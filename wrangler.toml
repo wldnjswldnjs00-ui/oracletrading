@@ -1,0 +1,13 @@
+name = "oracletrading"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".open-next/assets"
+main = ".open-next/worker.js"
+
+[[kv_namespaces]]
+binding = "PUSH_SUBS"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+[vars]
+NEXT_PUBLIC_VAPID_PUBLIC_KEY = "BMwdMqSh356k5_HwUjt-7JSgeDBbinD1PmklwsgPJ-O3j9y65HT4OaAe_SdYsn0BGH0DBllriViBJ7a2T7-r1bI"
+VAPID_EMAIL = "mailto:admin@oracletrading.app"
