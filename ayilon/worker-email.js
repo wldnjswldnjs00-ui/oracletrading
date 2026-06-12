@@ -65,14 +65,14 @@ async function handleCreatePayment(request, env) {
   const { email, plan, billing, baseAmount } = await request.json();
   if (!email || !plan || !baseAmount) return json({ error: 'Missing fields' }, 400);
 
-  let cents = 1;
+  let n = 1;
   if (env.USERS_KV) {
     const stored = await env.USERS_KV.get('payment:counter');
-    cents = stored ? (parseInt(stored) % 99) + 1 : 1;
-    await env.USERS_KV.put('payment:counter', String(cents));
+    n = stored ? (parseInt(stored) % 9999) + 1 : 1;
+    await env.USERS_KV.put('payment:counter', String(n));
   }
 
-  const uniqueAmount = (parseFloat(baseAmount) + cents / 100).toFixed(2);
+  const uniqueAmount = (parseFloat(baseAmount) + n / 10000).toFixed(4);
   const key = 'pending:' + uniqueAmount;
 
   if (env.USERS_KV) {
@@ -92,7 +92,7 @@ async function handleCheckPayment(request, env) {
   const { uniqueAmount } = await request.json();
   if (!uniqueAmount) return json({ confirmed: false });
   if (!env.USERS_KV) return json({ confirmed: false });
-  const pending = await env.USERS_KV.get('pending:' + parseFloat(uniqueAmount).toFixed(2), { type: 'json' });
+  const pending = await env.USERS_KV.get('pending:' + parseFloat(uniqueAmount).toFixed(4), { type: 'json' });
   return json({ confirmed: pending ? pending.confirmed : false, txHash: pending?.txHash || null });
 }
 
@@ -119,7 +119,7 @@ async function handleVerifyPayment(request, env) {
     const received = parseInt(tx.value) / 1_000_000;
     const expected = parseFloat(uniqueAmount);
 
-    if (Math.abs(received - expected) > 0.005) {
+    if (Math.abs(received - expected) > 0.00005) {
       return json({ verified: false, error: `Amount mismatch. Expected ${expected} USDT, received ${received} USDT.` });
     }
 
@@ -144,7 +144,7 @@ async function cronCheckPayments(env) {
 
     for (const tx of (data.data || [])) {
       if (tx.to !== WALLET) continue;
-      const amount = (parseInt(tx.value) / 1_000_000).toFixed(2);
+      const amount = (parseInt(tx.value) / 1_000_000).toFixed(4);
       const pending = await env.USERS_KV.get('pending:' + amount, { type: 'json' });
       if (pending && !pending.confirmed) {
         await activateSubscription(env, amount, tx.transaction_id);
@@ -156,7 +156,7 @@ async function cronCheckPayments(env) {
 // ── ACTIVATE SUBSCRIPTION ────────────────────────────────────
 async function activateSubscription(env, uniqueAmount, txHash) {
   if (!env.USERS_KV) return;
-  const key = 'pending:' + parseFloat(uniqueAmount).toFixed(2);
+  const key = 'pending:' + parseFloat(uniqueAmount).toFixed(4);
   const pending = await env.USERS_KV.get(key, { type: 'json' });
   if (!pending || pending.confirmed) return;
 
