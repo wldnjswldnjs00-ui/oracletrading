@@ -172,10 +172,12 @@
   </div>
 
   <script>
+    const WORKER_URL = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
     let timerInterval = null;
     let emailVerified = false;
+    let sentCode = null;
 
-    function sendVerificationCode() {
+    async function sendVerificationCode() {
       const email = document.getElementById('email').value;
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         document.getElementById('email').classList.add('error');
@@ -183,9 +185,30 @@
       }
       document.getElementById('email').classList.remove('error');
       document.getElementById('sendCodeBtn').disabled = true;
-      document.getElementById('sendCodeBtn').textContent = 'Sent';
-      document.getElementById('codeWrap').classList.add('show');
-      startTimer();
+      document.getElementById('sendCodeBtn').textContent = 'Sending...';
+
+      try {
+        const res = await fetch(WORKER_URL + '/send-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.success) {
+          sentCode = data.code;
+          document.getElementById('sendCodeBtn').textContent = 'Sent';
+          document.getElementById('codeWrap').classList.add('show');
+          startTimer();
+        } else {
+          document.getElementById('sendCodeBtn').disabled = false;
+          document.getElementById('sendCodeBtn').textContent = 'Send Code';
+          alert('Failed to send email. Please try again.');
+        }
+      } catch {
+        document.getElementById('sendCodeBtn').disabled = false;
+        document.getElementById('sendCodeBtn').textContent = 'Send Code';
+        alert('Failed to send email. Please try again.');
+      }
     }
 
     function startTimer() {
@@ -208,7 +231,7 @@
     function confirmCode() {
       const code = document.getElementById('verifyCode').value;
       const hint = document.getElementById('codeHint');
-      if (code.length === 6) {
+      if (code.length === 6 && code === sentCode) {
         emailVerified = true;
         clearInterval(timerInterval);
         document.getElementById('verifyCode').classList.add('success');

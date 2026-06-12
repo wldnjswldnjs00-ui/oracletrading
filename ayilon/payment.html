@@ -206,6 +206,13 @@
         </div>
       </div>
 
+      <!-- EMAIL INPUT (shared) -->
+      <div class="form-group" id="emailGroup">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input" id="checkoutEmail" placeholder="you@example.com" autocomplete="email" />
+        <div style="font-size:12px;color:var(--gray-600);margin-top:6px;">Payment confirmation will be sent to this address.</div>
+      </div>
+
       <!-- CREDIT CARD PANEL -->
       <div class="payment-panel active" id="panel-card">
         <div class="stripe-info">
@@ -342,6 +349,7 @@
       }
     };
 
+    var WORKER_URL = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
     var currentPlan = 'pro';
     var currentBilling = 'monthly';
 
@@ -449,6 +457,17 @@
       document.getElementById('processingScreen').classList.remove('show');
       document.getElementById('checkoutWrap').style.display = 'none';
       document.getElementById('successScreen').classList.add('show');
+
+      var email = document.getElementById('checkoutEmail').value;
+      var plan = plans[currentPlan];
+      var amt = currentBilling === 'annual' ? plan.annualTotal : plan.monthly;
+      if (email) {
+        fetch(WORKER_URL + '/send-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, plan: plan.label, billing: currentBilling, amount: amt })
+        });
+      }
     }
 
     init();
