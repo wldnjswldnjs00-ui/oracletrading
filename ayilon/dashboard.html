@@ -498,71 +498,15 @@
 
     <!-- POSITIONS -->
     <div class="page" id="page-positions">
-      <div class="topbar"><h1>Open Positions</h1></div>
-
-      <div class="stats-grid" style="margin-bottom:24px;">
-        <div class="stat-card">
-          <div class="stat-card-label">Total Unrealized P&amp;L</div>
-          <div class="stat-card-value up">+$435.49</div>
-          <div class="stat-card-change up">↑ 4 positions</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Long Exposure</div>
-          <div class="stat-card-value">$1,840</div>
-          <div class="stat-card-change" style="color:var(--gray-400)">3 positions</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Short Exposure</div>
-          <div class="stat-card-value">$711</div>
-          <div class="stat-card-change" style="color:var(--gray-400)">1 position</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Margin Used</div>
-          <div class="stat-card-value">$487</div>
-          <div class="stat-card-change" style="color:var(--gray-400)">of $2,000 available</div>
-        </div>
+      <div class="topbar" style="display:flex;align-items:center;justify-content:space-between;">
+        <h1>Positions</h1>
+        <button onclick="loadPositions()" style="padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--gray-400);font-size:13px;cursor:pointer;font-family:inherit;">↻ Refresh</button>
       </div>
 
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">All Open Positions</span>
-          <button class="card-action">Refresh</button>
+      <div id="positionsContent">
+        <div class="card">
+          <div style="text-align:center;padding:40px;color:var(--gray-600);font-size:14px;">Loading positions...</div>
         </div>
-        <table>
-          <thead>
-            <tr><th>Pair</th><th>Side</th><th>Entry</th><th>Mark Price</th><th>Liq. Price</th><th>Size</th><th>Unrealized PnL</th><th>ROE</th><th>Exchange</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><div class="coin-row"><div class="coin-dot" style="background:#f7931a20;color:#f7931a">B</div>BTC/USDT</div></td>
-              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
-              <td>$63,241</td><td>$67,820</td><td>$58,100</td><td>0.042</td>
-              <td class="up">+$192.32</td><td class="up">+7.24%</td>
-              <td style="color:var(--gray-400)">OKX</td>
-            </tr>
-            <tr>
-              <td><div class="coin-row"><div class="coin-dot" style="background:#627eea20;color:#627eea">E</div>ETH/USDT</div></td>
-              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
-              <td>$3,112</td><td>$3,287</td><td>$2,840</td><td>1.25</td>
-              <td class="up">+$218.75</td><td class="up">+5.62%</td>
-              <td style="color:var(--gray-400)">OKX</td>
-            </tr>
-            <tr>
-              <td><div class="coin-row"><div class="coin-dot" style="background:#e8414220;color:#e84142">A</div>AVAX/USDT</div></td>
-              <td><span style="color:var(--red);font-weight:600;font-size:12px;">SHORT</span></td>
-              <td>$38.40</td><td>$39.82</td><td>$44.20</td><td>18.5</td>
-              <td class="down">-$26.27</td><td class="down">-3.70%</td>
-              <td style="color:var(--gray-400)">OKX</td>
-            </tr>
-            <tr>
-              <td><div class="coin-row"><div class="coin-dot" style="background:#9945ff20;color:#9945ff">S</div>SOL/USDT</div></td>
-              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
-              <td>$142.10</td><td>$155.44</td><td>$128.00</td><td>3.8</td>
-              <td class="up">+$50.69</td><td class="up">+9.39%</td>
-              <td style="color:var(--gray-400)">OKX</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
 
@@ -643,28 +587,12 @@
 
     <!-- TRADE HISTORY -->
     <div class="page" id="page-history">
-      <div class="topbar"><h1>Trade History</h1></div>
-
-      <div class="filter-bar">
-        <button class="filter-btn active" onclick="filterHistory('all', this)">All</button>
-        <button class="filter-btn" onclick="filterHistory('win', this)">Wins</button>
-        <button class="filter-btn" onclick="filterHistory('loss', this)">Losses</button>
-        <button class="filter-btn" onclick="filterHistory('BTC/USDT', this)">BTC/USDT</button>
-        <button class="filter-btn" onclick="filterHistory('ETH/USDT', this)">ETH/USDT</button>
-        <button class="filter-btn" onclick="filterHistory('SOL/USDT', this)">SOL/USDT</button>
+      <div class="topbar" style="display:flex;align-items:center;justify-content:space-between;">
+        <h1>Trade History</h1>
+        <button onclick="loadHistory()" style="padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--gray-400);font-size:13px;cursor:pointer;font-family:inherit;">↻ Refresh</button>
       </div>
-
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Closed Trades</span>
-          <span id="historyCount" style="font-size:12px;color:var(--gray-400);">20 trades</span>
-        </div>
-        <table>
-          <thead>
-            <tr><th>Pair</th><th>Side</th><th>Strategy</th><th>Entry</th><th>Exit</th><th>Size</th><th>P&amp;L</th><th>ROE</th><th>Closed</th></tr>
-          </thead>
-          <tbody id="historyBody"></tbody>
-        </table>
+      <div id="historyContent">
+        <div class="card"><div style="text-align:center;padding:40px;color:var(--gray-600);font-size:14px;">Loading history...</div></div>
       </div>
     </div>
 
@@ -1047,9 +975,20 @@
                 <input type="checkbox" id="notifyEmail" checked style="accent-color:var(--white);"> Email notification
               </label>
               <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--gray-400);cursor:pointer;">
-                <input type="checkbox" id="notifyTelegram" style="accent-color:var(--white);"> Telegram notification
+                <input type="checkbox" id="notifyTelegram" onchange="toggleTelegramFields()" style="accent-color:var(--white);"> Telegram notification
                 <span style="font-size:11px;color:var(--gray-600);">(token required)</span>
               </label>
+              <div id="telegramFields" style="display:none;margin-top:12px;flex-direction:column;gap:10px;">
+                <div>
+                  <div style="font-size:12px;color:var(--gray-600);margin-bottom:6px;">Bot Token</div>
+                  <input type="text" id="telegramToken" class="d-form-input" placeholder="1234567890:ABCdef..." autocomplete="off">
+                </div>
+                <div>
+                  <div style="font-size:12px;color:var(--gray-600);margin-bottom:6px;">Chat ID</div>
+                  <input type="text" id="telegramChatId" class="d-form-input" placeholder="-1001234567890" autocomplete="off">
+                  <div style="font-size:11px;color:var(--gray-600);margin-top:4px;">Send /start to your bot, then get chat ID from @userinfobot</div>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -2087,7 +2026,8 @@
     showPage = function(name, el) {
       _origShowPage(name, el);
       if (name === 'bots')     renderBotList();
-      if (name === 'history')  renderHistory();
+      if (name === 'positions') loadPositions();
+      if (name === 'history')  loadHistory();
       if (name === 'mypage')   loadProfilePage();
       if (name === 'overview') initOverviewChart();
       if (name === 'analytics') initPerfCharts();
@@ -2102,11 +2042,117 @@
         showPage(startPage, matchEl);
       }
       renderBotList();
-      renderHistory();
       loadProfilePage();
       loadApiPage();
       initOverviewChart();
     });
+
+    // ── TRADE HISTORY ─────────────────────────────────────────────
+    async function loadHistory() {
+      var el = document.getElementById('historyContent');
+      if (!el) return;
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+        });
+        var data = await res.json();
+        var logs = data.logs || [];
+
+        if (!logs.length) {
+          el.innerHTML = '<div class="card"><div style="text-align:center;padding:40px;color:var(--gray-600);font-size:14px;">No trade history yet. Start the bot to see activity.</div></div>';
+          return;
+        }
+
+        var rows = logs.map(function(l) {
+          var t = new Date(l.time);
+          var dateStr = t.toLocaleDateString() + ' ' + t.toLocaleTimeString();
+          var isEntry = l.msg.includes('LONG') || l.msg.includes('SHORT');
+          var isSL = l.msg.includes('SL hit') || l.msg.includes('Stop loss');
+          var isWarn = l.msg.includes('⚠️');
+          var isError = l.msg.includes('error') || l.msg.includes('Error');
+          var color = isEntry ? '#22c55e' : isSL ? '#ef4444' : isWarn ? '#f59e0b' : isError ? '#ef4444' : 'var(--gray-400)';
+          var tag = isEntry ? '<span style="background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">ENTRY</span>' :
+                    isSL ? '<span style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">SL</span>' :
+                    isWarn ? '<span style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">WARN</span>' :
+                    '<span style="background:rgba(255,255,255,0.04);color:var(--gray-600);border:1px solid rgba(255,255,255,0.06);padding:2px 8px;border-radius:4px;font-size:11px;">LOG</span>';
+          return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
+            '<td style="padding:12px 16px;font-size:12px;color:var(--gray-600);font-family:monospace;white-space:nowrap;">' + dateStr + '</td>' +
+            '<td style="padding:12px 16px;">' + tag + '</td>' +
+            '<td style="padding:12px 16px;font-size:13px;color:' + color + ';">' + l.msg + '</td>' +
+            '</tr>';
+        }).join('');
+
+        el.innerHTML = '<div class="card" style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">' +
+          '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08);">' +
+          '<th style="padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-600);text-align:left;">Time</th>' +
+          '<th style="padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-600);text-align:left;">Type</th>' +
+          '<th style="padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-600);text-align:left;">Message</th>' +
+          '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+      } catch(e) {
+        el.innerHTML = '<div class="card"><div style="text-align:center;padding:40px;color:#ef4444;font-size:13px;">Failed to load history.</div></div>';
+      }
+    }
+
+    // ── POSITIONS ─────────────────────────────────────────────────
+    async function loadPositions() {
+      var el = document.getElementById('positionsContent');
+      if (!el) return;
+      var apiKey = localStorage.getItem('ayilon_api_key');
+      var apiSecret = localStorage.getItem('ayilon_api_secret');
+      var apiPassphrase = localStorage.getItem('ayilon_api_passphrase');
+
+      if (!apiKey) {
+        el.innerHTML = '<div class="card"><div style="text-align:center;padding:40px;"><div style="color:var(--gray-400);font-size:14px;margin-bottom:16px;">No API key connected.</div><a href="#" onclick="showPage(\'api\',null);return false;" style="color:var(--white);font-size:13px;text-decoration:underline;">Connect API →</a></div></div>';
+        return;
+      }
+
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/get-positions', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey, apiSecret, apiPassphrase })
+        });
+        var data = await res.json();
+        var positions = data.positions || [];
+
+        if (!positions.length) {
+          el.innerHTML = '<div class="card"><div style="text-align:center;padding:40px;color:var(--gray-600);font-size:14px;">No open positions.</div></div>';
+          return;
+        }
+
+        var rows = positions.map(function(p) {
+          var side = p.posSide === 'long' ? '<span style="color:#22c55e;">LONG</span>' : '<span style="color:#ef4444;">SHORT</span>';
+          var pnl = parseFloat(p.upl || 0);
+          var pnlColor = pnl >= 0 ? '#22c55e' : '#ef4444';
+          var pnlStr = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT';
+          var liqPrice = parseFloat(p.liqPx || 0).toFixed(2);
+          var entryPrice = parseFloat(p.avgPx || 0).toFixed(2);
+          var markPrice = parseFloat(p.markPx || 0).toFixed(2);
+          var lever = p.lever || '—';
+          return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
+            '<td style="padding:14px 16px;font-size:13px;font-weight:600;">' + (p.instId || '—') + '</td>' +
+            '<td style="padding:14px 16px;font-size:13px;">' + side + '</td>' +
+            '<td style="padding:14px 16px;font-size:13px;">' + lever + 'x</td>' +
+            '<td style="padding:14px 16px;font-size:13px;">' + entryPrice + '</td>' +
+            '<td style="padding:14px 16px;font-size:13px;">' + markPrice + '</td>' +
+            '<td style="padding:14px 16px;font-size:13px;">' + liqPrice + '</td>' +
+            '<td style="padding:14px 16px;font-size:13px;color:' + pnlColor + ';font-weight:600;">' + pnlStr + '</td>' +
+            '</tr>';
+        }).join('');
+
+        el.innerHTML = '<div class="card" style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">' +
+          '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08);">' +
+          '<th style="padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-600);text-align:left;">Pair</th>' +
+          '<th style="padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-600);text-align:left;">Side</th>' +
+          '<th style="padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-600);text-align:left;">Lev</th>' +
+          '<th style="padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-600);text-align:left;">Entry</th>' +
+          '<th style="padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-600);text-align:left;">Mark</th>' +
+          '<th style="padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-600);text-align:left;">Liq.</th>' +
+          '<th style="padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-600);text-align:left;">PnL</th>' +
+          '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+      } catch(e) {
+        el.innerHTML = '<div class="card"><div style="text-align:center;padding:40px;color:#ef4444;font-size:13px;">Failed to load positions: ' + e.message + '</div></div>';
+      }
+    }
 
     // ── BOT SETTINGS ─────────────────────────────────────────────
     function loadBotSettings() {
@@ -2117,6 +2163,9 @@
       if (s.lossLimitEnabled !== undefined) { document.getElementById('lossLimitEnabled').checked = s.lossLimitEnabled; }
       if (s.notifyEmail !== undefined) { document.getElementById('notifyEmail').checked = s.notifyEmail; }
       if (s.notifyTelegram !== undefined) { document.getElementById('notifyTelegram').checked = s.notifyTelegram; }
+      if (s.telegramToken) document.getElementById('telegramToken').value = s.telegramToken;
+      if (s.telegramChatId) document.getElementById('telegramChatId').value = s.telegramChatId;
+      toggleTelegramFields();
       if (s.tradingPair) { document.getElementById('tradingPair').value = s.tradingPair; }
       if (s.strategy) { var el = document.getElementById('strat-' + s.strategy); if(el) el.checked = true; }
       if (s.srTimeframe) { var el = document.getElementById('tf-' + s.srTimeframe.toLowerCase()); if(el) el.checked = true; }
@@ -2153,6 +2202,12 @@
       if (note) note.style.display = isMartingale ? 'block' : 'none';
     }
 
+    function toggleTelegramFields() {
+      var show = document.getElementById('notifyTelegram').checked;
+      var el = document.getElementById('telegramFields');
+      if (el) el.style.display = show ? 'flex' : 'none';
+    }
+
     async function saveBotSettings() {
       var s = {
         posSize: document.getElementById('posSize').value,
@@ -2161,6 +2216,8 @@
         lossLimitEnabled: document.getElementById('lossLimitEnabled').checked,
         notifyEmail: document.getElementById('notifyEmail').checked,
         notifyTelegram: document.getElementById('notifyTelegram').checked,
+        telegramToken: (document.getElementById('telegramToken') || {}).value || '',
+        telegramChatId: (document.getElementById('telegramChatId') || {}).value || '',
         tradingPair: document.getElementById('tradingPair').value.trim(),
         strategy: (document.querySelector('input[name="strategy"]:checked') || {}).value || 'daytrading',
         srTimeframe: (document.querySelector('input[name="srTimeframe"]:checked') || {}).value || '1H',
