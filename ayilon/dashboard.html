@@ -701,7 +701,37 @@
     </div>
   </div>
 
+  <!-- LOCK OVERLAY -->
+  <div id="lockOverlay" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px;">
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:12px;">Subscribe to Access</div>
+    <div style="font-size:14px;color:#a3a3a3;max-width:340px;margin-bottom:32px;line-height:1.7;">Your dashboard is ready — start a subscription to unlock your bots, analytics, and trading performance.</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+      <a href="index.html#pricing" style="padding:13px 28px;background:#fff;color:#000;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;">View Plans →</a>
+      <a href="login.html" style="padding:13px 28px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:14px;font-weight:500;text-decoration:none;">Log In</a>
+    </div>
+  </div>
+
   <script>
+    var ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
+
+    (function checkAccess() {
+      var loggedIn = localStorage.getItem('ayilon_logged_in');
+      var subscription = localStorage.getItem('ayilon_subscription');
+      var email = localStorage.getItem('ayilon_email');
+      var isAdmin = email === ADMIN_EMAIL;
+
+      if (!loggedIn && !isAdmin && !subscription) {
+        document.getElementById('lockOverlay').style.display = 'flex';
+      }
+
+      if (isAdmin) {
+        var adminBadge = document.createElement('div');
+        adminBadge.innerHTML = '&#9733; Admin';
+        adminBadge.style.cssText = 'position:fixed;bottom:16px;right:16px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:#f59e0b;font-size:11px;font-weight:700;padding:5px 10px;border-radius:100px;z-index:100;';
+        document.body.appendChild(adminBadge);
+      }
+    })();
+
     function showPage(name, el) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));

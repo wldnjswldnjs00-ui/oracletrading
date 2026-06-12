@@ -461,6 +461,16 @@
       var email = document.getElementById('checkoutEmail').value;
       var plan = plans[currentPlan];
       var amt = currentBilling === 'annual' ? plan.annualTotal : plan.monthly;
+
+      localStorage.setItem('ayilon_subscription', JSON.stringify({
+        plan: currentPlan,
+        billing: currentBilling,
+        amount: amt,
+        activatedAt: new Date().toISOString()
+      }));
+      if (email) localStorage.setItem('ayilon_email', email);
+      localStorage.setItem('ayilon_logged_in', 'true');
+
       if (email) {
         fetch(WORKER_URL + '/send-confirmation', {
           method: 'POST',

@@ -196,6 +196,9 @@
       var digits = document.querySelectorAll('.otp-digit');
       var code = Array.from(digits).map(function(d) { return d.value; }).join('');
       if (code.length === 6) {
+        var email = document.getElementById('loginEmail').value;
+        localStorage.setItem('ayilon_email', email);
+        localStorage.setItem('ayilon_logged_in', 'true');
         window.location.href = 'dashboard.html';
       }
     }
