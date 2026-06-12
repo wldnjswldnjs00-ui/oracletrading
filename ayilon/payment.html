@@ -92,6 +92,14 @@
     .btn-copy { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: var(--white); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.2s; }
     .btn-copy:hover { background: rgba(255,255,255,0.1); }
 
+    .fee-breakdown { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+    .fee-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--gray-400); }
+    .fee-row strong { color: var(--white); }
+    .fee-row.fee-total { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; margin-top: 2px; font-weight: 600; color: var(--white); }
+    .fee-row.fee-total strong { font-size: 15px; }
+    .fee-note { font-size: 12px; color: var(--gray-600); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; line-height: 1.5; }
+    .fee-note strong { color: var(--gray-400); }
+
     .okx-notice { background: rgba(255,165,0,0.06); border: 1px solid rgba(255,165,0,0.25); border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; }
     .okx-notice-title { font-size: 13px; font-weight: 700; color: #f59e0b; margin-bottom: 8px; }
     .okx-notice p { font-size: 13px; color: var(--gray-400); line-height: 1.6; }
@@ -235,6 +243,22 @@
           <div class="usdt-amount-sub">1 USDT = $1.00 USD &nbsp;&bull;&nbsp; Network: TRC20 (TRON)</div>
         </div>
 
+        <div class="fee-breakdown">
+          <div class="fee-row">
+            <span>Subscription amount</span>
+            <span><strong id="feeBase">500</strong> USDT</span>
+          </div>
+          <div class="fee-row">
+            <span>TRC20 network fee (charged by OKX)</span>
+            <span>~ 1 USDT</span>
+          </div>
+          <div class="fee-row fee-total">
+            <span>Total to have in your OKX account</span>
+            <span><strong id="feeTotal">501</strong> USDT</span>
+          </div>
+          <div class="fee-note">AYILON receives exactly <strong id="feeReceive">500 USDT</strong>. The network fee is deducted separately from your OKX balance.</div>
+        </div>
+
         <div class="wallet-section">
           <div class="wallet-header">
             <h3>Deposit Address</h3>
@@ -363,6 +387,9 @@
       document.getElementById('usdtStepAmount').textContent = amt.toLocaleString() + ' USDT';
       document.getElementById('cardPayAmount').textContent = '$' + amt.toLocaleString();
       document.getElementById('successPlan').textContent = plan.label;
+      document.getElementById('feeBase').textContent = amt.toLocaleString();
+      document.getElementById('feeTotal').textContent = (amt + 1).toLocaleString();
+      document.getElementById('feeReceive').textContent = amt.toLocaleString() + ' USDT';
     }
 
     function setMethod(method) {
