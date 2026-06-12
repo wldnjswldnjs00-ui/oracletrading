@@ -50,27 +50,11 @@
     .payment-form { flex: 1; min-width: 0; }
     .payment-title { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 28px; }
 
-    .method-tabs { display: flex; gap: 12px; margin-bottom: 32px; }
-    .method-tab { display: flex; align-items: center; gap: 10px; padding: 14px 20px; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer; flex: 1; transition: border-color 0.2s; }
-    .method-tab.active { border-color: var(--white); }
-    .method-tab-icon { font-size: 20px; }
-    .method-tab-label { font-size: 14px; font-weight: 600; }
-    .method-tab-sub { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
-
-    .payment-panel { display: none; }
-    .payment-panel.active { display: block; }
-
-    /* CARD FORM */
     .form-group { margin-bottom: 18px; }
     .form-label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 8px; }
     .form-input { width: 100%; padding: 13px 16px; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
     .form-input::placeholder { color: var(--gray-600); }
     .form-input:focus { border-color: rgba(255,255,255,0.4); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-
-    .stripe-info { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; margin-bottom: 20px; }
-    .stripe-info p { font-size: 12px; color: var(--gray-600); }
-    .stripe-info p strong { color: var(--gray-400); }
 
     /* USDT FORM */
     .usdt-amount { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 24px; margin-bottom: 24px; text-align: center; }
@@ -140,8 +124,6 @@
       nav { padding: 20px 24px; }
       .checkout-wrap { flex-direction: column; padding: 32px 20px; gap: 32px; }
       .order-summary { width: 100%; }
-      .method-tabs { flex-direction: column; }
-      .form-row { grid-template-columns: 1fr; }
       .wallet-inner { flex-direction: column; }
     }
   </style>
