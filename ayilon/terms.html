@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms of Service — AYILON</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --black: #000; --white: #fff; --gray-400: #a3a3a3; --gray-600: #525252; --gray-900: #111111; }
+    body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); line-height: 1.7; }
+
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 60px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
+    .nav-back { font-size: 14px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
+    .nav-back:hover { color: var(--white); }
+
+    .content { max-width: 720px; margin: 0 auto; padding: 60px 24px 100px; }
+    .page-title { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+    .page-meta { font-size: 13px; color: var(--gray-600); margin-bottom: 60px; }
+
+    h2 { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; margin: 40px 0 12px; color: var(--white); }
+    p { font-size: 15px; color: var(--gray-400); margin-bottom: 12px; }
+    ul { list-style: none; margin-bottom: 12px; }
+    ul li { font-size: 15px; color: var(--gray-400); padding: 4px 0 4px 20px; position: relative; }
+    ul li::before { content: '—'; position: absolute; left: 0; color: var(--gray-600); }
+    .highlight { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 20px 24px; margin: 16px 0 24px; }
+    .highlight p { margin: 0; }
+    strong { color: var(--white); font-weight: 600; }
+
+    footer { text-align: center; padding: 40px 24px; border-top: 1px solid rgba(255,255,255,0.06); }
+    footer a { font-size: 13px; color: var(--gray-600); text-decoration: none; margin: 0 12px; }
+    footer a:hover { color: var(--white); }
+
+    @media (max-width: 480px) { nav { padding: 20px 24px; } .page-title { font-size: 28px; } }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-logo">AYILON</a>
+    <a href="index.html" class="nav-back">&larr; Back to Home</a>
+  </nav>
+
+  <div class="content">
+    <h1 class="page-title">Terms of Service</h1>
+    <p class="page-meta">Last updated: June 2025 &nbsp;·&nbsp; Effective immediately upon registration</p>
+
+    <h2>1. Acceptance of Terms</h2>
+    <p>By creating an account or using any part of the AYILON platform, you agree to be bound by these Terms of Service. If you do not agree, do not use the service.</p>
+
+    <h2>2. Service Description</h2>
+    <p>AYILON provides automated crypto trading bot software that connects to supported exchanges (currently OKX) via user-supplied API keys. AYILON does not hold, custody, or control user funds at any time. All trading activity occurs directly between the user's exchange account and the exchange.</p>
+
+    <h2>3. Eligibility</h2>
+    <p>You must be at least 18 years old and legally permitted to trade cryptocurrencies in your jurisdiction to use AYILON. By using the service, you represent and warrant that you meet these requirements.</p>
+
+    <h2>4. Subscription & Billing</h2>
+    <p>AYILON offers subscription plans billed on a monthly or annual basis. Subscriptions renew automatically unless cancelled.</p>
+    <ul>
+      <li>Prices are listed in USD and are subject to change with 30 days' notice.</li>
+      <li>Annual plans are billed as a single upfront payment.</li>
+      <li>Failed payments may result in suspension of service.</li>
+    </ul>
+
+    <h2>5. Cancellation Policy</h2>
+    <p>You may cancel your subscription at any time from the My Account page in your dashboard. Cancellation takes effect at the end of the current billing period. You will retain full access to the service until then.</p>
+
+    <h2>6. Refund Policy</h2>
+    <div class="highlight">
+      <p><strong>7-Day Refund Window:</strong> You are eligible for a full refund if all of the following conditions are met:</p>
+    </div>
+    <ul>
+      <li>Your refund request is submitted within <strong>7 calendar days</strong> of your initial purchase.</li>
+      <li>You have <strong>not</strong> connected an exchange API key to your account.</li>
+    </ul>
+    <p>Once you connect an exchange API key, the 7-day refund eligibility is forfeited, regardless of time elapsed. This is because connecting an API key indicates active use of the service.</p>
+    <p>Refunds are not available after 7 days from purchase, or after an API key has been connected. Refund requests that meet the above criteria will be processed within 3–5 business days.</p>
+
+    <h2>7. Trading Risk Disclaimer</h2>
+    <p>Cryptocurrency trading involves substantial risk of loss. AYILON does not guarantee any profit, return, or specific trading outcome. Past performance of any bot strategy is not indicative of future results. You trade at your own risk.</p>
+    <p>AYILON is a software tool — it is not a financial advisor, broker, or investment manager. Nothing on this platform constitutes financial or investment advice.</p>
+
+    <h2>8. API Key Security</h2>
+    <p>Your exchange API keys are stored encrypted and used solely to execute trades on your behalf. AYILON strongly recommends:</p>
+    <ul>
+      <li>Enabling only <strong>Trade</strong> permissions on your API key (never Withdraw).</li>
+      <li>Binding API keys to AYILON's IP addresses where supported by your exchange.</li>
+      <li>Rotating API keys regularly.</li>
+    </ul>
+
+    <h2>9. Prohibited Use</h2>
+    <p>You may not use AYILON to engage in market manipulation, wash trading, or any activity that violates the terms of service of your connected exchange or applicable law.</p>
+
+    <h2>10. Limitation of Liability</h2>
+    <p>To the maximum extent permitted by law, AYILON and its operators shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service, including trading losses.</p>
+
+    <h2>11. Modifications</h2>
+    <p>We reserve the right to update these Terms at any time. Continued use of the service after changes are posted constitutes acceptance of the revised Terms.</p>
+
+    <h2>12. Contact</h2>
+    <p>For questions about these Terms, email us at <strong>support@ayilon.com</strong>.</p>
+  </div>
+
+  <footer>
+    <a href="index.html">Home</a>
+    <a href="terms.html">Terms of Service</a>
+    <a href="privacy.html">Privacy Policy</a>
+  </footer>
+</body>
+</html>

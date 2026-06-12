@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — AYILON</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --black: #000; --white: #fff;
+      --gray-100: #f5f5f5; --gray-200: #e5e5e5;
+      --gray-400: #a3a3a3; --gray-600: #525252;
+      --gray-800: #262626; --gray-900: #111111;
+      --green: #22c55e; --red: #ef4444; --yellow: #f59e0b;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar { width: 240px; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.06); padding: 28px 0; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; background: var(--black); z-index: 50; }
+    .sidebar-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); padding: 0 24px; margin-bottom: 36px; text-decoration: none; display: block; }
+    .sidebar-section { margin-bottom: 6px; }
+    .sidebar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gray-600); padding: 0 24px; margin-bottom: 4px; margin-top: 16px; }
+    .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 24px; color: var(--gray-400); font-size: 14px; font-weight: 400; cursor: pointer; transition: color 0.15s, background 0.15s; border-radius: 0; text-decoration: none; border-left: 2px solid transparent; }
+    .sidebar-item:hover { color: var(--white); background: rgba(255,255,255,0.03); }
+    .sidebar-item.active { color: var(--white); border-left-color: var(--white); background: rgba(255,255,255,0.04); }
+    .sidebar-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: 0.7; }
+    .sidebar-item.active .sidebar-icon, .sidebar-item:hover .sidebar-icon { opacity: 1; }
+    .sidebar-bottom { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.06); padding: 16px 0 0; }
+    .user-info { display: flex; align-items: center; gap: 12px; padding: 10px 24px; cursor: pointer; }
+    .user-avatar { width: 32px; height: 32px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .user-name { font-size: 13px; font-weight: 500; }
+    .user-email { font-size: 11px; color: var(--gray-600); }
+    .logout-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 24px 14px; background: none; border: none; color: var(--gray-600); font-size: 12px; font-family: 'Inter', sans-serif; cursor: pointer; transition: color 0.2s; text-align: left; }
+    .logout-btn:hover { color: #ef4444; }
+
+    /* MAIN */
+    .main { margin-left: 240px; flex: 1; padding: 36px 40px; min-width: 0; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* TOP BAR */
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; }
+    .topbar h1 { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .badge-live { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); border-radius: 100px; font-size: 12px; color: var(--green); font-weight: 500; }
+    .badge-live span { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* STAT CARDS */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-card { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px 24px; }
+    .stat-card-label { font-size: 12px; color: var(--gray-400); font-weight: 500; margin-bottom: 10px; letter-spacing: 0.02em; }
+    .stat-card-value { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+    .stat-card-change { font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+    .up { color: var(--green); }
+    .down { color: var(--red); }
+
+    /* GRID LAYOUT */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .grid-3-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+    /* CARD */
+    .card { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 24px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .card-title { font-size: 14px; font-weight: 600; letter-spacing: 0.01em; }
+    .card-action { font-size: 12px; color: var(--gray-400); cursor: pointer; background: none; border: none; font-family: 'Inter',sans-serif; transition: color 0.2s; }
+    .card-action:hover { color: var(--white); }
+
+    /* TABLE */
+    table { width: 100%; border-collapse: collapse; }
+    thead th { font-size: 11px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.08em; padding: 0 0 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody td { padding: 14px 0; font-size: 13px; color: var(--gray-400); }
+    tbody td:first-child { color: var(--white); font-weight: 500; }
+    td.up { color: var(--green); font-weight: 600; }
+    td.down { color: var(--red); font-weight: 600; }
+
+    .coin-row { display: flex; align-items: center; gap: 10px; }
+    .coin-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+    /* CHART */
+    .chart-wrap { height: 140px; display: flex; align-items: flex-end; gap: 6px; padding-top: 10px; }
+    .chart-bar { flex: 1; border-radius: 4px 4px 0 0; transition: opacity 0.2s; cursor: pointer; }
+    .chart-bar:hover { opacity: 0.8; }
+    .chart-bar.pos { background: var(--green); }
+    .chart-bar.neg { background: var(--red); border-radius: 0 0 4px 4px; align-self: flex-start; }
+    .chart-labels { display: flex; gap: 6px; margin-top: 8px; }
+    .chart-labels span { flex: 1; text-align: center; font-size: 10px; color: var(--gray-600); }
+
+    /* WINRATE RING */
+    .ring-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 160px; gap: 8px; }
+    .ring { width: 100px; height: 100px; position: relative; }
+    .ring svg { transform: rotate(-90deg); }
+    .ring-track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 8; }
+    .ring-fill { fill: none; stroke: var(--white); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 251; stroke-dashoffset: 62; transition: stroke-dashoffset 1s ease; }
+    .ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .ring-pct { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; }
+    .ring-lbl { font-size: 10px; color: var(--gray-400); margin-top: 2px; }
+
+    /* TOGGLE SWITCH */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label h3 { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+    .toggle-label p { font-size: 12px; color: var(--gray-400); }
+    .toggle { width: 44px; height: 24px; background: var(--gray-800); border-radius: 100px; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+    .toggle.on { background: var(--white); }
+    .toggle::after { content: ''; position: absolute; width: 18px; height: 18px; background: var(--gray-400); border-radius: 50%; top: 3px; left: 3px; transition: transform 0.2s, background 0.2s; }
+    .toggle.on::after { transform: translateX(20px); background: var(--black); }
+
+    /* API EXCHANGE CARD */
+    .exchange-list { display: flex; flex-direction: column; gap: 12px; }
+    .exchange-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; }
+    .exchange-info { display: flex; align-items: center; gap: 12px; }
+    .exchange-logo { width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .exchange-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .exchange-key { font-size: 11px; color: var(--gray-600); font-family: monospace; }
+    .exchange-status { display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .status-dot.connected { background: var(--green); }
+    .status-dot.disconnected { background: var(--gray-600); }
+    .status-text { font-size: 12px; color: var(--gray-400); }
+    .btn-sm { padding: 6px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: var(--white); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter',sans-serif; transition: background 0.2s; }
+    .btn-sm:hover { background: rgba(255,255,255,0.1); }
+    .btn-sm.danger { color: var(--red); border-color: rgba(239,68,68,0.2); }
+    .btn-sm.danger:hover { background: rgba(239,68,68,0.08); }
+    .btn-add { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: transparent; border: 1px dashed rgba(255,255,255,0.12); border-radius: 10px; color: var(--gray-400); font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 12px; transition: border-color 0.2s, color 0.2s; font-family: 'Inter',sans-serif; }
+    .btn-add:hover { border-color: rgba(255,255,255,0.3); color: var(--white); }
+
+    /* SECURITY */
+    .security-section { margin-bottom: 32px; }
+    .security-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+    .security-desc { font-size: 13px; color: var(--gray-400); margin-bottom: 20px; }
+    .method-card { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; transition: border-color 0.2s; }
+    .method-card.selected { border-color: var(--white); }
+    .method-left { display: flex; align-items: center; gap: 16px; }
+    .method-icon { font-size: 24px; }
+    .method-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+    .method-detail { font-size: 12px; color: var(--gray-400); }
+    .method-right { display: flex; align-items: center; gap: 12px; }
+    .badge-set { padding: 4px 10px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 100px; font-size: 11px; color: var(--green); }
+    .badge-unset { padding: 4px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 100px; font-size: 11px; color: var(--gray-400); }
+    .radio-circle { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.2s; }
+    .radio-circle.checked { border-color: var(--white); }
+    .radio-circle.checked::after { content: ''; width: 8px; height: 8px; background: var(--white); border-radius: 50%; }
+
+    /* FORM */
+    .d-form-group { margin-bottom: 16px; }
+    .d-form-label { display: block; font-size: 12px; font-weight: 500; color: var(--gray-400); margin-bottom: 8px; }
+    .d-form-input { width: 100%; padding: 11px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--white); font-family: 'Inter', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s; }
+    .d-form-input:focus { border-color: rgba(255,255,255,0.3); }
+    .d-form-input::placeholder { color: var(--gray-600); }
+    .btn-primary { padding: 11px 24px; background: var(--white); color: var(--black); border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; transition: opacity 0.2s; }
+    .btn-primary:hover { opacity: 0.88; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 32px; width: 100%; max-width: 460px; }
+    .modal-title { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .modal-desc { font-size: 13px; color: var(--gray-400); margin-bottom: 24px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+    .btn-cancel { padding: 11px 24px; background: transparent; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: var(--white); font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Inter',sans-serif; }
+
+    /* MOBILE HEADER */
+    .mobile-header { display: none; position: fixed; top: 0; left: 0; right: 0; height: 56px; background: var(--black); border-bottom: 1px solid rgba(255,255,255,0.06); align-items: center; justify-content: space-between; padding: 0 20px; z-index: 60; }
+    .hamburger { width: 40px; height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; border-radius: 8px; background: none; border: none; transition: background 0.2s; }
+    .hamburger:hover { background: rgba(255,255,255,0.06); }
+    .hamburger span { display: block; width: 22px; height: 2px; background: var(--white); border-radius: 2px; }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 49; }
+    .sidebar-backdrop.show { display: block; }
+
+    @media (max-width: 1024px) {
+      .mobile-header { display: flex; }
+      .sidebar { transform: translateX(-100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1); z-index: 55; }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; padding: 72px 20px 24px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .grid-2, .grid-3-1 { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .main { padding: 72px 16px 24px; }
+    }
+
+    /* BOT MANAGER */
+    .bot-item { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.04); gap:12px; }
+    .bot-item:last-child { border-bottom:none; }
+    .bot-left { display:flex; align-items:center; gap:14px; flex:1; min-width:0; }
+    .bot-pair { font-size:14px; font-weight:600; margin-bottom:2px; }
+    .bot-sub { font-size:12px; color:var(--gray-400); }
+    .bot-right { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+    .empty-state { text-align:center; padding:48px 20px; color:var(--gray-600); font-size:14px; }
+
+    /* FILTER BAR */
+    .filter-bar { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+    .filter-btn { padding:7px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:100px; color:var(--gray-400); font-size:12px; font-weight:500; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s; }
+    .filter-btn.active, .filter-btn:hover { background:rgba(255,255,255,0.1); color:var(--white); border-color:rgba(255,255,255,0.25); }
+
+    /* PERF STAT CARDS */
+    .perf-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+    @media (max-width:1024px) { .perf-grid { grid-template-columns:repeat(2,1fr); } }
+  </style>
+</head>
+<body>
+
+  <!-- Mobile top bar -->
+  <div class="mobile-header">
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+    <a href="index.html" style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;letter-spacing:0.12em;color:var(--white);text-decoration:none;">AYILON</a>
+    <div style="width:40px;"></div>
+  </div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="appSidebar">
+    <a href="index.html" class="sidebar-logo">AYILON</a>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Main</div>
+      <a class="sidebar-item active" onclick="showPage('overview', this)">
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg></span> Dashboard
+      </a>
+      <a class="sidebar-item" onclick="showPage('bots', this)">
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="8" height="8" rx="1"/><path d="M2 6h2M2 10h2M12 6h2M12 10h2M6 2v2M10 2v2M6 12v2M10 12v2"/></svg></span> Bot Manager
+      </a>
+      <a class="sidebar-item" onclick="showPage('positions', this)">
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,12 5,8 8,10 14,4"/><polyline points="10,4 14,4 14,8"/></svg></span> Positions
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Analytics</div>
+      <a class="sidebar-item" onclick="showPage('analytics', this)">
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="8" width="3" height="7" rx="0.5"/><rect x="6.5" y="4.5" width="3" height="10.5" rx="0.5"/><rect x="12" y="1.5" width="3" height="13.5" rx="0.5"/></svg></span> Performance
+      </a>
+      <a class="sidebar-item" onclick="showPage('history', this)">
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><polyline points="8,4.5 8,8 10.5,9.5"/></svg></span> Trade History
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Settings</div>
+      <a class="sidebar-item" onclick="showPage('api', this)">
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5a3.5 3.5 0 0 0 5 0l2-2a3.5 3.5 0 0 0-5-5L7 4"/><path d="M9.5 6.5a3.5 3.5 0 0 0-5 0l-2 2a3.5 3.5 0 0 0 5 5L9 12"/></svg></span> API Integration
+      </a>
+      <a class="sidebar-item" onclick="showPage('security', this)">
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5L2 4v3.5c0 3.3 2.6 6 6 7 3.4-1 6-3.7 6-7V4L8 1.5z"/></svg></span> Security
+      </a>
+      <a class="sidebar-item" onclick="showPage('mypage', this)">
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.5" r="3"/><path d="M1.5 14.5c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6"/></svg></span> My Account
+      </a>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div id="planStatus" style="padding:8px 24px 4px;font-size:11px;color:#525252;display:none;">
+        <span id="planStatusText">No active plan</span> · <a href="index.html#pricing" style="color:#f59e0b;text-decoration:none;">Upgrade</a>
+      </div>
+      <div class="user-info">
+        <div class="user-avatar" id="sidebarAvatar">AY</div>
+        <div>
+          <div class="user-name" id="sidebarName">AYILON User</div>
+          <div class="user-email" id="sidebarEmail">user@ayilon.com</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Log Out
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- OVERVIEW -->
+    <div class="page active" id="page-overview">
+      <div class="topbar">
+        <h1>Dashboard</h1>
+        <div class="topbar-right">
+          <div class="badge-live"><span></span> Bot Running</div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-label">Total Unrealized P&amp;L</div>
+          <div class="stat-card-value up">+$2,847</div>
+          <div class="stat-card-change up">↑ +12.4% this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Win Rate</div>
+          <div class="stat-card-value">74.2%</div>
+          <div class="stat-card-change up">↑ +2.1% vs last week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Today's P&amp;L</div>
+          <div class="stat-card-value up">+$138</div>
+          <div class="stat-card-change up">↑ 34 trades filled</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Active Bots</div>
+          <div class="stat-card-value">3</div>
+          <div class="stat-card-change" style="color:var(--gray-400)">Out of 5 total</div>
+        </div>
+      </div>
+
+      <div class="grid-3-1">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Equity Curve</span>
+            <span style="font-size:12px;color:var(--green);font-weight:600;">+$2,847 this month</span>
+          </div>
+          <div style="position:relative;height:160px;">
+            <canvas id="overviewLineChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card" style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <div class="card-header" style="width:100%">
+            <span class="card-title">Win Rate</span>
+          </div>
+          <div class="ring-wrap">
+            <div class="ring">
+              <svg viewBox="0 0 100 100" width="100" height="100">
+                <circle class="ring-track" cx="50" cy="50" r="40" />
+                <circle class="ring-fill" cx="50" cy="50" r="40" />
+              </svg>
+              <div class="ring-text">
+                <span class="ring-pct">74%</span>
+                <span class="ring-lbl">win rate</span>
+              </div>
+            </div>
+            <div style="text-align:center; margin-top:8px;">
+              <div style="font-size:22px; font-weight:700; font-family:'Space Grotesk',sans-serif;">1,248</div>
+              <div style="font-size:12px; color:var(--gray-400);">total trades</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">Open Positions</span>
+          <button class="card-action">View all</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Pair</th><th>Side</th><th>Entry</th><th>Mark</th>
+              <th>Size</th><th>Unrealized PnL</th><th>ROE</th><th>Exchange</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#f7931a20;color:#f7931a">B</div>BTC/USDT</div></td>
+              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
+              <td>$63,241</td><td>$67,820</td><td>0.042</td>
+              <td class="up">+$192.32</td><td class="up">+7.24%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#627eea20;color:#627eea">E</div>ETH/USDT</div></td>
+              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
+              <td>$3,112</td><td>$3,287</td><td>1.25</td>
+              <td class="up">+$218.75</td><td class="up">+5.62%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#e8414220;color:#e84142">A</div>AVAX/USDT</div></td>
+              <td><span style="color:var(--red);font-weight:600;font-size:12px;">SHORT</span></td>
+              <td>$38.40</td><td>$39.82</td><td>18.5</td>
+              <td class="down">-$26.27</td><td class="down">-3.70%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#0033ad20;color:#0033ad">S</div>SOL/USDT</div></td>
+              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
+              <td>$142.10</td><td>$155.44</td><td>3.8</td>
+              <td class="up">+$50.69</td><td class="up">+9.39%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Trade Statistics</span></div>
+          <div style="display:flex; flex-direction:column; gap:0;">
+            <div class="toggle-row" style="border:none; padding:10px 0;">
+              <div style="font-size:13px; color:var(--gray-400)">Winning Trades</div>
+              <div style="font-size:14px; font-weight:600; color:var(--green)">926</div>
+            </div>
+            <div class="toggle-row" style="padding:10px 0;">
+              <div style="font-size:13px; color:var(--gray-400)">Losing Trades</div>
+              <div style="font-size:14px; font-weight:600; color:var(--red)">322</div>
+            </div>
+            <div class="toggle-row" style="padding:10px 0;">
+              <div style="font-size:13px; color:var(--gray-400)">Avg. Win</div>
+              <div style="font-size:14px; font-weight:600; color:var(--green)">+3.14%</div>
+            </div>
+            <div class="toggle-row" style="padding:10px 0;">
+              <div style="font-size:13px; color:var(--gray-400)">Avg. Loss</div>
+              <div style="font-size:14px; font-weight:600; color:var(--red)">-1.82%</div>
+            </div>
+            <div class="toggle-row" style="padding:10px 0; border:none;">
+              <div style="font-size:13px; color:var(--gray-400)">Risk / Reward</div>
+              <div style="font-size:14px; font-weight:600;">1 : 1.72</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Recent Trades</span></div>
+          <table>
+            <thead>
+              <tr><th>Pair</th><th>Result</th><th>ROE</th><th>Time</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>BTC/USDT</td>
+                <td><span style="color:var(--green);font-size:12px;">Win</span></td>
+                <td class="up">+4.2%</td>
+                <td style="color:var(--gray-600);font-size:12px;">14m ago</td>
+              </tr>
+              <tr>
+                <td>ETH/USDT</td>
+                <td><span style="color:var(--red);font-size:12px;">Loss</span></td>
+                <td class="down">-1.8%</td>
+                <td style="color:var(--gray-600);font-size:12px;">32m ago</td>
+              </tr>
+              <tr>
+                <td>SOL/USDT</td>
+                <td><span style="color:var(--green);font-size:12px;">Win</span></td>
+                <td class="up">+6.7%</td>
+                <td style="color:var(--gray-600);font-size:12px;">1h ago</td>
+              </tr>
+              <tr>
+                <td>BTC/USDT</td>
+                <td><span style="color:var(--green);font-size:12px;">Win</span></td>
+                <td class="up">+2.1%</td>
+                <td style="color:var(--gray-600);font-size:12px;">2h ago</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOT MANAGER -->
+    <div class="page" id="page-bots">
+      <div class="topbar">
+        <h1>Bot Manager</h1>
+        <div class="topbar-right">
+          <button class="btn-primary" onclick="openAddBotModal()" style="font-size:13px;padding:9px 20px;">+ Add Bot</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">My Bots</span>
+          <span id="botCount" style="font-size:12px;color:var(--gray-400);">—</span>
+        </div>
+        <div id="botList"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Available Strategies</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+          <div style="padding:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Grid Trading</div>
+            <div style="font-size:12px;color:var(--gray-400);line-height:1.6;">Places buy/sell orders at regular intervals. Best for sideways markets.</div>
+          </div>
+          <div style="padding:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">DCA</div>
+            <div style="font-size:12px;color:var(--gray-400);line-height:1.6;">Dollar-cost averaging. Buys at regular intervals to reduce entry price.</div>
+          </div>
+          <div style="padding:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Momentum</div>
+            <div style="font-size:12px;color:var(--gray-400);line-height:1.6;">Follows trend direction using RSI &amp; MACD signals for entries.</div>
+          </div>
+          <div style="padding:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Scalping</div>
+            <div style="font-size:12px;color:var(--gray-400);line-height:1.6;">High-frequency small profit trades. Best for high-liquidity pairs.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POSITIONS -->
+    <div class="page" id="page-positions">
+      <div class="topbar"><h1>Open Positions</h1></div>
+
+      <div class="stats-grid" style="margin-bottom:24px;">
+        <div class="stat-card">
+          <div class="stat-card-label">Total Unrealized P&amp;L</div>
+          <div class="stat-card-value up">+$435.49</div>
+          <div class="stat-card-change up">↑ 4 positions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Long Exposure</div>
+          <div class="stat-card-value">$1,840</div>
+          <div class="stat-card-change" style="color:var(--gray-400)">3 positions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Short Exposure</div>
+          <div class="stat-card-value">$711</div>
+          <div class="stat-card-change" style="color:var(--gray-400)">1 position</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Margin Used</div>
+          <div class="stat-card-value">$487</div>
+          <div class="stat-card-change" style="color:var(--gray-400)">of $2,000 available</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Open Positions</span>
+          <button class="card-action">Refresh</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Pair</th><th>Side</th><th>Entry</th><th>Mark Price</th><th>Liq. Price</th><th>Size</th><th>Unrealized PnL</th><th>ROE</th><th>Exchange</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#f7931a20;color:#f7931a">B</div>BTC/USDT</div></td>
+              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
+              <td>$63,241</td><td>$67,820</td><td>$58,100</td><td>0.042</td>
+              <td class="up">+$192.32</td><td class="up">+7.24%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#627eea20;color:#627eea">E</div>ETH/USDT</div></td>
+              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
+              <td>$3,112</td><td>$3,287</td><td>$2,840</td><td>1.25</td>
+              <td class="up">+$218.75</td><td class="up">+5.62%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#e8414220;color:#e84142">A</div>AVAX/USDT</div></td>
+              <td><span style="color:var(--red);font-weight:600;font-size:12px;">SHORT</span></td>
+              <td>$38.40</td><td>$39.82</td><td>$44.20</td><td>18.5</td>
+              <td class="down">-$26.27</td><td class="down">-3.70%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#9945ff20;color:#9945ff">S</div>SOL/USDT</div></td>
+              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
+              <td>$142.10</td><td>$155.44</td><td>$128.00</td><td>3.8</td>
+              <td class="up">+$50.69</td><td class="up">+9.39%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PERFORMANCE -->
+    <div class="page" id="page-analytics">
+      <div class="topbar"><h1>Performance</h1></div>
+
+      <div class="perf-grid">
+        <div class="stat-card">
+          <div class="stat-card-label">Total P&amp;L (All Time)</div>
+          <div class="stat-card-value up">+$8,420</div>
+          <div class="stat-card-change up">↑ +28.4% overall</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Win Rate</div>
+          <div class="stat-card-value">74.2%</div>
+          <div class="stat-card-change up">↑ +2.1% vs last month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Best Month</div>
+          <div class="stat-card-value up">+$1,840</div>
+          <div class="stat-card-change" style="color:var(--gray-400)">August 2024</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Sharpe Ratio</div>
+          <div class="stat-card-value">2.14</div>
+          <div class="stat-card-change up">↑ Above benchmark</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">Equity Curve (All Time)</span>
+          <span style="font-size:12px;color:var(--green);font-weight:600;">+$8,420 total</span>
+        </div>
+        <div style="position:relative;height:200px;">
+          <canvas id="perfLineChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">Monthly P&amp;L</span>
+          <span style="font-size:12px;color:var(--gray-400);">2024</span>
+        </div>
+        <div style="position:relative;height:180px;">
+          <canvas id="perfBarChart"></canvas>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Strategy Breakdown</span></div>
+          <table>
+            <thead><tr><th>Strategy</th><th>Trades</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
+            <tbody>
+              <tr><td>Grid Trading</td><td>482</td><td class="up">78.4%</td><td class="up">+$3,240</td></tr>
+              <tr><td>DCA</td><td>314</td><td class="up">71.0%</td><td class="up">+$2,180</td></tr>
+              <tr><td>Momentum</td><td>288</td><td class="up">69.8%</td><td class="up">+$1,820</td></tr>
+              <tr><td>Scalping</td><td>164</td><td class="down">62.2%</td><td class="up">+$1,180</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Top Pairs</span></div>
+          <table>
+            <thead><tr><th>Pair</th><th>Trades</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
+            <tbody>
+              <tr><td>BTC/USDT</td><td>420</td><td class="up">76.9%</td><td class="up">+$3,820</td></tr>
+              <tr><td>ETH/USDT</td><td>318</td><td class="up">73.3%</td><td class="up">+$2,440</td></tr>
+              <tr><td>SOL/USDT</td><td>286</td><td class="up">72.0%</td><td class="up">+$1,560</td></tr>
+              <tr><td>AVAX/USDT</td><td>224</td><td class="down">66.1%</td><td class="up">+$600</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRADE HISTORY -->
+    <div class="page" id="page-history">
+      <div class="topbar"><h1>Trade History</h1></div>
+
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterHistory('all', this)">All</button>
+        <button class="filter-btn" onclick="filterHistory('win', this)">Wins</button>
+        <button class="filter-btn" onclick="filterHistory('loss', this)">Losses</button>
+        <button class="filter-btn" onclick="filterHistory('BTC/USDT', this)">BTC/USDT</button>
+        <button class="filter-btn" onclick="filterHistory('ETH/USDT', this)">ETH/USDT</button>
+        <button class="filter-btn" onclick="filterHistory('SOL/USDT', this)">SOL/USDT</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Closed Trades</span>
+          <span id="historyCount" style="font-size:12px;color:var(--gray-400);">20 trades</span>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Pair</th><th>Side</th><th>Strategy</th><th>Entry</th><th>Exit</th><th>Size</th><th>P&amp;L</th><th>ROE</th><th>Closed</th></tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- API INTEGRATION -->
+    <div class="page" id="page-api">
+      <div class="topbar"><h1>API Integration</h1></div>
+
+      <div class="card" style="margin-bottom:20px;" id="apiConnectCard">
+        <div class="card-header">
+          <span class="card-title">OKX API Key</span>
+          <span id="apiStatusBadge" style="font-size:12px;display:none;"></span>
+        </div>
+
+        <!-- NOT CONNECTED STATE -->
+        <div id="apiFormWrap">
+          <p style="font-size:13px;color:var(--gray-400);margin-bottom:20px;line-height:1.6;">Connect your OKX API key to enable live trading. Create a <strong style="color:var(--white)">Trade-only</strong> key — never enable Withdraw permission.</p>
+          <div class="d-form-group">
+            <label class="d-form-label">API Key</label>
+            <input type="text" class="d-form-input" id="inputApiKey" placeholder="Paste your OKX API key" autocomplete="off" />
+          </div>
+          <div class="d-form-group">
+            <label class="d-form-label">Secret Key</label>
+            <div style="position:relative;">
+              <input type="password" class="d-form-input" id="inputApiSecret" placeholder="Paste your secret key" autocomplete="off" />
+              <button type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray-400);font-size:12px;cursor:pointer;font-family:Inter,sans-serif;" onclick="toggleApiPw('inputApiSecret',this)">Show</button>
+            </div>
+          </div>
+          <div class="d-form-group">
+            <label class="d-form-label">Passphrase</label>
+            <div style="position:relative;">
+              <input type="password" class="d-form-input" id="inputApiPass" placeholder="Your API passphrase" autocomplete="off" />
+              <button type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray-400);font-size:12px;cursor:pointer;font-family:Inter,sans-serif;" onclick="toggleApiPw('inputApiPass',this)">Show</button>
+            </div>
+          </div>
+          <div id="apiFormErr" style="font-size:12px;color:#ef4444;margin-bottom:12px;display:none;"></div>
+          <button class="btn-primary" onclick="saveApiKey()" style="width:100%;padding:12px;">Connect API Key →</button>
+        </div>
+
+        <!-- CONNECTED STATE -->
+        <div id="apiConnectedWrap" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:10px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;"></div>
+              <div>
+                <div style="font-size:14px;font-weight:600;">OKX — Connected</div>
+                <div id="apiKeyMasked" style="font-size:12px;color:var(--gray-400);margin-top:2px;">API: ****...****</div>
+              </div>
+            </div>
+            <button onclick="disconnectApi()" style="padding:6px 14px;background:none;border:1px solid rgba(239,68,68,0.25);color:#ef4444;border-radius:6px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">Disconnect</button>
+          </div>
+          <p style="font-size:12px;color:var(--gray-600);line-height:1.6;">Your API key is stored securely. To update it, disconnect and re-enter your new key.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">API Security Guidelines</span></div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; gap:12px; align-items:flex-start; padding:14px; background:rgba(34,197,94,0.04); border:1px solid rgba(34,197,94,0.12); border-radius:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><polyline points="20 6 9 17 4 12"/></svg>
+            <div>
+              <div style="font-size:13px; font-weight:600; margin-bottom:3px;">Trade-only permissions</div>
+              <div style="font-size:12px; color:var(--gray-400);">When creating your OKX API key, keep Withdrawal permission OFF. AYILON never needs withdrawal access.</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:12px; align-items:flex-start; padding:14px; background:rgba(34,197,94,0.04); border:1px solid rgba(34,197,94,0.12); border-radius:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div>
+              <div style="font-size:13px; font-weight:600; margin-bottom:3px;">AES-256 encryption at rest</div>
+              <div style="font-size:12px; color:var(--gray-400);">All API keys are encrypted with AES-256 before storage. No AYILON staff can view your keys in plaintext.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECURITY -->
+    <div class="page" id="page-security">
+      <div class="topbar"><h1>Security</h1></div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="security-section">
+          <div class="security-title">Two-Factor Authentication (2FA)</div>
+          <div class="security-desc">Choose your primary 2FA method for login. Others can serve as backup.</div>
+        </div>
+
+        <div class="method-card" id="mc-authenticator">
+          <div class="method-left">
+            <span class="method-icon">🔐</span>
+            <div>
+              <div class="method-name">Authenticator App</div>
+              <div class="method-detail">Google Authenticator, Microsoft Authenticator — Free</div>
+            </div>
+          </div>
+          <div class="method-right">
+            <span id="badge-authenticator" class="badge-unset">Not set</span>
+            <div class="toggle" id="toggle-authenticator" onclick="toggle2fa('authenticator')"></div>
+          </div>
+        </div>
+
+        <div class="method-card" id="mc-email">
+          <div class="method-left">
+            <span class="method-icon">📧</span>
+            <div>
+              <div class="method-name">Email Code</div>
+              <div class="method-detail">6-digit code sent to your email on each login — Free</div>
+            </div>
+          </div>
+          <div class="method-right">
+            <span id="badge-email" class="badge-unset">Not set</span>
+            <div class="toggle" id="toggle-email" onclick="toggle2fa('email')"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span class="card-title">Change Password</span></div>
+        <div style="max-width:400px;">
+          <div class="d-form-group">
+            <label class="d-form-label">Current Password</label>
+            <input type="password" class="d-form-input" id="pwCurrent" placeholder="Enter current password" />
+          </div>
+          <div class="d-form-group">
+            <label class="d-form-label">New Password</label>
+            <input type="password" class="d-form-input" id="pwNew" placeholder="8+ characters" />
+          </div>
+          <div class="d-form-group">
+            <label class="d-form-label">Confirm New Password</label>
+            <input type="password" class="d-form-input" id="pwConfirm" placeholder="Re-enter new password" />
+          </div>
+          <div id="pwHint" style="font-size:12px;min-height:16px;margin-bottom:14px;margin-top:-4px;"></div>
+          <button class="btn-primary" onclick="changePassword()">Update Password</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Security Notifications</span></div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <h3>New device login alert</h3>
+            <p>Email notification when a new device signs in</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <h3>API key change alert</h3>
+            <p>Email notification when API keys are added or removed</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <h3>Suspicious activity alert</h3>
+            <p>Immediate notification on anomalous access attempts</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MY ACCOUNT -->
+    <div class="page" id="page-mypage">
+      <div class="topbar"><h1>My Account</h1></div>
+
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Profile</span></div>
+          <div style="display:flex; align-items:center; gap:20px; margin-bottom:24px;">
+            <div id="profileAvatar" style="width:64px;height:64px;background:rgba(255,255,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;">A</div>
+            <div>
+              <div id="profileDisplayName" style="font-size:16px;font-weight:600;margin-bottom:3px;">—</div>
+              <div id="profileDisplayEmail" style="font-size:12px;color:var(--gray-400);">—</div>
+              <div id="profileDisplayPlan" style="font-size:11px;color:var(--gray-600);margin-top:4px;">No active plan</div>
+            </div>
+          </div>
+          <div class="d-form-group">
+            <label class="d-form-label">Full Name</label>
+            <input type="text" class="d-form-input" id="profileName" placeholder="Your name" />
+          </div>
+          <div class="d-form-group">
+            <label class="d-form-label">Username</label>
+            <div style="display:flex;gap:10px;">
+              <input type="text" class="d-form-input" id="profileUsername" placeholder="e.g. ayilon_trader" style="flex:1;" oninput="checkUsernameAvail(this)" />
+            </div>
+            <div id="usernameHint" style="font-size:12px;margin-top:5px;min-height:16px;"></div>
+          </div>
+          <div class="d-form-group">
+            <label class="d-form-label">Email</label>
+            <div style="display:flex;gap:10px;">
+              <input type="email" class="d-form-input" id="profileEmail" placeholder="—" readonly style="flex:1;opacity:0.6;cursor:not-allowed;" />
+              <button class="btn-sm" style="flex-shrink:0;padding:0 16px;" onclick="openChangeEmail()">Change</button>
+            </div>
+            <div id="emailChangeWrap" style="display:none;margin-top:10px;">
+              <div style="display:flex;gap:10px;margin-bottom:8px;">
+                <input type="email" class="d-form-input" id="newEmailInput" placeholder="New email address" style="flex:1;" />
+                <button class="btn-sm" style="flex-shrink:0;padding:0 14px;" onclick="sendEmailChangeCode()" id="sendEmailChangeBtn">Send Code</button>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <input type="text" class="d-form-input" id="emailChangeCode" placeholder="6-digit code" maxlength="6" style="flex:1;" />
+                <button class="btn-sm" style="flex-shrink:0;padding:0 14px;" onclick="confirmEmailChange()">Confirm</button>
+              </div>
+              <div id="emailChangeHint" style="font-size:12px;color:#ef4444;margin-top:6px;"></div>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Subscription</span></div>
+          <div id="subCard" style="padding:20px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; margin-bottom:16px;">
+            <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray-400);margin-bottom:8px;">Current Plan</div>
+            <div id="subPlanName" style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:4px;">—</div>
+            <div id="subPlanDetail" style="font-size:13px;color:var(--gray-400);">No active subscription</div>
+          </div>
+          <div id="subMeta" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+          <div id="subActions" style="margin-bottom:12px;"></div>
+          <a href="index.html#pricing" id="subBtn" class="btn-sm" style="width:100%;padding:10px;display:block;text-align:center;text-decoration:none;">View Plans</a>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span class="card-title">Two-Factor Authentication</span></div>
+        <div class="method-card" id="mc-authenticator-my">
+          <div class="method-left">
+            <span class="method-icon">🔐</span>
+            <div>
+              <div class="method-name">Authenticator App</div>
+              <div class="method-detail">Google / Microsoft Authenticator — Free</div>
+            </div>
+          </div>
+          <div class="method-right">
+            <span id="badge-authenticator-my" class="badge-unset">Not set</span>
+            <div class="toggle" id="toggle-authenticator-my" onclick="toggle2fa('authenticator')"></div>
+          </div>
+        </div>
+        <div class="method-card" id="mc-email-my">
+          <div class="method-left">
+            <span class="method-icon">📧</span>
+            <div>
+              <div class="method-name">Email Code</div>
+              <div class="method-detail">6-digit code sent to your email on each login — Free</div>
+            </div>
+          </div>
+          <div class="method-right">
+            <span id="badge-email-my" class="badge-unset">Not set</span>
+            <div class="toggle" id="toggle-email-my" onclick="toggle2fa('email')"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Notification Preferences</span></div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <h3>Trade execution alerts</h3>
+            <p>Notify every time a bot fills an order</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <h3>Telegram notifications</h3>
+            <p>Receive real-time trade alerts via Telegram bot</p>
+          </div>
+          <div class="toggle" id="tgToggle" onclick="toggleTelegram()"></div>
+        </div>
+        <div id="tgSetupWrap" style="display:none;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px;margin:0 0 4px;">
+          <p style="font-size:13px;color:#a3a3a3;margin-bottom:12px;line-height:1.6;">
+            1. Open Telegram and search <strong style="color:#fff;">@AYILONBot</strong><br/>
+            2. Send the command <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">/start</code><br/>
+            3. The bot will reply with a 6-digit code. Enter it below.
+          </p>
+          <div style="display:flex;gap:10px;">
+            <input type="text" class="d-form-input" id="tgCodeInput" placeholder="6-digit code from bot" maxlength="6" style="flex:1;" />
+            <button class="btn-sm" style="flex-shrink:0;padding:0 14px;" onclick="confirmTelegram()">Connect</button>
+          </div>
+          <div id="tgHint" style="font-size:12px;margin-top:6px;"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <h3>Daily email report</h3>
+            <p>Receive yesterday's performance summary every morning</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <h3>Stop-loss triggered alert</h3>
+            <p>Immediate SMS + email when a stop-loss fires</p>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 2FA Setup Modal -->
+  <div class="modal-overlay" id="twoFaSetupOverlay">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-title" id="twoFaSetupTitle">Enable 2FA</div>
+      <div id="twoFaSetupBody" style="margin-bottom:20px;"></div>
+      <div class="d-form-group">
+        <label class="d-form-label">Enter 6-digit verification code</label>
+        <input type="text" class="d-form-input" id="twoFaSetupCode" placeholder="000000" maxlength="6" />
+      </div>
+      <div style="font-size:13px;color:#ef4444;min-height:18px;margin-bottom:12px;" id="twoFaSetupHint"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="document.getElementById('twoFaSetupOverlay').classList.remove('show')">Cancel</button>
+        <button class="btn-primary" onclick="confirm2faSetup()">Confirm &amp; Enable</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Modal -->
+  <div class="modal-overlay" id="apiModal">
+    <div class="modal">
+      <div class="modal-title">Connect OKX API</div>
+      <div class="modal-desc">Enter your OKX API key and secret. Ensure withdrawal permission is disabled.</div>
+      <div class="d-form-group">
+        <label class="d-form-label">Exchange</label>
+        <select class="d-form-input" style="cursor:pointer;">
+          <option>OKX</option>
+        </select>
+      </div>
+      <div class="d-form-group">
+        <label class="d-form-label">API Key</label>
+        <input type="text" class="d-form-input" placeholder="Paste your API key" />
+      </div>
+      <div class="d-form-group">
+        <label class="d-form-label">Secret Key</label>
+        <input type="password" class="d-form-input" placeholder="Paste your secret key" />
+      </div>
+      <div class="d-form-group">
+        <label class="d-form-label">Passphrase</label>
+        <input type="password" class="d-form-input" placeholder="OKX API passphrase" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('apiModal')">Cancel</button>
+        <button class="btn-primary" onclick="closeModal('apiModal')">Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phone Modal -->
+  <div class="modal-overlay" id="phoneModal">
+    <div class="modal">
+      <div class="modal-title">Register Phone Number</div>
+      <div class="modal-desc">Add your phone number to enable SMS two-factor authentication.</div>
+      <div class="d-form-group">
+        <label class="d-form-label">Phone Number</label>
+        <div style="display:flex;gap:10px;">
+          <input type="tel" class="d-form-input" placeholder="+1 (555) 000-0000" style="flex:1" />
+          <button class="btn-sm" style="flex-shrink:0;padding:0 16px;" onclick="this.textContent='Sent';this.disabled=true">Send Code</button>
+        </div>
+      </div>
+      <div class="d-form-group">
+        <label class="d-form-label">Verification Code</label>
+        <input type="text" class="d-form-input" placeholder="6-digit code" maxlength="6" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('phoneModal')">Cancel</button>
+        <button class="btn-primary" onclick="closeModal('phoneModal')">Register</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Bot Modal -->
+  <div class="modal-overlay" id="addBotModal">
+    <div class="modal">
+      <div class="modal-title">Add New Bot</div>
+      <div class="modal-desc">Configure your trading bot settings below.</div>
+      <div class="d-form-group">
+        <label class="d-form-label">Trading Pair</label>
+        <select class="d-form-input" id="botPair" style="cursor:pointer;">
+          <option value="">Select pair...</option>
+          <option>BTC/USDT</option>
+          <option>ETH/USDT</option>
+          <option>SOL/USDT</option>
+          <option>BNB/USDT</option>
+          <option>AVAX/USDT</option>
+          <option>DOGE/USDT</option>
+          <option>XRP/USDT</option>
+          <option>ADA/USDT</option>
+        </select>
+      </div>
+      <div class="d-form-group">
+        <label class="d-form-label">Strategy</label>
+        <select class="d-form-input" id="botStrategy" style="cursor:pointer;">
+          <option>Grid</option>
+          <option>DCA</option>
+          <option>Momentum</option>
+          <option>Scalping</option>
+        </select>
+      </div>
+      <div class="d-form-group">
+        <label class="d-form-label">Position Size (USDT)</label>
+        <input type="number" class="d-form-input" id="botSize" placeholder="e.g. 100" min="10" />
+      </div>
+      <div id="botAddHint" style="font-size:12px;color:#ef4444;min-height:16px;margin-top:-8px;"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('addBotModal')">Cancel</button>
+        <button class="btn-primary" onclick="submitAddBot()">Start Bot</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOT LOGGED IN: full redirect overlay -->
+  <div id="loginOverlay" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px;">
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:12px;">Welcome to AYILON</div>
+    <div style="font-size:14px;color:#a3a3a3;max-width:320px;margin-bottom:32px;line-height:1.7;">Please log in to access your dashboard and account settings.</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+      <a href="login.html" style="padding:13px 28px;background:#fff;color:#000;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;">Log In →</a>
+      <a href="signup.html" style="padding:13px 28px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:14px;font-weight:500;text-decoration:none;">Sign Up</a>
+    </div>
+  </div>
+
+  <script>
+    var ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
+    var LOCKED_PAGES = ['dashboard', 'bots', 'positions', 'analytics', 'history', 'api'];
+
+    (function checkAccess() {
+      var loggedIn = localStorage.getItem('ayilon_logged_in');
+      var subscription = localStorage.getItem('ayilon_subscription');
+      var email = localStorage.getItem('ayilon_email') || '';
+      var isAdmin = email === ADMIN_EMAIL;
+
+      // Update sidebar user info
+      if (email) {
+        var uname = localStorage.getItem('ayilon_username') || '';
+        document.getElementById('sidebarEmail').textContent = email;
+        document.getElementById('sidebarAvatar').textContent = (uname || email).charAt(0).toUpperCase();
+        document.getElementById('sidebarName').textContent = uname || email;
+      }
+
+      if (!loggedIn && !isAdmin) {
+        window.location.replace('login.html');
+        return;
+      }
+
+      var hasAccess = isAdmin || !!subscription;
+
+      if (!hasAccess) {
+        // Show locked state for trading pages, but allow account/security
+        LOCKED_PAGES.forEach(function(p) {
+          var page = document.getElementById('page-' + p);
+          if (!page) return;
+          var lock = document.createElement('div');
+          lock.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;z-index:10;border-radius:4px;';
+          lock.innerHTML = '<div style="font-size:32px;margin-bottom:16px;">🔒</div>'
+            + '<div style="font-family:Space Grotesk,sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;">Subscription Required</div>'
+            + '<div style="font-size:14px;color:#a3a3a3;max-width:280px;margin-bottom:24px;line-height:1.6;">Subscribe to a plan to unlock trading bots and analytics.</div>'
+            + '<a href="index.html#pricing" style="padding:11px 24px;background:#fff;color:#000;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;">View Plans →</a>';
+          page.style.position = 'relative';
+          page.appendChild(lock);
+        });
+
+      }
+
+      {
+        // Handle ?page= param for all users
+        var params = new URLSearchParams(window.location.search);
+        var startPage = params.get('page');
+        if (startPage) {
+          var startEl = document.querySelector('[onclick*="' + startPage + '"]');
+          setTimeout(function() { showPage(startPage, startEl); }, 0);
+        }
+
+        // Show current plan in sidebar
+        var ps = document.getElementById('planStatus');
+        ps.style.display = 'block';
+        if (isAdmin) {
+          ps.innerHTML = '<span style="color:#f59e0b;">★ Admin</span>';
+        } else {
+          var sub = JSON.parse(subscription || '{}');
+          var planLabel = sub.plan ? sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1) + ' Plan' : 'Active Plan';
+          document.getElementById('planStatusText').textContent = planLabel;
+          document.getElementById('planStatus').querySelector('a') && (document.getElementById('planStatus').innerHTML = '<span style="color:#22c55e;">● ' + planLabel + '</span>');
+        }
+      }
+    })();
+
+    function showPage(name, el) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      if (el) el.classList.add('active');
+      if (window.innerWidth <= 1024) closeSidebar();
+      history.replaceState(null, '', '?page=' + name);
+    }
+
+    function doLogout() {
+      localStorage.removeItem('ayilon_logged_in');
+      window.location.href = 'index.html';
+    }
+
+    function toggleSidebar() {
+      var sidebar = document.getElementById('appSidebar');
+      var backdrop = document.getElementById('sidebarBackdrop');
+      var isOpen = sidebar.classList.contains('open');
+      sidebar.classList.toggle('open');
+      backdrop.classList.toggle('show');
+      document.body.style.overflow = isOpen ? '' : 'hidden';
+    }
+
+    function closeSidebar() {
+      var sidebar = document.getElementById('appSidebar');
+      var backdrop = document.getElementById('sidebarBackdrop');
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    function openApiModal() {
+      document.getElementById('apiModal').classList.add('show');
+    }
+
+    function openPhoneModal() {
+      document.getElementById('phoneModal').classList.add('show');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('show');
+    }
+
+    function toggle2fa(method) {
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+      var isEnabled = methods.indexOf(method) !== -1;
+      if (isEnabled) {
+        methods.splice(methods.indexOf(method), 1);
+        localStorage.setItem('ayilon_2fa_methods', JSON.stringify(methods));
+        update2faUI();
+      } else {
+        open2faSetup(method);
+      }
+    }
+
+    function open2faSetup(method) {
+      var overlay = document.getElementById('twoFaSetupOverlay');
+      var title = document.getElementById('twoFaSetupTitle');
+      var body = document.getElementById('twoFaSetupBody');
+      var hint = document.getElementById('twoFaSetupHint');
+      hint.textContent = '';
+      document.getElementById('twoFaSetupCode').value = '';
+      overlay.dataset.method = method;
+      overlay.classList.add('show');
+
+      if (method === 'email') {
+        title.textContent = 'Enable Email Verification';
+        var email = localStorage.getItem('ayilon_email') || '';
+        body.innerHTML = '<p style="font-size:14px;color:#a3a3a3;margin-bottom:16px;">A 6-digit code will be sent to <strong style="color:#fff">' + email + '</strong> each time you log in.</p>'
+          + '<button onclick="sendTwoFaEmailCode()" style="padding:9px 20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:7px;color:#fff;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;" id="send2faBtn">Send Code to Email</button>'
+          + '<div id="send2faStatus" style="font-size:12px;color:#22c55e;margin-top:8px;display:none;">Code sent! Check your inbox.</div>';
+      } else {
+        title.textContent = 'Enable Authenticator App';
+        var key = generateTotpKey();
+        var rawKey = key.replace(/\s/g, '');
+        overlay.dataset.totpKey = key;
+        var email = localStorage.getItem('ayilon_email') || 'user';
+        var otpUri = 'otpauth://totp/AYILON:' + encodeURIComponent(email) + '?secret=' + rawKey + '&issuer=AYILON';
+        var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(otpUri);
+        body.innerHTML = '<p style="font-size:14px;color:#a3a3a3;margin-bottom:16px;">Scan the QR code below with <strong style="color:#fff">Google Authenticator</strong> or <strong style="color:#fff">Microsoft Authenticator</strong>.</p>'
+          + '<div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:16px;">'
+          + '<div style="background:#fff;padding:6px;border-radius:8px;flex-shrink:0;"><img src="' + qrUrl + '" width="120" height="120" alt="QR Code" /></div>'
+          + '<div style="flex:1;">'
+          + '<p style="font-size:12px;color:#525252;margin-bottom:8px;">Can\'t scan? Enter this key manually:</p>'
+          + '<div style="background:#111;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;font-family:monospace;font-size:13px;letter-spacing:2px;color:#fff;word-break:break-all;" id="totpKey">' + key + '</div>'
+          + '<p style="font-size:11px;color:#525252;margin-top:6px;">Account: AYILON</p>'
+          + '</div></div>';
+      }
+    }
+
+    function generateTotpKey() {
+      var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+      var key = '';
+      for (var i = 0; i < 16; i++) key += chars[Math.floor(Math.random() * 32)];
+      return key.match(/.{1,4}/g).join(' ');
+    }
+
+    var twoFaEmailCode = null;
+
+    async function sendTwoFaEmailCode() {
+      var email = localStorage.getItem('ayilon_email') || '';
+      if (!email) return;
+      document.getElementById('send2faBtn').disabled = true;
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/send-verification', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        });
+        var data = await res.json();
+        if (data.success) {
+          twoFaEmailCode = data.code;
+          document.getElementById('send2faStatus').style.display = 'block';
+        }
+      } catch(e) {}
+    }
+
+    function confirm2faSetup() {
+      var overlay = document.getElementById('twoFaSetupOverlay');
+      var method = overlay.dataset.method;
+      var code = document.getElementById('twoFaSetupCode').value.trim();
+      var hint = document.getElementById('twoFaSetupHint');
+
+      if (code.length !== 6) { hint.textContent = 'Enter the 6-digit code.'; return; }
+
+      if (method === 'email' && code !== twoFaEmailCode) {
+        hint.textContent = 'Incorrect code. Please try again.';
+        return;
+      }
+
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+      if (methods.indexOf(method) === -1) methods.push(method);
+      localStorage.setItem('ayilon_2fa_methods', JSON.stringify(methods));
+      overlay.classList.remove('show');
+      update2faUI();
+    }
+
+    function update2faUI() {
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+      ['authenticator', 'email'].forEach(function(m) {
+        ['', '-my'].forEach(function(suffix) {
+          var toggle = document.getElementById('toggle-' + m + suffix);
+          var badge = document.getElementById('badge-' + m + suffix);
+          if (!toggle) return;
+          if (methods.indexOf(m) !== -1) {
+            toggle.classList.add('on');
+            badge.className = 'badge-set'; badge.textContent = 'Active';
+          } else {
+            toggle.classList.remove('on');
+            badge.className = 'badge-unset'; badge.textContent = 'Not set';
+          }
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', update2faUI);
+
+    // Profile / Email change
+    var emailChangeCode = null;
+
+    function loadProfilePage() {
+      _usernameAvail = true; _usernameChecking = false;
+      var email = localStorage.getItem('ayilon_email') || '';
+      var name  = localStorage.getItem('ayilon_name')  || '';
+      var sub   = JSON.parse(localStorage.getItem('ayilon_subscription') || 'null');
+      var isAdmin = email === ADMIN_EMAIL;
+
+      // Form fields
+      var username = localStorage.getItem('ayilon_username') || '';
+
+      // Avatar + header — show username publicly, full name stays private
+      var displayName = username || name || email || '—';
+      var initial = displayName.charAt(0).toUpperCase();
+      document.getElementById('profileAvatar').textContent = initial;
+      document.getElementById('profileDisplayName').textContent  = displayName;
+      document.getElementById('profileDisplayEmail').textContent = email || '—';
+      document.getElementById('profileName').value     = name;
+      document.getElementById('profileUsername').value = username;
+      document.getElementById('profileEmail').value    = email;
+
+      // Plan display
+      if (isAdmin) {
+        document.getElementById('profileDisplayPlan').textContent = '★ Admin';
+        document.getElementById('subPlanName').textContent   = 'Admin';
+        document.getElementById('subPlanDetail').textContent = 'Full access — no subscription needed';
+        document.getElementById('subMeta').innerHTML = '';
+        document.getElementById('subBtn').textContent = 'Admin Account';
+        document.getElementById('subBtn').removeAttribute('href');
+      } else if (sub && sub.plan) {
+        var planLabel = sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1);
+        var prices = { starter: '$100', pro: '$500', elite: '$1,000' };
+        document.getElementById('profileDisplayPlan').textContent = planLabel + ' Plan';
+        document.getElementById('subPlanName').textContent   = planLabel;
+        document.getElementById('subPlanDetail').textContent = (prices[sub.plan] || '') + ' / month';
+        document.getElementById('subMeta').innerHTML =
+          '<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--gray-400)">Exchange</span><span>OKX</span></div>'
+          + '<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--gray-400)">Backtesting</span><span style="color:var(--green)">✓ Included</span></div>';
+        document.getElementById('subBtn').textContent = 'Change Plan';
+        document.getElementById('subBtn').href = 'index.html#pricing';
+
+        // Refund / cancel actions
+        var apiKey = localStorage.getItem('ayilon_api_key') || '';
+        var activatedAt = sub.activatedAt ? new Date(sub.activatedAt).getTime() : 0;
+        var daysSince = activatedAt ? (Date.now() - activatedAt) / 86400000 : 999;
+        var refundEligible = !apiKey && daysSince <= 7 && activatedAt > 0;
+        var actionsEl = document.getElementById('subActions');
+        if (sub.cancelled) {
+          actionsEl.innerHTML = '<div style="font-size:13px;color:var(--gray-400);padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;">'
+            + (sub.refunded
+                ? '✓ Refund processed — subscription cancelled.'
+                : '⏸ Cancellation scheduled — access continues until end of billing period.')
+            + '</div>';
+        } else if (refundEligible) {
+          actionsEl.innerHTML = '<button onclick="requestRefund()" style="width:100%;padding:10px 0;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.18);color:#ef4444;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:Inter,sans-serif;">Request Refund</button>'
+            + '<div style="font-size:11px;color:var(--gray-600);text-align:center;margin-top:6px;">Eligible · API key not connected · ' + Math.ceil(7 - daysSince) + ' day(s) remaining</div>';
+        } else {
+          actionsEl.innerHTML = '<button onclick="cancelPlan()" style="width:100%;padding:10px 0;background:none;border:1px solid rgba(255,255,255,0.08);color:var(--gray-400);border-radius:8px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">Cancel Subscription</button>'
+            + (apiKey && daysSince <= 7 ? '<div style="font-size:11px;color:var(--gray-600);text-align:center;margin-top:6px;">Refund no longer available — API key has been connected</div>' : '');
+        }
+      } else {
+        document.getElementById('profileDisplayPlan').textContent = 'No active plan';
+        document.getElementById('subPlanName').textContent   = 'Free';
+        document.getElementById('subPlanDetail').textContent = 'No active subscription';
+        document.getElementById('subMeta').innerHTML = '';
+        document.getElementById('subBtn').textContent = 'View Plans →';
+        document.getElementById('subBtn').href = 'index.html#pricing';
+      }
+    }
+
+    var _usernameAvail = true;
+    var _usernameChecking = false;
+    var _usernameTimer = null;
+
+    function checkUsernameAvail(el) {
+      var val = el.value.trim();
+      var hint = document.getElementById('usernameHint');
+
+      if (!val) { hint.textContent = ''; _usernameAvail = true; _usernameChecking = false; return; }
+
+      var valid = /^[a-zA-Z0-9_]{2,20}$/.test(val);
+      if (!valid) {
+        hint.style.color = '#ef4444'; hint.textContent = 'Letters, numbers and _ only (2–20 chars)';
+        _usernameAvail = false; _usernameChecking = false; return;
+      }
+
+      // Same as saved username — always OK
+      var current = localStorage.getItem('ayilon_username') || '';
+      if (val.toLowerCase() === current.toLowerCase()) {
+        hint.style.color = '#22c55e'; hint.textContent = '✓ Current username';
+        _usernameAvail = true; _usernameChecking = false; return;
+      }
+
+      hint.style.color = '#a3a3a3'; hint.textContent = 'Checking...';
+      _usernameAvail = false; _usernameChecking = true;
+      clearTimeout(_usernameTimer);
+      _usernameTimer = setTimeout(async function() {
+        try {
+          var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/check-username', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: val })
+          });
+          _usernameChecking = false;
+          if (!res.ok) { _usernameAvail = true; hint.style.color = '#22c55e'; hint.textContent = '✓ Available'; return; }
+          var data = await res.json();
+          if (data.available === false) {
+            hint.style.color = '#ef4444'; hint.textContent = 'Username already taken';
+            _usernameAvail = false;
+          } else {
+            hint.style.color = '#22c55e'; hint.textContent = '✓ Available';
+            _usernameAvail = true;
+          }
+        } catch {
+          _usernameChecking = false; _usernameAvail = true;
+          hint.style.color = '#22c55e'; hint.textContent = '✓ Available';
+        }
+      }, 500);
+    }
+
+    async function saveProfile() {
+      var name     = document.getElementById('profileName').value.trim();
+      var username = document.getElementById('profileUsername').value.trim();
+      var btn      = event.target;
+
+      // Still waiting for server check — wait up to 1.5s
+      if (_usernameChecking) {
+        btn.textContent = 'Checking...'; btn.disabled = true;
+        var waited = 0;
+        while (_usernameChecking && waited < 1500) { await new Promise(function(r){ setTimeout(r, 100); }); waited += 100; }
+        btn.textContent = 'Save Changes'; btn.disabled = false;
+      }
+
+      // Username not available
+      if (username && !_usernameAvail) {
+        document.getElementById('usernameHint').style.color = '#ef4444';
+        document.getElementById('usernameHint').textContent = 'Username already taken. Choose a different one.';
+        return;
+      }
+
+      // If username changed, update on server
+      var oldUsername = localStorage.getItem('ayilon_username') || '';
+      if (username && username.toLowerCase() !== oldUsername.toLowerCase()) {
+        try {
+          var email = localStorage.getItem('ayilon_email') || '';
+          await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/register-user', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, username, name, password: localStorage.getItem('ayilon_password') || '', update: true })
+          });
+        } catch { /* offline fallback */ }
+      }
+
+      localStorage.setItem('ayilon_name', name);
+      if (username) localStorage.setItem('ayilon_username', username);
+      document.getElementById('sidebarName') && (document.getElementById('sidebarName').textContent = name || localStorage.getItem('ayilon_email') || '');
+      loadProfilePage();
+      btn.textContent = 'Saved!';
+      setTimeout(function() { btn.textContent = 'Save Changes'; }, 2000);
+    }
+
+    function openChangeEmail() {
+      var wrap = document.getElementById('emailChangeWrap');
+      wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function sendEmailChangeCode() {
+      var email = document.getElementById('newEmailInput').value;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+      document.getElementById('sendEmailChangeBtn').disabled = true;
+      document.getElementById('sendEmailChangeBtn').textContent = 'Sent';
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/send-verification', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        });
+        var data = await res.json();
+        if (data.success) emailChangeCode = data.code;
+      } catch(e) {}
+    }
+
+    function confirmEmailChange() {
+      var code = document.getElementById('emailChangeCode').value;
+      var hint = document.getElementById('emailChangeHint');
+      if (code !== emailChangeCode) { hint.textContent = 'Invalid code.'; return; }
+      var newEmail = document.getElementById('newEmailInput').value;
+      document.getElementById('profileEmail').value = newEmail;
+      localStorage.setItem('ayilon_email', newEmail);
+      document.getElementById('emailChangeWrap').style.display = 'none';
+      hint.textContent = '';
+      document.getElementById('sendEmailChangeBtn').disabled = false;
+      document.getElementById('sendEmailChangeBtn').textContent = 'Send Code';
+    }
+
+    // Telegram
+    function toggleTelegram() {
+      var toggle = document.getElementById('tgToggle');
+      var wrap = document.getElementById('tgSetupWrap');
+      var isOn = toggle.classList.contains('on');
+      if (isOn) {
+        toggle.classList.remove('on');
+        wrap.style.display = 'none';
+        localStorage.removeItem('ayilon_telegram');
+      } else {
+        var saved = localStorage.getItem('ayilon_telegram');
+        if (saved) {
+          toggle.classList.add('on');
+        } else {
+          wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+        }
+      }
+    }
+
+    function confirmTelegram() {
+      var code = document.getElementById('tgCodeInput').value.trim();
+      var hint = document.getElementById('tgHint');
+      if (code.length !== 6) { hint.style.color = '#ef4444'; hint.textContent = 'Enter the 6-digit code from @AYILONBot.'; return; }
+      localStorage.setItem('ayilon_telegram', code);
+      document.getElementById('tgToggle').classList.add('on');
+      document.getElementById('tgSetupWrap').style.display = 'none';
+      hint.style.color = '#22c55e'; hint.textContent = '✓ Telegram connected.';
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+      m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+    });
+
+    // ── SUBSCRIPTION CANCEL / REFUND ─────────────────────
+    function cancelPlan() {
+      if (!confirm('Cancel your subscription?\n\nYou will keep access until the end of the current billing period. This cannot be undone.')) return;
+      var sub = JSON.parse(localStorage.getItem('ayilon_subscription') || 'null');
+      if (sub) { sub.cancelled = true; sub.cancelledAt = new Date().toISOString(); localStorage.setItem('ayilon_subscription', JSON.stringify(sub)); }
+      loadProfilePage();
+    }
+
+    function requestRefund() {
+      if (!confirm('Request a refund?\n\nYour subscription will be cancelled immediately and a refund will be processed within 3–5 business days.')) return;
+      var sub = JSON.parse(localStorage.getItem('ayilon_subscription') || 'null');
+      if (sub) { sub.cancelled = true; sub.refunded = true; sub.cancelledAt = new Date().toISOString(); localStorage.setItem('ayilon_subscription', JSON.stringify(sub)); }
+      loadProfilePage();
+    }
+
+    // ── PASSWORD CHANGE ──────────────────────────────────
+    function changePassword() {
+      var current = document.getElementById('pwCurrent').value;
+      var newPw   = document.getElementById('pwNew').value;
+      var confirm = document.getElementById('pwConfirm').value;
+      var hint    = document.getElementById('pwHint');
+      var stored  = localStorage.getItem('ayilon_password') || '';
+
+      if (!newPw || !confirm) { hint.style.color='#ef4444'; hint.textContent='Please fill in all fields.'; return; }
+      if (stored && current !== stored) { hint.style.color='#ef4444'; hint.textContent='Current password is incorrect.'; return; }
+      if (newPw.length < 8) { hint.style.color='#ef4444'; hint.textContent='Password must be at least 8 characters.'; return; }
+      if (newPw !== confirm) { hint.style.color='#ef4444'; hint.textContent='New passwords do not match.'; return; }
+
+      localStorage.setItem('ayilon_password', newPw);
+      hint.style.color = '#22c55e';
+      hint.textContent = 'Password updated successfully.';
+      ['pwCurrent','pwNew','pwConfirm'].forEach(function(id){ document.getElementById(id).value=''; });
+      setTimeout(function(){ hint.textContent=''; }, 3000);
+    }
+
+    // ── BOT MANAGER ──────────────────────────────────────
+    var DEFAULT_BOTS = [
+      { id:1, pair:'BTC/USDT', strategy:'Grid',     size:200, running:true,  pnl: 24.50 },
+      { id:2, pair:'ETH/USDT', strategy:'DCA',      size:150, running:true,  pnl: 18.20 },
+      { id:3, pair:'SOL/USDT', strategy:'Momentum', size:100, running:false, pnl: -4.10 },
+      { id:4, pair:'BNB/USDT', strategy:'Grid',     size:80,  running:true,  pnl:  6.80 },
+    ];
+
+    function getBots() {
+      var s = localStorage.getItem('ayilon_bots');
+      if (!s) { localStorage.setItem('ayilon_bots', JSON.stringify(DEFAULT_BOTS)); return DEFAULT_BOTS; }
+      return JSON.parse(s);
+    }
+
+    function saveBots(bots) { localStorage.setItem('ayilon_bots', JSON.stringify(bots)); }
+
+    function renderBotList() {
+      var bots = getBots();
+      var list = document.getElementById('botList');
+      if (!list) return;
+      var running = bots.filter(function(b){ return b.running; }).length;
+      var countEl = document.getElementById('botCount');
+      if (countEl) countEl.textContent = running + ' running · ' + bots.length + ' total';
+
+      if (!bots.length) {
+        list.innerHTML = '<div class="empty-state">No bots yet. Click "+ Add Bot" to create one.</div>';
+        return;
+      }
+
+      list.innerHTML = bots.map(function(b, i) {
+        var pos  = b.pnl >= 0;
+        var pnlStr = (pos ? '+' : '') + '$' + Math.abs(b.pnl).toFixed(2);
+        var pnlColor = pos ? 'var(--green)' : 'var(--red)';
+        var letter = b.pair.charAt(0);
+        return '<div class="bot-item">'
+          + '<div class="bot-left">'
+          + '<div class="coin-dot" style="background:rgba(255,255,255,0.06);color:var(--gray-400)">' + letter + '</div>'
+          + '<div><div class="bot-pair">' + b.pair + '</div>'
+          + '<div class="bot-sub">' + b.strategy + ' · $' + b.size + ' position</div></div>'
+          + '</div>'
+          + '<div class="bot-right">'
+          + '<span style="font-size:13px;font-weight:600;min-width:72px;text-align:right;color:' + pnlColor + '">' + pnlStr + '</span>'
+          + '<span style="font-size:11px;color:' + (b.running ? 'var(--green)' : 'var(--gray-600)') + ';min-width:48px;">' + (b.running ? 'Running' : 'Stopped') + '</span>'
+          + '<div class="toggle' + (b.running ? ' on' : '') + '" onclick="toggleBot(' + i + ')"></div>'
+          + '<button class="btn-sm danger" onclick="deleteBot(' + i + ')">Delete</button>'
+          + '</div></div>';
+      }).join('');
+    }
+
+    function toggleBot(idx) {
+      var bots = getBots();
+      bots[idx].running = !bots[idx].running;
+      saveBots(bots);
+      renderBotList();
+    }
+
+    function deleteBot(idx) {
+      if (!confirm('Delete this bot?')) return;
+      var bots = getBots();
+      bots.splice(idx, 1);
+      saveBots(bots);
+      renderBotList();
+    }
+
+    function openAddBotModal() {
+      document.getElementById('addBotModal').classList.add('show');
+    }
+
+    function submitAddBot() {
+      var pair     = document.getElementById('botPair').value;
+      var strategy = document.getElementById('botStrategy').value;
+      var size     = parseFloat(document.getElementById('botSize').value) || 0;
+      var hint     = document.getElementById('botAddHint');
+      if (!pair) { hint.textContent = 'Please select a trading pair.'; return; }
+      if (size < 10) { hint.textContent = 'Minimum position size is $10.'; return; }
+      var bots = getBots();
+      bots.push({ id: Date.now(), pair: pair, strategy: strategy, size: size, running: true, pnl: 0 });
+      saveBots(bots);
+      renderBotList();
+      closeModal('addBotModal');
+      document.getElementById('botPair').value = '';
+      document.getElementById('botSize').value = '';
+      hint.textContent = '';
+    }
+
+    // ── TRADE HISTORY ────────────────────────────────────
+    var ALL_TRADES = [
+      { pair:'BTC/USDT', side:'Long',  strategy:'Grid',     entry:'$63,241', exit:'$67,820', size:'0.042', pnl:'+$192.32', roe:'+7.24%', win:true,  time:'2h ago' },
+      { pair:'ETH/USDT', side:'Long',  strategy:'DCA',      entry:'$3,112',  exit:'$3,287',  size:'1.25',  pnl:'+$218.75', roe:'+5.62%', win:true,  time:'3h ago' },
+      { pair:'SOL/USDT', side:'Long',  strategy:'Momentum', entry:'$142.10', exit:'$155.44', size:'3.8',   pnl:'+$50.69',  roe:'+9.39%', win:true,  time:'5h ago' },
+      { pair:'AVAX/USDT',side:'Short', strategy:'Momentum', entry:'$40.20',  exit:'$38.40',  size:'10',    pnl:'+$18.00',  roe:'+4.48%', win:true,  time:'7h ago' },
+      { pair:'BTC/USDT', side:'Long',  strategy:'Grid',     entry:'$61,800', exit:'$60,100', size:'0.03',  pnl:'-$51.00',  roe:'-2.75%', win:false, time:'10h ago' },
+      { pair:'ETH/USDT', side:'Short', strategy:'Grid',     entry:'$3,380',  exit:'$3,290',  size:'0.8',   pnl:'+$72.00',  roe:'+2.66%', win:true,  time:'14h ago' },
+      { pair:'BNB/USDT', side:'Long',  strategy:'DCA',      entry:'$520',    exit:'$545',    size:'2',     pnl:'+$50.00',  roe:'+4.81%', win:true,  time:'1d ago' },
+      { pair:'SOL/USDT', side:'Short', strategy:'Scalping', entry:'$158',    exit:'$161',    size:'5',     pnl:'-$15.00',  roe:'-1.90%', win:false, time:'1d ago' },
+      { pair:'BTC/USDT', side:'Long',  strategy:'Momentum', entry:'$62,400', exit:'$65,100', size:'0.05',  pnl:'+$135.00', roe:'+4.33%', win:true,  time:'1d ago' },
+      { pair:'ETH/USDT', side:'Long',  strategy:'DCA',      entry:'$3,050',  exit:'$3,180',  size:'1.0',   pnl:'+$130.00', roe:'+4.26%', win:true,  time:'2d ago' },
+      { pair:'AVAX/USDT',side:'Long',  strategy:'Grid',     entry:'$36.20',  exit:'$34.80',  size:'20',    pnl:'-$28.00',  roe:'-3.87%', win:false, time:'2d ago' },
+      { pair:'BTC/USDT', side:'Short', strategy:'Scalping', entry:'$67,100', exit:'$66,400', size:'0.02',  pnl:'+$14.00',  roe:'+1.04%', win:true,  time:'2d ago' },
+      { pair:'SOL/USDT', side:'Long',  strategy:'Momentum', entry:'$148',    exit:'$160',    size:'4',     pnl:'+$48.00',  roe:'+8.11%', win:true,  time:'3d ago' },
+      { pair:'BNB/USDT', side:'Short', strategy:'Grid',     entry:'$542',    exit:'$528',    size:'1.5',   pnl:'+$21.00',  roe:'+2.58%', win:true,  time:'3d ago' },
+      { pair:'ETH/USDT', side:'Long',  strategy:'Scalping', entry:'$3,200',  exit:'$3,150',  size:'0.5',   pnl:'-$25.00',  roe:'-1.56%', win:false, time:'3d ago' },
+      { pair:'BTC/USDT', side:'Long',  strategy:'DCA',      entry:'$60,500', exit:'$63,800', size:'0.04',  pnl:'+$132.00', roe:'+5.45%', win:true,  time:'4d ago' },
+      { pair:'SOL/USDT', side:'Long',  strategy:'DCA',      entry:'$135',    exit:'$142',    size:'6',     pnl:'+$42.00',  roe:'+5.19%', win:true,  time:'4d ago' },
+      { pair:'AVAX/USDT',side:'Long',  strategy:'Momentum', entry:'$38',     exit:'$41.20',  size:'12',    pnl:'+$38.40',  roe:'+8.42%', win:true,  time:'5d ago' },
+      { pair:'ETH/USDT', side:'Short', strategy:'Momentum', entry:'$3,420',  exit:'$3,350',  size:'0.7',   pnl:'+$49.00',  roe:'+2.04%', win:true,  time:'5d ago' },
+      { pair:'BTC/USDT', side:'Short', strategy:'Grid',     entry:'$68,200', exit:'$69,100', size:'0.02',  pnl:'-$18.00',  roe:'-1.32%', win:false, time:'6d ago' },
+    ];
+
+    var currentHistoryFilter = 'all';
+
+    function filterHistory(filter, btn) {
+      currentHistoryFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      renderHistory();
+    }
+
+    function renderHistory() {
+      var trades = ALL_TRADES.filter(function(t) {
+        if (currentHistoryFilter === 'win') return t.win;
+        if (currentHistoryFilter === 'loss') return !t.win;
+        if (currentHistoryFilter !== 'all') return t.pair === currentHistoryFilter;
+        return true;
+      });
+
+      var countEl = document.getElementById('historyCount');
+      if (countEl) countEl.textContent = trades.length + ' trades';
+
+      var tbody = document.getElementById('historyBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = trades.map(function(t) {
+        var winClass = t.win ? 'up' : 'down';
+        var sideColor = t.side === 'Long' ? 'var(--green)' : 'var(--red)';
+        return '<tr>'
+          + '<td>' + t.pair + '</td>'
+          + '<td><span style="color:' + sideColor + ';font-weight:600;font-size:12px;">' + t.side.toUpperCase() + '</span></td>'
+          + '<td style="color:var(--gray-400)">' + t.strategy + '</td>'
+          + '<td>' + t.entry + '</td>'
+          + '<td>' + t.exit + '</td>'
+          + '<td style="color:var(--gray-400)">' + t.size + '</td>'
+          + '<td class="' + winClass + '">' + t.pnl + '</td>'
+          + '<td class="' + winClass + '">' + t.roe + '</td>'
+          + '<td style="color:var(--gray-600);font-size:12px;">' + t.time + '</td>'
+          + '</tr>';
+      }).join('');
+    }
+
+    // ── CHARTS ───────────────────────────────────────────────────
+    Chart.defaults.color = '#737373';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+    Chart.defaults.font.family = 'Inter, sans-serif';
+    Chart.defaults.font.size = 11;
+
+    function genEquityData(days, finalVal) {
+      var seed = 12345;
+      function rand() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967295; }
+      var pts = [0];
+      for (var i = 1; i < days; i++) pts.push(pts[i-1] + (rand() - 0.44) * 160);
+      var last = pts[pts.length - 1] || 1;
+      var scale = finalVal / last;
+      return pts.map(function(v) { return +(v * scale).toFixed(0); });
+    }
+
+    function genDateLabels(days) {
+      var labels = [], now = new Date();
+      for (var i = days - 1; i >= 0; i--) {
+        var d = new Date(now); d.setDate(d.getDate() - i);
+        labels.push((d.getMonth()+1) + '/' + d.getDate());
+      }
+      return labels;
+    }
+
+    function makeLineChart(id, data, labels) {
+      var ctx = document.getElementById(id);
+      if (!ctx) return null;
+      var c = ctx.getContext('2d');
+      var grad = c.createLinearGradient(0, 0, 0, ctx.offsetHeight || 200);
+      grad.addColorStop(0, 'rgba(34,197,94,0.25)');
+      grad.addColorStop(1, 'rgba(34,197,94,0)');
+      return new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            borderColor: '#22c55e',
+            backgroundColor: grad,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 0,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 800 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              mode: 'index', intersect: false,
+              callbacks: { label: function(ctx) { return ' $' + ctx.raw.toLocaleString(); } }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { maxTicksLimit: 6, maxRotation: 0 } },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.04)' },
+              ticks: { callback: function(v) { return '$' + (v >= 1000 ? (v/1000).toFixed(1)+'k' : v); } }
+            }
+          }
+        }
+      });
+    }
+
+    function makeBarChart(id, monthlyData) {
+      var ctx = document.getElementById(id);
+      if (!ctx) return null;
+      return new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+          datasets: [{
+            data: monthlyData,
+            backgroundColor: monthlyData.map(function(v) {
+              return v >= 0 ? 'rgba(34,197,94,0.75)' : 'rgba(239,68,68,0.75)';
+            }),
+            borderRadius: 4,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 700 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return ' ' + (ctx.raw >= 0 ? '+' : '') + '$' + ctx.raw;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.04)' },
+              ticks: { callback: function(v) { return '$' + v; } }
+            }
+          }
+        }
+      });
+    }
+
+    var _chartOverviewDone = false;
+    var _chartPerfDone = false;
+
+    function initOverviewChart() {
+      if (_chartOverviewDone) return;
+      _chartOverviewDone = true;
+      var d = genEquityData(90, 2847);
+      var l = genDateLabels(90);
+      makeLineChart('overviewLineChart', d, l);
+    }
+
+    function initPerfCharts() {
+      if (_chartPerfDone) return;
+      _chartPerfDone = true;
+      var d = genEquityData(365, 8420);
+      var l = genDateLabels(365);
+      makeLineChart('perfLineChart', d, l);
+      makeBarChart('perfBarChart', [420, 680, -240, 520, 820, -180, 720, 1040, 600, -280, 780, 880]);
+    }
+
+    // ── API KEY ──────────────────────────────────────────────────
+    function loadApiPage() {
+      var key = localStorage.getItem('ayilon_api_key') || '';
+      if (key) {
+        document.getElementById('apiFormWrap').style.display = 'none';
+        document.getElementById('apiConnectedWrap').style.display = 'block';
+        document.getElementById('apiKeyMasked').textContent = 'API: ' + key.slice(0,4) + '****...' + key.slice(-4);
+      } else {
+        document.getElementById('apiFormWrap').style.display = 'block';
+        document.getElementById('apiConnectedWrap').style.display = 'none';
+      }
+    }
+
+    function toggleApiPw(id, btn) {
+      var el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+      btn.textContent = el.type === 'password' ? 'Show' : 'Hide';
+    }
+
+    function saveApiKey() {
+      var key    = document.getElementById('inputApiKey').value.trim();
+      var secret = document.getElementById('inputApiSecret').value.trim();
+      var pass   = document.getElementById('inputApiPass').value.trim();
+      var errEl  = document.getElementById('apiFormErr');
+      errEl.style.display = 'none';
+      if (!key || !secret || !pass) { errEl.textContent = 'All three fields are required.'; errEl.style.display = 'block'; return; }
+      if (key.length < 20) { errEl.textContent = 'API key looks too short — please check it.'; errEl.style.display = 'block'; return; }
+      localStorage.setItem('ayilon_api_key', key);
+      localStorage.setItem('ayilon_api_secret', secret);
+      localStorage.setItem('ayilon_api_passphrase', pass);
+      loadApiPage();
+    }
+
+    function disconnectApi() {
+      if (!confirm('Disconnect your OKX API key? Your bots will stop running.')) return;
+      localStorage.removeItem('ayilon_api_key');
+      localStorage.removeItem('ayilon_api_secret');
+      localStorage.removeItem('ayilon_api_passphrase');
+      document.getElementById('inputApiKey').value = '';
+      document.getElementById('inputApiSecret').value = '';
+      document.getElementById('inputApiPass').value = '';
+      loadApiPage();
+    }
+
+    // Render dynamic content when pages are shown
+    var _origShowPage = showPage;
+    showPage = function(name, el) {
+      _origShowPage(name, el);
+      if (name === 'bots')     renderBotList();
+      if (name === 'history')  renderHistory();
+      if (name === 'mypage')   loadProfilePage();
+      if (name === 'overview') initOverviewChart();
+      if (name === 'analytics') initPerfCharts();
+      if (name === 'api')      loadApiPage();
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var startPage = new URLSearchParams(window.location.search).get('page');
+      if (startPage && document.getElementById('page-' + startPage)) {
+        var matchEl = document.querySelector('.sidebar-item[onclick*="' + startPage + '"]');
+        showPage(startPage, matchEl);
+      }
+      renderBotList();
+      renderHistory();
+      loadProfilePage();
+      loadApiPage();
+      initOverviewChart();
+    });
+  </script>
+</body>
+</html>

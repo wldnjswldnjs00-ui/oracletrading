@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout — AYILON</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --black: #000; --white: #fff;
+      --gray-400: #a3a3a3; --gray-600: #525252;
+      --gray-900: #111111; --gray-800: #262626;
+      --green: #22c55e; --error: #ef4444;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
+
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 60px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
+    .nav-back { font-size: 14px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
+    .nav-back:hover { color: var(--white); }
+
+    .checkout-wrap { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 60px 24px; gap: 48px; max-width: 1000px; margin: 0 auto; width: 100%; }
+
+    /* ORDER SUMMARY */
+    .order-summary { width: 320px; flex-shrink: 0; }
+    .summary-card { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 28px; }
+    .summary-title { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-600); margin-bottom: 20px; }
+    .plan-name { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+    .plan-price { font-size: 14px; color: var(--gray-400); margin-bottom: 20px; }
+    .plan-price strong { font-size: 22px; font-weight: 700; color: var(--white); font-family: 'Space Grotesk', sans-serif; }
+
+    .billing-switch { display: flex; gap: 0; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 3px; margin-bottom: 20px; }
+    .billing-btn { flex: 1; padding: 7px 12px; font-size: 13px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--gray-400); font-family: 'Inter', sans-serif; transition: background 0.2s, color 0.2s; }
+    .billing-btn.active { background: var(--white); color: var(--black); }
+
+    .summary-features { list-style: none; margin-bottom: 24px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; }
+    .summary-features li { font-size: 13px; color: var(--gray-400); padding: 6px 0; display: flex; gap: 8px; }
+    .summary-features li::before { content: '✓'; color: var(--white); font-weight: 700; }
+
+    .summary-total { border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; display: flex; justify-content: space-between; align-items: baseline; }
+    .summary-total span { font-size: 13px; color: var(--gray-400); }
+    .summary-total strong { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; }
+
+    .save-note { font-size: 12px; color: var(--green); margin-top: 8px; display: none; }
+    .save-note.show { display: block; }
+
+    /* PAYMENT FORM */
+    .payment-form { flex: 1; min-width: 0; }
+    .payment-title { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 28px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 8px; }
+    .form-input { width: 100%; padding: 13px 16px; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
+    .form-input::placeholder { color: var(--gray-600); }
+    .form-input:focus { border-color: rgba(255,255,255,0.4); }
+
+    /* USDT FORM */
+    .usdt-amount { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 24px; margin-bottom: 24px; text-align: center; }
+    .usdt-amount-label { font-size: 12px; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+    .usdt-amount-value { font-family: 'Space Grotesk', sans-serif; font-size: 42px; font-weight: 700; margin-bottom: 4px; }
+    .usdt-amount-sub { font-size: 13px; color: var(--gray-400); }
+
+    .wallet-section { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .wallet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .wallet-header h3 { font-size: 14px; font-weight: 600; }
+    .network-badge { padding: 4px 10px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 100px; font-size: 11px; font-weight: 600; color: var(--gray-400); }
+
+    .wallet-inner { display: flex; gap: 20px; align-items: center; }
+    .qr-code { width: 100px; height: 100px; background: #fff; border-radius: 8px; padding: 4px; flex-shrink: 0; }
+    .qr-code img { width: 100%; height: 100%; display: block; border-radius: 4px; }
+    .wallet-address-wrap { flex: 1; min-width: 0; }
+    .wallet-address-label { font-size: 11px; color: var(--gray-600); margin-bottom: 6px; }
+    .wallet-address { font-family: monospace; font-size: 13px; word-break: break-all; color: var(--white); background: rgba(255,255,255,0.04); padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; }
+    .btn-copy { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: var(--white); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.2s; }
+    .btn-copy:hover { background: rgba(255,255,255,0.1); }
+
+    .fee-breakdown { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+    .fee-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--gray-400); }
+    .fee-row strong { color: var(--white); }
+    .fee-row.fee-total { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; margin-top: 2px; font-weight: 600; color: var(--white); }
+    .fee-row.fee-total strong { font-size: 15px; }
+    .fee-note { font-size: 12px; color: var(--gray-600); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; line-height: 1.5; }
+    .fee-note strong { color: var(--gray-400); }
+
+    .okx-notice { background: rgba(255,165,0,0.06); border: 1px solid rgba(255,165,0,0.25); border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; }
+    .okx-notice-title { font-size: 13px; font-weight: 700; color: #f59e0b; margin-bottom: 8px; }
+    .okx-notice p { font-size: 13px; color: var(--gray-400); line-height: 1.6; }
+    .okx-notice p strong { color: var(--white); }
+
+    .usdt-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .usdt-step { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; }
+    .usdt-step-num { width: 20px; height: 20px; background: rgba(255,255,255,0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .usdt-step p { font-size: 13px; color: var(--gray-400); line-height: 1.5; }
+    .usdt-step p strong { color: var(--white); }
+
+    .txid-group { margin-bottom: 20px; }
+
+    /* SUBMIT */
+    .btn-pay { width: 100%; padding: 15px; background: var(--white); color: var(--black); border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.2s; letter-spacing: 0.01em; }
+    .btn-pay:hover { opacity: 0.88; }
+    .btn-pay:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .pay-note { font-size: 12px; color: var(--gray-600); text-align: center; margin-top: 12px; }
+
+    /* SUCCESS SCREEN */
+    .success-screen { display: none; text-align: center; padding: 60px 24px; }
+    .success-screen.show { display: block; }
+    .success-icon { font-size: 56px; margin-bottom: 24px; }
+    .success-screen h2 { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+    .success-screen p { font-size: 15px; color: var(--gray-400); margin-bottom: 32px; }
+    .btn-go { display: inline-block; padding: 13px 32px; background: var(--white); color: var(--black); border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; transition: opacity 0.2s; }
+    .btn-go:hover { opacity: 0.88; }
+
+    /* PROCESSING */
+    .processing { display: none; text-align: center; padding: 40px; }
+    .processing.show { display: block; }
+    .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--white); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .processing p { font-size: 14px; color: var(--gray-400); }
+
+    @media (max-width: 768px) {
+      nav { padding: 20px 24px; }
+      .checkout-wrap { flex-direction: column; padding: 32px 20px; gap: 32px; }
+      .order-summary { width: 100%; }
+      .wallet-inner { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-logo">AYILON</a>
+    <a href="index.html#pricing" class="nav-back">&larr; Back to Pricing</a>
+  </nav>
+
+  <div class="checkout-wrap" id="checkoutWrap">
+
+    <!-- ORDER SUMMARY -->
+    <div class="order-summary">
+      <div class="summary-card">
+        <div class="summary-title">Order Summary</div>
+        <div class="plan-name" id="summaryPlan">Pro</div>
+        <div class="plan-price">
+          <strong id="summaryPrice">$500</strong> <span id="summaryPeriodLabel">/ month</span>
+        </div>
+
+        <div class="billing-switch">
+          <button class="billing-btn active" id="sw-monthly" onclick="setBilling('monthly')">Monthly</button>
+          <button class="billing-btn" id="sw-annual" onclick="setBilling('annual')">Annual</button>
+        </div>
+
+        <div class="save-note" id="saveNote"></div>
+
+        <ul class="summary-features" id="featureList">
+          <li>5 active trading bots</li>
+          <li>OKX integration</li>
+          <li>All strategies</li>
+          <li>Backtesting engine</li>
+          <li>Priority support</li>
+        </ul>
+
+        <div class="summary-total">
+          <span>Total due today</span>
+          <strong id="totalPrice">$500</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT FORM -->
+    <div class="payment-form" id="paymentForm">
+      <div class="payment-title">Payment Details</div>
+
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;margin-bottom:24px;">
+        <span style="font-size:18px;">&#128176;</span>
+        <div>
+          <div style="font-size:14px;font-weight:600;">USDT (TRC20)</div>
+          <div style="font-size:11px;color:var(--gray-400);">Tether on TRON network · 0% fees</div>
+        </div>
+        <span style="margin-left:auto;font-size:11px;font-weight:600;color:var(--green);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);padding:3px 10px;border-radius:100px;">ACTIVE</span>
+      </div>
+
+      <!-- EMAIL INPUT (shared) -->
+      <div class="form-group" id="emailGroup">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input" id="checkoutEmail" placeholder="you@example.com" autocomplete="email" />
+        <div style="font-size:12px;color:var(--gray-600);margin-top:6px;">Payment confirmation will be sent to this address.</div>
+      </div>
+
+      <!-- USDT PANEL -->
+      <div class="payment-panel active" id="panel-usdt">
+        <div class="usdt-amount" id="usdtAmountBox">
+          <div class="usdt-amount-label">Amount to Send (exact)</div>
+          <div class="usdt-amount-value" id="usdtAmountDisplay">— USDT</div>
+          <div class="usdt-amount-sub" id="usdtAmountSub">Generating your unique payment amount...</div>
+        </div>
+        <div id="usdtLoadingNote" style="text-align:center;font-size:13px;color:var(--gray-600);margin-bottom:16px;">Loading...</div>
+
+        <div class="fee-breakdown">
+          <div class="fee-row">
+            <span>Subscription amount</span>
+            <span><strong id="feeBase">—</strong> USDT</span>
+          </div>
+          <div class="fee-row">
+            <span>TRC20 network fee (charged by OKX)</span>
+            <span>~ 1 USDT</span>
+          </div>
+          <div class="fee-row fee-total">
+            <span>Total to have in your OKX account</span>
+            <span><strong id="feeTotal">—</strong> USDT</span>
+          </div>
+          <div class="fee-note">AYILON receives exactly <strong id="feeReceive">— USDT</strong>. The network fee is deducted separately from your OKX balance.</div>
+        </div>
+
+        <div class="wallet-section">
+          <div class="wallet-header">
+            <h3>Deposit Address</h3>
+            <span class="network-badge">TRC20</span>
+          </div>
+          <div class="wallet-inner">
+            <div class="qr-code">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TBvtft3H8B4Rv4cEHTotyak3Ds2mLur99E" alt="QR Code" />
+            </div>
+            <div class="wallet-address-wrap">
+              <div class="wallet-address-label">USDT TRC20 Wallet Address</div>
+              <div class="wallet-address" id="walletAddr">TBvtft3H8B4Rv4cEHTotyak3Ds2mLur99E</div>
+              <button class="btn-copy" onclick="copyAddress()">&#128203; Copy Address</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="okx-notice">
+          <div class="okx-notice-title">&#128179; Withdrawing from OKX?</div>
+          <p>On the OKX withdrawal screen, you will be asked to select a destination type. Choose <strong>Exchange</strong> — do <strong>not</strong> select Unhosted Wallet, OKX Users, or OKX Wallet.</p>
+        </div>
+
+        <div class="usdt-steps">
+          <div class="usdt-step">
+            <div class="usdt-step-num">1</div>
+            <p>Send exactly <strong id="usdtStepAmount">— USDT</strong> to the address above using the <strong>TRC20 (TRON)</strong> network. <strong style="color:#ef4444;">Use the exact amount shown</strong> — this is how we identify your payment. Any other network will result in permanent loss of funds.</p>
+          </div>
+          <div class="usdt-step">
+            <div class="usdt-step-num">2</div>
+            <p>Wait for the transaction to confirm on the TRON blockchain (usually 1&ndash;3 minutes).</p>
+          </div>
+          <div class="usdt-step">
+            <div class="usdt-step-num">3</div>
+            <p>Paste your <strong>transaction hash (TxID)</strong> below and click Confirm. Your account will be activated automatically.</p>
+          </div>
+        </div>
+
+        <div class="form-group txid-group">
+          <label class="form-label">Transaction Hash (TxID)</label>
+          <input type="text" class="form-input" id="txidInput" placeholder="Paste your TxID here (64 characters)" />
+        </div>
+
+        <div id="pollStatus" style="display:none;text-align:center;padding:16px;margin-bottom:16px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;">
+          <div style="font-size:13px;color:#22c55e;font-weight:500;" id="pollStatusText">&#9679; Monitoring blockchain for your payment...</div>
+        </div>
+        <div id="verifyError" style="display:none;font-size:12px;color:#ef4444;margin-bottom:12px;padding:10px 14px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;"></div>
+        <button class="btn-pay" id="btnPayUsdt" onclick="payWithUsdt()">
+          Verify Transaction &rarr;
+        </button>
+        <p class="pay-note">Your subscription activates automatically once confirmed on-chain (usually 1–3 min). Or paste your TxID above and click Verify.</p>
+      </div>
+    </div>
+
+    <!-- PROCESSING -->
+    <div class="processing" id="processingScreen">
+      <div class="spinner"></div>
+      <p id="processingText">Processing your payment...</p>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="success-screen" id="successScreen">
+    <div class="success-icon">&#10003;</div>
+    <h2>Payment Confirmed</h2>
+    <p>Your <strong id="successPlan">Pro</strong> plan is now active.<br />Your bots are ready to trade on OKX.</p>
+    <a href="dashboard.html" class="btn-go">Go to Dashboard &rarr;</a>
+  </div>
+
+  <script>
+    var plans = {
+      starter: {
+        label: 'Starter',
+        monthly: 100, annual: 95, annualTotal: 1140, save: 5,
+        features: ['1 active trading bot', 'OKX integration', 'Grid & DCA strategies', 'Real-time dashboard', 'Email notifications']
+      },
+      pro: {
+        label: 'Pro',
+        monthly: 500, annual: 450, annualTotal: 5400, save: 10,
+        features: ['5 active trading bots', 'OKX integration', 'All strategies', 'Backtesting engine', 'Email & Telegram alerts', 'Priority support']
+      },
+      elite: {
+        label: 'Elite',
+        monthly: 1000, annual: 850, annualTotal: 10200, save: 15,
+        features: ['Unlimited trading bots', 'OKX integration', 'All strategies + custom', 'Full analytics suite', 'Email, Telegram & SMS', 'Dedicated account manager', '24/7 premium support']
+      }
+    };
+
+    var WORKER_URL = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
+    var currentPlan = 'pro';
+    var currentBilling = 'monthly';
+    var uniqueAmount = null;
+    var pollTimer = null;
+
+    function init() {
+      var params = new URLSearchParams(window.location.search);
+      var p = params.get('plan');
+      var b = params.get('billing');
+      if (p && plans[p]) currentPlan = p;
+      if (b === 'annual') { currentBilling = 'annual'; document.getElementById('sw-monthly').classList.remove('active'); document.getElementById('sw-annual').classList.add('active'); }
+      updateSummary();
+      createPayment();
+    }
+
+    function setBilling(period) {
+      currentBilling = period;
+      document.getElementById('sw-monthly').classList.toggle('active', period === 'monthly');
+      document.getElementById('sw-annual').classList.toggle('active', period === 'annual');
+      updateSummary();
+      createPayment();
+    }
+
+    function updateSummary() {
+      var plan = plans[currentPlan];
+      var price = currentBilling === 'monthly' ? plan.monthly : plan.annual;
+      var total = currentBilling === 'annual' ? plan.annualTotal : plan.monthly;
+      document.getElementById('summaryPlan').textContent = plan.label;
+      document.getElementById('summaryPrice').textContent = '$' + price.toLocaleString();
+      document.getElementById('summaryPeriodLabel').textContent = '/ month';
+      document.getElementById('totalPrice').textContent = '$' + total.toLocaleString();
+      var saveNote = document.getElementById('saveNote');
+      if (currentBilling === 'annual') {
+        saveNote.textContent = 'Billed $' + plan.annualTotal.toLocaleString() + '/year — Save ' + plan.save + '%';
+        saveNote.classList.add('show');
+      } else {
+        saveNote.classList.remove('show');
+      }
+      var fl = document.getElementById('featureList');
+      fl.innerHTML = plan.features.map(function(f) { return '<li>' + f + '</li>'; }).join('');
+    }
+
+    async function createPayment() {
+      var email = document.getElementById('checkoutEmail').value.trim();
+      if (!email) return;
+      var plan = plans[currentPlan];
+      var baseAmount = currentBilling === 'annual' ? plan.annualTotal : plan.monthly;
+
+      document.getElementById('usdtAmountDisplay').textContent = '— USDT';
+      document.getElementById('usdtAmountSub').textContent = 'Generating your unique payment amount...';
+      document.getElementById('usdtLoadingNote').style.display = 'block';
+
+      try {
+        var res = await fetch(WORKER_URL + '/create-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, plan: currentPlan, billing: currentBilling, baseAmount: baseAmount })
+        });
+        var data = await res.json();
+        if (!data.uniqueAmount) throw new Error('No amount');
+
+        uniqueAmount = data.uniqueAmount;
+        document.getElementById('usdtAmountDisplay').textContent = uniqueAmount + ' USDT';
+        document.getElementById('usdtAmountSub').textContent = 'Your unique payment ID — send this exact amount';
+        document.getElementById('usdtLoadingNote').style.display = 'none';
+        document.getElementById('usdtStepAmount').textContent = uniqueAmount + ' USDT';
+        document.getElementById('feeBase').textContent = uniqueAmount;
+        document.getElementById('feeTotal').textContent = (parseFloat(uniqueAmount) + 1).toFixed(2);
+        document.getElementById('feeReceive').textContent = uniqueAmount + ' USDT';
+
+        // Update QR to include amount
+        var qrImg = document.querySelector('.qr-code img');
+        if (qrImg) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TBvtft3H8B4Rv4cEHTotyak3Ds2mLur99E';
+
+        // Start polling
+        startPolling();
+
+      } catch(e) {
+        document.getElementById('usdtAmountSub').textContent = 'Enter your email above first, then the amount will be generated.';
+        document.getElementById('usdtLoadingNote').style.display = 'none';
+      }
+    }
+
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      if (!uniqueAmount) return;
+      document.getElementById('pollStatus').style.display = 'block';
+      pollTimer = setInterval(async function() {
+        try {
+          var res = await fetch(WORKER_URL + '/check-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uniqueAmount: uniqueAmount })
+          });
+          var data = await res.json();
+          if (data.confirmed) {
+            clearInterval(pollTimer);
+            onPaymentConfirmed(data.txHash);
+          }
+        } catch(e) {}
+      }, 30000); // check every 30 seconds
+    }
+
+    async function payWithUsdt() {
+      var txid = document.getElementById('txidInput').value.trim();
+      var errEl = document.getElementById('verifyError');
+      errEl.style.display = 'none';
+
+      if (!uniqueAmount) {
+        var email = document.getElementById('checkoutEmail').value.trim();
+        if (!email) { errEl.textContent = 'Please enter your email address first.'; errEl.style.display = 'block'; return; }
+        await createPayment();
+        if (!uniqueAmount) { errEl.textContent = 'Could not generate payment. Please try again.'; errEl.style.display = 'block'; return; }
+      }
+
+      if (txid.length < 20) {
+        // No TxID - just confirm they're waiting
+        document.getElementById('pollStatus').style.display = 'block';
+        document.getElementById('pollStatusText').textContent = '⏳ Waiting for payment... (auto-detects within 1-3 minutes)';
+        return;
+      }
+
+      var btn = document.getElementById('btnPayUsdt');
+      btn.textContent = 'Verifying...'; btn.disabled = true;
+
+      try {
+        var res = await fetch(WORKER_URL + '/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ txid: txid, uniqueAmount: uniqueAmount })
+        });
+        var data = await res.json();
+        if (data.verified) {
+          onPaymentConfirmed(txid);
+        } else {
+          errEl.textContent = data.error || 'Verification failed. Please try again.';
+          errEl.style.display = 'block';
+          btn.textContent = 'Verify Transaction →'; btn.disabled = false;
+        }
+      } catch(e) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.style.display = 'block';
+        btn.textContent = 'Verify Transaction →'; btn.disabled = false;
+      }
+    }
+
+    function onPaymentConfirmed(txHash) {
+      if (pollTimer) clearInterval(pollTimer);
+      var plan = plans[currentPlan];
+      var amt = currentBilling === 'annual' ? plan.annualTotal : plan.monthly;
+      localStorage.setItem('ayilon_subscription', JSON.stringify({
+        plan: currentPlan, billing: currentBilling,
+        amount: amt, activatedAt: new Date().toISOString(), txHash: txHash
+      }));
+      localStorage.setItem('ayilon_logged_in', 'true');
+      var email = document.getElementById('checkoutEmail').value.trim();
+      if (email) localStorage.setItem('ayilon_email', email);
+      document.getElementById('successPlan').textContent = plan.label;
+      document.getElementById('checkoutWrap').style.display = 'none';
+      document.getElementById('successScreen').classList.add('show');
+    }
+
+    function copyAddress() {
+      var addr = document.getElementById('walletAddr').textContent;
+      navigator.clipboard.writeText(addr).then(function() {
+        var btn = event.target;
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.innerHTML = '&#128203; Copy Address'; }, 2000);
+      });
+    }
+
+    // Trigger payment creation when email is filled in
+    document.getElementById('checkoutEmail').addEventListener('blur', function() {
+      if (this.value && !uniqueAmount) createPayment();
+    });
+
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>

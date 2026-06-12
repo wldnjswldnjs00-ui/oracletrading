@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up — AYILON</title>
+  <meta name="description" content="AYILON에 가입하고 자동 매매 봇을 시작하세요. OKX와 연동, 24시간 자동 운영." />
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --black: #000000; --white: #ffffff;
+      --gray-400: #a3a3a3; --gray-600: #525252;
+      --gray-900: #111111; --error: #ef4444; --success: #22c55e;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
+
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 60px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
+    .nav-login { font-size: 14px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
+    .nav-login:hover { color: var(--white); }
+
+    .page-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 24px; }
+    .signup-box { width: 100%; max-width: 480px; }
+    .signup-header { margin-bottom: 40px; }
+    .signup-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+    .signup-header p { font-size: 14px; color: var(--gray-400); }
+    .signup-header p a { color: var(--white); text-decoration: underline; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-400); margin-bottom: 8px; letter-spacing: 0.02em; }
+    .form-input { width: 100%; padding: 12px 16px; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
+    .form-input::placeholder { color: var(--gray-600); }
+    .form-input:focus { border-color: rgba(255,255,255,0.3); }
+    .form-input.error { border-color: var(--error); }
+    .form-input.success { border-color: var(--success); }
+
+    .form-hint { font-size: 12px; color: var(--gray-600); margin-top: 6px; }
+    .form-hint.error { color: var(--error); }
+    .form-hint.success { color: var(--success); }
+
+    .email-row { display: flex; gap: 10px; }
+    .email-row .form-input { flex: 1; }
+    .btn-verify { padding: 12px 18px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: var(--white); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.2s; font-family: 'Inter', sans-serif; }
+    .btn-verify:hover { background: rgba(255,255,255,0.1); }
+    .btn-verify:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .verify-code-wrap { margin-top: 10px; display: none; }
+    .verify-code-wrap.show { display: block; }
+    .verify-row { display: flex; gap: 10px; }
+    .verify-timer { font-size: 13px; color: var(--error); display: flex; align-items: center; padding: 0 4px; }
+
+    .password-wrap { position: relative; }
+    .password-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--gray-400); cursor: pointer; font-size: 13px; font-family: 'Inter', sans-serif; }
+
+    .strength-bar { display: flex; gap: 4px; margin-top: 8px; }
+    .strength-seg { height: 3px; flex: 1; background: rgba(255,255,255,0.08); border-radius: 2px; transition: background 0.3s; }
+    .strength-seg.weak { background: var(--error); }
+    .strength-seg.medium { background: #f59e0b; }
+    .strength-seg.strong { background: var(--success); }
+
+    .divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0; }
+
+    .terms-check { display: flex; align-items: flex-start; gap: 10px; }
+    .terms-check input[type="checkbox"] { width: 16px; height: 16px; margin-top: 1px; accent-color: var(--white); cursor: pointer; flex-shrink: 0; }
+    .terms-check label { font-size: 13px; color: var(--gray-400); line-height: 1.5; cursor: pointer; }
+    .terms-check label a { color: var(--white); }
+
+    .btn-submit { width: 100%; padding: 14px; background: var(--white); color: var(--black); border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 24px; transition: opacity 0.2s; font-family: 'Inter', sans-serif; letter-spacing: 0.01em; }
+    .btn-submit:hover { opacity: 0.88; }
+    .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    @media (max-width: 480px) {
+      nav { padding: 20px 24px; }
+      .email-row { flex-direction: column; }
+      .btn-verify { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-logo">AYILON</a>
+    <a href="login.html" class="nav-login">Already have an account? Log In →</a>
+  </nav>
+
+  <div class="page-wrap">
+    <div class="signup-box">
+      <div class="signup-header">
+        <h1>Create your account</h1>
+        <p>Already have an account? <a href="login.html">Log in</a></p>
+      </div>
+
+      <form id="signupForm" onsubmit="handleSignup(event)">
+
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" id="name" placeholder="John Doe" autocomplete="name" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-input" id="nickname" placeholder="e.g. ayilon_trader" autocomplete="off" oninput="checkNickname(this)" />
+          <div class="form-hint" id="nicknameHint">Letters, numbers and _ only (2–20 characters)</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email (used as login ID)</label>
+          <div class="email-row">
+            <input type="email" class="form-input" id="email" placeholder="you@example.com" autocomplete="email" />
+            <button type="button" class="btn-verify" id="sendCodeBtn" onclick="sendVerificationCode()">Send Code</button>
+          </div>
+          <div class="verify-code-wrap" id="codeWrap">
+            <div class="verify-row">
+              <input type="text" class="form-input" id="verifyCode" placeholder="Enter 6-digit code" maxlength="6" />
+              <span class="verify-timer" id="timer">05:00</span>
+              <button type="button" class="btn-verify" onclick="confirmCode()">Verify</button>
+            </div>
+            <div class="form-hint" id="codeHint">Enter the 6-digit code sent to your email</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="password-wrap">
+            <input type="password" class="form-input" id="password" placeholder="8+ characters, letters + numbers + symbols" oninput="checkPasswordStrength(this)" />
+            <button type="button" class="password-toggle" onclick="togglePassword('password')">Show</button>
+          </div>
+          <div class="strength-bar">
+            <div class="strength-seg" id="seg1"></div>
+            <div class="strength-seg" id="seg2"></div>
+            <div class="strength-seg" id="seg3"></div>
+            <div class="strength-seg" id="seg4"></div>
+          </div>
+          <div class="form-hint" id="passwordHint">Use letters, numbers, and special characters (8+ chars)</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="password-wrap">
+            <input type="password" class="form-input" id="passwordConfirm" placeholder="Re-enter your password" oninput="checkPasswordMatch()" />
+            <button type="button" class="password-toggle" onclick="togglePassword('passwordConfirm')">Show</button>
+          </div>
+          <div class="form-hint" id="matchHint"></div>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="form-group">
+          <div class="terms-check">
+            <input type="checkbox" id="termsAll" onchange="toggleAll(this)" />
+            <label for="termsAll"><strong style="color:#fff">Agree to all</strong></label>
+          </div>
+          <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+            <div class="terms-check">
+              <input type="checkbox" id="terms1" />
+              <label for="terms1"><a href="terms.html" target="_blank">Terms of Service</a> (required)</label>
+            </div>
+            <div class="terms-check">
+              <input type="checkbox" id="terms2" />
+              <label for="terms2"><a href="privacy.html" target="_blank">Privacy Policy</a> (required)</label>
+            </div>
+            <div class="terms-check">
+              <input type="checkbox" id="terms3" />
+              <label for="terms3">Receive marketing communications (optional)</label>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const WORKER_URL = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
+    let timerInterval = null;
+    let emailVerified = false;
+    let sentCode = null;
+
+    async function sendVerificationCode() {
+      const email = document.getElementById('email').value;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        document.getElementById('email').classList.add('error');
+        return;
+      }
+      document.getElementById('email').classList.remove('error');
+      document.getElementById('sendCodeBtn').disabled = true;
+      document.getElementById('sendCodeBtn').textContent = 'Checking...';
+
+      // Check email uniqueness first
+      try {
+        const checkRes = await fetch(WORKER_URL + '/check-email', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const checkData = await checkRes.json();
+        if (!checkData.available) {
+          document.getElementById('email').classList.add('error');
+          document.getElementById('sendCodeBtn').disabled = false;
+          document.getElementById('sendCodeBtn').textContent = 'Send Code';
+          const hint = document.getElementById('codeHint');
+          document.getElementById('codeWrap').classList.add('show');
+          hint.className = 'form-hint error';
+          hint.textContent = 'This email is already registered. Try logging in instead.';
+          return;
+        }
+      } catch { /* KV not set up yet — allow signup */ }
+
+      document.getElementById('sendCodeBtn').textContent = 'Sending...';
+
+      try {
+        const res = await fetch(WORKER_URL + '/send-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.success) {
+          sentCode = data.code;
+          document.getElementById('sendCodeBtn').textContent = 'Sent';
+          document.getElementById('codeWrap').classList.add('show');
+          startTimer();
+        } else {
+          document.getElementById('sendCodeBtn').disabled = false;
+          document.getElementById('sendCodeBtn').textContent = 'Send Code';
+          alert('Failed to send email. Please try again.');
+        }
+      } catch {
+        document.getElementById('sendCodeBtn').disabled = false;
+        document.getElementById('sendCodeBtn').textContent = 'Send Code';
+        alert('Failed to send email. Please try again.');
+      }
+    }
+
+    function startTimer() {
+      let seconds = 300;
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        seconds--;
+        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const s = String(seconds % 60).padStart(2, '0');
+        document.getElementById('timer').textContent = `${m}:${s}`;
+        if (seconds <= 0) {
+          clearInterval(timerInterval);
+          document.getElementById('timer').textContent = 'Expired';
+          document.getElementById('sendCodeBtn').disabled = false;
+          document.getElementById('sendCodeBtn').textContent = 'Resend';
+        }
+      }, 1000);
+    }
+
+    function confirmCode() {
+      const code = document.getElementById('verifyCode').value;
+      const hint = document.getElementById('codeHint');
+      if (code.length === 6 && code === sentCode) {
+        emailVerified = true;
+        clearInterval(timerInterval);
+        document.getElementById('verifyCode').classList.add('success');
+        document.getElementById('verifyCode').disabled = true;
+        hint.className = 'form-hint success';
+        hint.textContent = '✓ Email verified successfully';
+      } else {
+        hint.className = 'form-hint error';
+        hint.textContent = 'Invalid verification code';
+      }
+    }
+
+    let nicknameTimer = null;
+    let nicknameAvailable = false;
+
+    function checkNickname(el) {
+      const val = el.value;
+      const hint = document.getElementById('nicknameHint');
+      const valid = /^[a-zA-Z0-9_]{2,20}$/.test(val);
+      nicknameAvailable = false;
+
+      if (val.length === 0) {
+        el.classList.remove('error', 'success');
+        hint.className = 'form-hint';
+        hint.textContent = 'Letters, numbers and _ only (2–20 characters)';
+        return;
+      }
+      if (!valid) {
+        el.classList.remove('success'); el.classList.add('error');
+        hint.className = 'form-hint error';
+        hint.textContent = 'Letters, numbers and _ only (2–20 characters)';
+        return;
+      }
+
+      hint.className = 'form-hint';
+      hint.textContent = 'Checking...';
+      clearTimeout(nicknameTimer);
+      nicknameTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(WORKER_URL + '/check-username', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: val })
+          });
+          if (!res.ok) {
+            el.classList.remove('error'); el.classList.add('success');
+            hint.className = 'form-hint success'; hint.textContent = '✓ Username is available';
+            nicknameAvailable = true;
+          } else {
+            const data = await res.json();
+            if (data.available === false) {
+              el.classList.remove('success'); el.classList.add('error');
+              hint.className = 'form-hint error';
+              hint.textContent = 'This username is already taken';
+              nicknameAvailable = false;
+            } else {
+              el.classList.remove('error'); el.classList.add('success');
+              hint.className = 'form-hint success';
+              hint.textContent = '✓ Username is available';
+              nicknameAvailable = true;
+            }
+          }
+        } catch {
+          el.classList.remove('error'); el.classList.add('success');
+          hint.className = 'form-hint success';
+          hint.textContent = '✓ Username looks good';
+          nicknameAvailable = true;
+        }
+      }, 500);
+    }
+
+    function checkPasswordStrength(el) {
+      const val = el.value;
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val) || /[a-z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      const segs = ['seg1','seg2','seg3','seg4'];
+      const cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
+      segs.forEach((id, i) => {
+        const seg = document.getElementById(id);
+        seg.className = 'strength-seg';
+        if (i < score) seg.classList.add(cls);
+      });
+      const hint = document.getElementById('passwordHint');
+      if (val.length === 0) { hint.className = 'form-hint'; hint.textContent = 'Use letters, numbers, and special characters (8+ chars)'; }
+      else if (score <= 1) { hint.className = 'form-hint error'; hint.textContent = 'Password is too weak'; }
+      else if (score <= 2) { hint.className = 'form-hint'; hint.textContent = 'Moderate password strength'; }
+      else { hint.className = 'form-hint success'; hint.textContent = '✓ Strong password'; }
+      checkPasswordMatch();
+    }
+
+    function checkPasswordMatch() {
+      const pw = document.getElementById('password').value;
+      const confirm = document.getElementById('passwordConfirm').value;
+      const hint = document.getElementById('matchHint');
+      const el = document.getElementById('passwordConfirm');
+      if (confirm.length === 0) { hint.textContent = ''; el.classList.remove('error','success'); return; }
+      if (pw === confirm) {
+        el.classList.remove('error'); el.classList.add('success');
+        hint.className = 'form-hint success'; hint.textContent = '✓ Passwords match';
+      } else {
+        el.classList.remove('success'); el.classList.add('error');
+        hint.className = 'form-hint error'; hint.textContent = 'Passwords do not match';
+      }
+    }
+
+    function togglePassword(id) {
+      const el = document.getElementById(id);
+      const btn = el.nextElementSibling;
+      el.type = el.type === 'password' ? 'text' : 'password';
+      btn.textContent = el.type === 'password' ? 'Show' : 'Hide';
+    }
+
+    function toggleAll(el) {
+      ['terms1','terms2','terms3'].forEach(id => document.getElementById(id).checked = el.checked);
+    }
+
+    async function handleSignup(e) {
+      e.preventDefault();
+      const name     = document.getElementById('name').value.trim();
+      const nickname = document.getElementById('nickname').value.trim();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm  = document.getElementById('passwordConfirm').value;
+      const terms1   = document.getElementById('terms1').checked;
+      const terms2   = document.getElementById('terms2').checked;
+
+      if (!name || !nickname || !email || !password || !confirm) return;
+      if (!emailVerified) { alert('Please verify your email first.'); return; }
+      if (!nicknameAvailable && nicknameAvailable !== null) { alert('Please choose a valid, available username.'); return; }
+      if (password !== confirm) { alert('Passwords do not match.'); return; }
+      if (!terms1 || !terms2) { alert('Please agree to the required terms.'); return; }
+
+      const btn = document.getElementById('submitBtn');
+      btn.textContent = 'Creating account...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(WORKER_URL + '/register-user', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, username: nickname, name, password })
+        });
+        const data = await res.json();
+        if (data.error === 'email_taken') {
+          alert('This email is already registered. Please log in instead.');
+          btn.textContent = 'Create Account'; btn.disabled = false;
+          return;
+        }
+        if (data.error === 'username_taken') {
+          alert('This username was just taken. Please choose a different one.');
+          btn.textContent = 'Create Account'; btn.disabled = false;
+          return;
+        }
+      } catch { /* KV not set up — allow signup */ }
+
+      // Save to localStorage
+      localStorage.setItem('ayilon_logged_in', 'true');
+      localStorage.setItem('ayilon_email', email);
+      localStorage.setItem('ayilon_name', name);
+      localStorage.setItem('ayilon_username', nickname);
+      localStorage.setItem('ayilon_password', password);
+
+      window.location.href = 'dashboard.html?page=mypage';
+    }
+  </script>
+</body>
+</html>

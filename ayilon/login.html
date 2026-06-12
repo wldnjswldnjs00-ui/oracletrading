@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log In — AYILON</title>
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --black: #000; --white: #fff; --gray-400: #a3a3a3; --gray-600: #525252; --gray-900: #111111; --error: #ef4444; }
+    body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
+
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 60px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
+    .nav-signup { font-size: 14px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
+    .nav-signup:hover { color: var(--white); }
+
+    .page-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 24px; }
+    .login-box { width: 100%; max-width: 420px; }
+    .login-header { margin-bottom: 40px; }
+    .login-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+    .login-header p { font-size: 14px; color: var(--gray-400); }
+    .login-header p a { color: var(--white); text-decoration: underline; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-400); margin-bottom: 8px; }
+    .form-input { width: 100%; padding: 12px 16px; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
+    .form-input::placeholder { color: var(--gray-600); }
+    .form-input:focus { border-color: rgba(255,255,255,0.3); }
+
+    .password-wrap { position: relative; }
+    .password-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--gray-400); cursor: pointer; font-size: 13px; font-family: 'Inter', sans-serif; }
+
+    .forgot { text-align: right; margin-top: 8px; }
+    .forgot a { font-size: 13px; color: var(--gray-400); text-decoration: none; }
+    .forgot a:hover { color: var(--white); }
+
+    .btn-submit { width: 100%; padding: 14px; background: var(--white); color: var(--black); border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 24px; transition: opacity 0.2s; font-family: 'Inter', sans-serif; }
+    .btn-submit:hover { opacity: 0.88; }
+
+    .error-msg { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--error); margin-bottom: 16px; display: none; }
+    .error-msg.show { display: block; }
+
+    .step { display: none; }
+    .step.active { display: block; }
+
+    .twofa-options { display: flex; flex-direction: column; gap: 12px; margin: 24px 0; }
+    .twofa-btn { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer; transition: border-color 0.2s; width: 100%; text-align: left; }
+    .twofa-btn:hover { border-color: rgba(255,255,255,0.3); }
+    .twofa-icon { font-size: 24px; flex-shrink: 0; }
+    .twofa-info h3 { font-size: 14px; font-weight: 600; margin-bottom: 2px; color: var(--white); }
+    .twofa-info p { font-size: 12px; color: var(--gray-400); }
+
+    .otp-inputs { display: flex; gap: 10px; justify-content: center; margin: 24px 0; }
+    .otp-digit { width: 52px; height: 60px; text-align: center; font-size: 22px; font-weight: 700; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--white); font-family: 'Space Grotesk', sans-serif; outline: none; transition: border-color 0.2s; }
+    .otp-digit:focus { border-color: rgba(255,255,255,0.4); }
+
+    .back-btn { background: none; border: none; color: var(--gray-400); font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 28px; font-family: 'Inter', sans-serif; padding: 0; }
+    .back-btn:hover { color: var(--white); }
+
+    @media (max-width: 480px) { nav { padding: 20px 24px; } }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-logo">AYILON</a>
+    <a href="signup.html" class="nav-signup">Don't have an account? Sign Up &rarr;</a>
+  </nav>
+
+  <div class="page-wrap">
+    <div class="login-box">
+
+      <div class="step active" id="step1">
+        <div class="login-header">
+          <h1>Log In</h1>
+          <p>Don't have an account? <a href="signup.html">Sign up</a></p>
+        </div>
+        <div class="error-msg" id="errorMsg">Incorrect email or password.</div>
+        <form onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com" autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="password-wrap">
+              <input type="password" class="form-input" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" />
+              <button type="button" class="password-toggle" onclick="togglePassword()">Show</button>
+            </div>
+            <div class="forgot"><a href="#" onclick="startForgot(); return false;">Forgot your password?</a></div>
+          </div>
+          <button type="submit" class="btn-submit">Log In</button>
+        </form>
+      </div>
+
+      <div class="step" id="step2">
+        <button class="back-btn" onclick="goBack(1)">&larr; Back</button>
+        <div class="login-header">
+          <h1>Two-Factor Auth</h1>
+          <p>Select your verification method.</p>
+        </div>
+        <div class="twofa-options" id="twofaOptions"></div>
+      </div>
+
+      <div class="step" id="step3">
+        <button class="back-btn" onclick="goBack(2)">&larr; Back</button>
+        <div class="login-header">
+          <h1 id="otpTitle">Enter Code</h1>
+          <p id="otpDesc"></p>
+        </div>
+        <div class="otp-inputs">
+          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 0)" />
+          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 1)" />
+          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 2)" />
+          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 3)" />
+          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 4)" />
+          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 5)" />
+        </div>
+        <button class="btn-submit" onclick="verifyOTP()">Verify &amp; Sign In</button>
+        <p style="text-align:center; margin-top:16px; font-size:13px; color:var(--gray-600)">
+          Didn't receive a code? <a href="#" style="color:var(--white)" onclick="resendCode()">Resend</a>
+        </p>
+      </div>
+
+      <!-- FORGOT: Step 4 - Enter email -->
+      <div class="step" id="step4">
+        <button class="back-btn" onclick="goBack(1)">&larr; Back</button>
+        <div class="login-header">
+          <h1>Reset Password</h1>
+          <p>Enter your registered email address.</p>
+        </div>
+        <div class="error-msg" id="forgotError">Email address not found.</div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="forgotEmail" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <button class="btn-submit" onclick="handleForgot()">Send Verification &rarr;</button>
+      </div>
+
+      <!-- FORGOT: Step 5 - Verify identity -->
+      <div class="step" id="step5">
+        <button class="back-btn" onclick="goBack(4)">&larr; Back</button>
+        <div class="login-header">
+          <h1 id="forgotVerifyTitle">Verify Identity</h1>
+          <p id="forgotVerifyDesc"></p>
+        </div>
+        <div class="otp-inputs">
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 0)" />
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 1)" />
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 2)" />
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 3)" />
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 4)" />
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 5)" />
+        </div>
+        <button class="btn-submit" onclick="verifyForgotOTP()">Verify &rarr;</button>
+      </div>
+
+      <!-- FORGOT: Step 6 - New password -->
+      <div class="step" id="step6">
+        <div class="login-header">
+          <h1>New Password</h1>
+          <p>Enter your new password below.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <div class="password-wrap">
+            <input type="password" class="form-input" id="newPassword" placeholder="8+ characters" />
+            <button type="button" class="password-toggle" onclick="togglePw('newPassword')">Show</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="password-wrap">
+            <input type="password" class="form-input" id="confirmPassword" placeholder="Re-enter new password" />
+            <button type="button" class="password-toggle" onclick="togglePw('confirmPassword')">Show</button>
+          </div>
+        </div>
+        <div class="error-msg" id="pwResetError"></div>
+        <button class="btn-submit" onclick="resetPassword()">Reset Password</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // If already logged in, skip to dashboard
+    if (localStorage.getItem('ayilon_logged_in') === 'true') {
+      window.location.href = 'dashboard.html';
+    }
+
+    function togglePassword() {
+      var el = document.getElementById('loginPassword');
+      var btn = el.nextElementSibling;
+      el.type = el.type === 'password' ? 'text' : 'password';
+      btn.textContent = el.type === 'password' ? 'Show' : 'Hide';
+    }
+
+    function togglePw(id) {
+      var el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+      el.nextElementSibling.textContent = el.type === 'password' ? 'Show' : 'Hide';
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      var email = document.getElementById('loginEmail').value.trim().toLowerCase();
+      var pw    = document.getElementById('loginPassword').value;
+      if (!email || !pw) return;
+
+      var errEl = document.getElementById('errorMsg');
+      errEl.classList.remove('show');
+
+      var storedEmail = (localStorage.getItem('ayilon_email') || '').toLowerCase();
+      var storedPw    = localStorage.getItem('ayilon_password') || '';
+
+      if (email !== storedEmail || pw !== storedPw) {
+        errEl.textContent = 'Incorrect email or password.';
+        errEl.classList.add('show');
+        return;
+      }
+
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+
+      if (methods.length === 0) {
+        finishLogin();
+        return;
+      }
+
+      if (methods.length === 1) {
+        selectMethod(methods[0]);
+        return;
+      }
+
+      var methodInfo = {
+        email:         { icon: '&#128231;', title: 'Email Code',        desc: 'Send a 6-digit code to your email address' },
+        authenticator: { icon: '&#128272;', title: 'Authenticator App', desc: 'Enter the code from Google or Microsoft Authenticator' }
+      };
+      document.getElementById('twofaOptions').innerHTML = methods.map(function(m) {
+        var info = methodInfo[m];
+        return '<button class="twofa-btn" onclick="selectMethod(\'' + m + '\')">'
+          + '<span class="twofa-icon">' + info.icon + '</span>'
+          + '<div class="twofa-info"><h3>' + info.title + '</h3><p>' + info.desc + '</p></div>'
+          + '</button>';
+      }).join('');
+      showStep(2);
+    }
+
+    function selectMethod(method) {
+      var titles = { email: 'Email Code', authenticator: 'Authenticator App' };
+      var descs  = {
+        email:         'Enter the 6-digit code sent to your email address.',
+        authenticator: 'Enter the 6-digit code shown in your Authenticator app.'
+      };
+      document.getElementById('otpTitle').textContent = titles[method] || 'Verify';
+      document.getElementById('otpDesc').textContent  = descs[method]  || '';
+      showStep(3);
+      setTimeout(function() { document.querySelectorAll('.otp-digit')[0].focus(); }, 100);
+    }
+
+    function showStep(n) {
+      document.querySelectorAll('.step').forEach(function(s) { s.classList.remove('active'); });
+      document.getElementById('step' + n).classList.add('active');
+    }
+
+    function goBack(n) { showStep(n); }
+
+    function moveNext(el, idx) {
+      el.value = el.value.replace(/\D/g, '');
+      if (el.value && idx < 5) document.querySelectorAll('.otp-digit')[idx + 1].focus();
+    }
+
+    function verifyOTP() {
+      var digits = document.querySelectorAll('.otp-digit');
+      var code = Array.from(digits).map(function(d) { return d.value; }).join('');
+      if (code.length === 6) finishLogin();
+    }
+
+    function finishLogin() {
+      localStorage.setItem('ayilon_logged_in', 'true');
+      window.location.href = 'dashboard.html';
+    }
+
+    function resendCode() { alert('A new code has been sent.'); }
+
+    // ── FORGOT PASSWORD ──────────────────────────────────────────
+    var forgotSentCode = null;
+
+    function startForgot() { showStep(4); }
+
+    async function handleForgot() {
+      var email = document.getElementById('forgotEmail').value.trim();
+      var errEl = document.getElementById('forgotError');
+      errEl.classList.remove('show');
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+
+      var storedEmail = (localStorage.getItem('ayilon_email') || '').toLowerCase();
+      if (email.toLowerCase() !== storedEmail) {
+        errEl.textContent = 'Email address not found.';
+        errEl.classList.add('show');
+        return;
+      }
+
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+      if (methods.indexOf('authenticator') !== -1 && methods.indexOf('email') === -1) {
+        document.getElementById('forgotVerifyTitle').textContent = 'Authenticator App';
+        document.getElementById('forgotVerifyDesc').textContent  = 'Enter the 6-digit code from your Authenticator app.';
+        showStep(5);
+        setTimeout(function() { document.querySelectorAll('.otp-forgot')[0].focus(); }, 100);
+        return;
+      }
+
+      var btn = document.querySelector('#step4 .btn-submit');
+      btn.textContent = 'Sending...'; btn.disabled = true;
+      try {
+        var res  = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/send-verification', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        });
+        var data = await res.json();
+        if (data.success) {
+          forgotSentCode = data.code;
+          document.getElementById('forgotVerifyTitle').textContent = 'Email Verification';
+          document.getElementById('forgotVerifyDesc').textContent  = 'Enter the 6-digit code sent to ' + email;
+          showStep(5);
+          setTimeout(function() { document.querySelectorAll('.otp-forgot')[0].focus(); }, 100);
+        } else {
+          errEl.textContent = 'Failed to send email. Try again.';
+          errEl.classList.add('show');
+        }
+      } catch(e) {
+        errEl.textContent = 'Network error. Try again.';
+        errEl.classList.add('show');
+      }
+      btn.textContent = 'Send Verification →'; btn.disabled = false;
+    }
+
+    function moveForgotNext(el, idx) {
+      el.value = el.value.replace(/\D/g, '');
+      if (el.value && idx < 5) document.querySelectorAll('.otp-forgot')[idx + 1].focus();
+    }
+
+    function verifyForgotOTP() {
+      var digits = document.querySelectorAll('.otp-forgot');
+      var code   = Array.from(digits).map(function(d) { return d.value; }).join('');
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+      var isAuth  = methods.indexOf('authenticator') !== -1 && methods.indexOf('email') === -1;
+      if (code.length === 6 && (isAuth || code === forgotSentCode)) {
+        showStep(6);
+      } else {
+        Array.from(digits).forEach(function(d) { d.style.borderColor = '#ef4444'; });
+        setTimeout(function() { Array.from(digits).forEach(function(d) { d.style.borderColor = ''; }); }, 800);
+      }
+    }
+
+    function resetPassword() {
+      var pw      = document.getElementById('newPassword').value;
+      var confirm = document.getElementById('confirmPassword').value;
+      var errEl   = document.getElementById('pwResetError');
+      errEl.classList.remove('show');
+      if (pw.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.classList.add('show'); return; }
+      if (pw !== confirm) { errEl.textContent = 'Passwords do not match.'; errEl.classList.add('show'); return; }
+
+      localStorage.setItem('ayilon_password', pw);
+
+      showStep(1);
+      var ok = document.createElement('div');
+      ok.style.cssText = 'background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 16px;font-size:13px;color:#22c55e;margin-bottom:16px;';
+      ok.textContent = 'Password reset successfully. Please log in.';
+      var form = document.querySelector('#step1 form');
+      document.getElementById('step1').insertBefore(ok, form);
+      setTimeout(function() { ok.remove(); }, 5000);
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (document.getElementById('step3').classList.contains('active') && e.key === 'Enter') verifyOTP();
+      if (document.getElementById('step5').classList.contains('active') && e.key === 'Enter') verifyForgotOTP();
+    });
+  </script>
+</body>
+</html>
