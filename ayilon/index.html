@@ -196,6 +196,18 @@
     .btn-referral:hover { opacity: 0.88; }
     .referral-note { font-size: 12px; color: var(--gray-600); margin-top: 10px; }
 
+    /* FAQ */
+    .faq-section { padding: 100px 60px; max-width: 800px; margin: 0 auto; }
+    .faq-list { margin-top: 48px; display: flex; flex-direction: column; gap: 0; }
+    .faq-item { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .faq-question { width: 100%; background: none; border: none; color: var(--white); font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; text-align: left; padding: 22px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 20px; transition: color 0.2s; }
+    .faq-question:hover { color: rgba(255,255,255,0.7); }
+    .faq-icon { flex-shrink: 0; width: 22px; height: 22px; border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: transform 0.25s, background 0.2s; }
+    .faq-item.open .faq-icon { transform: rotate(45deg); background: rgba(255,255,255,0.08); }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
+    .faq-answer p { font-size: 15px; color: var(--gray-400); line-height: 1.75; padding-bottom: 20px; }
+    .faq-answer a { color: var(--white); }
+
     /* CTA */
     .cta-section {
       margin: 0 60px 100px; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px;
@@ -236,6 +248,7 @@
       .how { margin: 0 30px; }
       .how-inner { padding: 50px 30px; }
       .pricing-grid { grid-template-columns: 1fr; }
+      .faq-section { padding: 80px 30px; }
       .referral-banner { flex-direction: column; padding: 40px 30px; margin: 40px 0 0; }
       .referral-banner::before { display: none; }
       .cta-section { margin: 0 30px 80px; padding: 60px 30px; }
@@ -482,6 +495,90 @@
     </div>
   </section>
 
+  <!-- FAQ -->
+  <div id="faq">
+    <div class="faq-section">
+      <div class="section-tag">FAQ</div>
+      <h2 class="section-title">Everything you need to know</h2>
+
+      <div class="faq-list">
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            What is AYILON?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><p>AYILON is a fully automated crypto trading platform that runs bots on your OKX account 24/7. You connect your API key, choose a strategy (Grid, DCA, or Momentum), and the bot handles everything — entries, exits, and position management — while you sleep.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            Is my money safe? Does AYILON hold my funds?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><p>No — AYILON never holds or touches your funds. All trades happen directly on your OKX account via an API key that you create and control. We strongly recommend enabling <strong>Trade-only</strong> permissions (no Withdraw access) on your API key so that funds can never leave your exchange account.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            What exchanges are supported?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><p>Currently AYILON supports <strong>OKX</strong>. Support for Binance, Bybit, and other major exchanges is on our roadmap. If you register through our <a href="#pricing">OKX referral link</a>, you also receive a lifetime fee discount on every trade.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            What trading strategies are available?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><p><strong>Grid Trading</strong> — places a grid of buy/sell orders within a price range, capturing small profits as price oscillates. Best for sideways markets.<br /><br /><strong>DCA (Dollar-Cost Averaging)</strong> — systematically buys on dips and sells on recovery. Best for volatile but trending assets.<br /><br /><strong>Momentum</strong> — follows breakout signals and rides short-term trends. Higher risk/reward profile.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            Do I need any trading experience?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><p>No. AYILON is built for everyone — from complete beginners to experienced traders. Each bot comes with default parameters tuned for safety. Advanced users can customise grid spacing, leverage, position size, and stop-loss levels.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            Can I get a refund?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><p>Yes — if you have <strong>not yet connected an API key</strong> and your request is within <strong>7 days</strong> of purchase, you are eligible for a full refund. Simply go to My Account → Subscription and click "Request Refund." After 7 days or after connecting an API key, only cancellation (end of billing period) is available. See our <a href="terms.html">Terms of Service</a> for full details.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            How do I cancel my subscription?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><p>Go to Dashboard → My Account → Subscription and click "Cancel Subscription." Your access continues until the end of the current billing period — nothing is charged from the next cycle. No hidden fees, no lock-ins.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            What is the minimum amount to start?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><p>There is no minimum set by AYILON — however, OKX has minimum order sizes per pair (typically $5–$10 per order). For Grid bots to work effectively we recommend starting with at least <strong>$500–$1,000</strong> in your OKX account per active bot.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            Is there a demo or trial mode?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer"><p>Yes — you can connect OKX's <strong>Demo Trading</strong> account (free virtual $100,000 USDT) to test any strategy risk-free before going live. Demo mode is available on all plans.</p></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- CTA -->
   <div class="cta-section">
     <h2>Start trading<br />on autopilot</h2>
@@ -517,7 +614,7 @@
       <div class="footer-col">
         <h4>Company</h4>
         <ul>
-          <li><a href="#">About</a></li>
+          <li><a href="about.html">About</a></li>
           <li><a href="#">Blog</a></li>
           <li><a href="privacy.html">Privacy Policy</a></li>
           <li><a href="terms.html">Terms of Service</a></li>
@@ -529,6 +626,22 @@
     <p>© 2025 AYILON. All rights reserved.</p>
     <p>Trading involves risk. Past performance does not guarantee future results.</p>
   </div>
+
+  <script>
+    function toggleFaq(btn) {
+      var item = btn.closest('.faq-item');
+      var answer = item.querySelector('.faq-answer');
+      var isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(function(el) {
+        el.classList.remove('open');
+        el.querySelector('.faq-answer').style.maxHeight = '0';
+      });
+      if (!isOpen) {
+        item.classList.add('open');
+        answer.style.maxHeight = answer.scrollHeight + 'px';
+      }
+    }
+  </script>
 
   <script>
     const pricing = {
