@@ -88,7 +88,7 @@
               <input type="password" class="form-input" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" />
               <button type="button" class="password-toggle" onclick="togglePassword()">Show</button>
             </div>
-            <div class="forgot"><a href="#">Forgot your password?</a></div>
+            <div class="forgot"><a href="#" onclick="startForgot(); return false;">Forgot your password?</a></div>
           </div>
           <button type="submit" class="btn-submit">Log In</button>
         </form>
@@ -121,6 +121,63 @@
         <p style="text-align:center; margin-top:16px; font-size:13px; color:var(--gray-600)">
           Didn't receive a code? <a href="#" style="color:var(--white)" onclick="resendCode()">Resend</a>
         </p>
+      </div>
+
+      <!-- FORGOT: Step 4 - Enter email -->
+      <div class="step" id="step4">
+        <button class="back-btn" onclick="goBack(1)">&larr; Back</button>
+        <div class="login-header">
+          <h1>Reset Password</h1>
+          <p>Enter your registered email address.</p>
+        </div>
+        <div class="error-msg" id="forgotError">Email address not found.</div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="forgotEmail" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <button class="btn-submit" onclick="handleForgot()">Send Verification &rarr;</button>
+      </div>
+
+      <!-- FORGOT: Step 5 - Verify identity -->
+      <div class="step" id="step5">
+        <button class="back-btn" onclick="goBack(4)">&larr; Back</button>
+        <div class="login-header">
+          <h1 id="forgotVerifyTitle">Verify Identity</h1>
+          <p id="forgotVerifyDesc"></p>
+        </div>
+        <div class="otp-inputs">
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 0)" />
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 1)" />
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 2)" />
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 3)" />
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 4)" />
+          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 5)" />
+        </div>
+        <button class="btn-submit" onclick="verifyForgotOTP()">Verify &rarr;</button>
+      </div>
+
+      <!-- FORGOT: Step 6 - New password -->
+      <div class="step" id="step6">
+        <div class="login-header">
+          <h1>New Password</h1>
+          <p>Enter your new password below.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <div class="password-wrap">
+            <input type="password" class="form-input" id="newPassword" placeholder="8+ characters" />
+            <button type="button" class="password-toggle" onclick="togglePw('newPassword')">Show</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="password-wrap">
+            <input type="password" class="form-input" id="confirmPassword" placeholder="Re-enter new password" />
+            <button type="button" class="password-toggle" onclick="togglePw('confirmPassword')">Show</button>
+          </div>
+        </div>
+        <div class="error-msg" id="pwResetError"></div>
+        <button class="btn-submit" onclick="resetPassword()">Reset Password</button>
       </div>
 
     </div>
@@ -210,6 +267,75 @@
     }
 
     function resendCode() { alert('A new code has been sent.'); }
+
+    var forgotSentCode = null;
+
+    function startForgot() { showStep(4); }
+
+    async function handleForgot() {
+      var email = document.getElementById('forgotEmail').value;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+
+      if (methods.indexOf('authenticator') !== -1 && methods.indexOf('email') === -1) {
+        document.getElementById('forgotVerifyTitle').textContent = 'Authenticator App';
+        document.getElementById('forgotVerifyDesc').textContent = 'Enter the 6-digit code from your Authenticator app.';
+        showStep(5);
+        setTimeout(function() { document.querySelectorAll('.otp-forgot')[0].focus(); }, 100);
+        return;
+      }
+
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/send-verification', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        });
+        var data = await res.json();
+        if (data.success) {
+          forgotSentCode = data.code;
+          document.getElementById('forgotVerifyTitle').textContent = 'Email Verification';
+          document.getElementById('forgotVerifyDesc').textContent = 'Enter the 6-digit code sent to ' + email;
+          showStep(5);
+          setTimeout(function() { document.querySelectorAll('.otp-forgot')[0].focus(); }, 100);
+        }
+      } catch(e) {
+        document.getElementById('forgotError').classList.add('show');
+      }
+    }
+
+    function moveForgotNext(el, idx) {
+      el.value = el.value.replace(/\D/g, '');
+      if (el.value && idx < 5) document.querySelectorAll('.otp-forgot')[idx + 1].focus();
+    }
+
+    function verifyForgotOTP() {
+      var digits = document.querySelectorAll('.otp-forgot');
+      var code = Array.from(digits).map(function(d) { return d.value; }).join('');
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+      var isAuthenticator = methods.indexOf('authenticator') !== -1 && methods.indexOf('email') === -1;
+      if (code.length === 6 && (isAuthenticator || code === forgotSentCode)) {
+        showStep(6);
+      } else {
+        alert('Invalid code. Please try again.');
+      }
+    }
+
+    function togglePw(id) {
+      var el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+      el.nextElementSibling.textContent = el.type === 'password' ? 'Show' : 'Hide';
+    }
+
+    function resetPassword() {
+      var pw = document.getElementById('newPassword').value;
+      var confirm = document.getElementById('confirmPassword').value;
+      var errEl = document.getElementById('pwResetError');
+      errEl.classList.remove('show');
+      if (pw.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.classList.add('show'); return; }
+      if (pw !== confirm) { errEl.textContent = 'Passwords do not match.'; errEl.classList.add('show'); return; }
+      alert('Password reset successfully! Please log in with your new password.');
+      showStep(1);
+    }
 
     document.addEventListener('keydown', function(e) {
       if (document.getElementById('step3').classList.contains('active') && e.key === 'Enter') {

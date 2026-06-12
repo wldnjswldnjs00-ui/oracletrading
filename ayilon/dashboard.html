@@ -688,18 +688,25 @@
     </div>
   </div>
 
-  <!-- LOCK OVERLAY -->
-  <div id="lockOverlay" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px;">
-    <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:12px;">Subscribe to Access</div>
-    <div style="font-size:14px;color:#a3a3a3;max-width:340px;margin-bottom:32px;line-height:1.7;">Your dashboard is ready — start a subscription to unlock your bots, analytics, and trading performance.</div>
+  <!-- NOT LOGGED IN: full redirect overlay -->
+  <div id="loginOverlay" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px;">
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:12px;">Welcome to AYILON</div>
+    <div style="font-size:14px;color:#a3a3a3;max-width:320px;margin-bottom:32px;line-height:1.7;">Please log in to access your dashboard and account settings.</div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
-      <a href="index.html#pricing" style="padding:13px 28px;background:#fff;color:#000;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;">View Plans →</a>
-      <a href="login.html" style="padding:13px 28px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:14px;font-weight:500;text-decoration:none;">Log In</a>
+      <a href="login.html" style="padding:13px 28px;background:#fff;color:#000;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;">Log In →</a>
+      <a href="signup.html" style="padding:13px 28px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:14px;font-weight:500;text-decoration:none;">Sign Up</a>
     </div>
+  </div>
+
+  <!-- UPGRADE BANNER (for logged-in but unsubscribed) -->
+  <div id="upgradeBanner" style="display:none;position:sticky;top:0;z-index:40;background:linear-gradient(90deg,#111,#1a1a1a);border-bottom:1px solid rgba(245,158,11,0.25);padding:10px 40px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+    <span style="font-size:13px;color:#a3a3a3;">You don't have an active subscription. Upgrade to unlock trading bots and analytics.</span>
+    <a href="index.html#pricing" style="padding:7px 18px;background:#fff;color:#000;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;">View Plans →</a>
   </div>
 
   <script>
     var ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
+    var LOCKED_PAGES = ['dashboard', 'bots', 'positions', 'performance', 'history', 'api'];
 
     (function checkAccess() {
       var loggedIn = localStorage.getItem('ayilon_logged_in');
@@ -707,8 +714,27 @@
       var email = localStorage.getItem('ayilon_email');
       var isAdmin = email === ADMIN_EMAIL;
 
-      if (!loggedIn && !isAdmin && !subscription) {
-        document.getElementById('lockOverlay').style.display = 'flex';
+      if (!loggedIn && !isAdmin) {
+        var ol = document.getElementById('loginOverlay');
+        ol.style.display = 'flex';
+        return;
+      }
+
+      if (!subscription && !isAdmin) {
+        var banner = document.getElementById('upgradeBanner');
+        banner.style.display = 'flex';
+        LOCKED_PAGES.forEach(function(p) {
+          var page = document.getElementById('page-' + p);
+          if (!page) return;
+          var lock = document.createElement('div');
+          lock.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;border-radius:12px;z-index:10;';
+          lock.innerHTML = '<div style="font-size:32px;margin-bottom:16px;">🔒</div>'
+            + '<div style="font-family:Space Grotesk,sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;">Subscription Required</div>'
+            + '<div style="font-size:14px;color:#a3a3a3;max-width:280px;margin-bottom:24px;line-height:1.6;">Subscribe to a plan to unlock this feature.</div>'
+            + '<a href="index.html#pricing" style="padding:11px 24px;background:#fff;color:#000;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;">View Plans →</a>';
+          page.style.position = 'relative';
+          page.appendChild(lock);
+        });
       }
 
       if (isAdmin) {
