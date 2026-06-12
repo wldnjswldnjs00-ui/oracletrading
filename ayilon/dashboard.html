@@ -250,6 +250,9 @@
       <a class="sidebar-item" onclick="showPage('api', this)">
         <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5a3.5 3.5 0 0 0 5 0l2-2a3.5 3.5 0 0 0-5-5L7 4"/><path d="M9.5 6.5a3.5 3.5 0 0 0-5 0l-2 2a3.5 3.5 0 0 0 5 5L9 12"/></svg></span> API Integration
       </a>
+      <a class="sidebar-item" onclick="showPage('botsettings', this)">
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.1 3.1l1.1 1.1M11.8 11.8l1.1 1.1M3.1 12.9l1.1-1.1M11.8 4.2l1.1-1.1"/></svg></span> Bot Settings
+      </a>
       <a class="sidebar-item" onclick="showPage('security', this)">
         <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5L2 4v3.5c0 3.3 2.6 6 6 7 3.4-1 6-3.7 6-7V4L8 1.5z"/></svg></span> Security
       </a>
@@ -956,6 +959,192 @@
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
         </div>
       </div>
+    </div>
+
+    <div class="page" id="page-botsettings">
+      <div class="topbar"><h1>Bot Settings</h1></div>
+
+      <!-- DAILY LOSS LIMIT ALERT (shown when limit hit) -->
+      <div id="dailyLossAlert" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:#ef4444;margin-bottom:4px;">⚠️ Daily Loss Limit Reached</div>
+          <div id="dailyLossAlertText" style="font-size:13px;color:var(--gray-400);">Bot has been paused. Resume trading?</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-shrink:0;">
+          <button onclick="pauseBot()" style="padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--gray-400);font-size:13px;cursor:pointer;font-family:inherit;">Stay Paused</button>
+          <button onclick="resumeBot()" style="padding:8px 16px;background:var(--white);color:var(--black);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Resume Trading →</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+
+        <!-- BOT STATUS -->
+        <div class="card" style="grid-column:1/-1;">
+          <div class="card-header"><span class="card-title">Bot Status</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div id="botStatusDot" style="width:10px;height:10px;border-radius:50%;background:#525252;"></div>
+              <div>
+                <div id="botStatusLabel" style="font-size:14px;font-weight:600;">Inactive</div>
+                <div id="botStatusSub" style="font-size:12px;color:var(--gray-400);">Configure settings below and start the bot</div>
+              </div>
+            </div>
+            <button id="botToggleBtn" onclick="toggleBot()" style="padding:10px 24px;background:var(--white);color:var(--black);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.2s;">Start Bot</button>
+          </div>
+        </div>
+
+        <!-- RISK MANAGEMENT -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Risk Management</span></div>
+          <div style="display:flex;flex-direction:column;gap:20px;">
+
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <label style="font-size:13px;color:var(--gray-400);">Max Position Size</label>
+                <span id="posLabel" style="font-size:13px;font-weight:600;">40%</span>
+              </div>
+              <input type="range" id="posSize" min="1" max="100" value="40" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
+              <div id="posSizeWarn" style="display:none;font-size:12px;color:#f59e0b;margin-top:6px;">⚠️ Over 40% risks compounding — Kelly Criterion recommends staying below this threshold.</div>
+            </div>
+
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <label style="font-size:13px;color:var(--gray-400);">Max Leverage</label>
+                <span id="levLabel" style="font-size:13px;font-weight:600;">20x</span>
+              </div>
+              <input type="range" id="leverage" min="1" max="100" value="20" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
+              <div id="leverageWarn" style="display:none;font-size:12px;color:#f59e0b;margin-top:6px;">⚠️ Over 20x leverage significantly increases liquidation risk. Mathematically unsustainable for compounding.</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- DAILY LOSS LIMIT -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Daily Loss Limit</span></div>
+          <div style="display:flex;flex-direction:column;gap:20px;">
+
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:13px;color:var(--gray-400);">Enable daily loss limit</span>
+              <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer;">
+                <input type="checkbox" id="lossLimitEnabled" onchange="updateRiskLabels()" style="opacity:0;width:0;height:0;" checked>
+                <span style="position:absolute;inset:0;background:#333;border-radius:11px;transition:0.2s;" id="lossToggleTrack"></span>
+                <span style="position:absolute;left:3px;top:3px;width:16px;height:16px;background:white;border-radius:50%;transition:0.2s;" id="lossToggleThumb"></span>
+              </label>
+            </div>
+
+            <div id="lossLimitWrap">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <label style="font-size:13px;color:var(--gray-400);">Limit</label>
+                <span id="lossLabel" style="font-size:13px;font-weight:600;">5.0%</span>
+              </div>
+              <input type="range" id="lossLimit" min="0.1" max="10" step="0.1" value="5" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-600);margin-top:4px;"><span>0.1%</span><span>10%</span></div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--gray-400);cursor:pointer;">
+                <input type="checkbox" id="notifyEmail" checked style="accent-color:var(--white);"> Email notification
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--gray-400);cursor:pointer;">
+                <input type="checkbox" id="notifyTelegram" style="accent-color:var(--white);"> Telegram notification
+                <span style="font-size:11px;color:var(--gray-600);">(token required)</span>
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- STRATEGY SETTINGS -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Strategy</span></div>
+          <div style="display:flex;flex-direction:column;gap:20px;">
+
+            <div>
+              <div style="font-size:12px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Strategy Type</div>
+              <div style="display:flex;gap:8px;">
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;" id="strat-dt-label">
+                  <input type="radio" name="strategy" value="daytrading" id="strat-daytrading" onchange="updateStratLabels()" checked style="accent-color:var(--white);"> Day Trading
+                </label>
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;" id="strat-sw-label">
+                  <input type="radio" name="strategy" value="swing" id="strat-swing" onchange="updateStratLabels()"> Swing
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label style="font-size:12px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:8px;">Trading Pair</label>
+              <input type="text" id="tradingPair" value="BTC-USDT-SWAP" class="d-form-input" style="font-family:monospace;" placeholder="e.g. BTC-USDT-SWAP">
+            </div>
+
+            <div>
+              <div style="font-size:12px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">S/R Detection Timeframe</div>
+              <div style="display:flex;gap:8px;">
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;">
+                  <input type="radio" name="srTimeframe" value="1H" id="tf-1h" onchange="updateStratLabels()" checked style="accent-color:var(--white);"> 1H
+                </label>
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;">
+                  <input type="radio" name="srTimeframe" value="4H" id="tf-4h" onchange="updateStratLabels()"> 4H
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:12px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">S/R Touch Count for Entry</div>
+              <div style="display:flex;gap:8px;">
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;">
+                  <input type="radio" name="srTouch" value="2" id="touch-2" onchange="updateStratLabels()" checked style="accent-color:var(--white);"> 2
+                </label>
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;">
+                  <input type="radio" name="srTouch" value="3" id="touch-3" onchange="updateStratLabels()"> 3
+                </label>
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;">
+                  <input type="radio" name="srTouch" value="4" id="touch-4" onchange="updateStratLabels()"> 4
+                </label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ENTRY SETTINGS -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Fractional Entry</span></div>
+          <div style="display:flex;flex-direction:column;gap:20px;">
+
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <label style="font-size:13px;color:var(--gray-400);">Number of Entries</label>
+                <span id="entriesLabel" style="font-size:13px;font-weight:600;">3</span>
+              </div>
+              <input type="range" id="numEntries" min="2" max="10" value="3" oninput="document.getElementById('entriesLabel').textContent=this.value" style="width:100%;accent-color:var(--white);">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-600);margin-top:4px;"><span>2</span><span>10</span></div>
+            </div>
+
+            <div>
+              <div style="font-size:12px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Entry Sizing</div>
+              <div style="display:flex;gap:8px;">
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;" id="entry-equal-label">
+                  <input type="radio" name="entrySizing" value="equal" id="entry-equal" onchange="updateStratLabels()" checked style="accent-color:var(--white);"> Equal
+                </label>
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;" id="entry-martingale-label">
+                  <input type="radio" name="entrySizing" value="martingale" id="entry-martingale" onchange="updateStratLabels()"> Martingale
+                </label>
+              </div>
+              <div id="martingaleNote" style="display:none;font-size:12px;color:#f59e0b;margin-top:8px;">⚠️ Martingale doubles each subsequent entry size. Ensure total doesn't exceed max position size.</div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SAVE BUTTON -->
+      <div style="display:flex;justify-content:flex-end;gap:12px;">
+        <div id="botSettingsSaved" style="display:none;font-size:13px;color:#22c55e;align-self:center;">✓ Settings saved</div>
+        <button onclick="saveBotSettings()" style="padding:12px 28px;background:var(--white);color:var(--black);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Save Settings</button>
+      </div>
+
     </div>
 
   </main>
@@ -1895,6 +2084,7 @@
       if (name === 'overview') initOverviewChart();
       if (name === 'analytics') initPerfCharts();
       if (name === 'api')      loadApiPage();
+      if (name === 'botsettings') { loadBotSettings(); checkDailyLossAlert(); }
     };
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -1909,6 +2099,134 @@
       loadApiPage();
       initOverviewChart();
     });
+
+    // ── BOT SETTINGS ─────────────────────────────────────────────
+    function loadBotSettings() {
+      var s = JSON.parse(localStorage.getItem('ayilon_bot_settings') || '{}');
+      if (s.posSize) { document.getElementById('posSize').value = s.posSize; }
+      if (s.leverage) { document.getElementById('leverage').value = s.leverage; }
+      if (s.lossLimit) { document.getElementById('lossLimit').value = s.lossLimit; }
+      if (s.lossLimitEnabled !== undefined) { document.getElementById('lossLimitEnabled').checked = s.lossLimitEnabled; }
+      if (s.notifyEmail !== undefined) { document.getElementById('notifyEmail').checked = s.notifyEmail; }
+      if (s.notifyTelegram !== undefined) { document.getElementById('notifyTelegram').checked = s.notifyTelegram; }
+      if (s.tradingPair) { document.getElementById('tradingPair').value = s.tradingPair; }
+      if (s.strategy) { var el = document.getElementById('strat-' + s.strategy); if(el) el.checked = true; }
+      if (s.srTimeframe) { var el = document.getElementById('tf-' + s.srTimeframe.toLowerCase()); if(el) el.checked = true; }
+      if (s.srTouch) { var el = document.getElementById('touch-' + s.srTouch); if(el) el.checked = true; }
+      if (s.numEntries) { document.getElementById('numEntries').value = s.numEntries; document.getElementById('entriesLabel').textContent = s.numEntries; }
+      if (s.entrySizing) { var el = document.getElementById('entry-' + s.entrySizing); if(el) el.checked = true; }
+      updateRiskLabels();
+      updateStratLabels();
+      updateBotStatus();
+    }
+
+    function updateRiskLabels() {
+      var pos = parseInt(document.getElementById('posSize').value);
+      var lev = parseInt(document.getElementById('leverage').value);
+      var loss = parseFloat(document.getElementById('lossLimit').value);
+      var lossOn = document.getElementById('lossLimitEnabled').checked;
+
+      document.getElementById('posLabel').textContent = pos + '%';
+      document.getElementById('levLabel').textContent = lev + 'x';
+      document.getElementById('lossLabel').textContent = loss.toFixed(1) + '%';
+      document.getElementById('posSizeWarn').style.display = pos > 40 ? 'block' : 'none';
+      document.getElementById('leverageWarn').style.display = lev > 20 ? 'block' : 'none';
+      document.getElementById('lossLimitWrap').style.display = lossOn ? 'block' : 'none';
+
+      var track = document.getElementById('lossToggleTrack');
+      var thumb = document.getElementById('lossToggleThumb');
+      if (track) track.style.background = lossOn ? '#fff' : '#333';
+      if (thumb) { thumb.style.background = lossOn ? '#000' : '#fff'; thumb.style.transform = lossOn ? 'translateX(18px)' : 'none'; }
+    }
+
+    function updateStratLabels() {
+      var isMartingale = document.getElementById('entry-martingale') && document.getElementById('entry-martingale').checked;
+      var note = document.getElementById('martingaleNote');
+      if (note) note.style.display = isMartingale ? 'block' : 'none';
+    }
+
+    function saveBotSettings() {
+      var s = {
+        posSize: document.getElementById('posSize').value,
+        leverage: document.getElementById('leverage').value,
+        lossLimit: document.getElementById('lossLimit').value,
+        lossLimitEnabled: document.getElementById('lossLimitEnabled').checked,
+        notifyEmail: document.getElementById('notifyEmail').checked,
+        notifyTelegram: document.getElementById('notifyTelegram').checked,
+        tradingPair: document.getElementById('tradingPair').value.trim(),
+        strategy: document.querySelector('input[name="strategy"]:checked') ? document.querySelector('input[name="strategy"]:checked').value : 'daytrading',
+        srTimeframe: document.querySelector('input[name="srTimeframe"]:checked') ? document.querySelector('input[name="srTimeframe"]:checked').value : '1H',
+        srTouch: document.querySelector('input[name="srTouch"]:checked') ? document.querySelector('input[name="srTouch"]:checked').value : '2',
+        numEntries: document.getElementById('numEntries').value,
+        entrySizing: document.querySelector('input[name="entrySizing"]:checked') ? document.querySelector('input[name="entrySizing"]:checked').value : 'equal'
+      };
+      localStorage.setItem('ayilon_bot_settings', JSON.stringify(s));
+      var saved = document.getElementById('botSettingsSaved');
+      saved.style.display = 'block';
+      setTimeout(function() { saved.style.display = 'none'; }, 2000);
+    }
+
+    function updateBotStatus() {
+      var running = localStorage.getItem('ayilon_bot_running') === 'true';
+      var dot = document.getElementById('botStatusDot');
+      var label = document.getElementById('botStatusLabel');
+      var sub = document.getElementById('botStatusSub');
+      var btn = document.getElementById('botToggleBtn');
+      if (!dot) return;
+      if (running) {
+        dot.style.background = '#22c55e';
+        label.textContent = 'Active';
+        sub.textContent = 'Bot is running — monitoring market signals';
+        btn.textContent = 'Stop Bot';
+        btn.style.background = 'rgba(239,68,68,0.1)';
+        btn.style.color = '#ef4444';
+        btn.style.border = '1px solid rgba(239,68,68,0.3)';
+      } else {
+        dot.style.background = '#525252';
+        label.textContent = 'Inactive';
+        sub.textContent = 'Configure settings below and start the bot';
+        btn.textContent = 'Start Bot';
+        btn.style.background = 'var(--white)';
+        btn.style.color = 'var(--black)';
+        btn.style.border = 'none';
+      }
+    }
+
+    function toggleBot() {
+      var apiKey = localStorage.getItem('ayilon_api_key');
+      if (!apiKey) {
+        alert('Please connect your OKX API key first (Settings → API Integration).');
+        return;
+      }
+      var running = localStorage.getItem('ayilon_bot_running') === 'true';
+      localStorage.setItem('ayilon_bot_running', running ? 'false' : 'true');
+      saveBotSettings();
+      updateBotStatus();
+    }
+
+    function pauseBot() {
+      localStorage.setItem('ayilon_bot_running', 'false');
+      document.getElementById('dailyLossAlert').style.display = 'none';
+      updateBotStatus();
+    }
+
+    function resumeBot() {
+      localStorage.setItem('ayilon_bot_running', 'true');
+      localStorage.setItem('ayilon_daily_loss_reset', new Date().toDateString());
+      document.getElementById('dailyLossAlert').style.display = 'none';
+      updateBotStatus();
+    }
+
+    function checkDailyLossAlert() {
+      var alert = localStorage.getItem('ayilon_daily_loss_triggered');
+      var alertEl = document.getElementById('dailyLossAlert');
+      if (!alertEl) return;
+      if (alert) {
+        alertEl.style.display = 'flex';
+        document.getElementById('dailyLossAlertText').textContent = 'Daily loss limit reached (' + alert + '). Bot paused. Resume trading?';
+        localStorage.removeItem('ayilon_daily_loss_triggered');
+      }
+    }
   </script>
 </body>
 </html>
