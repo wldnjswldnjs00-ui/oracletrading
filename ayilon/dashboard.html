@@ -576,9 +576,23 @@
           </div>
           <div class="d-form-group">
             <label class="d-form-label">Email</label>
-            <input type="email" class="d-form-input" value="user@ayilon.com" readonly style="opacity:0.5;cursor:not-allowed;" />
+            <div style="display:flex;gap:10px;">
+              <input type="email" class="d-form-input" id="profileEmail" value="user@ayilon.com" readonly style="flex:1;opacity:0.6;cursor:not-allowed;" />
+              <button class="btn-sm" style="flex-shrink:0;padding:0 16px;" onclick="openChangeEmail()">Change</button>
+            </div>
+            <div id="emailChangeWrap" style="display:none;margin-top:10px;">
+              <div style="display:flex;gap:10px;margin-bottom:8px;">
+                <input type="email" class="d-form-input" id="newEmailInput" placeholder="New email address" style="flex:1;" />
+                <button class="btn-sm" style="flex-shrink:0;padding:0 14px;" onclick="sendEmailChangeCode()" id="sendEmailChangeBtn">Send Code</button>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <input type="text" class="d-form-input" id="emailChangeCode" placeholder="6-digit code" maxlength="6" style="flex:1;" />
+                <button class="btn-sm" style="flex-shrink:0;padding:0 14px;" onclick="confirmEmailChange()">Confirm</button>
+              </div>
+              <div id="emailChangeHint" style="font-size:12px;color:#ef4444;margin-top:6px;"></div>
+            </div>
           </div>
-          <button class="btn-primary">Save Changes</button>
+          <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
         </div>
 
         <div class="card">
@@ -603,6 +617,36 @@
         </div>
       </div>
 
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span class="card-title">Two-Factor Authentication</span></div>
+        <div class="method-card" id="mc-authenticator-my">
+          <div class="method-left">
+            <span class="method-icon">🔐</span>
+            <div>
+              <div class="method-name">Authenticator App</div>
+              <div class="method-detail">Google / Microsoft Authenticator — Free</div>
+            </div>
+          </div>
+          <div class="method-right">
+            <span id="badge-authenticator-my" class="badge-unset">Not set</span>
+            <div class="toggle" id="toggle-authenticator-my" onclick="toggle2fa('authenticator')"></div>
+          </div>
+        </div>
+        <div class="method-card" id="mc-email-my">
+          <div class="method-left">
+            <span class="method-icon">📧</span>
+            <div>
+              <div class="method-name">Email Code</div>
+              <div class="method-detail">6-digit code sent to your email on each login — Free</div>
+            </div>
+          </div>
+          <div class="method-right">
+            <span id="badge-email-my" class="badge-unset">Not set</span>
+            <div class="toggle" id="toggle-email-my" onclick="toggle2fa('email')"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header"><span class="card-title">Notification Preferences</span></div>
         <div class="toggle-row">
@@ -617,7 +661,19 @@
             <h3>Telegram notifications</h3>
             <p>Receive real-time trade alerts via Telegram bot</p>
           </div>
-          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+          <div class="toggle" id="tgToggle" onclick="toggleTelegram()"></div>
+        </div>
+        <div id="tgSetupWrap" style="display:none;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px;margin:0 0 4px;">
+          <p style="font-size:13px;color:#a3a3a3;margin-bottom:12px;line-height:1.6;">
+            1. Open Telegram and search <strong style="color:#fff;">@AYILONBot</strong><br/>
+            2. Send the command <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">/start</code><br/>
+            3. The bot will reply with a 6-digit code. Enter it below.
+          </p>
+          <div style="display:flex;gap:10px;">
+            <input type="text" class="d-form-input" id="tgCodeInput" placeholder="6-digit code from bot" maxlength="6" style="flex:1;" />
+            <button class="btn-sm" style="flex-shrink:0;padding:0 14px;" onclick="confirmTelegram()">Connect</button>
+          </div>
+          <div id="tgHint" style="font-size:12px;margin-top:6px;"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
@@ -888,20 +944,95 @@
     function update2faUI() {
       var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
       ['authenticator', 'email'].forEach(function(m) {
-        var toggle = document.getElementById('toggle-' + m);
-        var badge = document.getElementById('badge-' + m);
-        if (!toggle) return;
-        if (methods.indexOf(m) !== -1) {
-          toggle.classList.add('on');
-          badge.className = 'badge-set'; badge.textContent = 'Active';
-        } else {
-          toggle.classList.remove('on');
-          badge.className = 'badge-unset'; badge.textContent = 'Not set';
-        }
+        ['', '-my'].forEach(function(suffix) {
+          var toggle = document.getElementById('toggle-' + m + suffix);
+          var badge = document.getElementById('badge-' + m + suffix);
+          if (!toggle) return;
+          if (methods.indexOf(m) !== -1) {
+            toggle.classList.add('on');
+            badge.className = 'badge-set'; badge.textContent = 'Active';
+          } else {
+            toggle.classList.remove('on');
+            badge.className = 'badge-unset'; badge.textContent = 'Not set';
+          }
+        });
       });
     }
 
     document.addEventListener('DOMContentLoaded', update2faUI);
+
+    // Profile / Email change
+    var emailChangeCode = null;
+
+    function saveProfile() {
+      var name = document.querySelector('#page-mypage [type="text"]');
+      if (name) localStorage.setItem('ayilon_name', name.value);
+      var btn = event.target;
+      btn.textContent = 'Saved!';
+      setTimeout(function() { btn.textContent = 'Save Changes'; }, 2000);
+    }
+
+    function openChangeEmail() {
+      var wrap = document.getElementById('emailChangeWrap');
+      wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function sendEmailChangeCode() {
+      var email = document.getElementById('newEmailInput').value;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+      document.getElementById('sendEmailChangeBtn').disabled = true;
+      document.getElementById('sendEmailChangeBtn').textContent = 'Sent';
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/send-verification', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        });
+        var data = await res.json();
+        if (data.success) emailChangeCode = data.code;
+      } catch(e) {}
+    }
+
+    function confirmEmailChange() {
+      var code = document.getElementById('emailChangeCode').value;
+      var hint = document.getElementById('emailChangeHint');
+      if (code !== emailChangeCode) { hint.textContent = 'Invalid code.'; return; }
+      var newEmail = document.getElementById('newEmailInput').value;
+      document.getElementById('profileEmail').value = newEmail;
+      localStorage.setItem('ayilon_email', newEmail);
+      document.getElementById('emailChangeWrap').style.display = 'none';
+      hint.textContent = '';
+      document.getElementById('sendEmailChangeBtn').disabled = false;
+      document.getElementById('sendEmailChangeBtn').textContent = 'Send Code';
+    }
+
+    // Telegram
+    function toggleTelegram() {
+      var toggle = document.getElementById('tgToggle');
+      var wrap = document.getElementById('tgSetupWrap');
+      var isOn = toggle.classList.contains('on');
+      if (isOn) {
+        toggle.classList.remove('on');
+        wrap.style.display = 'none';
+        localStorage.removeItem('ayilon_telegram');
+      } else {
+        var saved = localStorage.getItem('ayilon_telegram');
+        if (saved) {
+          toggle.classList.add('on');
+        } else {
+          wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+        }
+      }
+    }
+
+    function confirmTelegram() {
+      var code = document.getElementById('tgCodeInput').value.trim();
+      var hint = document.getElementById('tgHint');
+      if (code.length !== 6) { hint.style.color = '#ef4444'; hint.textContent = 'Enter the 6-digit code from @AYILONBot.'; return; }
+      localStorage.setItem('ayilon_telegram', code);
+      document.getElementById('tgToggle').classList.add('on');
+      document.getElementById('tgSetupWrap').style.display = 'none';
+      hint.style.color = '#22c55e'; hint.textContent = '✓ Telegram connected.';
+    }
 
     document.querySelectorAll('.modal-overlay').forEach(m => {
       m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
