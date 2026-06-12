@@ -834,6 +834,13 @@
             <input type="text" class="d-form-input" id="profileName" placeholder="Your name" />
           </div>
           <div class="d-form-group">
+            <label class="d-form-label">Username</label>
+            <div style="display:flex;gap:10px;">
+              <input type="text" class="d-form-input" id="profileUsername" placeholder="e.g. ayilon_trader" style="flex:1;" oninput="checkUsernameAvail(this)" />
+            </div>
+            <div id="usernameHint" style="font-size:12px;margin-top:5px;min-height:16px;"></div>
+          </div>
+          <div class="d-form-group">
             <label class="d-form-label">Email</label>
             <div style="display:flex;gap:10px;">
               <input type="email" class="d-form-input" id="profileEmail" placeholder="—" readonly style="flex:1;opacity:0.6;cursor:not-allowed;" />
@@ -1292,8 +1299,10 @@
       document.getElementById('profileDisplayEmail').textContent = email || '—';
 
       // Form fields
-      document.getElementById('profileName').value  = name;
-      document.getElementById('profileEmail').value = email;
+      var username = localStorage.getItem('ayilon_username') || '';
+      document.getElementById('profileName').value     = name;
+      document.getElementById('profileUsername').value = username;
+      document.getElementById('profileEmail').value    = email;
 
       // Plan display
       if (isAdmin) {
@@ -1324,13 +1333,68 @@
       }
     }
 
-    function saveProfile() {
-      var name = document.getElementById('profileName').value.trim();
+    var _usernameAvail = true;
+    var _usernameTimer = null;
+
+    function checkUsernameAvail(el) {
+      var val = el.value.trim();
+      var hint = document.getElementById('usernameHint');
+      var valid = /^[a-zA-Z0-9_]{2,20}$/.test(val);
+      _usernameAvail = false;
+
+      if (!val) { hint.textContent = ''; _usernameAvail = true; return; }
+      if (!valid) { hint.style.color = '#ef4444'; hint.textContent = 'Letters, numbers and _ only (2–20 chars)'; return; }
+
+      var current = localStorage.getItem('ayilon_username') || '';
+      if (val.toLowerCase() === current.toLowerCase()) { hint.style.color = '#22c55e'; hint.textContent = '✓ Current username'; _usernameAvail = true; return; }
+
+      hint.style.color = '#a3a3a3'; hint.textContent = 'Checking...';
+      clearTimeout(_usernameTimer);
+      _usernameTimer = setTimeout(async function() {
+        try {
+          var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/check-username', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: val })
+          });
+          var data = await res.json();
+          if (data.available) {
+            hint.style.color = '#22c55e'; hint.textContent = '✓ Available';
+            _usernameAvail = true;
+          } else {
+            hint.style.color = '#ef4444'; hint.textContent = 'Username already taken';
+            _usernameAvail = false;
+          }
+        } catch { hint.style.color = '#22c55e'; hint.textContent = '✓ Looks good'; _usernameAvail = true; }
+      }, 500);
+    }
+
+    async function saveProfile() {
+      var name     = document.getElementById('profileName').value.trim();
+      var username = document.getElementById('profileUsername').value.trim();
+      var btn      = event.target;
+
+      if (username && !_usernameAvail) {
+        document.getElementById('usernameHint').style.color = '#ef4444';
+        document.getElementById('usernameHint').textContent = 'Username is not available.';
+        return;
+      }
+
+      // If username changed, update on server
+      var oldUsername = localStorage.getItem('ayilon_username') || '';
+      if (username && username.toLowerCase() !== oldUsername.toLowerCase()) {
+        try {
+          var email = localStorage.getItem('ayilon_email') || '';
+          await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/register-user', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, username, name, password: localStorage.getItem('ayilon_password') || '', update: true })
+          });
+        } catch { /* offline fallback */ }
+      }
+
       localStorage.setItem('ayilon_name', name);
-      // Sync sidebar + header display
+      if (username) localStorage.setItem('ayilon_username', username);
       document.getElementById('sidebarName') && (document.getElementById('sidebarName').textContent = name || localStorage.getItem('ayilon_email') || '');
       loadProfilePage();
-      var btn = event.target;
       btn.textContent = 'Saved!';
       setTimeout(function() { btn.textContent = 'Save Changes'; }, 2000);
     }

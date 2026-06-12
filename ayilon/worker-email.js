@@ -5,33 +5,70 @@ export default {
     }
 
     const url = new URL(request.url);
+    const path = url.pathname;
 
-    if (request.method === 'POST' && url.pathname === '/send-verification') {
-      return handleVerification(request, env);
-    }
-
-    if (request.method === 'POST' && url.pathname === '/send-confirmation') {
-      return handleConfirmation(request, env);
+    if (request.method === 'POST') {
+      if (path === '/send-verification')  return handleVerification(request, env);
+      if (path === '/send-confirmation')  return handleConfirmation(request, env);
+      if (path === '/check-email')        return handleCheckEmail(request, env);
+      if (path === '/check-username')     return handleCheckUsername(request, env);
+      if (path === '/register-user')      return handleRegisterUser(request, env);
     }
 
     return corsResponse(JSON.stringify({ error: 'Not found' }), 404);
   }
 };
 
+// ── CHECK EMAIL ──────────────────────────────────────────────
+async function handleCheckEmail(request, env) {
+  const { email } = await request.json();
+  if (!env.USERS_KV) return json({ available: true });
+  const existing = await env.USERS_KV.get('user:' + email.toLowerCase());
+  return json({ available: !existing });
+}
+
+// ── CHECK USERNAME ───────────────────────────────────────────
+async function handleCheckUsername(request, env) {
+  const { username } = await request.json();
+  if (!env.USERS_KV) return json({ available: true });
+  const existing = await env.USERS_KV.get('username:' + username.toLowerCase());
+  return json({ available: !existing });
+}
+
+// ── REGISTER USER ────────────────────────────────────────────
+async function handleRegisterUser(request, env) {
+  const { email, username, name, password } = await request.json();
+  if (!email || !username) return json({ success: false, error: 'missing_fields' }, 400);
+
+  if (env.USERS_KV) {
+    const emailKey    = 'user:'     + email.toLowerCase();
+    const usernameKey = 'username:' + username.toLowerCase();
+
+    const emailExists    = await env.USERS_KV.get(emailKey);
+    if (emailExists)    return json({ success: false, error: 'email_taken' });
+
+    const usernameExists = await env.USERS_KV.get(usernameKey);
+    if (usernameExists) return json({ success: false, error: 'username_taken' });
+
+    await env.USERS_KV.put(emailKey,    JSON.stringify({ email, username, name, password, createdAt: Date.now() }));
+    await env.USERS_KV.put(usernameKey, email.toLowerCase());
+  }
+
+  return json({ success: true });
+}
+
+// ── SEND VERIFICATION EMAIL ──────────────────────────────────
 async function handleVerification(request, env) {
   const { email } = await request.json();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return corsResponse(JSON.stringify({ error: 'Invalid email' }), 400);
+    return json({ error: 'Invalid email' }, 400);
   }
 
   const code = String(Math.floor(100000 + Math.random() * 900000));
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: 'AYILON <onboarding@resend.dev>',
       to: [email],
@@ -50,29 +87,20 @@ async function handleVerification(request, env) {
     })
   });
 
-  if (!res.ok) {
-    return corsResponse(JSON.stringify({ error: 'Failed to send email' }), 500);
-  }
-
-  // Store code temporarily using a simple in-memory approach
-  // In production, use KV or D1 for persistence
-  return corsResponse(JSON.stringify({ success: true, code }), 200);
+  if (!res.ok) return json({ error: 'Failed to send email' }, 500);
+  return json({ success: true, code });
 }
 
+// ── SEND CONFIRMATION EMAIL ──────────────────────────────────
 async function handleConfirmation(request, env) {
   const { email, plan, billing, amount } = await request.json();
-  if (!email || !plan) {
-    return corsResponse(JSON.stringify({ error: 'Missing fields' }), 400);
-  }
+  if (!email || !plan) return json({ error: 'Missing fields' }, 400);
 
   const billingLabel = billing === 'annual' ? 'Annual' : 'Monthly';
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: 'AYILON <onboarding@resend.dev>',
       to: [email],
@@ -97,11 +125,13 @@ async function handleConfirmation(request, env) {
     })
   });
 
-  if (!res.ok) {
-    return corsResponse(JSON.stringify({ error: 'Failed to send email' }), 500);
-  }
+  if (!res.ok) return json({ error: 'Failed to send email' }, 500);
+  return json({ success: true });
+}
 
-  return corsResponse(JSON.stringify({ success: true }), 200);
+// ── HELPERS ──────────────────────────────────────────────────
+function json(body, status = 200) {
+  return corsResponse(JSON.stringify(body), status);
 }
 
 function corsResponse(body, status) {
