@@ -267,13 +267,7 @@
     }
 
     function goToDashboardOrPricing(email) {
-      var subscription = localStorage.getItem('ayilon_subscription');
-      var isAdmin = email === 'wldnjswldnjs00@gmail.com';
-      if (isAdmin || subscription) {
-        window.location.href = 'dashboard.html';
-      } else {
-        window.location.href = 'dashboard.html?page=mypage';
-      }
+      window.location.href = 'dashboard.html?page=mypage';
     }
 
     function resendCode() { alert('A new code has been sent.'); }

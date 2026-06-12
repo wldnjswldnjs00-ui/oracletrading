@@ -756,14 +756,17 @@
           page.appendChild(lock);
         });
 
-        // Open mypage by default if no subscription
-        var params = new URLSearchParams(window.location.search);
-        var startPage = params.get('page') || 'mypage';
-        var startEl = document.querySelector('[onclick*="' + startPage + '"]');
-        setTimeout(function() { showPage(startPage, startEl); }, 0);
       }
 
       {
+        // Handle ?page= param for all users
+        var params = new URLSearchParams(window.location.search);
+        var startPage = params.get('page');
+        if (startPage) {
+          var startEl = document.querySelector('[onclick*="' + startPage + '"]');
+          setTimeout(function() { showPage(startPage, startEl); }, 0);
+        }
+
         // Show current plan in sidebar
         var ps = document.getElementById('planStatus');
         ps.style.display = 'block';
