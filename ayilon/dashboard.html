@@ -1141,6 +1141,7 @@
       document.getElementById('page-' + name).classList.add('active');
       if (el) el.classList.add('active');
       if (window.innerWidth <= 1024) closeSidebar();
+      history.replaceState(null, '', '?page=' + name);
     }
 
     function toggleSidebar() {
@@ -1295,15 +1296,15 @@
       var sub   = JSON.parse(localStorage.getItem('ayilon_subscription') || 'null');
       var isAdmin = email === ADMIN_EMAIL;
 
+      // Form fields
+      var username = localStorage.getItem('ayilon_username') || '';
+
       // Avatar + header — show username publicly, full name stays private
       var displayName = username || name || email || '—';
       var initial = displayName.charAt(0).toUpperCase();
       document.getElementById('profileAvatar').textContent = initial;
       document.getElementById('profileDisplayName').textContent  = displayName;
       document.getElementById('profileDisplayEmail').textContent = email || '—';
-
-      // Form fields
-      var username = localStorage.getItem('ayilon_username') || '';
       document.getElementById('profileName').value     = name;
       document.getElementById('profileUsername').value = username;
       document.getElementById('profileEmail').value    = email;
@@ -1671,6 +1672,11 @@
     };
 
     document.addEventListener('DOMContentLoaded', function() {
+      var startPage = new URLSearchParams(window.location.search).get('page');
+      if (startPage && document.getElementById('page-' + startPage)) {
+        var matchEl = document.querySelector('.sidebar-item[onclick*="' + startPage + '"]');
+        showPage(startPage, matchEl);
+      }
       renderBotList();
       renderHistory();
       loadProfilePage();
