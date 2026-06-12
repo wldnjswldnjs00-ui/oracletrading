@@ -253,11 +253,20 @@
       <li><a href="#how">How It Works</a></li>
       <li><a href="#pricing">Pricing</a></li>
     </ul>
-    <div class="nav-actions">
+    <div class="nav-actions" id="navActions">
       <a href="login.html" class="btn-ghost">Log In</a>
       <a href="signup.html" class="btn-white">Get Started</a>
     </div>
   </nav>
+  <script>
+    (function() {
+      if (localStorage.getItem('ayilon_logged_in') === 'true') {
+        var username = localStorage.getItem('ayilon_username') || localStorage.getItem('ayilon_email') || 'Account';
+        document.getElementById('navActions').innerHTML =
+          '<a href="dashboard.html" class="btn-white">Dashboard →</a>';
+      }
+    })();
+  </script>
 
   <!-- HERO -->
   <section class="hero">
