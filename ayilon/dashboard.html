@@ -735,29 +735,16 @@
       }
 
       if (!loggedIn && !isAdmin) {
-        document.getElementById('loginOverlay').style.display = 'flex';
+        window.location.replace('login.html');
         return;
       }
 
       if (!subscription && !isAdmin) {
-        // Show subtle plan status in sidebar
-        var ps = document.getElementById('planStatus');
-        ps.style.display = 'block';
-        document.getElementById('planStatusText').textContent = 'No active plan';
+        window.location.replace('index.html#pricing');
+        return;
+      }
 
-        LOCKED_PAGES.forEach(function(p) {
-          var page = document.getElementById('page-' + p);
-          if (!page) return;
-          var lock = document.createElement('div');
-          lock.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;z-index:10;';
-          lock.innerHTML = '<div style="font-size:32px;margin-bottom:16px;">🔒</div>'
-            + '<div style="font-family:Space Grotesk,sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;">Subscription Required</div>'
-            + '<div style="font-size:14px;color:#a3a3a3;max-width:280px;margin-bottom:24px;line-height:1.6;">Subscribe to a plan to unlock this feature.</div>'
-            + '<a href="index.html#pricing" style="padding:11px 24px;background:#fff;color:#000;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;">View Plans →</a>';
-          page.style.position = 'relative';
-          page.appendChild(lock);
-        });
-      } else {
+      {
         // Show current plan in sidebar
         var ps = document.getElementById('planStatus');
         ps.style.display = 'block';

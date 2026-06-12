@@ -203,7 +203,7 @@
       if (methods.length === 0) {
         localStorage.setItem('ayilon_email', email);
         localStorage.setItem('ayilon_logged_in', 'true');
-        window.location.href = 'dashboard.html';
+        goToDashboardOrPricing(email);
         return;
       }
 
@@ -262,7 +262,17 @@
         var email = document.getElementById('loginEmail').value;
         localStorage.setItem('ayilon_email', email);
         localStorage.setItem('ayilon_logged_in', 'true');
+        goToDashboardOrPricing(email);
+      }
+    }
+
+    function goToDashboardOrPricing(email) {
+      var subscription = localStorage.getItem('ayilon_subscription');
+      var isAdmin = email === 'wldnjswldnjs00@gmail.com';
+      if (isAdmin || subscription) {
         window.location.href = 'dashboard.html';
+      } else {
+        window.location.href = 'index.html#pricing';
       }
     }
 
