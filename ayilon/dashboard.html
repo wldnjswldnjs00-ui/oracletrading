@@ -25,7 +25,8 @@
     .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 24px; color: var(--gray-400); font-size: 14px; font-weight: 400; cursor: pointer; transition: color 0.15s, background 0.15s; border-radius: 0; text-decoration: none; border-left: 2px solid transparent; }
     .sidebar-item:hover { color: var(--white); background: rgba(255,255,255,0.03); }
     .sidebar-item.active { color: var(--white); border-left-color: var(--white); background: rgba(255,255,255,0.04); }
-    .sidebar-icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: 0.7; }
+    .sidebar-item.active .sidebar-icon, .sidebar-item:hover .sidebar-icon { opacity: 1; }
     .sidebar-bottom { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.06); padding: 16px 0 0; }
     .user-info { display: flex; align-items: center; gap: 12px; padding: 10px 24px; cursor: pointer; }
     .user-avatar { width: 32px; height: 32px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
@@ -203,36 +204,36 @@
     <div class="sidebar-section">
       <div class="sidebar-label">Main</div>
       <a class="sidebar-item active" onclick="showPage('overview', this)">
-        <span class="sidebar-icon">⬛</span> Dashboard
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg></span> Dashboard
       </a>
       <a class="sidebar-item" onclick="showPage('bots', this)">
-        <span class="sidebar-icon">🤖</span> Bot Manager
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="8" height="8" rx="1"/><path d="M2 6h2M2 10h2M12 6h2M12 10h2M6 2v2M10 2v2M6 12v2M10 12v2"/></svg></span> Bot Manager
       </a>
       <a class="sidebar-item" onclick="showPage('positions', this)">
-        <span class="sidebar-icon">📈</span> Positions
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,12 5,8 8,10 14,4"/><polyline points="10,4 14,4 14,8"/></svg></span> Positions
       </a>
     </div>
 
     <div class="sidebar-section">
       <div class="sidebar-label">Analytics</div>
       <a class="sidebar-item" onclick="showPage('analytics', this)">
-        <span class="sidebar-icon">📊</span> Performance
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="8" width="3" height="7" rx="0.5"/><rect x="6.5" y="4.5" width="3" height="10.5" rx="0.5"/><rect x="12" y="1.5" width="3" height="13.5" rx="0.5"/></svg></span> Performance
       </a>
       <a class="sidebar-item">
-        <span class="sidebar-icon">🔁</span> Trade History
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><polyline points="8,4.5 8,8 10.5,9.5"/></svg></span> Trade History
       </a>
     </div>
 
     <div class="sidebar-section">
       <div class="sidebar-label">Settings</div>
       <a class="sidebar-item" onclick="showPage('api', this)">
-        <span class="sidebar-icon">🔗</span> API Integration
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5a3.5 3.5 0 0 0 5 0l2-2a3.5 3.5 0 0 0-5-5L7 4"/><path d="M9.5 6.5a3.5 3.5 0 0 0-5 0l-2 2a3.5 3.5 0 0 0 5 5L9 12"/></svg></span> API Integration
       </a>
       <a class="sidebar-item" onclick="showPage('security', this)">
-        <span class="sidebar-icon">🛡️</span> Security
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5L2 4v3.5c0 3.3 2.6 6 6 7 3.4-1 6-3.7 6-7V4L8 1.5z"/></svg></span> Security
       </a>
       <a class="sidebar-item" onclick="showPage('mypage', this)">
-        <span class="sidebar-icon">👤</span> My Account
+        <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.5" r="3"/><path d="M1.5 14.5c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6"/></svg></span> My Account
       </a>
     </div>
 
