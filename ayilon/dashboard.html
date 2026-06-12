@@ -1145,6 +1145,14 @@
         <button onclick="saveBotSettings()" style="padding:12px 28px;background:var(--white);color:var(--black);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Save Settings</button>
       </div>
 
+      <!-- BOT ACTIVITY LOG -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header"><span class="card-title">Activity Log</span></div>
+        <div id="botLogsWrap" style="max-height:300px;overflow-y:auto;">
+          <div style="font-size:13px;color:var(--gray-600);text-align:center;padding:20px;">No activity yet</div>
+        </div>
+      </div>
+
     </div>
 
   </main>
@@ -2145,7 +2153,7 @@
       if (note) note.style.display = isMartingale ? 'block' : 'none';
     }
 
-    function saveBotSettings() {
+    async function saveBotSettings() {
       var s = {
         posSize: document.getElementById('posSize').value,
         leverage: document.getElementById('leverage').value,
@@ -2154,13 +2162,24 @@
         notifyEmail: document.getElementById('notifyEmail').checked,
         notifyTelegram: document.getElementById('notifyTelegram').checked,
         tradingPair: document.getElementById('tradingPair').value.trim(),
-        strategy: document.querySelector('input[name="strategy"]:checked') ? document.querySelector('input[name="strategy"]:checked').value : 'daytrading',
-        srTimeframe: document.querySelector('input[name="srTimeframe"]:checked') ? document.querySelector('input[name="srTimeframe"]:checked').value : '1H',
-        srTouch: document.querySelector('input[name="srTouch"]:checked') ? document.querySelector('input[name="srTouch"]:checked').value : '2',
+        strategy: (document.querySelector('input[name="strategy"]:checked') || {}).value || 'daytrading',
+        srTimeframe: (document.querySelector('input[name="srTimeframe"]:checked') || {}).value || '1H',
+        srTouch: (document.querySelector('input[name="srTouch"]:checked') || {}).value || '2',
         numEntries: document.getElementById('numEntries').value,
-        entrySizing: document.querySelector('input[name="entrySizing"]:checked') ? document.querySelector('input[name="entrySizing"]:checked').value : 'equal'
+        entrySizing: (document.querySelector('input[name="entrySizing"]:checked') || {}).value || 'equal',
+        apiKey: localStorage.getItem('ayilon_api_key') || '',
+        apiSecret: localStorage.getItem('ayilon_api_secret') || '',
+        apiPassphrase: localStorage.getItem('ayilon_api_passphrase') || '',
+        userEmail: localStorage.getItem('ayilon_email') || '',
+        running: localStorage.getItem('ayilon_bot_running') === 'true'
       };
       localStorage.setItem('ayilon_bot_settings', JSON.stringify(s));
+      try {
+        await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/save-bot-settings', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(s)
+        });
+      } catch(e) {}
       var saved = document.getElementById('botSettingsSaved');
       saved.style.display = 'block';
       setTimeout(function() { saved.style.display = 'none'; }, 2000);
@@ -2192,40 +2211,80 @@
       }
     }
 
-    function toggleBot() {
+    async function toggleBot() {
       var apiKey = localStorage.getItem('ayilon_api_key');
-      if (!apiKey) {
-        alert('Please connect your OKX API key first (Settings → API Integration).');
-        return;
-      }
+      if (!apiKey) { alert('Please connect your OKX API key first (Settings → API Integration).'); return; }
       var running = localStorage.getItem('ayilon_bot_running') === 'true';
-      localStorage.setItem('ayilon_bot_running', running ? 'false' : 'true');
-      saveBotSettings();
+      var newState = !running;
+      localStorage.setItem('ayilon_bot_running', newState ? 'true' : 'false');
+      await saveBotSettings();
+      try {
+        await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: newState ? 'start' : 'stop' })
+        });
+      } catch(e) {}
       updateBotStatus();
     }
 
-    function pauseBot() {
+    async function pauseBot() {
       localStorage.setItem('ayilon_bot_running', 'false');
       document.getElementById('dailyLossAlert').style.display = 'none';
+      try {
+        await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'stop' })
+        });
+      } catch(e) {}
       updateBotStatus();
     }
 
-    function resumeBot() {
+    async function resumeBot() {
       localStorage.setItem('ayilon_bot_running', 'true');
-      localStorage.setItem('ayilon_daily_loss_reset', new Date().toDateString());
       document.getElementById('dailyLossAlert').style.display = 'none';
+      try {
+        await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'resume' })
+        });
+      } catch(e) {}
       updateBotStatus();
     }
 
-    function checkDailyLossAlert() {
-      var alert = localStorage.getItem('ayilon_daily_loss_triggered');
+    async function checkDailyLossAlert() {
       var alertEl = document.getElementById('dailyLossAlert');
       if (!alertEl) return;
-      if (alert) {
-        alertEl.style.display = 'flex';
-        document.getElementById('dailyLossAlertText').textContent = 'Daily loss limit reached (' + alert + '). Bot paused. Resume trading?';
-        localStorage.removeItem('ayilon_daily_loss_triggered');
-      }
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+        });
+        var data = await res.json();
+        // Sync running state
+        if (data.running !== undefined) {
+          localStorage.setItem('ayilon_bot_running', data.running ? 'true' : 'false');
+          updateBotStatus();
+        }
+        // Daily loss alert
+        if (data.alert) {
+          alertEl.style.display = 'flex';
+          document.getElementById('dailyLossAlertText').textContent =
+            'Daily loss limit reached (' + data.alert.loss + '). Bot paused. Resume trading?';
+        }
+        // Render logs
+        renderBotLogs(data.logs || []);
+      } catch(e) {}
+
+    }
+
+    function renderBotLogs(logs) {
+      var el = document.getElementById('botLogsWrap');
+      if (!el) return;
+      if (!logs.length) { el.innerHTML = '<div style="font-size:13px;color:var(--gray-600);text-align:center;padding:20px;">No activity yet</div>'; return; }
+      el.innerHTML = logs.slice(0, 20).map(function(l) {
+        var t = new Date(l.time).toLocaleTimeString();
+        var color = l.msg.includes('error') || l.msg.includes('Error') ? '#ef4444' : l.msg.includes('⚠️') ? '#f59e0b' : '#a3a3a3';
+        return '<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;"><span style="color:var(--gray-600);flex-shrink:0;font-family:monospace;">' + t + '</span><span style="color:' + color + ';">' + l.msg + '</span></div>';
+      }).join('');
     }
   </script>
 </body>
