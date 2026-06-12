@@ -189,21 +189,13 @@
     <div class="payment-form" id="paymentForm">
       <div class="payment-title">Payment Details</div>
 
-      <div class="method-tabs">
-        <div class="method-tab active" id="tab-card" onclick="setMethod('card')">
-          <span class="method-tab-icon">&#128179;</span>
-          <div>
-            <div class="method-tab-label">Credit Card</div>
-            <div class="method-tab-sub">Visa, Mastercard, Amex</div>
-          </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;margin-bottom:24px;">
+        <span style="font-size:18px;">&#128176;</span>
+        <div>
+          <div style="font-size:14px;font-weight:600;">USDT (TRC20)</div>
+          <div style="font-size:11px;color:var(--gray-400);">Tether on TRON network · 0% fees</div>
         </div>
-        <div class="method-tab" id="tab-usdt" onclick="setMethod('usdt')">
-          <span class="method-tab-icon">&#128176;</span>
-          <div>
-            <div class="method-tab-label">USDT (TRC20)</div>
-            <div class="method-tab-sub">Tether on TRON network</div>
-          </div>
-        </div>
+        <span style="margin-left:auto;font-size:11px;font-weight:600;color:var(--green);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);padding:3px 10px;border-radius:100px;">ACTIVE</span>
       </div>
 
       <!-- EMAIL INPUT (shared) -->
@@ -213,47 +205,19 @@
         <div style="font-size:12px;color:var(--gray-600);margin-top:6px;">Payment confirmation will be sent to this address.</div>
       </div>
 
-      <!-- CREDIT CARD PANEL -->
-      <div class="payment-panel active" id="panel-card">
-        <div class="stripe-info">
-          <p><strong>Secured by Stripe.</strong> Your card details are encrypted and never stored on AYILON servers.</p>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Cardholder Name</label>
-          <input type="text" class="form-input" id="cardName" placeholder="Name as shown on card" autocomplete="cc-name" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Card Number</label>
-          <input type="text" class="form-input" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" autocomplete="cc-number" oninput="formatCard(this)" />
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Expiry Date</label>
-            <input type="text" class="form-input" id="cardExpiry" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp" oninput="formatExpiry(this)" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">CVC</label>
-            <input type="text" class="form-input" id="cardCvc" placeholder="123" maxlength="4" autocomplete="cc-csc" />
-          </div>
-        </div>
-        <button class="btn-pay" id="btnPayCard" onclick="payWithCard()">
-          Pay <span id="cardPayAmount">$500</span> &rarr;
-        </button>
-        <p class="pay-note">By completing your purchase you agree to AYILON's Terms of Service.</p>
-      </div>
-
       <!-- USDT PANEL -->
-      <div class="payment-panel" id="panel-usdt">
-        <div class="usdt-amount">
-          <div class="usdt-amount-label">Amount to Send</div>
-          <div class="usdt-amount-value"><span id="usdtAmount">500</span> USDT</div>
-          <div class="usdt-amount-sub">1 USDT = $1.00 USD &nbsp;&bull;&nbsp; Network: TRC20 (TRON)</div>
+      <div class="payment-panel active" id="panel-usdt">
+        <div class="usdt-amount" id="usdtAmountBox">
+          <div class="usdt-amount-label">Amount to Send (exact)</div>
+          <div class="usdt-amount-value" id="usdtAmountDisplay">— USDT</div>
+          <div class="usdt-amount-sub" id="usdtAmountSub">Generating your unique payment amount...</div>
         </div>
+        <div id="usdtLoadingNote" style="text-align:center;font-size:13px;color:var(--gray-600);margin-bottom:16px;">Loading...</div>
 
         <div class="fee-breakdown">
           <div class="fee-row">
             <span>Subscription amount</span>
-            <span><strong id="feeBase">500</strong> USDT</span>
+            <span><strong id="feeBase">—</strong> USDT</span>
           </div>
           <div class="fee-row">
             <span>TRC20 network fee (charged by OKX)</span>
@@ -261,9 +225,9 @@
           </div>
           <div class="fee-row fee-total">
             <span>Total to have in your OKX account</span>
-            <span><strong id="feeTotal">501</strong> USDT</span>
+            <span><strong id="feeTotal">—</strong> USDT</span>
           </div>
-          <div class="fee-note">AYILON receives exactly <strong id="feeReceive">500 USDT</strong>. The network fee is deducted separately from your OKX balance.</div>
+          <div class="fee-note">AYILON receives exactly <strong id="feeReceive">— USDT</strong>. The network fee is deducted separately from your OKX balance.</div>
         </div>
 
         <div class="wallet-section">
@@ -291,7 +255,7 @@
         <div class="usdt-steps">
           <div class="usdt-step">
             <div class="usdt-step-num">1</div>
-            <p>Send exactly <strong id="usdtStepAmount">500 USDT</strong> to the address above using the <strong>TRC20 (TRON)</strong> network. Any other network will result in permanent loss of funds.</p>
+            <p>Send exactly <strong id="usdtStepAmount">— USDT</strong> to the address above using the <strong>TRC20 (TRON)</strong> network. <strong style="color:#ef4444;">Use the exact amount shown</strong> — this is how we identify your payment. Any other network will result in permanent loss of funds.</p>
           </div>
           <div class="usdt-step">
             <div class="usdt-step-num">2</div>
@@ -308,10 +272,14 @@
           <input type="text" class="form-input" id="txidInput" placeholder="Paste your TxID here (64 characters)" />
         </div>
 
+        <div id="pollStatus" style="display:none;text-align:center;padding:16px;margin-bottom:16px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;">
+          <div style="font-size:13px;color:#22c55e;font-weight:500;" id="pollStatusText">&#9679; Monitoring blockchain for your payment...</div>
+        </div>
+        <div id="verifyError" style="display:none;font-size:12px;color:#ef4444;margin-bottom:12px;padding:10px 14px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;"></div>
         <button class="btn-pay" id="btnPayUsdt" onclick="payWithUsdt()">
-          I've Sent Payment &rarr;
+          Verify Transaction &rarr;
         </button>
-        <p class="pay-note">Your subscription activates automatically once the transaction is verified on-chain.</p>
+        <p class="pay-note">Your subscription activates automatically once confirmed on-chain (usually 1–3 min). Or paste your TxID above and click Verify.</p>
       </div>
     </div>
 
@@ -352,6 +320,8 @@
     var WORKER_URL = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
     var currentPlan = 'pro';
     var currentBilling = 'monthly';
+    var uniqueAmount = null;
+    var pollTimer = null;
 
     function init() {
       var params = new URLSearchParams(window.location.search);
@@ -360,6 +330,7 @@
       if (p && plans[p]) currentPlan = p;
       if (b === 'annual') { currentBilling = 'annual'; document.getElementById('sw-monthly').classList.remove('active'); document.getElementById('sw-annual').classList.add('active'); }
       updateSummary();
+      createPayment();
     }
 
     function setBilling(period) {
@@ -367,18 +338,17 @@
       document.getElementById('sw-monthly').classList.toggle('active', period === 'monthly');
       document.getElementById('sw-annual').classList.toggle('active', period === 'annual');
       updateSummary();
+      createPayment();
     }
 
     function updateSummary() {
       var plan = plans[currentPlan];
       var price = currentBilling === 'monthly' ? plan.monthly : plan.annual;
       var total = currentBilling === 'annual' ? plan.annualTotal : plan.monthly;
-
       document.getElementById('summaryPlan').textContent = plan.label;
       document.getElementById('summaryPrice').textContent = '$' + price.toLocaleString();
       document.getElementById('summaryPeriodLabel').textContent = '/ month';
       document.getElementById('totalPrice').textContent = '$' + total.toLocaleString();
-
       var saveNote = document.getElementById('saveNote');
       if (currentBilling === 'annual') {
         saveNote.textContent = 'Billed $' + plan.annualTotal.toLocaleString() + '/year — Save ' + plan.save + '%';
@@ -386,36 +356,128 @@
       } else {
         saveNote.classList.remove('show');
       }
-
       var fl = document.getElementById('featureList');
       fl.innerHTML = plan.features.map(function(f) { return '<li>' + f + '</li>'; }).join('');
+    }
 
+    async function createPayment() {
+      var email = document.getElementById('checkoutEmail').value.trim();
+      if (!email) return;
+      var plan = plans[currentPlan];
+      var baseAmount = currentBilling === 'annual' ? plan.annualTotal : plan.monthly;
+
+      document.getElementById('usdtAmountDisplay').textContent = '— USDT';
+      document.getElementById('usdtAmountSub').textContent = 'Generating your unique payment amount...';
+      document.getElementById('usdtLoadingNote').style.display = 'block';
+
+      try {
+        var res = await fetch(WORKER_URL + '/create-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, plan: currentPlan, billing: currentBilling, baseAmount: baseAmount })
+        });
+        var data = await res.json();
+        if (!data.uniqueAmount) throw new Error('No amount');
+
+        uniqueAmount = data.uniqueAmount;
+        document.getElementById('usdtAmountDisplay').textContent = uniqueAmount + ' USDT';
+        document.getElementById('usdtAmountSub').textContent = 'Your unique payment ID — send this exact amount';
+        document.getElementById('usdtLoadingNote').style.display = 'none';
+        document.getElementById('usdtStepAmount').textContent = uniqueAmount + ' USDT';
+        document.getElementById('feeBase').textContent = uniqueAmount;
+        document.getElementById('feeTotal').textContent = (parseFloat(uniqueAmount) + 1).toFixed(2);
+        document.getElementById('feeReceive').textContent = uniqueAmount + ' USDT';
+
+        // Update QR to include amount
+        var qrImg = document.querySelector('.qr-code img');
+        if (qrImg) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TBvtft3H8B4Rv4cEHTotyak3Ds2mLur99E';
+
+        // Start polling
+        startPolling();
+
+      } catch(e) {
+        document.getElementById('usdtAmountSub').textContent = 'Enter your email above first, then the amount will be generated.';
+        document.getElementById('usdtLoadingNote').style.display = 'none';
+      }
+    }
+
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      if (!uniqueAmount) return;
+      document.getElementById('pollStatus').style.display = 'block';
+      pollTimer = setInterval(async function() {
+        try {
+          var res = await fetch(WORKER_URL + '/check-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uniqueAmount: uniqueAmount })
+          });
+          var data = await res.json();
+          if (data.confirmed) {
+            clearInterval(pollTimer);
+            onPaymentConfirmed(data.txHash);
+          }
+        } catch(e) {}
+      }, 30000); // check every 30 seconds
+    }
+
+    async function payWithUsdt() {
+      var txid = document.getElementById('txidInput').value.trim();
+      var errEl = document.getElementById('verifyError');
+      errEl.style.display = 'none';
+
+      if (!uniqueAmount) {
+        var email = document.getElementById('checkoutEmail').value.trim();
+        if (!email) { errEl.textContent = 'Please enter your email address first.'; errEl.style.display = 'block'; return; }
+        await createPayment();
+        if (!uniqueAmount) { errEl.textContent = 'Could not generate payment. Please try again.'; errEl.style.display = 'block'; return; }
+      }
+
+      if (txid.length < 20) {
+        // No TxID - just confirm they're waiting
+        document.getElementById('pollStatus').style.display = 'block';
+        document.getElementById('pollStatusText').textContent = '⏳ Waiting for payment... (auto-detects within 1-3 minutes)';
+        return;
+      }
+
+      var btn = document.getElementById('btnPayUsdt');
+      btn.textContent = 'Verifying...'; btn.disabled = true;
+
+      try {
+        var res = await fetch(WORKER_URL + '/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ txid: txid, uniqueAmount: uniqueAmount })
+        });
+        var data = await res.json();
+        if (data.verified) {
+          onPaymentConfirmed(txid);
+        } else {
+          errEl.textContent = data.error || 'Verification failed. Please try again.';
+          errEl.style.display = 'block';
+          btn.textContent = 'Verify Transaction →'; btn.disabled = false;
+        }
+      } catch(e) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.style.display = 'block';
+        btn.textContent = 'Verify Transaction →'; btn.disabled = false;
+      }
+    }
+
+    function onPaymentConfirmed(txHash) {
+      if (pollTimer) clearInterval(pollTimer);
+      var plan = plans[currentPlan];
       var amt = currentBilling === 'annual' ? plan.annualTotal : plan.monthly;
-      document.getElementById('usdtAmount').textContent = amt.toLocaleString();
-      document.getElementById('usdtStepAmount').textContent = amt.toLocaleString() + ' USDT';
-      document.getElementById('cardPayAmount').textContent = '$' + amt.toLocaleString();
+      localStorage.setItem('ayilon_subscription', JSON.stringify({
+        plan: currentPlan, billing: currentBilling,
+        amount: amt, activatedAt: new Date().toISOString(), txHash: txHash
+      }));
+      localStorage.setItem('ayilon_logged_in', 'true');
+      var email = document.getElementById('checkoutEmail').value.trim();
+      if (email) localStorage.setItem('ayilon_email', email);
       document.getElementById('successPlan').textContent = plan.label;
-      document.getElementById('feeBase').textContent = amt.toLocaleString();
-      document.getElementById('feeTotal').textContent = (amt + 1).toLocaleString();
-      document.getElementById('feeReceive').textContent = amt.toLocaleString() + ' USDT';
-    }
-
-    function setMethod(method) {
-      document.getElementById('tab-card').classList.toggle('active', method === 'card');
-      document.getElementById('tab-usdt').classList.toggle('active', method === 'usdt');
-      document.getElementById('panel-card').classList.toggle('active', method === 'card');
-      document.getElementById('panel-usdt').classList.toggle('active', method === 'usdt');
-    }
-
-    function formatCard(el) {
-      var v = el.value.replace(/\D/g, '').substring(0, 16);
-      el.value = v.match(/.{1,4}/g) ? v.match(/.{1,4}/g).join(' ') : v;
-    }
-
-    function formatExpiry(el) {
-      var v = el.value.replace(/\D/g, '').substring(0, 4);
-      if (v.length >= 2) v = v.substring(0, 2) + ' / ' + v.substring(2);
-      el.value = v;
+      document.getElementById('checkoutWrap').style.display = 'none';
+      document.getElementById('successScreen').classList.add('show');
     }
 
     function copyAddress() {
@@ -427,60 +489,12 @@
       });
     }
 
-    function payWithCard() {
-      var name = document.getElementById('cardName').value;
-      var num = document.getElementById('cardNumber').value.replace(/\s/g, '');
-      var exp = document.getElementById('cardExpiry').value;
-      var cvc = document.getElementById('cardCvc').value;
-      if (!name || num.length < 16 || !exp || !cvc) { alert('Please fill in all card details.'); return; }
-      showProcessing('Processing payment...');
-      setTimeout(function() { showSuccess(); }, 2500);
-    }
+    // Trigger payment creation when email is filled in
+    document.getElementById('checkoutEmail').addEventListener('blur', function() {
+      if (this.value && !uniqueAmount) createPayment();
+    });
 
-    function payWithUsdt() {
-      var txid = document.getElementById('txidInput').value.trim();
-      if (txid.length < 20) { alert('Please enter a valid transaction hash.'); return; }
-      showProcessing('Verifying transaction on TRON blockchain...');
-      setTimeout(function() {
-        document.getElementById('processingText').textContent = 'Transaction confirmed. Activating account...';
-        setTimeout(function() { showSuccess(); }, 1500);
-      }, 2500);
-    }
-
-    function showProcessing(msg) {
-      document.getElementById('paymentForm').style.display = 'none';
-      document.getElementById('processingText').textContent = msg;
-      document.getElementById('processingScreen').classList.add('show');
-    }
-
-    function showSuccess() {
-      document.getElementById('processingScreen').classList.remove('show');
-      document.getElementById('checkoutWrap').style.display = 'none';
-      document.getElementById('successScreen').classList.add('show');
-
-      var email = document.getElementById('checkoutEmail').value;
-      var plan = plans[currentPlan];
-      var amt = currentBilling === 'annual' ? plan.annualTotal : plan.monthly;
-
-      localStorage.setItem('ayilon_subscription', JSON.stringify({
-        plan: currentPlan,
-        billing: currentBilling,
-        amount: amt,
-        activatedAt: new Date().toISOString()
-      }));
-      if (email) localStorage.setItem('ayilon_email', email);
-      localStorage.setItem('ayilon_logged_in', 'true');
-
-      if (email) {
-        fetch(WORKER_URL + '/send-confirmation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email, plan: plan.label, billing: currentBilling, amount: amt })
-        });
-      }
-    }
-
-    init();
+    window.addEventListener('load', init);
   </script>
 </body>
 </html>
