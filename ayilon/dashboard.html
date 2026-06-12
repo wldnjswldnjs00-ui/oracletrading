@@ -184,6 +184,24 @@
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .main { padding: 72px 16px 24px; }
     }
+
+    /* BOT MANAGER */
+    .bot-item { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.04); gap:12px; }
+    .bot-item:last-child { border-bottom:none; }
+    .bot-left { display:flex; align-items:center; gap:14px; flex:1; min-width:0; }
+    .bot-pair { font-size:14px; font-weight:600; margin-bottom:2px; }
+    .bot-sub { font-size:12px; color:var(--gray-400); }
+    .bot-right { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+    .empty-state { text-align:center; padding:48px 20px; color:var(--gray-600); font-size:14px; }
+
+    /* FILTER BAR */
+    .filter-bar { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+    .filter-btn { padding:7px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:100px; color:var(--gray-400); font-size:12px; font-weight:500; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s; }
+    .filter-btn.active, .filter-btn:hover { background:rgba(255,255,255,0.1); color:var(--white); border-color:rgba(255,255,255,0.25); }
+
+    /* PERF STAT CARDS */
+    .perf-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+    @media (max-width:1024px) { .perf-grid { grid-template-columns:repeat(2,1fr); } }
   </style>
 </head>
 <body>
@@ -219,7 +237,7 @@
       <a class="sidebar-item" onclick="showPage('analytics', this)">
         <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="8" width="3" height="7" rx="0.5"/><rect x="6.5" y="4.5" width="3" height="10.5" rx="0.5"/><rect x="12" y="1.5" width="3" height="13.5" rx="0.5"/></svg></span> Performance
       </a>
-      <a class="sidebar-item">
+      <a class="sidebar-item" onclick="showPage('history', this)">
         <span class="sidebar-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><polyline points="8,4.5 8,8 10.5,9.5"/></svg></span> Trade History
       </a>
     </div>
@@ -444,6 +462,224 @@
       </div>
     </div>
 
+    <!-- BOT MANAGER -->
+    <div class="page" id="page-bots">
+      <div class="topbar">
+        <h1>Bot Manager</h1>
+        <div class="topbar-right">
+          <button class="btn-primary" onclick="openAddBotModal()" style="font-size:13px;padding:9px 20px;">+ Add Bot</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">My Bots</span>
+          <span id="botCount" style="font-size:12px;color:var(--gray-400);">—</span>
+        </div>
+        <div id="botList"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Available Strategies</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+          <div style="padding:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Grid Trading</div>
+            <div style="font-size:12px;color:var(--gray-400);line-height:1.6;">Places buy/sell orders at regular intervals. Best for sideways markets.</div>
+          </div>
+          <div style="padding:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">DCA</div>
+            <div style="font-size:12px;color:var(--gray-400);line-height:1.6;">Dollar-cost averaging. Buys at regular intervals to reduce entry price.</div>
+          </div>
+          <div style="padding:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Momentum</div>
+            <div style="font-size:12px;color:var(--gray-400);line-height:1.6;">Follows trend direction using RSI &amp; MACD signals for entries.</div>
+          </div>
+          <div style="padding:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Scalping</div>
+            <div style="font-size:12px;color:var(--gray-400);line-height:1.6;">High-frequency small profit trades. Best for high-liquidity pairs.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POSITIONS -->
+    <div class="page" id="page-positions">
+      <div class="topbar"><h1>Open Positions</h1></div>
+
+      <div class="stats-grid" style="margin-bottom:24px;">
+        <div class="stat-card">
+          <div class="stat-card-label">Total Unrealized P&amp;L</div>
+          <div class="stat-card-value up">+$435.49</div>
+          <div class="stat-card-change up">↑ 4 positions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Long Exposure</div>
+          <div class="stat-card-value">$1,840</div>
+          <div class="stat-card-change" style="color:var(--gray-400)">3 positions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Short Exposure</div>
+          <div class="stat-card-value">$711</div>
+          <div class="stat-card-change" style="color:var(--gray-400)">1 position</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Margin Used</div>
+          <div class="stat-card-value">$487</div>
+          <div class="stat-card-change" style="color:var(--gray-400)">of $2,000 available</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Open Positions</span>
+          <button class="card-action">Refresh</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Pair</th><th>Side</th><th>Entry</th><th>Mark Price</th><th>Liq. Price</th><th>Size</th><th>Unrealized PnL</th><th>ROE</th><th>Exchange</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#f7931a20;color:#f7931a">B</div>BTC/USDT</div></td>
+              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
+              <td>$63,241</td><td>$67,820</td><td>$58,100</td><td>0.042</td>
+              <td class="up">+$192.32</td><td class="up">+7.24%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#627eea20;color:#627eea">E</div>ETH/USDT</div></td>
+              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
+              <td>$3,112</td><td>$3,287</td><td>$2,840</td><td>1.25</td>
+              <td class="up">+$218.75</td><td class="up">+5.62%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#e8414220;color:#e84142">A</div>AVAX/USDT</div></td>
+              <td><span style="color:var(--red);font-weight:600;font-size:12px;">SHORT</span></td>
+              <td>$38.40</td><td>$39.82</td><td>$44.20</td><td>18.5</td>
+              <td class="down">-$26.27</td><td class="down">-3.70%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+            <tr>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#9945ff20;color:#9945ff">S</div>SOL/USDT</div></td>
+              <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
+              <td>$142.10</td><td>$155.44</td><td>$128.00</td><td>3.8</td>
+              <td class="up">+$50.69</td><td class="up">+9.39%</td>
+              <td style="color:var(--gray-400)">OKX</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PERFORMANCE -->
+    <div class="page" id="page-analytics">
+      <div class="topbar"><h1>Performance</h1></div>
+
+      <div class="perf-grid">
+        <div class="stat-card">
+          <div class="stat-card-label">Total P&amp;L (All Time)</div>
+          <div class="stat-card-value up">+$8,420</div>
+          <div class="stat-card-change up">↑ +28.4% overall</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Win Rate</div>
+          <div class="stat-card-value">74.2%</div>
+          <div class="stat-card-change up">↑ +2.1% vs last month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Best Month</div>
+          <div class="stat-card-value up">+$1,840</div>
+          <div class="stat-card-change" style="color:var(--gray-400)">August 2024</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Sharpe Ratio</div>
+          <div class="stat-card-value">2.14</div>
+          <div class="stat-card-change up">↑ Above benchmark</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">Monthly P&amp;L</span>
+          <button class="card-action">2024 ▾</button>
+        </div>
+        <div class="chart-wrap" style="height:180px;">
+          <div class="chart-bar pos" style="height:35%"></div>
+          <div class="chart-bar pos" style="height:52%"></div>
+          <div class="chart-bar neg" style="height:18%"></div>
+          <div class="chart-bar pos" style="height:48%"></div>
+          <div class="chart-bar pos" style="height:72%"></div>
+          <div class="chart-bar neg" style="height:12%"></div>
+          <div class="chart-bar pos" style="height:65%"></div>
+          <div class="chart-bar pos" style="height:100%"></div>
+          <div class="chart-bar pos" style="height:55%"></div>
+          <div class="chart-bar neg" style="height:22%"></div>
+          <div class="chart-bar pos" style="height:68%"></div>
+          <div class="chart-bar pos" style="height:80%"></div>
+        </div>
+        <div class="chart-labels">
+          <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span>
+          <span>May</span><span>Jun</span><span>Jul</span><span>Aug</span>
+          <span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Strategy Breakdown</span></div>
+          <table>
+            <thead><tr><th>Strategy</th><th>Trades</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
+            <tbody>
+              <tr><td>Grid Trading</td><td>482</td><td class="up">78.4%</td><td class="up">+$3,240</td></tr>
+              <tr><td>DCA</td><td>314</td><td class="up">71.0%</td><td class="up">+$2,180</td></tr>
+              <tr><td>Momentum</td><td>288</td><td class="up">69.8%</td><td class="up">+$1,820</td></tr>
+              <tr><td>Scalping</td><td>164</td><td class="down">62.2%</td><td class="up">+$1,180</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Top Pairs</span></div>
+          <table>
+            <thead><tr><th>Pair</th><th>Trades</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
+            <tbody>
+              <tr><td>BTC/USDT</td><td>420</td><td class="up">76.9%</td><td class="up">+$3,820</td></tr>
+              <tr><td>ETH/USDT</td><td>318</td><td class="up">73.3%</td><td class="up">+$2,440</td></tr>
+              <tr><td>SOL/USDT</td><td>286</td><td class="up">72.0%</td><td class="up">+$1,560</td></tr>
+              <tr><td>AVAX/USDT</td><td>224</td><td class="down">66.1%</td><td class="up">+$600</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRADE HISTORY -->
+    <div class="page" id="page-history">
+      <div class="topbar"><h1>Trade History</h1></div>
+
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterHistory('all', this)">All</button>
+        <button class="filter-btn" onclick="filterHistory('win', this)">Wins</button>
+        <button class="filter-btn" onclick="filterHistory('loss', this)">Losses</button>
+        <button class="filter-btn" onclick="filterHistory('BTC/USDT', this)">BTC/USDT</button>
+        <button class="filter-btn" onclick="filterHistory('ETH/USDT', this)">ETH/USDT</button>
+        <button class="filter-btn" onclick="filterHistory('SOL/USDT', this)">SOL/USDT</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Closed Trades</span>
+          <span id="historyCount" style="font-size:12px;color:var(--gray-400);">20 trades</span>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Pair</th><th>Side</th><th>Strategy</th><th>Entry</th><th>Exit</th><th>Size</th><th>P&amp;L</th><th>ROE</th><th>Closed</th></tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- API INTEGRATION -->
     <div class="page" id="page-api">
       <div class="topbar"><h1>API Integration</h1></div>
@@ -537,17 +773,18 @@
         <div style="max-width:400px;">
           <div class="d-form-group">
             <label class="d-form-label">Current Password</label>
-            <input type="password" class="d-form-input" placeholder="Enter current password" />
+            <input type="password" class="d-form-input" id="pwCurrent" placeholder="Enter current password" />
           </div>
           <div class="d-form-group">
             <label class="d-form-label">New Password</label>
-            <input type="password" class="d-form-input" placeholder="Enter new password" />
+            <input type="password" class="d-form-input" id="pwNew" placeholder="8+ characters" />
           </div>
           <div class="d-form-group">
             <label class="d-form-label">Confirm New Password</label>
-            <input type="password" class="d-form-input" placeholder="Re-enter new password" />
+            <input type="password" class="d-form-input" id="pwConfirm" placeholder="Re-enter new password" />
           </div>
-          <button class="btn-primary">Update Password</button>
+          <div id="pwHint" style="font-size:12px;min-height:16px;margin-bottom:14px;margin-top:-4px;"></div>
+          <button class="btn-primary" onclick="changePassword()">Update Password</button>
         </div>
       </div>
 
@@ -786,6 +1023,46 @@
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeModal('phoneModal')">Cancel</button>
         <button class="btn-primary" onclick="closeModal('phoneModal')">Register</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Bot Modal -->
+  <div class="modal-overlay" id="addBotModal">
+    <div class="modal">
+      <div class="modal-title">Add New Bot</div>
+      <div class="modal-desc">Configure your trading bot settings below.</div>
+      <div class="d-form-group">
+        <label class="d-form-label">Trading Pair</label>
+        <select class="d-form-input" id="botPair" style="cursor:pointer;">
+          <option value="">Select pair...</option>
+          <option>BTC/USDT</option>
+          <option>ETH/USDT</option>
+          <option>SOL/USDT</option>
+          <option>BNB/USDT</option>
+          <option>AVAX/USDT</option>
+          <option>DOGE/USDT</option>
+          <option>XRP/USDT</option>
+          <option>ADA/USDT</option>
+        </select>
+      </div>
+      <div class="d-form-group">
+        <label class="d-form-label">Strategy</label>
+        <select class="d-form-input" id="botStrategy" style="cursor:pointer;">
+          <option>Grid</option>
+          <option>DCA</option>
+          <option>Momentum</option>
+          <option>Scalping</option>
+        </select>
+      </div>
+      <div class="d-form-group">
+        <label class="d-form-label">Position Size (USDT)</label>
+        <input type="number" class="d-form-input" id="botSize" placeholder="e.g. 100" min="10" />
+      </div>
+      <div id="botAddHint" style="font-size:12px;color:#ef4444;min-height:16px;margin-top:-8px;"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('addBotModal')">Cancel</button>
+        <button class="btn-primary" onclick="submitAddBot()">Start Bot</button>
       </div>
     </div>
   </div>
@@ -1088,6 +1365,188 @@
 
     document.querySelectorAll('.modal-overlay').forEach(m => {
       m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+    });
+
+    // ── PASSWORD CHANGE ──────────────────────────────────
+    function changePassword() {
+      var current = document.getElementById('pwCurrent').value;
+      var newPw   = document.getElementById('pwNew').value;
+      var confirm = document.getElementById('pwConfirm').value;
+      var hint    = document.getElementById('pwHint');
+      var stored  = localStorage.getItem('ayilon_password') || '';
+
+      if (!newPw || !confirm) { hint.style.color='#ef4444'; hint.textContent='Please fill in all fields.'; return; }
+      if (stored && current !== stored) { hint.style.color='#ef4444'; hint.textContent='Current password is incorrect.'; return; }
+      if (newPw.length < 8) { hint.style.color='#ef4444'; hint.textContent='Password must be at least 8 characters.'; return; }
+      if (newPw !== confirm) { hint.style.color='#ef4444'; hint.textContent='New passwords do not match.'; return; }
+
+      localStorage.setItem('ayilon_password', newPw);
+      hint.style.color = '#22c55e';
+      hint.textContent = 'Password updated successfully.';
+      ['pwCurrent','pwNew','pwConfirm'].forEach(function(id){ document.getElementById(id).value=''; });
+      setTimeout(function(){ hint.textContent=''; }, 3000);
+    }
+
+    // ── BOT MANAGER ──────────────────────────────────────
+    var DEFAULT_BOTS = [
+      { id:1, pair:'BTC/USDT', strategy:'Grid',     size:200, running:true,  pnl: 24.50 },
+      { id:2, pair:'ETH/USDT', strategy:'DCA',      size:150, running:true,  pnl: 18.20 },
+      { id:3, pair:'SOL/USDT', strategy:'Momentum', size:100, running:false, pnl: -4.10 },
+      { id:4, pair:'BNB/USDT', strategy:'Grid',     size:80,  running:true,  pnl:  6.80 },
+    ];
+
+    function getBots() {
+      var s = localStorage.getItem('ayilon_bots');
+      if (!s) { localStorage.setItem('ayilon_bots', JSON.stringify(DEFAULT_BOTS)); return DEFAULT_BOTS; }
+      return JSON.parse(s);
+    }
+
+    function saveBots(bots) { localStorage.setItem('ayilon_bots', JSON.stringify(bots)); }
+
+    function renderBotList() {
+      var bots = getBots();
+      var list = document.getElementById('botList');
+      if (!list) return;
+      var running = bots.filter(function(b){ return b.running; }).length;
+      var countEl = document.getElementById('botCount');
+      if (countEl) countEl.textContent = running + ' running · ' + bots.length + ' total';
+
+      if (!bots.length) {
+        list.innerHTML = '<div class="empty-state">No bots yet. Click "+ Add Bot" to create one.</div>';
+        return;
+      }
+
+      list.innerHTML = bots.map(function(b, i) {
+        var pos  = b.pnl >= 0;
+        var pnlStr = (pos ? '+' : '') + '$' + Math.abs(b.pnl).toFixed(2);
+        var pnlColor = pos ? 'var(--green)' : 'var(--red)';
+        var letter = b.pair.charAt(0);
+        return '<div class="bot-item">'
+          + '<div class="bot-left">'
+          + '<div class="coin-dot" style="background:rgba(255,255,255,0.06);color:var(--gray-400)">' + letter + '</div>'
+          + '<div><div class="bot-pair">' + b.pair + '</div>'
+          + '<div class="bot-sub">' + b.strategy + ' · $' + b.size + ' position</div></div>'
+          + '</div>'
+          + '<div class="bot-right">'
+          + '<span style="font-size:13px;font-weight:600;min-width:72px;text-align:right;color:' + pnlColor + '">' + pnlStr + '</span>'
+          + '<span style="font-size:11px;color:' + (b.running ? 'var(--green)' : 'var(--gray-600)') + ';min-width:48px;">' + (b.running ? 'Running' : 'Stopped') + '</span>'
+          + '<div class="toggle' + (b.running ? ' on' : '') + '" onclick="toggleBot(' + i + ')"></div>'
+          + '<button class="btn-sm danger" onclick="deleteBot(' + i + ')">Delete</button>'
+          + '</div></div>';
+      }).join('');
+    }
+
+    function toggleBot(idx) {
+      var bots = getBots();
+      bots[idx].running = !bots[idx].running;
+      saveBots(bots);
+      renderBotList();
+    }
+
+    function deleteBot(idx) {
+      if (!confirm('Delete this bot?')) return;
+      var bots = getBots();
+      bots.splice(idx, 1);
+      saveBots(bots);
+      renderBotList();
+    }
+
+    function openAddBotModal() {
+      document.getElementById('addBotModal').classList.add('show');
+    }
+
+    function submitAddBot() {
+      var pair     = document.getElementById('botPair').value;
+      var strategy = document.getElementById('botStrategy').value;
+      var size     = parseFloat(document.getElementById('botSize').value) || 0;
+      var hint     = document.getElementById('botAddHint');
+      if (!pair) { hint.textContent = 'Please select a trading pair.'; return; }
+      if (size < 10) { hint.textContent = 'Minimum position size is $10.'; return; }
+      var bots = getBots();
+      bots.push({ id: Date.now(), pair: pair, strategy: strategy, size: size, running: true, pnl: 0 });
+      saveBots(bots);
+      renderBotList();
+      closeModal('addBotModal');
+      document.getElementById('botPair').value = '';
+      document.getElementById('botSize').value = '';
+      hint.textContent = '';
+    }
+
+    // ── TRADE HISTORY ────────────────────────────────────
+    var ALL_TRADES = [
+      { pair:'BTC/USDT', side:'Long',  strategy:'Grid',     entry:'$63,241', exit:'$67,820', size:'0.042', pnl:'+$192.32', roe:'+7.24%', win:true,  time:'2h ago' },
+      { pair:'ETH/USDT', side:'Long',  strategy:'DCA',      entry:'$3,112',  exit:'$3,287',  size:'1.25',  pnl:'+$218.75', roe:'+5.62%', win:true,  time:'3h ago' },
+      { pair:'SOL/USDT', side:'Long',  strategy:'Momentum', entry:'$142.10', exit:'$155.44', size:'3.8',   pnl:'+$50.69',  roe:'+9.39%', win:true,  time:'5h ago' },
+      { pair:'AVAX/USDT',side:'Short', strategy:'Momentum', entry:'$40.20',  exit:'$38.40',  size:'10',    pnl:'+$18.00',  roe:'+4.48%', win:true,  time:'7h ago' },
+      { pair:'BTC/USDT', side:'Long',  strategy:'Grid',     entry:'$61,800', exit:'$60,100', size:'0.03',  pnl:'-$51.00',  roe:'-2.75%', win:false, time:'10h ago' },
+      { pair:'ETH/USDT', side:'Short', strategy:'Grid',     entry:'$3,380',  exit:'$3,290',  size:'0.8',   pnl:'+$72.00',  roe:'+2.66%', win:true,  time:'14h ago' },
+      { pair:'BNB/USDT', side:'Long',  strategy:'DCA',      entry:'$520',    exit:'$545',    size:'2',     pnl:'+$50.00',  roe:'+4.81%', win:true,  time:'1d ago' },
+      { pair:'SOL/USDT', side:'Short', strategy:'Scalping', entry:'$158',    exit:'$161',    size:'5',     pnl:'-$15.00',  roe:'-1.90%', win:false, time:'1d ago' },
+      { pair:'BTC/USDT', side:'Long',  strategy:'Momentum', entry:'$62,400', exit:'$65,100', size:'0.05',  pnl:'+$135.00', roe:'+4.33%', win:true,  time:'1d ago' },
+      { pair:'ETH/USDT', side:'Long',  strategy:'DCA',      entry:'$3,050',  exit:'$3,180',  size:'1.0',   pnl:'+$130.00', roe:'+4.26%', win:true,  time:'2d ago' },
+      { pair:'AVAX/USDT',side:'Long',  strategy:'Grid',     entry:'$36.20',  exit:'$34.80',  size:'20',    pnl:'-$28.00',  roe:'-3.87%', win:false, time:'2d ago' },
+      { pair:'BTC/USDT', side:'Short', strategy:'Scalping', entry:'$67,100', exit:'$66,400', size:'0.02',  pnl:'+$14.00',  roe:'+1.04%', win:true,  time:'2d ago' },
+      { pair:'SOL/USDT', side:'Long',  strategy:'Momentum', entry:'$148',    exit:'$160',    size:'4',     pnl:'+$48.00',  roe:'+8.11%', win:true,  time:'3d ago' },
+      { pair:'BNB/USDT', side:'Short', strategy:'Grid',     entry:'$542',    exit:'$528',    size:'1.5',   pnl:'+$21.00',  roe:'+2.58%', win:true,  time:'3d ago' },
+      { pair:'ETH/USDT', side:'Long',  strategy:'Scalping', entry:'$3,200',  exit:'$3,150',  size:'0.5',   pnl:'-$25.00',  roe:'-1.56%', win:false, time:'3d ago' },
+      { pair:'BTC/USDT', side:'Long',  strategy:'DCA',      entry:'$60,500', exit:'$63,800', size:'0.04',  pnl:'+$132.00', roe:'+5.45%', win:true,  time:'4d ago' },
+      { pair:'SOL/USDT', side:'Long',  strategy:'DCA',      entry:'$135',    exit:'$142',    size:'6',     pnl:'+$42.00',  roe:'+5.19%', win:true,  time:'4d ago' },
+      { pair:'AVAX/USDT',side:'Long',  strategy:'Momentum', entry:'$38',     exit:'$41.20',  size:'12',    pnl:'+$38.40',  roe:'+8.42%', win:true,  time:'5d ago' },
+      { pair:'ETH/USDT', side:'Short', strategy:'Momentum', entry:'$3,420',  exit:'$3,350',  size:'0.7',   pnl:'+$49.00',  roe:'+2.04%', win:true,  time:'5d ago' },
+      { pair:'BTC/USDT', side:'Short', strategy:'Grid',     entry:'$68,200', exit:'$69,100', size:'0.02',  pnl:'-$18.00',  roe:'-1.32%', win:false, time:'6d ago' },
+    ];
+
+    var currentHistoryFilter = 'all';
+
+    function filterHistory(filter, btn) {
+      currentHistoryFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      renderHistory();
+    }
+
+    function renderHistory() {
+      var trades = ALL_TRADES.filter(function(t) {
+        if (currentHistoryFilter === 'win') return t.win;
+        if (currentHistoryFilter === 'loss') return !t.win;
+        if (currentHistoryFilter !== 'all') return t.pair === currentHistoryFilter;
+        return true;
+      });
+
+      var countEl = document.getElementById('historyCount');
+      if (countEl) countEl.textContent = trades.length + ' trades';
+
+      var tbody = document.getElementById('historyBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = trades.map(function(t) {
+        var winClass = t.win ? 'up' : 'down';
+        var sideColor = t.side === 'Long' ? 'var(--green)' : 'var(--red)';
+        return '<tr>'
+          + '<td>' + t.pair + '</td>'
+          + '<td><span style="color:' + sideColor + ';font-weight:600;font-size:12px;">' + t.side.toUpperCase() + '</span></td>'
+          + '<td style="color:var(--gray-400)">' + t.strategy + '</td>'
+          + '<td>' + t.entry + '</td>'
+          + '<td>' + t.exit + '</td>'
+          + '<td style="color:var(--gray-400)">' + t.size + '</td>'
+          + '<td class="' + winClass + '">' + t.pnl + '</td>'
+          + '<td class="' + winClass + '">' + t.roe + '</td>'
+          + '<td style="color:var(--gray-600);font-size:12px;">' + t.time + '</td>'
+          + '</tr>';
+      }).join('');
+    }
+
+    // Render dynamic content when pages are shown
+    var _origShowPage = showPage;
+    showPage = function(name, el) {
+      _origShowPage(name, el);
+      if (name === 'bots') renderBotList();
+      if (name === 'history') renderHistory();
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+      renderBotList();
+      renderHistory();
     });
   </script>
 </body>
