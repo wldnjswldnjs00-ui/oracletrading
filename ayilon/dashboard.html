@@ -473,47 +473,34 @@
           <div class="security-desc">Choose your primary 2FA method for login. Others can serve as backup.</div>
         </div>
 
-        <div class="method-card selected" onclick="selectMethod2fa(this)">
+        <div class="method-card" id="mc-authenticator">
           <div class="method-left">
             <span class="method-icon">🔐</span>
             <div>
-              <div class="method-name">Authenticator App (Recommended)</div>
-              <div class="method-detail">Google Authenticator, Microsoft Authenticator</div>
+              <div class="method-name">Authenticator App</div>
+              <div class="method-detail">Google Authenticator, Microsoft Authenticator — Free</div>
             </div>
           </div>
           <div class="method-right">
-            <span class="badge-set">Active</span>
-            <div class="radio-circle checked"></div>
+            <span id="badge-authenticator" class="badge-unset">Not set</span>
+            <div class="toggle" id="toggle-authenticator" onclick="toggle2fa('authenticator')"></div>
           </div>
         </div>
 
-        <div class="method-card" onclick="selectMethod2fa(this)">
+        <div class="method-card" id="mc-email">
           <div class="method-left">
             <span class="method-icon">📧</span>
             <div>
               <div class="method-name">Email Code</div>
-              <div class="method-detail">6-digit code sent to your email on each login</div>
+              <div class="method-detail">6-digit code sent to your email on each login — Free</div>
             </div>
           </div>
           <div class="method-right">
-            <span class="badge-set">Active</span>
-            <div class="radio-circle"></div>
+            <span id="badge-email" class="badge-unset">Not set</span>
+            <div class="toggle" id="toggle-email" onclick="toggle2fa('email')"></div>
           </div>
         </div>
 
-        <div class="method-card" onclick="openPhoneModal()">
-          <div class="method-left">
-            <span class="method-icon">📱</span>
-            <div>
-              <div class="method-name">SMS Verification</div>
-              <div class="method-detail">Text message sent to your registered phone</div>
-            </div>
-          </div>
-          <div class="method-right">
-            <span class="badge-unset">Not set</span>
-            <div class="radio-circle"></div>
-          </div>
-        </div>
       </div>
 
       <div class="card" style="margin-bottom:20px;">
@@ -751,12 +738,31 @@
       document.getElementById(id).classList.remove('show');
     }
 
-    function selectMethod2fa(card) {
-      document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
-      document.querySelectorAll('.radio-circle').forEach(r => r.classList.remove('checked'));
-      card.classList.add('selected');
-      card.querySelector('.radio-circle').classList.add('checked');
+    function toggle2fa(method) {
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+      var idx = methods.indexOf(method);
+      if (idx === -1) { methods.push(method); } else { methods.splice(idx, 1); }
+      localStorage.setItem('ayilon_2fa_methods', JSON.stringify(methods));
+      update2faUI();
     }
+
+    function update2faUI() {
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+      ['authenticator', 'email'].forEach(function(m) {
+        var toggle = document.getElementById('toggle-' + m);
+        var badge = document.getElementById('badge-' + m);
+        if (!toggle) return;
+        if (methods.indexOf(m) !== -1) {
+          toggle.classList.add('on');
+          badge.className = 'badge-set'; badge.textContent = 'Active';
+        } else {
+          toggle.classList.remove('on');
+          badge.className = 'badge-unset'; badge.textContent = 'Not set';
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', update2faUI);
 
     document.querySelectorAll('.modal-overlay').forEach(m => {
       m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });

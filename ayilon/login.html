@@ -98,31 +98,9 @@
         <button class="back-btn" onclick="goBack(1)">&larr; Back</button>
         <div class="login-header">
           <h1>Two-Factor Auth</h1>
-          <p>An extra layer of security is required to sign in.</p>
+          <p>Select your verification method.</p>
         </div>
-        <div class="twofa-options">
-          <button class="twofa-btn" onclick="selectMethod('sms')">
-            <span class="twofa-icon">&#128241;</span>
-            <div class="twofa-info">
-              <h3>SMS Verification</h3>
-              <p>Send a code to your registered phone number</p>
-            </div>
-          </button>
-          <button class="twofa-btn" onclick="selectMethod('email')">
-            <span class="twofa-icon">&#128231;</span>
-            <div class="twofa-info">
-              <h3>Email Code</h3>
-              <p>Send a 6-digit code to your email address</p>
-            </div>
-          </button>
-          <button class="twofa-btn" onclick="selectMethod('authenticator')">
-            <span class="twofa-icon">&#128272;</span>
-            <div class="twofa-info">
-              <h3>Authenticator App</h3>
-              <p>Enter the code from Google or Microsoft Authenticator</p>
-            </div>
-          </button>
-        </div>
+        <div class="twofa-options" id="twofaOptions"></div>
       </div>
 
       <div class="step" id="step3">
@@ -162,6 +140,34 @@
       var pw = document.getElementById('loginPassword').value;
       if (!email || !pw) return;
       document.getElementById('errorMsg').classList.remove('show');
+
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+
+      if (methods.length === 0) {
+        localStorage.setItem('ayilon_email', email);
+        localStorage.setItem('ayilon_logged_in', 'true');
+        window.location.href = 'dashboard.html';
+        return;
+      }
+
+      if (methods.length === 1) {
+        selectMethod(methods[0]);
+        showStep(3);
+        return;
+      }
+
+      var methodInfo = {
+        email: { icon: '&#128231;', title: 'Email Code', desc: 'Send a 6-digit code to your email address' },
+        authenticator: { icon: '&#128272;', title: 'Authenticator App', desc: 'Enter the code from Google or Microsoft Authenticator' }
+      };
+      var container = document.getElementById('twofaOptions');
+      container.innerHTML = methods.map(function(m) {
+        var info = methodInfo[m];
+        return '<button class="twofa-btn" onclick="selectMethod(\'' + m + '\')">'
+          + '<span class="twofa-icon">' + info.icon + '</span>'
+          + '<div class="twofa-info"><h3>' + info.title + '</h3><p>' + info.desc + '</p></div>'
+          + '</button>';
+      }).join('');
       showStep(2);
     }
 
