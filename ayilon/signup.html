@@ -1,35 +1,27 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>회원가입 — AYILON</title>
+  <title>Sign Up — AYILON</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
       --black: #000000; --white: #ffffff;
-      --gray-100: #f5f5f5; --gray-200: #e5e5e5;
       --gray-400: #a3a3a3; --gray-600: #525252;
-      --gray-800: #262626; --gray-900: #111111;
-      --error: #ef4444; --success: #22c55e;
+      --gray-900: #111111; --error: #ef4444; --success: #22c55e;
     }
     body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
 
-    nav {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 60px; border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 60px; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
     .nav-login { font-size: 14px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
     .nav-login:hover { color: var(--white); }
 
     .page-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 24px; }
-
-    .signup-box {
-      width: 100%; max-width: 480px;
-    }
+    .signup-box { width: 100%; max-width: 480px; }
     .signup-header { margin-bottom: 40px; }
     .signup-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
     .signup-header p { font-size: 14px; color: var(--gray-400); }
@@ -37,12 +29,7 @@
 
     .form-group { margin-bottom: 18px; }
     .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-400); margin-bottom: 8px; letter-spacing: 0.02em; }
-    .form-input {
-      width: 100%; padding: 12px 16px; background: var(--gray-900);
-      border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
-      color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px;
-      outline: none; transition: border-color 0.2s;
-    }
+    .form-input { width: 100%; padding: 12px 16px; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
     .form-input::placeholder { color: var(--gray-600); }
     .form-input:focus { border-color: rgba(255,255,255,0.3); }
     .form-input.error { border-color: var(--error); }
@@ -54,13 +41,7 @@
 
     .email-row { display: flex; gap: 10px; }
     .email-row .form-input { flex: 1; }
-    .btn-verify {
-      padding: 12px 18px; background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
-      color: var(--white); font-size: 13px; font-weight: 500;
-      cursor: pointer; white-space: nowrap; transition: background 0.2s;
-      font-family: 'Inter', sans-serif;
-    }
+    .btn-verify { padding: 12px 18px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: var(--white); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.2s; font-family: 'Inter', sans-serif; }
     .btn-verify:hover { background: rgba(255,255,255,0.1); }
     .btn-verify:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -70,11 +51,7 @@
     .verify-timer { font-size: 13px; color: var(--error); display: flex; align-items: center; padding: 0 4px; }
 
     .password-wrap { position: relative; }
-    .password-toggle {
-      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-      background: none; border: none; color: var(--gray-400); cursor: pointer;
-      font-size: 13px; font-family: 'Inter', sans-serif;
-    }
+    .password-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--gray-400); cursor: pointer; font-size: 13px; font-family: 'Inter', sans-serif; }
 
     .strength-bar { display: flex; gap: 4px; margin-top: 8px; }
     .strength-seg { height: 3px; flex: 1; background: rgba(255,255,255,0.08); border-radius: 2px; transition: background 0.3s; }
@@ -85,26 +62,13 @@
     .divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0; }
 
     .terms-check { display: flex; align-items: flex-start; gap: 10px; }
-    .terms-check input[type="checkbox"] {
-      width: 16px; height: 16px; margin-top: 1px; accent-color: var(--white);
-      background: var(--gray-900); border: 1px solid rgba(255,255,255,0.2);
-      cursor: pointer; flex-shrink: 0;
-    }
+    .terms-check input[type="checkbox"] { width: 16px; height: 16px; margin-top: 1px; accent-color: var(--white); cursor: pointer; flex-shrink: 0; }
     .terms-check label { font-size: 13px; color: var(--gray-400); line-height: 1.5; cursor: pointer; }
     .terms-check label a { color: var(--white); }
 
-    .btn-submit {
-      width: 100%; padding: 14px; background: var(--white); color: var(--black);
-      border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
-      cursor: pointer; margin-top: 24px; transition: opacity 0.2s;
-      font-family: 'Inter', sans-serif; letter-spacing: 0.01em;
-    }
+    .btn-submit { width: 100%; padding: 14px; background: var(--white); color: var(--black); border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 24px; transition: opacity 0.2s; font-family: 'Inter', sans-serif; letter-spacing: 0.01em; }
     .btn-submit:hover { opacity: 0.88; }
     .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .social-divider { text-align: center; position: relative; margin: 28px 0 24px; }
-    .social-divider::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; border-top: 1px solid rgba(255,255,255,0.06); }
-    .social-divider span { position: relative; background: var(--black); padding: 0 14px; font-size: 12px; color: var(--gray-600); }
 
     @media (max-width: 480px) {
       nav { padding: 20px 24px; }
@@ -116,54 +80,50 @@
 <body>
   <nav>
     <a href="index.html" class="nav-logo">AYILON</a>
-    <a href="login.html" class="nav-login">이미 계정이 있으신가요? 로그인 →</a>
+    <a href="login.html" class="nav-login">Already have an account? Log In →</a>
   </nav>
 
   <div class="page-wrap">
     <div class="signup-box">
       <div class="signup-header">
-        <h1>계정 만들기</h1>
-        <p>이미 계정이 있으신가요? <a href="login.html">로그인</a></p>
+        <h1>Create your account</h1>
+        <p>Already have an account? <a href="login.html">Log in</a></p>
       </div>
 
       <form id="signupForm" onsubmit="handleSignup(event)">
 
-        <!-- 이름 -->
         <div class="form-group">
-          <label class="form-label">이름</label>
-          <input type="text" class="form-input" id="name" placeholder="홍길동" autocomplete="name" />
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" id="name" placeholder="John Doe" autocomplete="name" />
         </div>
 
-        <!-- 닉네임 -->
         <div class="form-group">
-          <label class="form-label">닉네임</label>
-          <input type="text" class="form-input" id="nickname" placeholder="예: ayilon_trader" autocomplete="off" oninput="checkNickname(this)" />
-          <div class="form-hint" id="nicknameHint">영문, 숫자, _ 사용 가능 (2~20자)</div>
+          <label class="form-label">Username</label>
+          <input type="text" class="form-input" id="nickname" placeholder="e.g. ayilon_trader" autocomplete="off" oninput="checkNickname(this)" />
+          <div class="form-hint" id="nicknameHint">Letters, numbers and _ only (2–20 characters)</div>
         </div>
 
-        <!-- 이메일 -->
         <div class="form-group">
-          <label class="form-label">이메일 (아이디)</label>
+          <label class="form-label">Email (used as login ID)</label>
           <div class="email-row">
-            <input type="email" class="form-input" id="email" placeholder="example@email.com" autocomplete="email" />
-            <button type="button" class="btn-verify" id="sendCodeBtn" onclick="sendVerificationCode()">인증코드 발송</button>
+            <input type="email" class="form-input" id="email" placeholder="you@example.com" autocomplete="email" />
+            <button type="button" class="btn-verify" id="sendCodeBtn" onclick="sendVerificationCode()">Send Code</button>
           </div>
           <div class="verify-code-wrap" id="codeWrap">
             <div class="verify-row">
-              <input type="text" class="form-input" id="verifyCode" placeholder="인증코드 6자리 입력" maxlength="6" />
+              <input type="text" class="form-input" id="verifyCode" placeholder="Enter 6-digit code" maxlength="6" />
               <span class="verify-timer" id="timer">05:00</span>
-              <button type="button" class="btn-verify" onclick="confirmCode()">확인</button>
+              <button type="button" class="btn-verify" onclick="confirmCode()">Verify</button>
             </div>
-            <div class="form-hint" id="codeHint">이메일로 발송된 6자리 코드를 입력하세요</div>
+            <div class="form-hint" id="codeHint">Enter the 6-digit code sent to your email</div>
           </div>
         </div>
 
-        <!-- 비밀번호 -->
         <div class="form-group">
-          <label class="form-label">비밀번호</label>
+          <label class="form-label">Password</label>
           <div class="password-wrap">
-            <input type="password" class="form-input" id="password" placeholder="8자 이상, 영문+숫자+특수문자" oninput="checkPasswordStrength(this)" />
-            <button type="button" class="password-toggle" onclick="togglePassword('password')">보기</button>
+            <input type="password" class="form-input" id="password" placeholder="8+ characters, letters + numbers + symbols" oninput="checkPasswordStrength(this)" />
+            <button type="button" class="password-toggle" onclick="togglePassword('password')">Show</button>
           </div>
           <div class="strength-bar">
             <div class="strength-seg" id="seg1"></div>
@@ -171,44 +131,42 @@
             <div class="strength-seg" id="seg3"></div>
             <div class="strength-seg" id="seg4"></div>
           </div>
-          <div class="form-hint" id="passwordHint">영문, 숫자, 특수문자 포함 8자 이상</div>
+          <div class="form-hint" id="passwordHint">Use letters, numbers, and special characters (8+ chars)</div>
         </div>
 
-        <!-- 비밀번호 확인 -->
         <div class="form-group">
-          <label class="form-label">비밀번호 확인</label>
+          <label class="form-label">Confirm Password</label>
           <div class="password-wrap">
-            <input type="password" class="form-input" id="passwordConfirm" placeholder="비밀번호를 다시 입력하세요" oninput="checkPasswordMatch()" />
-            <button type="button" class="password-toggle" onclick="togglePassword('passwordConfirm')">보기</button>
+            <input type="password" class="form-input" id="passwordConfirm" placeholder="Re-enter your password" oninput="checkPasswordMatch()" />
+            <button type="button" class="password-toggle" onclick="togglePassword('passwordConfirm')">Show</button>
           </div>
           <div class="form-hint" id="matchHint"></div>
         </div>
 
         <hr class="divider" />
 
-        <!-- 약관 동의 -->
         <div class="form-group">
           <div class="terms-check">
             <input type="checkbox" id="termsAll" onchange="toggleAll(this)" />
-            <label for="termsAll"><strong style="color:#fff">전체 동의</strong></label>
+            <label for="termsAll"><strong style="color:#fff">Agree to all</strong></label>
           </div>
           <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
             <div class="terms-check">
               <input type="checkbox" id="terms1" />
-              <label for="terms1"><a href="#">이용약관</a> 동의 (필수)</label>
+              <label for="terms1"><a href="#">Terms of Service</a> (required)</label>
             </div>
             <div class="terms-check">
               <input type="checkbox" id="terms2" />
-              <label for="terms2"><a href="#">개인정보처리방침</a> 동의 (필수)</label>
+              <label for="terms2"><a href="#">Privacy Policy</a> (required)</label>
             </div>
             <div class="terms-check">
               <input type="checkbox" id="terms3" />
-              <label for="terms3">마케팅 정보 수신 동의 (선택)</label>
+              <label for="terms3">Receive marketing communications (optional)</label>
             </div>
           </div>
         </div>
 
-        <button type="submit" class="btn-submit" id="submitBtn">회원가입 완료</button>
+        <button type="submit" class="btn-submit" id="submitBtn">Create Account</button>
       </form>
     </div>
   </div>
@@ -225,7 +183,7 @@
       }
       document.getElementById('email').classList.remove('error');
       document.getElementById('sendCodeBtn').disabled = true;
-      document.getElementById('sendCodeBtn').textContent = '발송됨';
+      document.getElementById('sendCodeBtn').textContent = 'Sent';
       document.getElementById('codeWrap').classList.add('show');
       startTimer();
     }
@@ -240,9 +198,9 @@
         document.getElementById('timer').textContent = `${m}:${s}`;
         if (seconds <= 0) {
           clearInterval(timerInterval);
-          document.getElementById('timer').textContent = '만료';
+          document.getElementById('timer').textContent = 'Expired';
           document.getElementById('sendCodeBtn').disabled = false;
-          document.getElementById('sendCodeBtn').textContent = '재발송';
+          document.getElementById('sendCodeBtn').textContent = 'Resend';
         }
       }, 1000);
     }
@@ -250,16 +208,16 @@
     function confirmCode() {
       const code = document.getElementById('verifyCode').value;
       const hint = document.getElementById('codeHint');
-      if (code === '123456' || code.length === 6) {
+      if (code.length === 6) {
         emailVerified = true;
         clearInterval(timerInterval);
         document.getElementById('verifyCode').classList.add('success');
         document.getElementById('verifyCode').disabled = true;
         hint.className = 'form-hint success';
-        hint.textContent = '✓ 이메일 인증이 완료되었습니다';
+        hint.textContent = '✓ Email verified successfully';
       } else {
         hint.className = 'form-hint error';
-        hint.textContent = '인증코드가 올바르지 않습니다';
+        hint.textContent = 'Invalid verification code';
       }
     }
 
@@ -270,15 +228,15 @@
       if (val.length === 0) {
         el.classList.remove('error', 'success');
         hint.className = 'form-hint';
-        hint.textContent = '영문, 숫자, _ 사용 가능 (2~20자)';
+        hint.textContent = 'Letters, numbers and _ only (2–20 characters)';
       } else if (valid) {
         el.classList.remove('error'); el.classList.add('success');
         hint.className = 'form-hint success';
-        hint.textContent = '✓ 사용 가능한 닉네임입니다';
+        hint.textContent = '✓ Username is available';
       } else {
         el.classList.remove('success'); el.classList.add('error');
         hint.className = 'form-hint error';
-        hint.textContent = '영문, 숫자, _만 사용 가능 (2~20자)';
+        hint.textContent = 'Letters, numbers and _ only (2–20 characters)';
       }
     }
 
@@ -292,15 +250,15 @@
       const segs = ['seg1','seg2','seg3','seg4'];
       const cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
       segs.forEach((id, i) => {
-        const el = document.getElementById(id);
-        el.className = 'strength-seg';
-        if (i < score) el.classList.add(cls);
+        const seg = document.getElementById(id);
+        seg.className = 'strength-seg';
+        if (i < score) seg.classList.add(cls);
       });
       const hint = document.getElementById('passwordHint');
-      if (val.length === 0) { hint.className = 'form-hint'; hint.textContent = '영문, 숫자, 특수문자 포함 8자 이상'; }
-      else if (score <= 1) { hint.className = 'form-hint error'; hint.textContent = '비밀번호가 너무 약합니다'; }
-      else if (score <= 2) { hint.className = 'form-hint'; hint.textContent = '보통 강도의 비밀번호'; }
-      else { hint.className = 'form-hint success'; hint.textContent = '✓ 강한 비밀번호입니다'; }
+      if (val.length === 0) { hint.className = 'form-hint'; hint.textContent = 'Use letters, numbers, and special characters (8+ chars)'; }
+      else if (score <= 1) { hint.className = 'form-hint error'; hint.textContent = 'Password is too weak'; }
+      else if (score <= 2) { hint.className = 'form-hint'; hint.textContent = 'Moderate password strength'; }
+      else { hint.className = 'form-hint success'; hint.textContent = '✓ Strong password'; }
       checkPasswordMatch();
     }
 
@@ -312,16 +270,18 @@
       if (confirm.length === 0) { hint.textContent = ''; el.classList.remove('error','success'); return; }
       if (pw === confirm) {
         el.classList.remove('error'); el.classList.add('success');
-        hint.className = 'form-hint success'; hint.textContent = '✓ 비밀번호가 일치합니다';
+        hint.className = 'form-hint success'; hint.textContent = '✓ Passwords match';
       } else {
         el.classList.remove('success'); el.classList.add('error');
-        hint.className = 'form-hint error'; hint.textContent = '비밀번호가 일치하지 않습니다';
+        hint.className = 'form-hint error'; hint.textContent = 'Passwords do not match';
       }
     }
 
     function togglePassword(id) {
       const el = document.getElementById(id);
+      const btn = el.nextElementSibling;
       el.type = el.type === 'password' ? 'text' : 'password';
+      btn.textContent = el.type === 'password' ? 'Show' : 'Hide';
     }
 
     function toggleAll(el) {
@@ -337,14 +297,12 @@
       const confirm = document.getElementById('passwordConfirm').value;
       const terms1 = document.getElementById('terms1').checked;
       const terms2 = document.getElementById('terms2').checked;
-
       if (!name || !nickname || !email || !password || !confirm) return;
-      if (!emailVerified) { alert('이메일 인증을 완료해주세요.'); return; }
-      if (password !== confirm) { alert('비밀번호가 일치하지 않습니다.'); return; }
-      if (!terms1 || !terms2) { alert('필수 약관에 동의해주세요.'); return; }
-
+      if (!emailVerified) { alert('Please verify your email first.'); return; }
+      if (password !== confirm) { alert('Passwords do not match.'); return; }
+      if (!terms1 || !terms2) { alert('Please agree to the required terms.'); return; }
       const btn = document.getElementById('submitBtn');
-      btn.textContent = '처리 중...'; btn.disabled = true;
+      btn.textContent = 'Creating account...'; btn.disabled = true;
       setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
     }
   </script>

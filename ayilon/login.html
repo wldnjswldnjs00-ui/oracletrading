@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>로그인 — AYILON</title>
+  <title>Log In — AYILON</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    :root { --black: #000; --white: #fff; --gray-400: #a3a3a3; --gray-600: #525252; --gray-900: #111111; --error: #ef4444; --success: #22c55e; }
+    :root { --black: #000; --white: #fff; --gray-400: #a3a3a3; --gray-600: #525252; --gray-900: #111111; --error: #ef4444; }
     body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
 
     nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 60px; border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -17,7 +17,6 @@
     .nav-signup:hover { color: var(--white); }
 
     .page-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 24px; }
-
     .login-box { width: 100%; max-width: 420px; }
     .login-header { margin-bottom: 40px; }
     .login-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
@@ -29,7 +28,6 @@
     .form-input { width: 100%; padding: 12px 16px; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
     .form-input::placeholder { color: var(--gray-600); }
     .form-input:focus { border-color: rgba(255,255,255,0.3); }
-    .form-input.error { border-color: var(--error); }
 
     .password-wrap { position: relative; }
     .password-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--gray-400); cursor: pointer; font-size: 13px; font-family: 'Inter', sans-serif; }
@@ -44,32 +42,18 @@
     .error-msg { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--error); margin-bottom: 16px; display: none; }
     .error-msg.show { display: block; }
 
-    /* 2FA STEP */
     .step { display: none; }
     .step.active { display: block; }
 
     .twofa-options { display: flex; flex-direction: column; gap: 12px; margin: 24px 0; }
-    .twofa-btn {
-      display: flex; align-items: center; gap: 16px; padding: 16px 20px;
-      background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px; cursor: pointer; transition: border-color 0.2s;
-      width: 100%; text-align: left;
-    }
+    .twofa-btn { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer; transition: border-color 0.2s; width: 100%; text-align: left; }
     .twofa-btn:hover { border-color: rgba(255,255,255,0.3); }
     .twofa-icon { font-size: 24px; flex-shrink: 0; }
-    .twofa-info h3 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .twofa-info h3 { font-size: 14px; font-weight: 600; margin-bottom: 2px; color: var(--white); }
     .twofa-info p { font-size: 12px; color: var(--gray-400); }
 
-    /* OTP Input */
-    .otp-wrap { display: none; }
-    .otp-wrap.show { display: block; }
     .otp-inputs { display: flex; gap: 10px; justify-content: center; margin: 24px 0; }
-    .otp-digit {
-      width: 52px; height: 60px; text-align: center; font-size: 22px; font-weight: 700;
-      background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 8px; color: var(--white); font-family: 'Space Grotesk', sans-serif;
-      outline: none; transition: border-color 0.2s;
-    }
+    .otp-digit { width: 52px; height: 60px; text-align: center; font-size: 22px; font-weight: 700; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--white); font-family: 'Space Grotesk', sans-serif; outline: none; transition: border-color 0.2s; }
     .otp-digit:focus { border-color: rgba(255,255,255,0.4); }
 
     .back-btn { background: none; border: none; color: var(--gray-400); font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 28px; font-family: 'Inter', sans-serif; padding: 0; }
@@ -81,73 +65,70 @@
 <body>
   <nav>
     <a href="index.html" class="nav-logo">AYILON</a>
-    <a href="signup.html" class="nav-signup">계정이 없으신가요? 회원가입 →</a>
+    <a href="signup.html" class="nav-signup">Don't have an account? Sign Up &rarr;</a>
   </nav>
 
   <div class="page-wrap">
     <div class="login-box">
 
-      <!-- STEP 1: 이메일 + 비밀번호 -->
       <div class="step active" id="step1">
         <div class="login-header">
-          <h1>로그인</h1>
-          <p>계정이 없으신가요? <a href="signup.html">회원가입</a></p>
+          <h1>Log In</h1>
+          <p>Don't have an account? <a href="signup.html">Sign up</a></p>
         </div>
-        <div class="error-msg" id="errorMsg">이메일 또는 비밀번호가 올바르지 않습니다.</div>
+        <div class="error-msg" id="errorMsg">Incorrect email or password.</div>
         <form onsubmit="handleLogin(event)">
           <div class="form-group">
-            <label class="form-label">이메일</label>
-            <input type="email" class="form-input" id="loginEmail" placeholder="example@email.com" autocomplete="email" />
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com" autocomplete="email" />
           </div>
           <div class="form-group">
-            <label class="form-label">비밀번호</label>
+            <label class="form-label">Password</label>
             <div class="password-wrap">
-              <input type="password" class="form-input" id="loginPassword" placeholder="비밀번호 입력" autocomplete="current-password" />
-              <button type="button" class="password-toggle" onclick="togglePassword()">보기</button>
+              <input type="password" class="form-input" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" />
+              <button type="button" class="password-toggle" onclick="togglePassword()">Show</button>
             </div>
-            <div class="forgot"><a href="#">비밀번호를 잊으셨나요?</a></div>
+            <div class="forgot"><a href="#">Forgot your password?</a></div>
           </div>
-          <button type="submit" class="btn-submit">로그인</button>
+          <button type="submit" class="btn-submit">Log In</button>
         </form>
       </div>
 
-      <!-- STEP 2: 2FA 방식 선택 -->
       <div class="step" id="step2">
-        <button class="back-btn" onclick="goBack(1)">← 돌아가기</button>
+        <button class="back-btn" onclick="goBack(1)">&larr; Back</button>
         <div class="login-header">
-          <h1>2단계 인증</h1>
-          <p>보안을 위해 추가 인증이 필요합니다.</p>
+          <h1>Two-Factor Auth</h1>
+          <p>An extra layer of security is required to sign in.</p>
         </div>
         <div class="twofa-options">
           <button class="twofa-btn" onclick="selectMethod('sms')">
-            <span class="twofa-icon">📱</span>
+            <span class="twofa-icon">&#128241;</span>
             <div class="twofa-info">
-              <h3>휴대폰 인증</h3>
-              <p>등록된 번호로 인증 문자를 발송합니다</p>
+              <h3>SMS Verification</h3>
+              <p>Send a code to your registered phone number</p>
             </div>
           </button>
           <button class="twofa-btn" onclick="selectMethod('email')">
-            <span class="twofa-icon">📧</span>
+            <span class="twofa-icon">&#128231;</span>
             <div class="twofa-info">
-              <h3>이메일 인증코드</h3>
-              <p>이메일로 6자리 코드를 발송합니다</p>
+              <h3>Email Code</h3>
+              <p>Send a 6-digit code to your email address</p>
             </div>
           </button>
           <button class="twofa-btn" onclick="selectMethod('authenticator')">
-            <span class="twofa-icon">🔐</span>
+            <span class="twofa-icon">&#128272;</span>
             <div class="twofa-info">
-              <h3>Authenticator 앱</h3>
-              <p>Google/Microsoft Authenticator 코드 입력</p>
+              <h3>Authenticator App</h3>
+              <p>Enter the code from Google or Microsoft Authenticator</p>
             </div>
           </button>
         </div>
       </div>
 
-      <!-- STEP 3: OTP 입력 -->
       <div class="step" id="step3">
-        <button class="back-btn" onclick="goBack(2)">← 돌아가기</button>
+        <button class="back-btn" onclick="goBack(2)">&larr; Back</button>
         <div class="login-header">
-          <h1 id="otpTitle">코드 입력</h1>
+          <h1 id="otpTitle">Enter Code</h1>
           <p id="otpDesc"></p>
         </div>
         <div class="otp-inputs">
@@ -158,9 +139,9 @@
           <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 4)" />
           <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 5)" />
         </div>
-        <button class="btn-submit" onclick="verifyOTP()">인증 완료</button>
+        <button class="btn-submit" onclick="verifyOTP()">Verify &amp; Sign In</button>
         <p style="text-align:center; margin-top:16px; font-size:13px; color:var(--gray-600)">
-          코드를 받지 못했나요? <a href="#" style="color:var(--white)" onclick="resendCode()">재발송</a>
+          Didn't receive a code? <a href="#" style="color:var(--white)" onclick="resendCode()">Resend</a>
         </p>
       </div>
 
@@ -169,34 +150,36 @@
 
   <script>
     function togglePassword() {
-      const el = document.getElementById('loginPassword');
+      var el = document.getElementById('loginPassword');
+      var btn = el.nextElementSibling;
       el.type = el.type === 'password' ? 'text' : 'password';
+      btn.textContent = el.type === 'password' ? 'Show' : 'Hide';
     }
 
     function handleLogin(e) {
       e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
-      const pw = document.getElementById('loginPassword').value;
+      var email = document.getElementById('loginEmail').value;
+      var pw = document.getElementById('loginPassword').value;
       if (!email || !pw) return;
       document.getElementById('errorMsg').classList.remove('show');
       showStep(2);
     }
 
     function selectMethod(method) {
-      const titles = { sms: '휴대폰 인증', email: '이메일 인증', authenticator: 'Authenticator' };
-      const descs = {
-        sms: '등록된 휴대폰으로 발송된 6자리 코드를 입력하세요.',
-        email: '이메일로 발송된 6자리 인증코드를 입력하세요.',
-        authenticator: 'Authenticator 앱에 표시된 6자리 코드를 입력하세요.'
+      var titles = { sms: 'SMS Verification', email: 'Email Code', authenticator: 'Authenticator App' };
+      var descs = {
+        sms: 'Enter the 6-digit code sent to your registered phone number.',
+        email: 'Enter the 6-digit code sent to your email address.',
+        authenticator: 'Enter the 6-digit code shown in your Authenticator app.'
       };
       document.getElementById('otpTitle').textContent = titles[method];
       document.getElementById('otpDesc').textContent = descs[method];
       showStep(3);
-      setTimeout(() => document.querySelectorAll('.otp-digit')[0].focus(), 100);
+      setTimeout(function() { document.querySelectorAll('.otp-digit')[0].focus(); }, 100);
     }
 
     function showStep(n) {
-      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.step').forEach(function(s) { s.classList.remove('active'); });
       document.getElementById('step' + n).classList.add('active');
     }
 
@@ -210,16 +193,16 @@
     }
 
     function verifyOTP() {
-      const digits = document.querySelectorAll('.otp-digit');
-      const code = Array.from(digits).map(d => d.value).join('');
+      var digits = document.querySelectorAll('.otp-digit');
+      var code = Array.from(digits).map(function(d) { return d.value; }).join('');
       if (code.length === 6) {
         window.location.href = 'dashboard.html';
       }
     }
 
-    function resendCode() { alert('코드가 재발송되었습니다.'); }
+    function resendCode() { alert('A new code has been sent.'); }
 
-    document.addEventListener('keydown', e => {
+    document.addEventListener('keydown', function(e) {
       if (document.getElementById('step3').classList.contains('active') && e.key === 'Enter') {
         verifyOTP();
       }

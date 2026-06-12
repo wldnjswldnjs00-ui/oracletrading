@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>대시보드 — AYILON</title>
+  <title>Dashboard — AYILON</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -18,25 +18,14 @@
     body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); display: flex; min-height: 100vh; }
 
     /* SIDEBAR */
-    .sidebar {
-      width: 240px; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.06);
-      padding: 28px 0; display: flex; flex-direction: column;
-      position: fixed; top: 0; left: 0; bottom: 0; background: var(--black); z-index: 50;
-    }
+    .sidebar { width: 240px; flex-shrink: 0; border-right: 1px solid rgba(255,255,255,0.06); padding: 28px 0; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; background: var(--black); z-index: 50; }
     .sidebar-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); padding: 0 24px; margin-bottom: 36px; text-decoration: none; display: block; }
-
     .sidebar-section { margin-bottom: 6px; }
     .sidebar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gray-600); padding: 0 24px; margin-bottom: 4px; margin-top: 16px; }
-    .sidebar-item {
-      display: flex; align-items: center; gap: 12px; padding: 10px 24px;
-      color: var(--gray-400); font-size: 14px; font-weight: 400; cursor: pointer;
-      transition: color 0.15s, background 0.15s; border-radius: 0; text-decoration: none;
-      border-left: 2px solid transparent;
-    }
+    .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 24px; color: var(--gray-400); font-size: 14px; font-weight: 400; cursor: pointer; transition: color 0.15s, background 0.15s; border-radius: 0; text-decoration: none; border-left: 2px solid transparent; }
     .sidebar-item:hover { color: var(--white); background: rgba(255,255,255,0.03); }
     .sidebar-item.active { color: var(--white); border-left-color: var(--white); background: rgba(255,255,255,0.04); }
     .sidebar-icon { font-size: 16px; width: 20px; text-align: center; }
-
     .sidebar-bottom { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.06); padding: 16px 0 0; }
     .user-info { display: flex; align-items: center; gap: 12px; padding: 10px 24px; cursor: pointer; }
     .user-avatar { width: 32px; height: 32px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
@@ -45,7 +34,6 @@
 
     /* MAIN */
     .main { margin-left: 240px; flex: 1; padding: 36px 40px; min-width: 0; }
-
     .page { display: none; }
     .page.active { display: block; }
 
@@ -88,17 +76,15 @@
     td.up { color: var(--green); font-weight: 600; }
     td.down { color: var(--red); font-weight: 600; }
 
-    /* COIN ICON */
     .coin-row { display: flex; align-items: center; gap: 10px; }
     .coin-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
 
-    /* PERFORMANCE CHART (CSS only) */
+    /* CHART */
     .chart-wrap { height: 140px; display: flex; align-items: flex-end; gap: 6px; padding-top: 10px; }
-    .chart-bar { flex: 1; border-radius: 4px 4px 0 0; transition: opacity 0.2s; cursor: pointer; position: relative; }
+    .chart-bar { flex: 1; border-radius: 4px 4px 0 0; transition: opacity 0.2s; cursor: pointer; }
     .chart-bar:hover { opacity: 0.8; }
     .chart-bar.pos { background: var(--green); }
     .chart-bar.neg { background: var(--red); border-radius: 0 0 4px 4px; align-self: flex-start; }
-
     .chart-labels { display: flex; gap: 6px; margin-top: 8px; }
     .chart-labels span { flex: 1; text-align: center; font-size: 10px; color: var(--gray-600); }
 
@@ -138,15 +124,13 @@
     .btn-sm:hover { background: rgba(255,255,255,0.1); }
     .btn-sm.danger { color: var(--red); border-color: rgba(239,68,68,0.2); }
     .btn-sm.danger:hover { background: rgba(239,68,68,0.08); }
-
     .btn-add { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; background: transparent; border: 1px dashed rgba(255,255,255,0.12); border-radius: 10px; color: var(--gray-400); font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 12px; transition: border-color 0.2s, color 0.2s; font-family: 'Inter',sans-serif; }
     .btn-add:hover { border-color: rgba(255,255,255,0.3); color: var(--white); }
 
-    /* SECURITY PAGE */
+    /* SECURITY */
     .security-section { margin-bottom: 32px; }
     .security-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
     .security-desc { font-size: 13px; color: var(--gray-400); margin-bottom: 20px; }
-
     .method-card { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; transition: border-color 0.2s; }
     .method-card.selected { border-color: var(--white); }
     .method-left { display: flex; align-items: center; gap: 16px; }
@@ -160,13 +144,12 @@
     .radio-circle.checked { border-color: var(--white); }
     .radio-circle.checked::after { content: ''; width: 8px; height: 8px; background: var(--white); border-radius: 50%; }
 
-    /* FORM INPUT (dashboard) */
+    /* FORM */
     .d-form-group { margin-bottom: 16px; }
     .d-form-label { display: block; font-size: 12px; font-weight: 500; color: var(--gray-400); margin-bottom: 8px; }
     .d-form-input { width: 100%; padding: 11px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--white); font-family: 'Inter', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s; }
     .d-form-input:focus { border-color: rgba(255,255,255,0.3); }
     .d-form-input::placeholder { color: var(--gray-600); }
-
     .btn-primary { padding: 11px 24px; background: var(--white); color: var(--black); border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; transition: opacity 0.2s; }
     .btn-primary:hover { opacity: 0.88; }
 
@@ -189,43 +172,42 @@
 </head>
 <body>
 
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <a href="index.html" class="sidebar-logo">AYILON</a>
 
     <div class="sidebar-section">
-      <div class="sidebar-label">메인</div>
-      <a class="sidebar-item active" onclick="showPage('overview')">
-        <span class="sidebar-icon">⬛</span> 대시보드
+      <div class="sidebar-label">Main</div>
+      <a class="sidebar-item active" onclick="showPage('overview', this)">
+        <span class="sidebar-icon">⬛</span> Dashboard
       </a>
-      <a class="sidebar-item" onclick="showPage('bots')">
-        <span class="sidebar-icon">🤖</span> 봇 관리
+      <a class="sidebar-item" onclick="showPage('bots', this)">
+        <span class="sidebar-icon">🤖</span> Bot Manager
       </a>
-      <a class="sidebar-item" onclick="showPage('positions')">
-        <span class="sidebar-icon">📈</span> 포지션
+      <a class="sidebar-item" onclick="showPage('positions', this)">
+        <span class="sidebar-icon">📈</span> Positions
       </a>
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-label">분석</div>
-      <a class="sidebar-item" onclick="showPage('analytics')">
-        <span class="sidebar-icon">📊</span> 수익 분석
+      <div class="sidebar-label">Analytics</div>
+      <a class="sidebar-item" onclick="showPage('analytics', this)">
+        <span class="sidebar-icon">📊</span> Performance
       </a>
       <a class="sidebar-item">
-        <span class="sidebar-icon">🔁</span> 거래 내역
+        <span class="sidebar-icon">🔁</span> Trade History
       </a>
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-label">설정</div>
-      <a class="sidebar-item" onclick="showPage('api')">
-        <span class="sidebar-icon">🔗</span> API 연동
+      <div class="sidebar-label">Settings</div>
+      <a class="sidebar-item" onclick="showPage('api', this)">
+        <span class="sidebar-icon">🔗</span> API Integration
       </a>
-      <a class="sidebar-item" onclick="showPage('security')">
-        <span class="sidebar-icon">🛡️</span> 보안 설정
+      <a class="sidebar-item" onclick="showPage('security', this)">
+        <span class="sidebar-icon">🛡️</span> Security
       </a>
-      <a class="sidebar-item" onclick="showPage('mypage')">
-        <span class="sidebar-icon">👤</span> 마이 페이지
+      <a class="sidebar-item" onclick="showPage('mypage', this)">
+        <span class="sidebar-icon">👤</span> My Account
       </a>
     </div>
 
@@ -233,55 +215,52 @@
       <div class="user-info">
         <div class="user-avatar">AY</div>
         <div>
-          <div class="user-name">김아일론</div>
+          <div class="user-name">AYILON User</div>
           <div class="user-email">user@ayilon.com</div>
         </div>
       </div>
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
   <main class="main">
 
-    <!-- ===== 대시보드 개요 ===== -->
+    <!-- OVERVIEW -->
     <div class="page active" id="page-overview">
       <div class="topbar">
-        <h1>대시보드</h1>
+        <h1>Dashboard</h1>
         <div class="topbar-right">
-          <div class="badge-live"><span></span> 봇 실행 중</div>
+          <div class="badge-live"><span></span> Bot Running</div>
         </div>
       </div>
 
-      <!-- 핵심 지표 -->
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-card-label">총 평가 수익</div>
-          <div class="stat-card-value up">+₩2,847,300</div>
-          <div class="stat-card-change up">↑ +12.4% 이번 달</div>
+          <div class="stat-card-label">Total Unrealized P&amp;L</div>
+          <div class="stat-card-value up">+$2,847</div>
+          <div class="stat-card-change up">↑ +12.4% this month</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-label">승률</div>
+          <div class="stat-card-label">Win Rate</div>
           <div class="stat-card-value">74.2%</div>
-          <div class="stat-card-change up">↑ +2.1% 지난 주 대비</div>
+          <div class="stat-card-change up">↑ +2.1% vs last week</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-label">오늘 수익</div>
-          <div class="stat-card-value up">+₩138,500</div>
-          <div class="stat-card-change up">↑ 34건 체결</div>
+          <div class="stat-card-label">Today's P&amp;L</div>
+          <div class="stat-card-value up">+$138</div>
+          <div class="stat-card-change up">↑ 34 trades filled</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-label">활성 봇</div>
+          <div class="stat-card-label">Active Bots</div>
           <div class="stat-card-value">3</div>
-          <div class="stat-card-change" style="color:var(--gray-400)">총 5개 봇 중</div>
+          <div class="stat-card-change" style="color:var(--gray-400)">Out of 5 total</div>
         </div>
       </div>
 
-      <!-- 수익 차트 + 승률 -->
       <div class="grid-3-1">
         <div class="card">
           <div class="card-header">
-            <span class="card-title">월별 수익률</span>
-            <button class="card-action">3개월 ▾</button>
+            <span class="card-title">Monthly Performance</span>
+            <button class="card-action">3 months ▾</button>
           </div>
           <div class="chart-wrap">
             <div class="chart-bar pos" style="height:40%"></div>
@@ -298,15 +277,15 @@
             <div class="chart-bar pos" style="height:85%"></div>
           </div>
           <div class="chart-labels">
-            <span>1월</span><span>2월</span><span>3월</span><span>4월</span>
-            <span>5월</span><span>6월</span><span>7월</span><span>8월</span>
-            <span>9월</span><span>10월</span><span>11월</span><span>12월</span>
+            <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span>
+            <span>May</span><span>Jun</span><span>Jul</span><span>Aug</span>
+            <span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
           </div>
         </div>
 
         <div class="card" style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
           <div class="card-header" style="width:100%">
-            <span class="card-title">전체 승률</span>
+            <span class="card-title">Win Rate</span>
           </div>
           <div class="ring-wrap">
             <div class="ring">
@@ -316,139 +295,119 @@
               </svg>
               <div class="ring-text">
                 <span class="ring-pct">74%</span>
-                <span class="ring-lbl">승률</span>
+                <span class="ring-lbl">win rate</span>
               </div>
             </div>
             <div style="text-align:center; margin-top:8px;">
               <div style="font-size:22px; font-weight:700; font-family:'Space Grotesk',sans-serif;">1,248</div>
-              <div style="font-size:12px; color:var(--gray-400);">총 거래 수</div>
+              <div style="font-size:12px; color:var(--gray-400);">total trades</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 현재 포지션 -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
-          <span class="card-title">현재 포지션</span>
-          <button class="card-action">전체 보기</button>
+          <span class="card-title">Open Positions</span>
+          <button class="card-action">View all</button>
         </div>
         <table>
           <thead>
             <tr>
-              <th>코인</th>
-              <th>방향</th>
-              <th>진입가</th>
-              <th>현재가</th>
-              <th>수량</th>
-              <th>미실현 손익</th>
-              <th>수익률</th>
-              <th>거래소</th>
+              <th>Pair</th><th>Side</th><th>Entry</th><th>Mark</th>
+              <th>Size</th><th>Unrealized PnL</th><th>ROE</th><th>Exchange</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td><div class="coin-row"><div class="coin-dot" style="background:#f7931a20;color:#f7931a">B</div>BTC/USDT</div></td>
               <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
-              <td>$63,241</td>
-              <td>$67,820</td>
-              <td>0.042</td>
-              <td class="up">+$192.32</td>
-              <td class="up">+7.24%</td>
-              <td style="color:var(--gray-400)">Binance</td>
+              <td>$63,241</td><td>$67,820</td><td>0.042</td>
+              <td class="up">+$192.32</td><td class="up">+7.24%</td>
+              <td style="color:var(--gray-400)">OKX</td>
             </tr>
             <tr>
               <td><div class="coin-row"><div class="coin-dot" style="background:#627eea20;color:#627eea">E</div>ETH/USDT</div></td>
               <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
-              <td>$3,112</td>
-              <td>$3,287</td>
-              <td>1.25</td>
-              <td class="up">+$218.75</td>
-              <td class="up">+5.62%</td>
-              <td style="color:var(--gray-400)">Binance</td>
+              <td>$3,112</td><td>$3,287</td><td>1.25</td>
+              <td class="up">+$218.75</td><td class="up">+5.62%</td>
+              <td style="color:var(--gray-400)">OKX</td>
             </tr>
             <tr>
-              <td><div class="coin-row"><div class="coin-dot" style="background:#e84142 20;color:#e84142">A</div>AVAX/USDT</div></td>
+              <td><div class="coin-row"><div class="coin-dot" style="background:#e8414220;color:#e84142">A</div>AVAX/USDT</div></td>
               <td><span style="color:var(--red);font-weight:600;font-size:12px;">SHORT</span></td>
-              <td>$38.40</td>
-              <td>$39.82</td>
-              <td>18.5</td>
-              <td class="down">-$26.27</td>
-              <td class="down">-3.70%</td>
-              <td style="color:var(--gray-400)">Upbit</td>
+              <td>$38.40</td><td>$39.82</td><td>18.5</td>
+              <td class="down">-$26.27</td><td class="down">-3.70%</td>
+              <td style="color:var(--gray-400)">OKX</td>
             </tr>
             <tr>
               <td><div class="coin-row"><div class="coin-dot" style="background:#0033ad20;color:#0033ad">S</div>SOL/USDT</div></td>
               <td><span style="color:var(--green);font-weight:600;font-size:12px;">LONG</span></td>
-              <td>$142.10</td>
-              <td>$155.44</td>
-              <td>3.8</td>
-              <td class="up">+$50.69</td>
-              <td class="up">+9.39%</td>
-              <td style="color:var(--gray-400)">Bybit</td>
+              <td>$142.10</td><td>$155.44</td><td>3.8</td>
+              <td class="up">+$50.69</td><td class="up">+9.39%</td>
+              <td style="color:var(--gray-400)">OKX</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- 수익 통계 상세 -->
       <div class="grid-2">
         <div class="card">
-          <div class="card-header"><span class="card-title">수익 통계</span></div>
+          <div class="card-header"><span class="card-title">Trade Statistics</span></div>
           <div style="display:flex; flex-direction:column; gap:0;">
             <div class="toggle-row" style="border:none; padding:10px 0;">
-              <div style="font-size:13px; color:var(--gray-400)">총 수익 거래</div>
-              <div style="font-size:14px; font-weight:600; color:var(--green)">926건</div>
+              <div style="font-size:13px; color:var(--gray-400)">Winning Trades</div>
+              <div style="font-size:14px; font-weight:600; color:var(--green)">926</div>
             </div>
             <div class="toggle-row" style="padding:10px 0;">
-              <div style="font-size:13px; color:var(--gray-400)">총 손실 거래</div>
-              <div style="font-size:14px; font-weight:600; color:var(--red)">322건</div>
+              <div style="font-size:13px; color:var(--gray-400)">Losing Trades</div>
+              <div style="font-size:14px; font-weight:600; color:var(--red)">322</div>
             </div>
             <div class="toggle-row" style="padding:10px 0;">
-              <div style="font-size:13px; color:var(--gray-400)">평균 수익</div>
+              <div style="font-size:13px; color:var(--gray-400)">Avg. Win</div>
               <div style="font-size:14px; font-weight:600; color:var(--green)">+3.14%</div>
             </div>
             <div class="toggle-row" style="padding:10px 0;">
-              <div style="font-size:13px; color:var(--gray-400)">평균 손실</div>
+              <div style="font-size:13px; color:var(--gray-400)">Avg. Loss</div>
               <div style="font-size:14px; font-weight:600; color:var(--red)">-1.82%</div>
             </div>
             <div class="toggle-row" style="padding:10px 0; border:none;">
-              <div style="font-size:13px; color:var(--gray-400)">손익비 (Risk/Reward)</div>
+              <div style="font-size:13px; color:var(--gray-400)">Risk / Reward</div>
               <div style="font-size:14px; font-weight:600;">1 : 1.72</div>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-header"><span class="card-title">최근 거래</span></div>
+          <div class="card-header"><span class="card-title">Recent Trades</span></div>
           <table>
             <thead>
-              <tr><th>코인</th><th>결과</th><th>수익률</th><th>시간</th></tr>
+              <tr><th>Pair</th><th>Result</th><th>ROE</th><th>Time</th></tr>
             </thead>
             <tbody>
               <tr>
                 <td>BTC/USDT</td>
-                <td><span style="color:var(--green);font-size:12px;">수익</span></td>
+                <td><span style="color:var(--green);font-size:12px;">Win</span></td>
                 <td class="up">+4.2%</td>
-                <td style="color:var(--gray-600);font-size:12px;">14분 전</td>
+                <td style="color:var(--gray-600);font-size:12px;">14m ago</td>
               </tr>
               <tr>
                 <td>ETH/USDT</td>
-                <td><span style="color:var(--red);font-size:12px;">손실</span></td>
+                <td><span style="color:var(--red);font-size:12px;">Loss</span></td>
                 <td class="down">-1.8%</td>
-                <td style="color:var(--gray-600);font-size:12px;">32분 전</td>
+                <td style="color:var(--gray-600);font-size:12px;">32m ago</td>
               </tr>
               <tr>
                 <td>SOL/USDT</td>
-                <td><span style="color:var(--green);font-size:12px;">수익</span></td>
+                <td><span style="color:var(--green);font-size:12px;">Win</span></td>
                 <td class="up">+6.7%</td>
-                <td style="color:var(--gray-600);font-size:12px;">1시간 전</td>
+                <td style="color:var(--gray-600);font-size:12px;">1h ago</td>
               </tr>
               <tr>
-                <td>BNB/USDT</td>
-                <td><span style="color:var(--green);font-size:12px;">수익</span></td>
+                <td>BTC/USDT</td>
+                <td><span style="color:var(--green);font-size:12px;">Win</span></td>
                 <td class="up">+2.1%</td>
-                <td style="color:var(--gray-600);font-size:12px;">2시간 전</td>
+                <td style="color:var(--gray-600);font-size:12px;">2h ago</td>
               </tr>
             </tbody>
           </table>
@@ -456,103 +415,75 @@
       </div>
     </div>
 
-    <!-- ===== API 연동 ===== -->
+    <!-- API INTEGRATION -->
     <div class="page" id="page-api">
-      <div class="topbar"><h1>API 연동</h1></div>
+      <div class="topbar"><h1>API Integration</h1></div>
 
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
-          <span class="card-title">연결된 거래소</span>
+          <span class="card-title">Connected Exchanges</span>
         </div>
         <div class="exchange-list">
           <div class="exchange-item">
             <div class="exchange-info">
-              <div class="exchange-logo">BN</div>
+              <div class="exchange-logo">OKX</div>
               <div>
-                <div class="exchange-name">Binance</div>
+                <div class="exchange-name">OKX</div>
                 <div class="exchange-key">API: ****...a4f2 | Secret: ****...9k3m</div>
               </div>
             </div>
             <div class="exchange-status">
               <div class="status-dot connected"></div>
-              <span class="status-text">연결됨</span>
-              <button class="btn-sm danger">해제</button>
-            </div>
-          </div>
-          <div class="exchange-item">
-            <div class="exchange-info">
-              <div class="exchange-logo">UB</div>
-              <div>
-                <div class="exchange-name">Upbit</div>
-                <div class="exchange-key">API: ****...b7c1 | Secret: ****...2p9n</div>
-              </div>
-            </div>
-            <div class="exchange-status">
-              <div class="status-dot connected"></div>
-              <span class="status-text">연결됨</span>
-              <button class="btn-sm danger">해제</button>
-            </div>
-          </div>
-          <div class="exchange-item">
-            <div class="exchange-info">
-              <div class="exchange-logo">BB</div>
-              <div>
-                <div class="exchange-name">Bybit</div>
-                <div class="exchange-key">연결되지 않음</div>
-              </div>
-            </div>
-            <div class="exchange-status">
-              <div class="status-dot disconnected"></div>
-              <span class="status-text">미연결</span>
-              <button class="btn-sm" onclick="openApiModal('Bybit')">연결</button>
+              <span class="status-text">Connected</span>
+              <button class="btn-sm danger">Disconnect</button>
             </div>
           </div>
         </div>
-        <button class="btn-add" onclick="openApiModal('')">+ 새 거래소 연결</button>
+        <button class="btn-add" onclick="openApiModal()">+ Connect OKX API</button>
       </div>
 
       <div class="card">
-        <div class="card-header"><span class="card-title">API 보안 안내</span></div>
+        <div class="card-header"><span class="card-title">API Security Guidelines</span></div>
         <div style="display:flex; flex-direction:column; gap:12px;">
           <div style="display:flex; gap:12px; align-items:flex-start; padding:14px; background:rgba(34,197,94,0.04); border:1px solid rgba(34,197,94,0.12); border-radius:8px;">
             <span style="font-size:18px; flex-shrink:0;">✅</span>
             <div>
-              <div style="font-size:13px; font-weight:600; margin-bottom:3px;">거래 전용 API만 사용</div>
-              <div style="font-size:12px; color:var(--gray-400);">API 키 생성 시 출금 권한을 OFF 상태로 유지하세요. AYILON은 출금 기능이 필요하지 않습니다.</div>
+              <div style="font-size:13px; font-weight:600; margin-bottom:3px;">Trade-only permissions</div>
+              <div style="font-size:12px; color:var(--gray-400);">When creating your OKX API key, keep Withdrawal permission OFF. AYILON never needs withdrawal access.</div>
             </div>
           </div>
           <div style="display:flex; gap:12px; align-items:flex-start; padding:14px; background:rgba(34,197,94,0.04); border:1px solid rgba(34,197,94,0.12); border-radius:8px;">
             <span style="font-size:18px; flex-shrink:0;">🔐</span>
             <div>
-              <div style="font-size:13px; font-weight:600; margin-bottom:3px;">AES-256 암호화 저장</div>
-              <div style="font-size:12px; color:var(--gray-400);">모든 API 키는 AES-256으로 암호화되어 저장됩니다. 직원도 평문으로 볼 수 없습니다.</div>
+              <div style="font-size:13px; font-weight:600; margin-bottom:3px;">AES-256 encryption at rest</div>
+              <div style="font-size:12px; color:var(--gray-400);">All API keys are encrypted with AES-256 before storage. No AYILON staff can view your keys in plaintext.</div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ===== 보안 설정 ===== -->
+    <!-- SECURITY -->
     <div class="page" id="page-security">
-      <div class="topbar"><h1>보안 설정</h1></div>
+      <div class="topbar"><h1>Security</h1></div>
 
       <div class="card" style="margin-bottom:20px;">
         <div class="security-section">
-          <div class="security-title">로그인 2단계 인증 (2FA)</div>
-          <div class="security-desc">로그인 시마다 추가 인증 방식을 설정합니다. 하나를 기본으로 선택하고 나머지는 백업으로 사용할 수 있습니다.</div>
+          <div class="security-title">Two-Factor Authentication (2FA)</div>
+          <div class="security-desc">Choose your primary 2FA method for login. Others can serve as backup.</div>
         </div>
 
         <div class="method-card selected" onclick="selectMethod2fa(this)">
           <div class="method-left">
             <span class="method-icon">🔐</span>
             <div>
-              <div class="method-name">Authenticator 앱 (권장)</div>
+              <div class="method-name">Authenticator App (Recommended)</div>
               <div class="method-detail">Google Authenticator, Microsoft Authenticator</div>
             </div>
           </div>
           <div class="method-right">
-            <span class="badge-set">설정됨</span>
-            <div class="radio-circle checked" id="radio-auth"></div>
+            <span class="badge-set">Active</span>
+            <div class="radio-circle checked"></div>
           </div>
         </div>
 
@@ -560,13 +491,13 @@
           <div class="method-left">
             <span class="method-icon">📧</span>
             <div>
-              <div class="method-name">이메일 인증코드</div>
-              <div class="method-detail">로그인 시 이메일로 6자리 코드 발송</div>
+              <div class="method-name">Email Code</div>
+              <div class="method-detail">6-digit code sent to your email on each login</div>
             </div>
           </div>
           <div class="method-right">
-            <span class="badge-set">설정됨</span>
-            <div class="radio-circle" id="radio-email"></div>
+            <span class="badge-set">Active</span>
+            <div class="radio-circle"></div>
           </div>
         </div>
 
@@ -574,141 +505,141 @@
           <div class="method-left">
             <span class="method-icon">📱</span>
             <div>
-              <div class="method-name">휴대폰 SMS 인증</div>
-              <div class="method-detail">등록된 번호로 문자 발송</div>
+              <div class="method-name">SMS Verification</div>
+              <div class="method-detail">Text message sent to your registered phone</div>
             </div>
           </div>
           <div class="method-right">
-            <span class="badge-unset">미설정</span>
-            <div class="radio-circle" id="radio-sms"></div>
+            <span class="badge-unset">Not set</span>
+            <div class="radio-circle"></div>
           </div>
         </div>
       </div>
 
       <div class="card" style="margin-bottom:20px;">
-        <div class="card-header"><span class="card-title">비밀번호 변경</span></div>
+        <div class="card-header"><span class="card-title">Change Password</span></div>
         <div style="max-width:400px;">
           <div class="d-form-group">
-            <label class="d-form-label">현재 비밀번호</label>
-            <input type="password" class="d-form-input" placeholder="현재 비밀번호 입력" />
+            <label class="d-form-label">Current Password</label>
+            <input type="password" class="d-form-input" placeholder="Enter current password" />
           </div>
           <div class="d-form-group">
-            <label class="d-form-label">새 비밀번호</label>
-            <input type="password" class="d-form-input" placeholder="새 비밀번호 입력" />
+            <label class="d-form-label">New Password</label>
+            <input type="password" class="d-form-input" placeholder="Enter new password" />
           </div>
           <div class="d-form-group">
-            <label class="d-form-label">새 비밀번호 확인</label>
-            <input type="password" class="d-form-input" placeholder="새 비밀번호 재입력" />
+            <label class="d-form-label">Confirm New Password</label>
+            <input type="password" class="d-form-input" placeholder="Re-enter new password" />
           </div>
-          <button class="btn-primary">비밀번호 변경</button>
+          <button class="btn-primary">Update Password</button>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header"><span class="card-title">보안 알림</span></div>
+        <div class="card-header"><span class="card-title">Security Notifications</span></div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>새 기기 로그인 알림</h3>
-            <p>새로운 기기에서 로그인 시 이메일로 알림</p>
+            <h3>New device login alert</h3>
+            <p>Email notification when a new device signs in</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>API 키 변경 알림</h3>
-            <p>API 키 추가/삭제 시 이메일로 알림</p>
+            <h3>API key change alert</h3>
+            <p>Email notification when API keys are added or removed</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>대규모 출금 시도 알림</h3>
-            <p>비정상적인 접근 시도 감지 시 즉시 알림</p>
+            <h3>Suspicious activity alert</h3>
+            <p>Immediate notification on anomalous access attempts</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
         </div>
       </div>
     </div>
 
-    <!-- ===== 마이 페이지 ===== -->
+    <!-- MY ACCOUNT -->
     <div class="page" id="page-mypage">
-      <div class="topbar"><h1>마이 페이지</h1></div>
+      <div class="topbar"><h1>My Account</h1></div>
 
       <div class="grid-2" style="margin-bottom:20px;">
         <div class="card">
-          <div class="card-header"><span class="card-title">프로필 정보</span></div>
+          <div class="card-header"><span class="card-title">Profile</span></div>
           <div style="display:flex; align-items:center; gap:20px; margin-bottom:24px;">
             <div style="width:64px;height:64px;background:rgba(255,255,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;">AY</div>
             <div>
-              <div style="font-size:16px;font-weight:600;margin-bottom:3px;">김아일론</div>
+              <div style="font-size:16px;font-weight:600;margin-bottom:3px;">AYILON User</div>
               <div style="font-size:12px;color:var(--gray-400);">user@ayilon.com</div>
-              <div style="font-size:11px;color:var(--gray-600);margin-top:4px;">Pro 플랜 · 2025.01.15 가입</div>
+              <div style="font-size:11px;color:var(--gray-600);margin-top:4px;">Pro Plan · Joined Jan 15, 2025</div>
             </div>
           </div>
           <div class="d-form-group">
-            <label class="d-form-label">이름</label>
-            <input type="text" class="d-form-input" value="김아일론" />
+            <label class="d-form-label">Full Name</label>
+            <input type="text" class="d-form-input" value="AYILON User" />
           </div>
           <div class="d-form-group">
-            <label class="d-form-label">닉네임</label>
+            <label class="d-form-label">Username</label>
             <input type="text" class="d-form-input" value="ayilon_trader" />
           </div>
           <div class="d-form-group">
-            <label class="d-form-label">이메일</label>
+            <label class="d-form-label">Email</label>
             <input type="email" class="d-form-input" value="user@ayilon.com" readonly style="opacity:0.5;cursor:not-allowed;" />
           </div>
-          <button class="btn-primary">저장</button>
+          <button class="btn-primary">Save Changes</button>
         </div>
 
         <div class="card">
-          <div class="card-header"><span class="card-title">구독 현황</span></div>
+          <div class="card-header"><span class="card-title">Subscription</span></div>
           <div style="padding:20px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; margin-bottom:16px;">
-            <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray-400);margin-bottom:8px;">현재 플랜</div>
+            <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray-400);margin-bottom:8px;">Current Plan</div>
             <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:4px;">Pro</div>
-            <div style="font-size:13px;color:var(--gray-400);">₩49,900 / 월 · 2025.02.15 갱신</div>
+            <div style="font-size:13px;color:var(--gray-400);">$500 / month · Renews Feb 15, 2025</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
             <div style="display:flex;justify-content:space-between;font-size:13px;">
-              <span style="color:var(--gray-400)">활성 봇</span><span>3 / 무제한</span>
+              <span style="color:var(--gray-400)">Active Bots</span><span>3 / 5</span>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:13px;">
-              <span style="color:var(--gray-400)">연결 거래소</span><span>2 / 5개 지원</span>
+              <span style="color:var(--gray-400)">Exchange</span><span>OKX</span>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:13px;">
-              <span style="color:var(--gray-400)">백테스트</span><span style="color:var(--green)">✓ 포함</span>
+              <span style="color:var(--gray-400)">Backtesting</span><span style="color:var(--green)">✓ Included</span>
             </div>
           </div>
-          <button class="btn-sm" style="width:100%;padding:10px;">플랜 변경</button>
+          <button class="btn-sm" style="width:100%;padding:10px;">Change Plan</button>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header"><span class="card-title">알림 설정</span></div>
+        <div class="card-header"><span class="card-title">Notification Preferences</span></div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>체결 알림</h3>
-            <p>봇이 매매를 체결할 때마다 알림</p>
+            <h3>Trade execution alerts</h3>
+            <p>Notify every time a bot fills an order</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>텔레그램 알림</h3>
-            <p>텔레그램 봇으로 실시간 체결 알림 수신</p>
+            <h3>Telegram notifications</h3>
+            <p>Receive real-time trade alerts via Telegram bot</p>
           </div>
           <div class="toggle" onclick="this.classList.toggle('on')"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>이메일 일일 리포트</h3>
-            <p>매일 오전 9시 전날 수익 리포트 발송</p>
+            <h3>Daily email report</h3>
+            <p>Receive yesterday's performance summary every morning</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>손절 발생 긴급 알림</h3>
-            <p>손절이 발생하면 즉시 SMS + 이메일</p>
+            <h3>Stop-loss triggered alert</h3>
+            <p>Immediate SMS + email when a stop-loss fires</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
         </div>
@@ -717,65 +648,68 @@
 
   </main>
 
-  <!-- API 연동 모달 -->
+  <!-- API Modal -->
   <div class="modal-overlay" id="apiModal">
     <div class="modal">
-      <div class="modal-title" id="apiModalTitle">거래소 API 연결</div>
-      <div class="modal-desc">API 키와 시크릿 키를 입력하세요. 출금 권한은 반드시 OFF로 설정해주세요.</div>
+      <div class="modal-title">Connect OKX API</div>
+      <div class="modal-desc">Enter your OKX API key and secret. Ensure withdrawal permission is disabled.</div>
       <div class="d-form-group">
-        <label class="d-form-label">거래소</label>
-        <select class="d-form-input" id="exchangeSelect" style="cursor:pointer;">
-          <option>Binance</option><option>Upbit</option><option>Bithumb</option><option>Bybit</option><option>OKX</option>
+        <label class="d-form-label">Exchange</label>
+        <select class="d-form-input" style="cursor:pointer;">
+          <option>OKX</option>
         </select>
       </div>
       <div class="d-form-group">
         <label class="d-form-label">API Key</label>
-        <input type="text" class="d-form-input" placeholder="API Key 입력" />
+        <input type="text" class="d-form-input" placeholder="Paste your API key" />
       </div>
       <div class="d-form-group">
         <label class="d-form-label">Secret Key</label>
-        <input type="password" class="d-form-input" placeholder="Secret Key 입력" />
+        <input type="password" class="d-form-input" placeholder="Paste your secret key" />
+      </div>
+      <div class="d-form-group">
+        <label class="d-form-label">Passphrase</label>
+        <input type="password" class="d-form-input" placeholder="OKX API passphrase" />
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeModal('apiModal')">취소</button>
-        <button class="btn-primary" onclick="closeModal('apiModal')">연결하기</button>
+        <button class="btn-cancel" onclick="closeModal('apiModal')">Cancel</button>
+        <button class="btn-primary" onclick="closeModal('apiModal')">Connect</button>
       </div>
     </div>
   </div>
 
-  <!-- 휴대폰 인증 모달 -->
+  <!-- Phone Modal -->
   <div class="modal-overlay" id="phoneModal">
     <div class="modal">
-      <div class="modal-title">휴대폰 번호 등록</div>
-      <div class="modal-desc">SMS 인증에 사용할 휴대폰 번호를 등록합니다.</div>
+      <div class="modal-title">Register Phone Number</div>
+      <div class="modal-desc">Add your phone number to enable SMS two-factor authentication.</div>
       <div class="d-form-group">
-        <label class="d-form-label">휴대폰 번호</label>
+        <label class="d-form-label">Phone Number</label>
         <div style="display:flex;gap:10px;">
-          <input type="tel" class="d-form-input" placeholder="010-0000-0000" style="flex:1" />
-          <button class="btn-sm" style="flex-shrink:0;padding:0 16px;" onclick="this.textContent='발송됨';this.disabled=true">인증 발송</button>
+          <input type="tel" class="d-form-input" placeholder="+1 (555) 000-0000" style="flex:1" />
+          <button class="btn-sm" style="flex-shrink:0;padding:0 16px;" onclick="this.textContent='Sent';this.disabled=true">Send Code</button>
         </div>
       </div>
       <div class="d-form-group">
-        <label class="d-form-label">인증번호</label>
-        <input type="text" class="d-form-input" placeholder="6자리 인증번호" maxlength="6" />
+        <label class="d-form-label">Verification Code</label>
+        <input type="text" class="d-form-input" placeholder="6-digit code" maxlength="6" />
       </div>
       <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeModal('phoneModal')">취소</button>
-        <button class="btn-primary" onclick="closeModal('phoneModal')">등록 완료</button>
+        <button class="btn-cancel" onclick="closeModal('phoneModal')">Cancel</button>
+        <button class="btn-primary" onclick="closeModal('phoneModal')">Register</button>
       </div>
     </div>
   </div>
 
   <script>
-    function showPage(name) {
+    function showPage(name, el) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
       document.getElementById('page-' + name).classList.add('active');
-      event.currentTarget.classList.add('active');
+      if (el) el.classList.add('active');
     }
 
-    function openApiModal(exchange) {
-      if (exchange) document.getElementById('exchangeSelect').value = exchange;
+    function openApiModal() {
       document.getElementById('apiModal').classList.add('show');
     }
 
