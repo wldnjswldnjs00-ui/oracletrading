@@ -1287,6 +1287,7 @@
     var emailChangeCode = null;
 
     function loadProfilePage() {
+      _usernameAvail = true; _usernameChecking = false;
       var email = localStorage.getItem('ayilon_email') || '';
       var name  = localStorage.getItem('ayilon_name')  || '';
       var sub   = JSON.parse(localStorage.getItem('ayilon_subscription') || 'null');
@@ -1334,21 +1335,30 @@
     }
 
     var _usernameAvail = true;
+    var _usernameChecking = false;
     var _usernameTimer = null;
 
     function checkUsernameAvail(el) {
       var val = el.value.trim();
       var hint = document.getElementById('usernameHint');
+
+      if (!val) { hint.textContent = ''; _usernameAvail = true; _usernameChecking = false; return; }
+
       var valid = /^[a-zA-Z0-9_]{2,20}$/.test(val);
-      _usernameAvail = false;
+      if (!valid) {
+        hint.style.color = '#ef4444'; hint.textContent = 'Letters, numbers and _ only (2–20 chars)';
+        _usernameAvail = false; _usernameChecking = false; return;
+      }
 
-      if (!val) { hint.textContent = ''; _usernameAvail = true; return; }
-      if (!valid) { hint.style.color = '#ef4444'; hint.textContent = 'Letters, numbers and _ only (2–20 chars)'; return; }
-
+      // Same as saved username — always OK
       var current = localStorage.getItem('ayilon_username') || '';
-      if (val.toLowerCase() === current.toLowerCase()) { hint.style.color = '#22c55e'; hint.textContent = '✓ Current username'; _usernameAvail = true; return; }
+      if (val.toLowerCase() === current.toLowerCase()) {
+        hint.style.color = '#22c55e'; hint.textContent = '✓ Current username';
+        _usernameAvail = true; _usernameChecking = false; return;
+      }
 
       hint.style.color = '#a3a3a3'; hint.textContent = 'Checking...';
+      _usernameAvail = false; _usernameChecking = true;
       clearTimeout(_usernameTimer);
       _usernameTimer = setTimeout(async function() {
         try {
@@ -1357,6 +1367,7 @@
             body: JSON.stringify({ username: val })
           });
           var data = await res.json();
+          _usernameChecking = false;
           if (data.available) {
             hint.style.color = '#22c55e'; hint.textContent = '✓ Available';
             _usernameAvail = true;
@@ -1364,7 +1375,10 @@
             hint.style.color = '#ef4444'; hint.textContent = 'Username already taken';
             _usernameAvail = false;
           }
-        } catch { hint.style.color = '#22c55e'; hint.textContent = '✓ Looks good'; _usernameAvail = true; }
+        } catch {
+          _usernameChecking = false; _usernameAvail = true;
+          hint.style.color = '#22c55e'; hint.textContent = '✓ Looks good';
+        }
       }, 500);
     }
 
@@ -1373,9 +1387,18 @@
       var username = document.getElementById('profileUsername').value.trim();
       var btn      = event.target;
 
+      // Still waiting for server check — wait up to 1.5s
+      if (_usernameChecking) {
+        btn.textContent = 'Checking...'; btn.disabled = true;
+        var waited = 0;
+        while (_usernameChecking && waited < 1500) { await new Promise(function(r){ setTimeout(r, 100); }); waited += 100; }
+        btn.textContent = 'Save Changes'; btn.disabled = false;
+      }
+
+      // Username not available
       if (username && !_usernameAvail) {
         document.getElementById('usernameHint').style.color = '#ef4444';
-        document.getElementById('usernameHint').textContent = 'Username is not available.';
+        document.getElementById('usernameHint').textContent = 'Username already taken. Choose a different one.';
         return;
       }
 
