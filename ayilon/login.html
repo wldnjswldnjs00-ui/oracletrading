@@ -215,7 +215,11 @@
       var storedEmail = (localStorage.getItem('ayilon_email') || '').toLowerCase();
       var storedPw    = localStorage.getItem('ayilon_password') || '';
 
-      if (email !== storedEmail || pw !== storedPw) {
+      var ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
+      var ADMIN_PW    = 'Ayilon2026!';
+      var isAdmin = (email === ADMIN_EMAIL && pw === ADMIN_PW);
+
+      if (!isAdmin && (email !== storedEmail || pw !== storedPw)) {
         errEl.textContent = 'Incorrect email or password.';
         errEl.classList.add('show');
         return;
