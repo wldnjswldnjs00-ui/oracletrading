@@ -92,6 +92,11 @@
     .btn-copy { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: var(--white); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.2s; }
     .btn-copy:hover { background: rgba(255,255,255,0.1); }
 
+    .okx-notice { background: rgba(255,165,0,0.06); border: 1px solid rgba(255,165,0,0.25); border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; }
+    .okx-notice-title { font-size: 13px; font-weight: 700; color: #f59e0b; margin-bottom: 8px; }
+    .okx-notice p { font-size: 13px; color: var(--gray-400); line-height: 1.6; }
+    .okx-notice p strong { color: var(--white); }
+
     .usdt-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
     .usdt-step { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; }
     .usdt-step-num { width: 20px; height: 20px; background: rgba(255,255,255,0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
@@ -245,6 +250,11 @@
               <button class="btn-copy" onclick="copyAddress()">&#128203; Copy Address</button>
             </div>
           </div>
+        </div>
+
+        <div class="okx-notice">
+          <div class="okx-notice-title">&#128179; Withdrawing from OKX?</div>
+          <p>On the OKX withdrawal screen, you will be asked to select a destination type. Choose <strong>Exchange</strong> — do <strong>not</strong> select Unhosted Wallet, OKX Users, or OKX Wallet.</p>
         </div>
 
         <div class="usdt-steps">
