@@ -309,12 +309,14 @@ async function runBot(env) {
     if (!cfg || cfg.running !== true) return;
 
     const { apiKey, apiSecret, apiPassphrase, tradingPair = 'BTC-USDT-SWAP',
-      strategy = 'daytrading', srTimeframe = '1H', srTouch = 2,
+      strategy = 'daytrading',
       numEntries = 3, entrySizing = 'equal',
       posSize = 40, leverage = 20,
       lossLimitEnabled = true, lossLimit = 5,
       notifyEmail = true, notifyTelegram = false,
       telegramToken, telegramChatId, userEmail } = cfg;
+    const srTimeframe = '4H';
+    const srTouch = 3;
 
     if (!apiKey || !apiSecret || !apiPassphrase) return;
 
@@ -348,8 +350,7 @@ async function runBot(env) {
     await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimit / 100);
 
     // ── S/R candles ───────────────────────────────────────────
-    const srBar = srTimeframe === '4H' ? '4H' : '1H';
-    const srCandles = await getCandles(tradingPair, srBar, 100);
+    const srCandles = await getCandles(tradingPair, '4H', 100);
     if (srCandles.length < 20) return;
     const levels = detectSR(srCandles, parseInt(srTouch));
     if (!levels.supports.length && !levels.resistances.length) return;
