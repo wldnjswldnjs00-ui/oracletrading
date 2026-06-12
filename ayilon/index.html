@@ -352,7 +352,7 @@
       <div class="feature-card">
         <div class="feature-icon">📊</div>
         <h3>Multiple Strategies</h3>
-        <p>Grid trading, DCA, RSI scalping, Bollinger Bands — proven strategies configurable in one click.</p>
+        <p>Support/resistance entries, fractional DCA, Kelly-sized positions, Bollinger Bands — proven strategies configurable in one click.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">🔍</div>
@@ -428,7 +428,7 @@
           <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--gray-600);margin-bottom:16px;">01 &nbsp;·&nbsp; Day Trading</div>
           <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:8px;">Day Trading</div>
           <div style="font-size:13px;color:var(--gray-400);margin-bottom:24px;">We recommend from <strong style="color:var(--white);">$1,000</strong></div>
-          <div style="flex:1;font-size:14px;color:var(--gray-400);line-height:1.75;margin-bottom:24px;">Opens and closes positions within the same day, converting intraday volatility into profit. Larger position sizes and higher per-trade returns, optimized for consistent daily gains.</div>
+          <div style="flex:1;font-size:14px;color:var(--gray-400);line-height:1.75;margin-bottom:24px;">Identifies support and resistance levels on the 4-hour chart with 3-touch confirmation. Enters on the 5-minute timeframe when a wick forms at the level — never when the body breaks through. Builds positions fractionally up to the stop loss (previous swing high/low), then exits cleanly.</div>
           <div style="display:flex;flex-direction:column;gap:8px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
             <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">Frequency</span><span>Medium (5–20 trades/day)</span></div>
             <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">Hold time</span><span>Minutes to hours</span></div>
@@ -440,7 +440,7 @@
           <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--gray-600);margin-bottom:16px;">02 &nbsp;·&nbsp; Swing</div>
           <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:8px;">Swing</div>
           <div style="font-size:13px;color:var(--gray-400);margin-bottom:24px;">We recommend from <strong style="color:var(--white);">$10,000</strong></div>
-          <div style="flex:1;font-size:14px;color:var(--gray-400);line-height:1.75;margin-bottom:24px;">Holds positions for days to weeks to capture major price movements. Fewer, higher-conviction trades with larger position sizes — optimized for accounts that can tolerate short-term drawdown.</div>
+          <div style="flex:1;font-size:14px;color:var(--gray-400);line-height:1.75;margin-bottom:24px;">Same S/R entry logic applied to multi-day positions. Holds through noise, uses wider stops based on weekly structure, and sizes positions conservatively per Kelly Criterion. Designed for accounts that prioritize capital preservation over daily returns.</div>
           <div style="display:flex;flex-direction:column;gap:8px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
             <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">Frequency</span><span>Low (1–5 trades/week)</span></div>
             <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">Hold time</span><span>Days to weeks</span></div>
@@ -578,7 +578,7 @@
             What is AYILON?
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p>AYILON is a fully automated crypto trading platform that runs bots on your OKX account 24/7. You connect your API key, choose a strategy (Grid, DCA, or Momentum), and the bot handles everything — entries, exits, and position management — while you sleep.</p></div>
+          <div class="faq-answer"><p>AYILON is a fully automated crypto trading platform that runs bots on your OKX account 24/7. You connect your API key, choose a strategy (Day Trading or Swing), and the bot handles everything — entries, exits, and position management — while you sleep.</p></div>
         </div>
 
         <div class="faq-item">
@@ -602,7 +602,7 @@
             What trading strategies are available?
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p>AYILON offers three proprietary strategies, each designed for a different capital size and risk profile:<br /><br /><strong>Scalping</strong> ($100–$1,000) — High-frequency trading with dozens of small trades per day. Best for building consistent profits with small capital and tight risk control.<br /><br /><strong>Day Trading</strong> ($1,000–$10,000) — Intraday positions held for minutes to hours. Balances trade frequency with position size for steady returns.<br /><br /><strong>Swing</strong> ($10,000+) — Multi-day positions that capture major price movements. Lower frequency, higher per-trade profitability. Best for larger capital that can absorb short-term volatility.</p></div>
+          <div class="faq-answer"><p>AYILON uses support/resistance breakout entries on the 4H timeframe with 5-minute execution. Positions are built fractionally, and every trade has a defined stop loss at the previous swing high or low.<br /><br /><strong>Day Trading</strong> (from $1,000) — Intraday positions held for minutes to hours. Identifies S/R levels on the 4H chart, enters on 5m wick confirmation, and exits cleanly within the session.<br /><br /><strong>Swing</strong> (from $10,000) — Same S/R logic applied to multi-day positions. Holds through noise using wider stops based on weekly structure, sized conservatively per Kelly Criterion.</p></div>
         </div>
 
         <div class="faq-item">
