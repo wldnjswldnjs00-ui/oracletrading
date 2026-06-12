@@ -19,6 +19,7 @@ export default {
       if (path === '/save-bot-settings')  return handleSaveBotSettings(request, env);
       if (path === '/bot-status')         return handleBotStatus(request, env);
       if (path === '/bot-control')        return handleBotControl(request, env);
+      if (path === '/get-positions')      return handleGetPositions(request, env);
     }
 
     return corsResponse(JSON.stringify({ error: 'Not found' }), 404);
@@ -283,6 +284,16 @@ async function handleBotControl(request, env) {
   }
   await env.USERS_KV.put('bot:config', JSON.stringify(config));
   return json({ ok: true, running: config.running });
+}
+
+async function handleGetPositions(request, env) {
+  const { apiKey, apiSecret, apiPassphrase, instId } = await request.json();
+  if (!apiKey || !apiSecret || !apiPassphrase) return json({ positions: [] });
+  try {
+    const path = instId ? `/api/v5/account/positions?instId=${instId}` : '/api/v5/account/positions';
+    const data = await okxGet(apiKey, apiSecret, apiPassphrase, path);
+    return json({ positions: data?.data || [] });
+  } catch(e) { return json({ positions: [], error: e.message }); }
 }
 
 // ════════════════════════════════════════════════════════════
