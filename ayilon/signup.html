@@ -296,17 +296,23 @@
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: val })
           });
-          const data = await res.json();
-          if (data.available) {
+          if (!res.ok) {
             el.classList.remove('error'); el.classList.add('success');
-            hint.className = 'form-hint success';
-            hint.textContent = '✓ Username is available';
+            hint.className = 'form-hint success'; hint.textContent = '✓ Username is available';
             nicknameAvailable = true;
           } else {
-            el.classList.remove('success'); el.classList.add('error');
-            hint.className = 'form-hint error';
-            hint.textContent = 'This username is already taken';
-            nicknameAvailable = false;
+            const data = await res.json();
+            if (data.available === false) {
+              el.classList.remove('success'); el.classList.add('error');
+              hint.className = 'form-hint error';
+              hint.textContent = 'This username is already taken';
+              nicknameAvailable = false;
+            } else {
+              el.classList.remove('error'); el.classList.add('success');
+              hint.className = 'form-hint success';
+              hint.textContent = '✓ Username is available';
+              nicknameAvailable = true;
+            }
           }
         } catch {
           el.classList.remove('error'); el.classList.add('success');

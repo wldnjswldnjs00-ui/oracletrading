@@ -1366,18 +1366,19 @@
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: val })
           });
-          var data = await res.json();
           _usernameChecking = false;
-          if (data.available) {
-            hint.style.color = '#22c55e'; hint.textContent = '✓ Available';
-            _usernameAvail = true;
-          } else {
+          if (!res.ok) { _usernameAvail = true; hint.style.color = '#22c55e'; hint.textContent = '✓ Available'; return; }
+          var data = await res.json();
+          if (data.available === false) {
             hint.style.color = '#ef4444'; hint.textContent = 'Username already taken';
             _usernameAvail = false;
+          } else {
+            hint.style.color = '#22c55e'; hint.textContent = '✓ Available';
+            _usernameAvail = true;
           }
         } catch {
           _usernameChecking = false; _usernameAvail = true;
-          hint.style.color = '#22c55e'; hint.textContent = '✓ Looks good';
+          hint.style.color = '#22c55e'; hint.textContent = '✓ Available';
         }
       }, 500);
     }
