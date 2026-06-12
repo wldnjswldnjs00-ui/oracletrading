@@ -211,7 +211,7 @@
     <button class="hamburger" onclick="toggleSidebar()" aria-label="Open menu">
       <span></span><span></span><span></span>
     </button>
-    <span style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;letter-spacing:0.12em;">AYILON</span>
+    <a href="index.html" style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;letter-spacing:0.12em;color:var(--white);text-decoration:none;">AYILON</a>
     <div style="width:40px;"></div>
   </div>
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
@@ -1082,8 +1082,10 @@
 
       // Update sidebar user info
       if (email) {
+        var uname = localStorage.getItem('ayilon_username') || '';
         document.getElementById('sidebarEmail').textContent = email;
-        document.getElementById('sidebarAvatar').textContent = email.charAt(0).toUpperCase();
+        document.getElementById('sidebarAvatar').textContent = (uname || email).charAt(0).toUpperCase();
+        document.getElementById('sidebarName').textContent = uname || email;
       }
 
       if (!loggedIn && !isAdmin) {
@@ -1293,10 +1295,11 @@
       var sub   = JSON.parse(localStorage.getItem('ayilon_subscription') || 'null');
       var isAdmin = email === ADMIN_EMAIL;
 
-      // Avatar + header
-      var initial = (name || email || 'A').charAt(0).toUpperCase();
+      // Avatar + header — show username publicly, full name stays private
+      var displayName = username || name || email || '—';
+      var initial = displayName.charAt(0).toUpperCase();
       document.getElementById('profileAvatar').textContent = initial;
-      document.getElementById('profileDisplayName').textContent  = name  || email || '—';
+      document.getElementById('profileDisplayName').textContent  = displayName;
       document.getElementById('profileDisplayEmail').textContent = email || '—';
 
       // Form fields
