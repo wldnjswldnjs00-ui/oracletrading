@@ -212,11 +212,14 @@
     </div>
 
     <div class="sidebar-bottom">
+      <div id="planStatus" style="padding:8px 24px 4px;font-size:11px;color:#525252;display:none;">
+        <span id="planStatusText">No active plan</span> · <a href="index.html#pricing" style="color:#f59e0b;text-decoration:none;">Upgrade</a>
+      </div>
       <div class="user-info">
-        <div class="user-avatar">AY</div>
+        <div class="user-avatar" id="sidebarAvatar">AY</div>
         <div>
-          <div class="user-name">AYILON User</div>
-          <div class="user-email">user@ayilon.com</div>
+          <div class="user-name" id="sidebarName">AYILON User</div>
+          <div class="user-email" id="sidebarEmail">user@ayilon.com</div>
         </div>
       </div>
     </div>
@@ -635,6 +638,23 @@
 
   </main>
 
+  <!-- 2FA Setup Modal -->
+  <div class="modal-overlay" id="twoFaSetupOverlay">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-title" id="twoFaSetupTitle">Enable 2FA</div>
+      <div id="twoFaSetupBody" style="margin-bottom:20px;"></div>
+      <div class="d-form-group">
+        <label class="d-form-label">Enter 6-digit verification code</label>
+        <input type="text" class="d-form-input" id="twoFaSetupCode" placeholder="000000" maxlength="6" />
+      </div>
+      <div style="font-size:13px;color:#ef4444;min-height:18px;margin-bottom:12px;" id="twoFaSetupHint"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="document.getElementById('twoFaSetupOverlay').classList.remove('show')">Cancel</button>
+        <button class="btn-primary" onclick="confirm2faSetup()">Confirm &amp; Enable</button>
+      </div>
+    </div>
+  </div>
+
   <!-- API Modal -->
   <div class="modal-overlay" id="apiModal">
     <div class="modal">
@@ -698,12 +718,6 @@
     </div>
   </div>
 
-  <!-- UPGRADE BANNER (for logged-in but unsubscribed) -->
-  <div id="upgradeBanner" style="display:none;position:sticky;top:0;z-index:40;background:linear-gradient(90deg,#111,#1a1a1a);border-bottom:1px solid rgba(245,158,11,0.25);padding:10px 40px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
-    <span style="font-size:13px;color:#a3a3a3;">You don't have an active subscription. Upgrade to unlock trading bots and analytics.</span>
-    <a href="index.html#pricing" style="padding:7px 18px;background:#fff;color:#000;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;">View Plans →</a>
-  </div>
-
   <script>
     var ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
     var LOCKED_PAGES = ['dashboard', 'bots', 'positions', 'performance', 'history', 'api'];
@@ -711,23 +725,31 @@
     (function checkAccess() {
       var loggedIn = localStorage.getItem('ayilon_logged_in');
       var subscription = localStorage.getItem('ayilon_subscription');
-      var email = localStorage.getItem('ayilon_email');
+      var email = localStorage.getItem('ayilon_email') || '';
       var isAdmin = email === ADMIN_EMAIL;
 
+      // Update sidebar user info
+      if (email) {
+        document.getElementById('sidebarEmail').textContent = email;
+        document.getElementById('sidebarAvatar').textContent = email.charAt(0).toUpperCase();
+      }
+
       if (!loggedIn && !isAdmin) {
-        var ol = document.getElementById('loginOverlay');
-        ol.style.display = 'flex';
+        document.getElementById('loginOverlay').style.display = 'flex';
         return;
       }
 
       if (!subscription && !isAdmin) {
-        var banner = document.getElementById('upgradeBanner');
-        banner.style.display = 'flex';
+        // Show subtle plan status in sidebar
+        var ps = document.getElementById('planStatus');
+        ps.style.display = 'block';
+        document.getElementById('planStatusText').textContent = 'No active plan';
+
         LOCKED_PAGES.forEach(function(p) {
           var page = document.getElementById('page-' + p);
           if (!page) return;
           var lock = document.createElement('div');
-          lock.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;border-radius:12px;z-index:10;';
+          lock.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;z-index:10;';
           lock.innerHTML = '<div style="font-size:32px;margin-bottom:16px;">🔒</div>'
             + '<div style="font-family:Space Grotesk,sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;">Subscription Required</div>'
             + '<div style="font-size:14px;color:#a3a3a3;max-width:280px;margin-bottom:24px;line-height:1.6;">Subscribe to a plan to unlock this feature.</div>'
@@ -735,13 +757,18 @@
           page.style.position = 'relative';
           page.appendChild(lock);
         });
-      }
-
-      if (isAdmin) {
-        var adminBadge = document.createElement('div');
-        adminBadge.innerHTML = '&#9733; Admin';
-        adminBadge.style.cssText = 'position:fixed;bottom:16px;right:16px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:#f59e0b;font-size:11px;font-weight:700;padding:5px 10px;border-radius:100px;z-index:100;';
-        document.body.appendChild(adminBadge);
+      } else {
+        // Show current plan in sidebar
+        var ps = document.getElementById('planStatus');
+        ps.style.display = 'block';
+        if (isAdmin) {
+          ps.innerHTML = '<span style="color:#f59e0b;">★ Admin</span>';
+        } else {
+          var sub = JSON.parse(subscription || '{}');
+          var planLabel = sub.plan ? sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1) + ' Plan' : 'Active Plan';
+          document.getElementById('planStatusText').textContent = planLabel;
+          document.getElementById('planStatus').querySelector('a') && (document.getElementById('planStatus').innerHTML = '<span style="color:#22c55e;">● ' + planLabel + '</span>');
+        }
       }
     })();
 
@@ -766,9 +793,86 @@
 
     function toggle2fa(method) {
       var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
-      var idx = methods.indexOf(method);
-      if (idx === -1) { methods.push(method); } else { methods.splice(idx, 1); }
+      var isEnabled = methods.indexOf(method) !== -1;
+      if (isEnabled) {
+        methods.splice(methods.indexOf(method), 1);
+        localStorage.setItem('ayilon_2fa_methods', JSON.stringify(methods));
+        update2faUI();
+      } else {
+        open2faSetup(method);
+      }
+    }
+
+    function open2faSetup(method) {
+      var overlay = document.getElementById('twoFaSetupOverlay');
+      var title = document.getElementById('twoFaSetupTitle');
+      var body = document.getElementById('twoFaSetupBody');
+      var hint = document.getElementById('twoFaSetupHint');
+      hint.textContent = '';
+      document.getElementById('twoFaSetupCode').value = '';
+      overlay.dataset.method = method;
+      overlay.classList.add('show');
+
+      if (method === 'email') {
+        title.textContent = 'Enable Email Verification';
+        var email = localStorage.getItem('ayilon_email') || '';
+        body.innerHTML = '<p style="font-size:14px;color:#a3a3a3;margin-bottom:16px;">A 6-digit code will be sent to <strong style="color:#fff">' + email + '</strong> each time you log in.</p>'
+          + '<button onclick="sendTwoFaEmailCode()" style="padding:9px 20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:7px;color:#fff;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;" id="send2faBtn">Send Code to Email</button>'
+          + '<div id="send2faStatus" style="font-size:12px;color:#22c55e;margin-top:8px;display:none;">Code sent! Check your inbox.</div>';
+      } else {
+        title.textContent = 'Enable Authenticator App';
+        body.innerHTML = '<p style="font-size:14px;color:#a3a3a3;margin-bottom:16px;">Download <strong style="color:#fff">Google Authenticator</strong> or <strong style="color:#fff">Microsoft Authenticator</strong>, then manually enter this key:</p>'
+          + '<div style="background:#111;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:14px;font-family:monospace;font-size:15px;letter-spacing:3px;text-align:center;margin-bottom:12px;color:#fff;" id="totpKey">LOADING...</div>'
+          + '<p style="font-size:12px;color:#525252;margin-bottom:16px;">Choose "Enter key manually" in the app. Account name: AYILON</p>';
+        var key = generateTotpKey();
+        overlay.dataset.totpKey = key;
+        document.getElementById('totpKey').textContent = key;
+      }
+    }
+
+    function generateTotpKey() {
+      var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+      var key = '';
+      for (var i = 0; i < 16; i++) key += chars[Math.floor(Math.random() * 32)];
+      return key.match(/.{1,4}/g).join(' ');
+    }
+
+    var twoFaEmailCode = null;
+
+    async function sendTwoFaEmailCode() {
+      var email = localStorage.getItem('ayilon_email') || '';
+      if (!email) return;
+      document.getElementById('send2faBtn').disabled = true;
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/send-verification', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        });
+        var data = await res.json();
+        if (data.success) {
+          twoFaEmailCode = data.code;
+          document.getElementById('send2faStatus').style.display = 'block';
+        }
+      } catch(e) {}
+    }
+
+    function confirm2faSetup() {
+      var overlay = document.getElementById('twoFaSetupOverlay');
+      var method = overlay.dataset.method;
+      var code = document.getElementById('twoFaSetupCode').value.trim();
+      var hint = document.getElementById('twoFaSetupHint');
+
+      if (code.length !== 6) { hint.textContent = 'Enter the 6-digit code.'; return; }
+
+      if (method === 'email' && code !== twoFaEmailCode) {
+        hint.textContent = 'Incorrect code. Please try again.';
+        return;
+      }
+
+      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
+      if (methods.indexOf(method) === -1) methods.push(method);
       localStorage.setItem('ayilon_2fa_methods', JSON.stringify(methods));
+      overlay.classList.remove('show');
       update2faUI();
     }
 
