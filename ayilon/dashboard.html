@@ -6,6 +6,7 @@
   <title>Dashboard — AYILON</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -306,27 +307,11 @@
       <div class="grid-3-1">
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Monthly Performance</span>
-            <button class="card-action">3 months ▾</button>
+            <span class="card-title">Equity Curve</span>
+            <span style="font-size:12px;color:var(--green);font-weight:600;">+$2,847 this month</span>
           </div>
-          <div class="chart-wrap">
-            <div class="chart-bar pos" style="height:40%"></div>
-            <div class="chart-bar pos" style="height:65%"></div>
-            <div class="chart-bar neg" style="height:20%"></div>
-            <div class="chart-bar pos" style="height:55%"></div>
-            <div class="chart-bar pos" style="height:80%"></div>
-            <div class="chart-bar neg" style="height:15%"></div>
-            <div class="chart-bar pos" style="height:70%"></div>
-            <div class="chart-bar pos" style="height:90%"></div>
-            <div class="chart-bar pos" style="height:60%"></div>
-            <div class="chart-bar neg" style="height:25%"></div>
-            <div class="chart-bar pos" style="height:75%"></div>
-            <div class="chart-bar pos" style="height:85%"></div>
-          </div>
-          <div class="chart-labels">
-            <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span>
-            <span>May</span><span>Jun</span><span>Jul</span><span>Aug</span>
-            <span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+          <div style="position:relative;height:160px;">
+            <canvas id="overviewLineChart"></canvas>
           </div>
         </div>
 
@@ -601,27 +586,21 @@
 
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
+          <span class="card-title">Equity Curve (All Time)</span>
+          <span style="font-size:12px;color:var(--green);font-weight:600;">+$8,420 total</span>
+        </div>
+        <div style="position:relative;height:200px;">
+          <canvas id="perfLineChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
           <span class="card-title">Monthly P&amp;L</span>
-          <button class="card-action">2024 ▾</button>
+          <span style="font-size:12px;color:var(--gray-400);">2024</span>
         </div>
-        <div class="chart-wrap" style="height:180px;">
-          <div class="chart-bar pos" style="height:35%"></div>
-          <div class="chart-bar pos" style="height:52%"></div>
-          <div class="chart-bar neg" style="height:18%"></div>
-          <div class="chart-bar pos" style="height:48%"></div>
-          <div class="chart-bar pos" style="height:72%"></div>
-          <div class="chart-bar neg" style="height:12%"></div>
-          <div class="chart-bar pos" style="height:65%"></div>
-          <div class="chart-bar pos" style="height:100%"></div>
-          <div class="chart-bar pos" style="height:55%"></div>
-          <div class="chart-bar neg" style="height:22%"></div>
-          <div class="chart-bar pos" style="height:68%"></div>
-          <div class="chart-bar pos" style="height:80%"></div>
-        </div>
-        <div class="chart-labels">
-          <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span>
-          <span>May</span><span>Jun</span><span>Jul</span><span>Aug</span>
-          <span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+        <div style="position:relative;height:180px;">
+          <canvas id="perfBarChart"></canvas>
         </div>
       </div>
 
@@ -1662,13 +1641,144 @@
       }).join('');
     }
 
+    // ── CHARTS ───────────────────────────────────────────────────
+    Chart.defaults.color = '#737373';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+    Chart.defaults.font.family = 'Inter, sans-serif';
+    Chart.defaults.font.size = 11;
+
+    function genEquityData(days, finalVal) {
+      var seed = 12345;
+      function rand() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967295; }
+      var pts = [0];
+      for (var i = 1; i < days; i++) pts.push(pts[i-1] + (rand() - 0.44) * 160);
+      var last = pts[pts.length - 1] || 1;
+      var scale = finalVal / last;
+      return pts.map(function(v) { return +(v * scale).toFixed(0); });
+    }
+
+    function genDateLabels(days) {
+      var labels = [], now = new Date();
+      for (var i = days - 1; i >= 0; i--) {
+        var d = new Date(now); d.setDate(d.getDate() - i);
+        labels.push((d.getMonth()+1) + '/' + d.getDate());
+      }
+      return labels;
+    }
+
+    function makeLineChart(id, data, labels) {
+      var ctx = document.getElementById(id);
+      if (!ctx) return null;
+      var c = ctx.getContext('2d');
+      var grad = c.createLinearGradient(0, 0, 0, ctx.offsetHeight || 200);
+      grad.addColorStop(0, 'rgba(34,197,94,0.25)');
+      grad.addColorStop(1, 'rgba(34,197,94,0)');
+      return new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            borderColor: '#22c55e',
+            backgroundColor: grad,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 0,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 800 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              mode: 'index', intersect: false,
+              callbacks: { label: function(ctx) { return ' $' + ctx.raw.toLocaleString(); } }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { maxTicksLimit: 6, maxRotation: 0 } },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.04)' },
+              ticks: { callback: function(v) { return '$' + (v >= 1000 ? (v/1000).toFixed(1)+'k' : v); } }
+            }
+          }
+        }
+      });
+    }
+
+    function makeBarChart(id, monthlyData) {
+      var ctx = document.getElementById(id);
+      if (!ctx) return null;
+      return new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+          datasets: [{
+            data: monthlyData,
+            backgroundColor: monthlyData.map(function(v) {
+              return v >= 0 ? 'rgba(34,197,94,0.75)' : 'rgba(239,68,68,0.75)';
+            }),
+            borderRadius: 4,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 700 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return ' ' + (ctx.raw >= 0 ? '+' : '') + '$' + ctx.raw;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.04)' },
+              ticks: { callback: function(v) { return '$' + v; } }
+            }
+          }
+        }
+      });
+    }
+
+    var _chartOverviewDone = false;
+    var _chartPerfDone = false;
+
+    function initOverviewChart() {
+      if (_chartOverviewDone) return;
+      _chartOverviewDone = true;
+      var d = genEquityData(90, 2847);
+      var l = genDateLabels(90);
+      makeLineChart('overviewLineChart', d, l);
+    }
+
+    function initPerfCharts() {
+      if (_chartPerfDone) return;
+      _chartPerfDone = true;
+      var d = genEquityData(365, 8420);
+      var l = genDateLabels(365);
+      makeLineChart('perfLineChart', d, l);
+      makeBarChart('perfBarChart', [420, 680, -240, 520, 820, -180, 720, 1040, 600, -280, 780, 880]);
+    }
+
     // Render dynamic content when pages are shown
     var _origShowPage = showPage;
     showPage = function(name, el) {
       _origShowPage(name, el);
-      if (name === 'bots')   renderBotList();
-      if (name === 'history') renderHistory();
-      if (name === 'mypage') loadProfilePage();
+      if (name === 'bots')     renderBotList();
+      if (name === 'history')  renderHistory();
+      if (name === 'mypage')   loadProfilePage();
+      if (name === 'overview') initOverviewChart();
+      if (name === 'analytics') initPerfCharts();
     };
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -1680,6 +1790,7 @@
       renderBotList();
       renderHistory();
       loadProfilePage();
+      initOverviewChart();
     });
   </script>
 </body>
