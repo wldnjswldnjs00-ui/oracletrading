@@ -847,7 +847,8 @@
             <div id="subPlanName" style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:4px;">—</div>
             <div id="subPlanDetail" style="font-size:13px;color:var(--gray-400);">No active subscription</div>
           </div>
-          <div id="subMeta" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;"></div>
+          <div id="subMeta" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+          <div id="subActions" style="margin-bottom:12px;"></div>
           <a href="index.html#pricing" id="subBtn" class="btn-sm" style="width:100%;padding:10px;display:block;text-align:center;text-decoration:none;">View Plans</a>
         </div>
       </div>
@@ -1307,6 +1308,26 @@
           + '<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--gray-400)">Backtesting</span><span style="color:var(--green)">✓ Included</span></div>';
         document.getElementById('subBtn').textContent = 'Change Plan';
         document.getElementById('subBtn').href = 'index.html#pricing';
+
+        // Refund / cancel actions
+        var apiKey = localStorage.getItem('ayilon_api_key') || '';
+        var activatedAt = sub.activatedAt ? new Date(sub.activatedAt).getTime() : 0;
+        var daysSince = activatedAt ? (Date.now() - activatedAt) / 86400000 : 999;
+        var refundEligible = !apiKey && daysSince <= 7 && activatedAt > 0;
+        var actionsEl = document.getElementById('subActions');
+        if (sub.cancelled) {
+          actionsEl.innerHTML = '<div style="font-size:13px;color:var(--gray-400);padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;">'
+            + (sub.refunded
+                ? '✓ Refund processed — subscription cancelled.'
+                : '⏸ Cancellation scheduled — access continues until end of billing period.')
+            + '</div>';
+        } else if (refundEligible) {
+          actionsEl.innerHTML = '<button onclick="requestRefund()" style="width:100%;padding:10px 0;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.18);color:#ef4444;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:Inter,sans-serif;">Request Refund</button>'
+            + '<div style="font-size:11px;color:var(--gray-600);text-align:center;margin-top:6px;">Eligible · API key not connected · ' + Math.ceil(7 - daysSince) + ' day(s) remaining</div>';
+        } else {
+          actionsEl.innerHTML = '<button onclick="cancelPlan()" style="width:100%;padding:10px 0;background:none;border:1px solid rgba(255,255,255,0.08);color:var(--gray-400);border-radius:8px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">Cancel Subscription</button>'
+            + (apiKey && daysSince <= 7 ? '<div style="font-size:11px;color:var(--gray-600);text-align:center;margin-top:6px;">Refund no longer available — API key has been connected</div>' : '');
+        }
       } else {
         document.getElementById('profileDisplayPlan').textContent = 'No active plan';
         document.getElementById('subPlanName').textContent   = 'Free';
@@ -1471,6 +1492,21 @@
     document.querySelectorAll('.modal-overlay').forEach(m => {
       m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
     });
+
+    // ── SUBSCRIPTION CANCEL / REFUND ─────────────────────
+    function cancelPlan() {
+      if (!confirm('Cancel your subscription?\n\nYou will keep access until the end of the current billing period. This cannot be undone.')) return;
+      var sub = JSON.parse(localStorage.getItem('ayilon_subscription') || 'null');
+      if (sub) { sub.cancelled = true; sub.cancelledAt = new Date().toISOString(); localStorage.setItem('ayilon_subscription', JSON.stringify(sub)); }
+      loadProfilePage();
+    }
+
+    function requestRefund() {
+      if (!confirm('Request a refund?\n\nYour subscription will be cancelled immediately and a refund will be processed within 3–5 business days.')) return;
+      var sub = JSON.parse(localStorage.getItem('ayilon_subscription') || 'null');
+      if (sub) { sub.cancelled = true; sub.refunded = true; sub.cancelledAt = new Date().toISOString(); localStorage.setItem('ayilon_subscription', JSON.stringify(sub)); }
+      loadProfilePage();
+    }
 
     // ── PASSWORD CHANGE ──────────────────────────────────
     function changePassword() {
