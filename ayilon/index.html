@@ -3,7 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AYILON — Create Profit from Nothing</title>
+  <title>AYILON — Automated Crypto Trading Bots 24/7</title>
+  <meta name="description" content="AYILON automates your crypto trading on OKX 24/7. Scalping, day trading, and swing strategies engineered for every capital size. Start for free." />
+  <meta property="og:title" content="AYILON — Create Profit from Nothing" />
+  <meta property="og:description" content="Automated crypto trading bots running 24/7 on OKX. Scalping, day trading, swing — engineered for every capital size." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://oracletrading-01o.pages.dev" />
+  <meta property="og:image" content="https://oracletrading-01o.pages.dev/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="AYILON — Create Profit from Nothing" />
+  <meta name="twitter:description" content="Automated crypto trading bots running 24/7 on OKX." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -208,6 +217,9 @@
     .faq-answer p { font-size: 15px; color: var(--gray-400); line-height: 1.75; padding-bottom: 20px; }
     .faq-answer a { color: var(--white); }
 
+    /* STRATEGIES */
+    .strat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:40px; }
+
     /* CTA */
     .cta-section {
       margin: 0 60px 100px; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px;
@@ -248,6 +260,8 @@
       .how { margin: 0 30px; }
       .how-inner { padding: 50px 30px; }
       .pricing-grid { grid-template-columns: 1fr; }
+      #strategies > section { padding: 80px 30px; }
+      .strat-grid { grid-template-columns: 1fr; }
       .faq-section { padding: 80px 30px; }
       .referral-banner { flex-direction: column; padding: 40px 30px; margin: 40px 0 0; }
       .referral-banner::before { display: none; }
@@ -398,6 +412,69 @@
     </div>
   </div>
 
+  <!-- STRATEGIES -->
+  <div id="strategies">
+    <section style="padding:100px 60px;">
+      <div style="text-align:center;margin-bottom:64px;">
+        <div class="section-tag">Our Approach</div>
+        <h2 class="section-title" style="max-width:100%;text-align:center;">What makes AYILON different?</h2>
+        <p style="font-size:16px;color:var(--gray-400);max-width:560px;margin:0 auto;line-height:1.7;">We didn't copy standard bot logic. Every strategy was engineered from scratch — capital-aware, risk-first, built to compound returns without blowing up accounts.</p>
+      </div>
+
+      <div class="strat-grid">
+
+        <div style="padding:32px;border:1px solid rgba(255,255,255,0.08);border-radius:16px;background:var(--gray-900);display:flex;flex-direction:column;gap:0;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--gray-600);margin-bottom:16px;">01 &nbsp;·&nbsp; Scalping</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:8px;">소액 자본</div>
+          <div style="font-size:13px;color:var(--gray-400);margin-bottom:24px;">$100 — $1,000</div>
+          <div style="flex:1;font-size:14px;color:var(--gray-400);line-height:1.75;margin-bottom:24px;">수십~수백 번의 작은 매매로 조금씩 수익을 누적합니다. 타이트한 손절 설정과 리스크 관리로 자본 손실을 최소화합니다.</div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">매매 빈도</span><span>고빈도 (하루 50~200회)</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">포지션 보유</span><span>수초 ~ 수분</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">리스크</span><span style="color:#22c55e;">● 낮음</span></div>
+          </div>
+        </div>
+
+        <div style="padding:32px;border:1px solid rgba(255,255,255,0.25);border-radius:16px;background:var(--gray-900);display:flex;flex-direction:column;gap:0;position:relative;">
+          <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--white);color:var(--black);font-size:10px;font-weight:700;letter-spacing:0.1em;padding:4px 14px;border-radius:0 0 8px 8px;">MOST POPULAR</div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--gray-600);margin-bottom:16px;">02 &nbsp;·&nbsp; Day Trading</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:8px;">중간 자본</div>
+          <div style="font-size:13px;color:var(--gray-400);margin-bottom:24px;">$1,000 — $10,000</div>
+          <div style="flex:1;font-size:14px;color:var(--gray-400);line-height:1.75;margin-bottom:24px;">당일 내 포지션을 열고 닫아 변동성을 수익으로 전환합니다. 스캘핑보다 적은 빈도로 더 큰 단위의 수익을 노립니다.</div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">매매 빈도</span><span>중빈도 (하루 5~20회)</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">포지션 보유</span><span>수분 ~ 수시간</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">리스크</span><span style="color:#f59e0b;">●● 보통</span></div>
+          </div>
+        </div>
+
+        <div style="padding:32px;border:1px solid rgba(255,255,255,0.08);border-radius:16px;background:var(--gray-900);display:flex;flex-direction:column;gap:0;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--gray-600);margin-bottom:16px;">03 &nbsp;·&nbsp; Swing</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:8px;">대자본</div>
+          <div style="font-size:13px;color:var(--gray-400);margin-bottom:24px;">$10,000+</div>
+          <div style="flex:1;font-size:14px;color:var(--gray-400);line-height:1.75;margin-bottom:24px;">며칠에서 몇 주에 걸쳐 큰 가격 움직임을 포착합니다. 적은 횟수의 매매로 높은 단위 수익을 목표로 합니다.</div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">매매 빈도</span><span>저빈도 (주 1~5회)</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">포지션 보유</span><span>수일 ~ 수주</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">리스크</span><span style="color:#ef4444;">●●● 주의</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Risk management callout -->
+      <div style="padding:32px 40px;border:1px solid rgba(255,255,255,0.08);border-radius:16px;background:rgba(255,255,255,0.02);display:flex;gap:32px;align-items:flex-start;">
+        <div style="flex-shrink:0;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;margin-bottom:8px;">리스크 관리에 기술을 쏟아부었습니다</div>
+          <div style="font-size:14px;color:var(--gray-400);line-height:1.75;max-width:640px;">모든 포지션은 실시간으로 모니터링됩니다. 변동성 기반 포지션 사이징, 동적 손절 조정, 그리고 극단적 시장 변동 시 자동으로 매매를 멈추는 서킷 브레이커까지 — 수익을 내기 전에 먼저 자본을 지킵니다.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <!-- PRICING -->
   <section class="pricing" id="pricing">
     <div class="pricing-header">
@@ -532,7 +609,7 @@
             What trading strategies are available?
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p><strong>Grid Trading</strong> — places a grid of buy/sell orders within a price range, capturing small profits as price oscillates. Best for sideways markets.<br /><br /><strong>DCA (Dollar-Cost Averaging)</strong> — systematically buys on dips and sells on recovery. Best for volatile but trending assets.<br /><br /><strong>Momentum</strong> — follows breakout signals and rides short-term trends. Higher risk/reward profile.</p></div>
+          <div class="faq-answer"><p>AYILON offers three proprietary strategies, each designed for a different capital size and risk profile:<br /><br /><strong>Scalping</strong> ($100–$1,000) — High-frequency trading with dozens of small trades per day. Best for building consistent profits with small capital and tight risk control.<br /><br /><strong>Day Trading</strong> ($1,000–$10,000) — Intraday positions held for minutes to hours. Balances trade frequency with position size for steady returns.<br /><br /><strong>Swing</strong> ($10,000+) — Multi-day positions that capture major price movements. Lower frequency, higher per-trade profitability. Best for larger capital that can absorb short-term volatility.</p></div>
         </div>
 
         <div class="faq-item">
