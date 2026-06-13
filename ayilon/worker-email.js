@@ -414,9 +414,15 @@ async function runBot(env) {
           state.stopLoss      = state.lastTPLevel;                        // trail SL to prev level
           state.lastTPLevel   = nextLv.price;                             // new high-water mark
           state.remainingFrac = Math.max(0, (state.remainingFrac ?? 0.5) - 0.10);
-          ps[tradingPair] = state;
-          await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-          await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL→${state.stopLoss.toFixed(2)} | Rem:${Math.round(state.remainingFrac * 100)}%`);
+          if (state.remainingFrac <= 0) {
+            delete ps[tradingPair]; // position fully exited via trailing TP
+            await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+            await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} — position fully closed`);
+          } else {
+            ps[tradingPair] = state;
+            await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+            await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL→${state.stopLoss.toFixed(2)} | Rem:${Math.round(state.remainingFrac * 100)}%`);
+          }
         } else {
           await botLog(env, `Trail order FAILED @ ${nextLv.price.toFixed(2)}: ${trailRes?.msg || 'unknown'}`);
         }
