@@ -356,16 +356,19 @@ async function runBot(env) {
     // ── Stop loss check ───────────────────────────────────────
     await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimit / 100, demoMode);
 
-    // ── S/R candles: 1H + 4H combined ────────────────────────
+    // ── S/R candles: 1H + 4H + 매물대 combined ───────────────
     const [candles1H, candles4H] = await Promise.all([
       getCandles(tradingPair, '1H', 100),
       getCandles(tradingPair, '4H', 100)
     ]);
     if (candles1H.length < 20 && candles4H.length < 20) return;
-    const levels = mergeLevels(
+    const currentPrice = parseFloat((await (await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${tradingPair}`)).json())?.data?.[0]?.last || '0');
+    const srLevels  = mergeLevels(
       candles1H.length >= 20 ? detectSR(candles1H, srTouch) : { supports: [], resistances: [] },
       candles4H.length >= 20 ? detectSR(candles4H, srTouch) : { supports: [], resistances: [] }
     );
+    const volLevels = detectVolumeZones(candles4H.length >= 20 ? candles4H : candles1H, currentPrice);
+    const levels    = mergeLevels(srLevels, volLevels);
     if (!levels.supports.length && !levels.resistances.length) return;
 
     // ── 5m entry candles ──────────────────────────────────────
@@ -501,36 +504,72 @@ function mergeLevels(a, b) {
 }
 
 // ── ENTRY SIGNAL ──────────────────────────────────────────────
+// Rising price touches resistance → SHORT
+// Falling price touches support → LONG
+// Only enter if prev 5m candle SL distance is 3-6%
 function detectSignal(c5, levels) {
-  const [, , , prevLow, prevClose] = c5[1].map(parseFloat);
-  const [, prevOpen2, prevHigh2] = c5[1].map(parseFloat);
-  const curPrice = parseFloat(c5[0][4]);
-  const recentLows  = c5.slice(1, 10).map(c => parseFloat(c[3]));
-  const recentHighs = c5.slice(1, 10).map(c => parseFloat(c[2]));
-  const swingLow  = Math.min(...recentLows);
-  const swingHigh = Math.max(...recentHighs);
+  if (c5.length < 4) return null;
+
+  const cur   = c5[0].map(parseFloat);
+  const prev1 = c5[1].map(parseFloat);
+  const prev2 = c5[2].map(parseFloat);
+  const prev3 = c5[3].map(parseFloat);
+
+  const curPrice = cur[4];
+  const prevHigh = prev1[2];
+  const prevLow  = prev1[3];
+
+  const rising  = prev1[4] > prev2[4] && prev2[4] > prev3[4];
+  const falling = prev1[4] < prev2[4] && prev2[4] < prev3[4];
+
+  const TOUCH_TOL = 0.004;
+  const SL_MIN    = 0.03;
+  const SL_MAX    = 0.06;
 
   for (const s of levels.supports) {
-    if (Math.abs(curPrice - s.price) / s.price > 0.005) continue;
-    // Body fully through support (no wick) → skip
-    if (prevClose < s.price && Math.abs(prevClose - prevLow) / prevClose < 0.001) continue;
-    // Wick: low touched or pierced support but close is above
-    if (prevLow <= s.price * 1.002 && prevClose > s.price) {
-      return { type: 'long', level: s.price, stopLoss: swingLow * 0.9985 };
-    }
+    if (!falling) continue;
+    if (Math.abs(curPrice - s.price) / s.price > TOUCH_TOL) continue;
+    const slDist = (curPrice - prevLow) / curPrice;
+    if (slDist < SL_MIN || slDist > SL_MAX) continue;
+    return { type: 'long', level: s.price, stopLoss: prevLow };
   }
 
   for (const r of levels.resistances) {
-    if (Math.abs(curPrice - r.price) / r.price > 0.005) continue;
-    // Body fully through resistance → skip
-    if (prevClose > r.price && Math.abs(prevHigh2 - prevClose) / prevClose < 0.001) continue;
-    // Wick: high touched/pierced resistance but close is below
-    if (prevHigh2 >= r.price * 0.998 && prevClose < r.price) {
-      return { type: 'short', level: r.price, stopLoss: swingHigh * 1.0015 };
-    }
+    if (!rising) continue;
+    if (Math.abs(curPrice - r.price) / r.price > TOUCH_TOL) continue;
+    const slDist = (prevHigh - curPrice) / curPrice;
+    if (slDist < SL_MIN || slDist > SL_MAX) continue;
+    return { type: 'short', level: r.price, stopLoss: prevHigh };
   }
 
   return null;
+}
+
+// ── VOLUME PROFILE (매물대) ────────────────────────────────────
+function detectVolumeZones(candles, currentPrice) {
+  if (candles.length < 20) return { supports: [], resistances: [] };
+  const BUCKETS = 50;
+  const minP = Math.min(...candles.map(c => parseFloat(c[3])));
+  const maxP = Math.max(...candles.map(c => parseFloat(c[2])));
+  const step = (maxP - minP) / BUCKETS;
+  const vols = new Array(BUCKETS).fill(0);
+  for (const c of candles) {
+    const lo = parseFloat(c[3]), hi = parseFloat(c[2]), vol = parseFloat(c[5]);
+    const b0 = Math.max(0, Math.floor((lo - minP) / step));
+    const b1 = Math.min(BUCKETS - 1, Math.ceil((hi - minP) / step));
+    for (let b = b0; b <= b1; b++) vols[b] += vol;
+  }
+  const avgVol = vols.reduce((s, v) => s + v, 0) / BUCKETS;
+  const zones  = [];
+  for (let b = 0; b < BUCKETS; b++) {
+    if (vols[b] < avgVol * 2) continue;
+    const zonePrice = minP + (b + 0.5) * step;
+    zones.push({ price: zonePrice, touches: Math.round(vols[b] / avgVol), type: zonePrice <= currentPrice ? 'support' : 'resistance' });
+  }
+  return {
+    supports:    zones.filter(z => z.type === 'support').sort((a, b) => b.price - a.price).slice(0, 3),
+    resistances: zones.filter(z => z.type === 'resistance').sort((a, b) => a.price - b.price).slice(0, 3)
+  };
 }
 
 // ── OKX API ───────────────────────────────────────────────────
