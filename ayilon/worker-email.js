@@ -263,27 +263,31 @@ async function handleSaveBotSettings(request, env) {
 
 async function handleBotStatus(request, env) {
   if (!env.USERS_KV) return json({ running: false, logs: [] });
-  const config   = await env.USERS_KV.get('bot:config', { type: 'json' }) || {};
-  const logs     = await env.USERS_KV.get('bot:logs',   { type: 'json' }) || [];
-  const alert    = await env.USERS_KV.get('bot:daily_loss_triggered', { type: 'json' });
-  const pos      = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
-  const lastScan = await env.USERS_KV.get('bot:last_scan');
+  const [config, logs, alert, pos, lastScan, marketData] = await Promise.all([
+    env.USERS_KV.get('bot:config',               { type: 'json' }),
+    env.USERS_KV.get('bot:logs',                 { type: 'json' }),
+    env.USERS_KV.get('bot:daily_loss_triggered', { type: 'json' }),
+    env.USERS_KV.get('bot:position_state',       { type: 'json' }),
+    env.USERS_KV.get('bot:last_scan'),
+    env.USERS_KV.get('bot:market_data',          { type: 'json' })
+  ]);
+  const _config = config || {}, _logs = logs || [], _pos = pos || {};
 
   // Funding rate — public endpoint, no auth
   let fundingRate = null;
   try {
-    const pair = config.tradingPair || 'BTC-USDT-SWAP';
+    const pair = _config.tradingPair || 'BTC-USDT-SWAP';
     const frRes = await fetch(`https://www.okx.com/api/v5/public/funding-rate?instId=${pair}`);
     const frData = await frRes.json();
     const fr = frData?.data?.[0];
     if (fr) fundingRate = {
       rate:     parseFloat(fr.fundingRate),
       nextRate: parseFloat(fr.nextFundingRate),
-      nextTime: parseInt(fr.fundingTime)   // ms timestamp
+      nextTime: parseInt(fr.fundingTime)
     };
   } catch {}
 
-  return json({ running: config.running === true, logs, alert, positions: pos, lastScan, fundingRate });
+  return json({ running: _config.running === true, logs: _logs, alert, positions: _pos, lastScan, fundingRate, marketData });
 }
 
 async function handleBotControl(request, env) {
@@ -418,6 +422,13 @@ async function runBot(env) {
     const levels    = mergeLevels(srLevels, volLevels);
     if (!levels.supports.length && !levels.resistances.length) return;
 
+    // ── Save market snapshot for dashboard (non-fatal background write) ────────
+    try {
+      await env.USERS_KV.put('bot:market_data', JSON.stringify({
+        price: currentPrice, trend, levels, updatedAt: Date.now()
+      }), { expirationTtl: 300 });
+    } catch {}
+
     // ── Sync position state with OKX (ps already loaded above) ──────────────────
     // Clear stale state if OKX has no matching position (handles manual close, liquidation)
     if (ps[tradingPair]?.direction) {
@@ -534,6 +545,16 @@ async function runBot(env) {
       return;
     }
     const sz = String(szContracts);
+
+    // ── Set OKX leverage to match dashboard config (first entry only) ─────────
+    if (entryNum === 1) {
+      const levRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/account/set-leverage', {
+        instId: tradingPair, lever: String(leverage), mgnMode: 'cross'
+      }, demoMode);
+      if (levRes?.code !== '0') {
+        await botLog(env, `⚠️ Leverage set FAILED [${levRes?.code}]: ${levRes?.msg}`);
+      }
+    }
 
     // ── Place order ───────────────────────────────────────────
     const orderRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {

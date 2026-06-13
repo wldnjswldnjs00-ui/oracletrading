@@ -948,6 +948,33 @@
           </div>
         </div>
 
+        <!-- MARKET INTELLIGENCE -->
+        <div class="card" id="marketDataCard" style="grid-column:1/-1;display:none;">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;padding-bottom:0;">
+            <span class="card-title">Market Intelligence</span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span id="mktTrend" style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:0.05em;"></span>
+              <span id="mktPrice" style="font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;"></span>
+            </div>
+          </div>
+          <!-- Active Position Summary -->
+          <div id="mktPositionSummary" style="display:none;margin:14px 0 16px;padding:12px 14px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
+            <div style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Active Position</div>
+            <div id="mktPosCells" style="display:flex;flex-wrap:wrap;gap:20px;"></div>
+          </div>
+          <!-- S/R Level Tables -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;">
+            <div>
+              <div style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Resistance Levels</div>
+              <div id="mktResTable"></div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Support Levels</div>
+              <div id="mktSupTable"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- RISK MANAGEMENT -->
         <div class="card">
           <div class="card-header"><span class="card-title">Risk Management</span></div>
@@ -2041,6 +2068,7 @@
     }
 
     // Render dynamic content when pages are shown
+    var _botPollInterval = null;
     var _origShowPage = showPage;
     showPage = function(name, el) {
       _origShowPage(name, el);
@@ -2051,7 +2079,14 @@
       if (name === 'overview') initOverviewChart();
       if (name === 'analytics') initPerfCharts();
       if (name === 'api')      loadApiPage();
-      if (name === 'botsettings') { loadBotSettings(); checkDailyLossAlert(); }
+      if (name === 'botsettings') {
+        loadBotSettings();
+        checkDailyLossAlert();
+        if (_botPollInterval) clearInterval(_botPollInterval);
+        _botPollInterval = setInterval(checkDailyLossAlert, 30000);
+      } else {
+        if (_botPollInterval) { clearInterval(_botPollInterval); _botPollInterval = null; }
+      }
     };
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -2370,7 +2405,97 @@
 
         // Funding rate
         if (data.fundingRate) renderFundingRate(data.fundingRate);
+        // Market intelligence
+        if (data.marketData) renderMarketData(data.marketData, data.positions);
       } catch(e) {}
+    }
+
+    function renderMarketData(md, positions) {
+      var card = document.getElementById('marketDataCard');
+      if (!card || !md) return;
+      card.style.display = 'block';
+
+      // Price
+      var priceEl = document.getElementById('mktPrice');
+      if (priceEl && md.price) {
+        priceEl.textContent = '$' + md.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      // Trend badge
+      var trendEl = document.getElementById('mktTrend');
+      if (trendEl && md.trend) {
+        var tMap = {
+          up:      { text: '↑ Uptrend',   bg: 'rgba(34,197,94,0.15)',  color: '#22c55e' },
+          down:    { text: '↓ Downtrend', bg: 'rgba(239,68,68,0.15)',  color: '#ef4444' },
+          neutral: { text: '↔ Neutral',   bg: 'rgba(163,163,163,0.15)', color: '#a3a3a3' }
+        };
+        var t = tMap[md.trend] || tMap.neutral;
+        trendEl.textContent = t.text;
+        trendEl.style.background = t.bg;
+        trendEl.style.color = t.color;
+      }
+
+      // Active position summary (from bot:position_state KV)
+      var posWrap = document.getElementById('mktPositionSummary');
+      var posCells = document.getElementById('mktPosCells');
+      if (posWrap && posCells && positions) {
+        var pair = Object.keys(positions)[0];
+        var st = pair ? positions[pair] : null;
+        if (st && st.direction) {
+          posWrap.style.display = 'block';
+          var dirColor = st.direction === 'long' ? '#22c55e' : '#ef4444';
+          var dirLabel = st.direction === 'long' ? 'LONG' : 'SHORT';
+          var avgEntry = st.entries && st.entries.length
+            ? (st.entries.reduce(function(s,e){ return s + e.price * parseInt(e.sz||1); }, 0) /
+               st.entries.reduce(function(s,e){ return s + parseInt(e.sz||1); }, 0)).toFixed(2)
+            : '—';
+          var unrealizedPct = (md.price && avgEntry !== '—')
+            ? (((md.price - parseFloat(avgEntry)) / parseFloat(avgEntry)) * 100 * (st.direction === 'long' ? 1 : -1)).toFixed(2)
+            : null;
+          var cells = [
+            { label: 'Direction', val: '<span style="font-weight:700;color:' + dirColor + ';">' + dirLabel + '</span>' },
+            { label: 'Entries',   val: (st.entries ? st.entries.length : 0) + ' filled' },
+            { label: 'Avg Entry', val: '$' + avgEntry },
+            { label: 'Unrealized', val: unrealizedPct !== null ? (unrealizedPct > 0 ? '+' : '') + unrealizedPct + '%' : '—',
+              color: unrealizedPct > 0 ? '#22c55e' : unrealizedPct < 0 ? '#ef4444' : '' },
+            { label: 'Stop Loss',  val: st.stopLoss ? '$' + parseFloat(st.stopLoss).toFixed(2) : '—' },
+            { label: 'SL Type',    val: st.algoId ? '<span style="color:#22c55e;">Native (OKX)</span>' : '<span style="color:#f59e0b;">Software</span>' }
+          ];
+          if (st.takeProfit) cells.push({ label: 'Take Profit', val: '$' + parseFloat(st.takeProfit).toFixed(2), color: '#22c55e' });
+          if (st.halfClosed) cells.push({ label: 'Status', val: '<span style="color:#a855f7;">Trailing ' + Math.round((st.remainingFrac||0)*100) + '% rem</span>' });
+          posCells.innerHTML = cells.map(function(c) {
+            return '<div style="min-width:100px;">'
+              + '<div style="font-size:11px;color:var(--gray-600);margin-bottom:3px;">' + c.label + '</div>'
+              + '<div style="font-size:13px;font-weight:600;' + (c.color ? 'color:' + c.color + ';' : '') + '">' + c.val + '</div>'
+              + '</div>';
+          }).join('');
+        } else {
+          posWrap.style.display = 'none';
+        }
+      }
+
+      // S/R level tables
+      function gradeColor(g) { return g==='S'?'#a855f7':g==='A'?'#f59e0b':'#6b7280'; }
+      function renderLevels(arr, price) {
+        if (!arr || !arr.length) return '<div style="font-size:12px;color:var(--gray-600);padding:8px 0;">No levels detected</div>';
+        return arr.map(function(lv) {
+          var dist = price ? (((lv.price - price) / price) * 100) : 0;
+          var distStr = (dist >= 0 ? '+' : '') + dist.toFixed(2) + '%';
+          var gc = gradeColor(lv.grade || 'B');
+          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);">'
+            + '<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:' + gc + '22;color:' + gc + ';flex-shrink:0;width:16px;text-align:center;">' + (lv.grade||'B') + '</span>'
+            + '<span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;flex:1;">'
+            + lv.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>'
+            + '<span style="font-size:11px;color:var(--gray-400);font-variant-numeric:tabular-nums;">' + distStr + '</span>'
+            + '<span style="font-size:11px;color:var(--gray-600);">×' + (lv.touches||1) + '</span>'
+            + '</div>';
+        }).join('');
+      }
+
+      var cp = md.price;
+      var lvs = md.levels || {};
+      document.getElementById('mktResTable').innerHTML = renderLevels(lvs.resistances, cp);
+      document.getElementById('mktSupTable').innerHTML = renderLevels(lvs.supports, cp);
     }
 
     function renderFundingRate(fr) {
