@@ -834,42 +834,49 @@ function mergeLevels(a, b) {
 }
 
 // ── ENTRY SIGNAL ──────────────────────────────────────────────
-// Rising price touches resistance → SHORT
-// Falling price touches support → LONG
-// Only enter if prev 5m candle SL distance is 3-6%
+// Trigger: prev candle TOUCHED the S/R level (by wick or close)
+// Entry:   current candle (price bouncing off level)
+// SL:      3-candle swing low (long) or swing high (short)
 function detectSignal(c5, levels) {
   if (c5.length < 4) return null;
 
-  const cur   = c5[0].map(parseFloat);
-  const prev1 = c5[1].map(parseFloat);
+  const cur   = c5[0].map(parseFloat); // current forming candle
+  const prev1 = c5[1].map(parseFloat); // last closed candle (signal candle)
   const prev2 = c5[2].map(parseFloat);
   const prev3 = c5[3].map(parseFloat);
 
   const curPrice = cur[4];
-  const prevHigh = prev1[2];
-  const prevLow  = prev1[3];
 
-  const rising  = prev1[4] > prev2[4] && prev2[4] > prev3[4];
-  const falling = prev1[4] < prev2[4] && prev2[4] < prev3[4];
+  // 3-candle swing SL (most reliable structural level)
+  const swingLow  = Math.min(prev1[3], prev2[3], prev3[3]);
+  const swingHigh = Math.max(prev1[2], prev2[2], prev3[2]);
 
-  const TOUCH_TOL = 0.004;
-  const SL_MIN    = 0.03;
-  const SL_MAX    = 0.06;
+  const TOUCH_TOL = 0.005; // 0.5% — prev candle wick must be within this of the level
+  const SL_MIN    = 0.01;  // 1% — minimum SL distance (tight structures)
+  const SL_MAX    = 0.07;  // 7% — maximum SL distance
 
   for (const s of levels.supports) {
-    if (!falling) continue;
-    if (Math.abs(curPrice - s.price) / s.price > TOUCH_TOL) continue;
-    const slDist = Math.abs(curPrice - prevLow) / curPrice;
+    // prev candle touched support by its low or close
+    const touchedByWick  = Math.abs(prev1[3] - s.price) / s.price <= TOUCH_TOL;
+    const touchedByClose = Math.abs(prev1[4] - s.price) / s.price <= TOUCH_TOL;
+    if (!touchedByWick && !touchedByClose) continue;
+    // Current price still above support (not broken through)
+    if (curPrice < s.price * 0.997) continue;
+    const slDist = Math.abs(curPrice - swingLow) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
-    return { type: 'long', level: s.price, grade: s.grade || '', stopLoss: prevLow };
+    return { type: 'long', level: s.price, grade: s.grade || '', stopLoss: swingLow };
   }
 
   for (const r of levels.resistances) {
-    if (!rising) continue;
-    if (Math.abs(curPrice - r.price) / r.price > TOUCH_TOL) continue;
-    const slDist = Math.abs(prevHigh - curPrice) / curPrice;
+    // prev candle touched resistance by its high or close
+    const touchedByWick  = Math.abs(prev1[2] - r.price) / r.price <= TOUCH_TOL;
+    const touchedByClose = Math.abs(prev1[4] - r.price) / r.price <= TOUCH_TOL;
+    if (!touchedByWick && !touchedByClose) continue;
+    // Current price still below resistance (not broken through)
+    if (curPrice > r.price * 1.003) continue;
+    const slDist = Math.abs(swingHigh - curPrice) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
-    return { type: 'short', level: r.price, grade: r.grade || '', stopLoss: prevHigh };
+    return { type: 'short', level: r.price, grade: r.grade || '', stopLoss: swingHigh };
   }
 
   return null;
