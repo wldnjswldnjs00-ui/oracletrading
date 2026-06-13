@@ -442,21 +442,202 @@
         <p style="font-size:16px;color:var(--gray-400);max-width:600px;margin:0 auto;line-height:1.7;">We didn't copy standard bot logic. The strategy runs on BTC and ETH with <em style="font-style:normal;color:var(--white);">real S/R structure</em> — not indicators, not signals. Pure price action.</p>
       </div>
 
-      <div class="strat-grid" style="grid-template-columns:1fr;">
-
-        <div style="padding:32px;border:1px solid rgba(255,255,255,0.25);border-radius:16px;background:var(--gray-900);display:flex;flex-direction:column;gap:0;position:relative;">
-          <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--white);color:var(--black);font-size:10px;font-weight:700;letter-spacing:0.1em;padding:4px 14px;border-radius:0 0 8px 8px;">AYILON STRATEGY</div>
-          <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--gray-600);margin-bottom:16px;">S/R Multi-Timeframe</div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:8px;">Support & Resistance Trading</div>
-          <div style="font-size:13px;color:var(--gray-400);margin-bottom:24px;">We recommend from <strong style="color:var(--white);">$1,000</strong></div>
-          <div style="flex:1;font-size:14px;color:var(--gray-400);line-height:1.75;margin-bottom:24px;">Identifies support and resistance levels on the 1H and 4H charts with 3-touch confirmation. Enters on the 5-minute timeframe when a wick forms at the level — never when the body breaks through. Builds positions fractionally up to the stop loss (previous swing high/low).</div>
-          <div style="display:flex;flex-direction:column;gap:8px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
-            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">Pairs</span><span>BTC/USDT · ETH/USDT</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">Timeframes</span><span>1H + 4H S/R · 5m entry</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--gray-600)">Risk</span><span style="color:#f59e0b;">●● Moderate</span></div>
+      <!-- CHART CARD -->
+      <div style="border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden;margin-bottom:20px;background:#0d0d0d;">
+        <div style="padding:18px 24px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 6px #22c55e;"></span>
+            <span style="font-size:12px;font-weight:600;color:var(--white);letter-spacing:0.04em;">BTC/USDT · 1H</span>
+            <span style="font-size:11px;color:var(--gray-600);">S/R Multi-Timeframe</span>
           </div>
+          <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--gray-600);text-transform:uppercase;">AYILON STRATEGY</span>
         </div>
+        <svg viewBox="0 0 720 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+          <defs>
+            <linearGradient id="supFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.12"/>
+              <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="resFill" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stop-color="#f97316" stop-opacity="0.1"/>
+              <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="upMove" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stop-color="#22c55e" stop-opacity="0"/>
+              <stop offset="100%" stop-color="#22c55e" stop-opacity="0.06"/>
+            </linearGradient>
+          </defs>
+          <!-- bg -->
+          <rect width="720" height="310" fill="#0d0d0d"/>
+          <!-- grid -->
+          <line x1="58" y1="42" x2="714" y2="42" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <line x1="58" y1="88" x2="714" y2="88" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <line x1="58" y1="134" x2="714" y2="134" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <line x1="58" y1="180" x2="714" y2="180" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <!-- resistance zone fill -->
+          <rect x="58" y="52" width="656" height="32" fill="url(#resFill)"/>
+          <!-- support zone fill -->
+          <rect x="58" y="204" width="656" height="32" fill="url(#supFill)"/>
+          <!-- resistance line -->
+          <line x1="58" y1="62" x2="714" y2="62" stroke="#f97316" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.75"/>
+          <text x="62" y="57" fill="#f97316" font-size="9" font-family="monospace" opacity="0.9" font-weight="600">RESISTANCE · 101,200</text>
+          <!-- support line -->
+          <line x1="58" y1="214" x2="714" y2="214" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.75"/>
+          <text x="62" y="230" fill="#3b82f6" font-size="9" font-family="monospace" opacity="0.9" font-weight="600">SUPPORT · 94,800</text>
 
+          <!-- ── CANDLES ── -->
+          <!-- C1 bearish -->
+          <line x1="74" y1="60" x2="74" y2="96" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="68" y="66" width="12" height="24" fill="#ef4444" rx="1"/>
+          <!-- C2 bearish -->
+          <line x1="97" y1="72" x2="97" y2="108" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="91" y="77" width="12" height="26" fill="#ef4444" rx="1"/>
+          <!-- C3 small green -->
+          <line x1="120" y1="90" x2="120" y2="110" stroke="#22c55e" stroke-width="1.5"/>
+          <rect x="114" y="93" width="12" height="13" fill="#22c55e" rx="1"/>
+          <!-- C4 bearish -->
+          <line x1="143" y1="96" x2="143" y2="124" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="137" y="100" width="12" height="20" fill="#ef4444" rx="1"/>
+          <!-- C5 bearish -->
+          <line x1="166" y1="112" x2="166" y2="144" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="160" y="117" width="12" height="22" fill="#ef4444" rx="1"/>
+          <!-- C6 doji -->
+          <line x1="189" y1="132" x2="189" y2="154" stroke="#6b7280" stroke-width="1.5"/>
+          <rect x="183" y="138" width="12" height="9" fill="#6b7280" rx="1"/>
+          <!-- C7 bearish -->
+          <line x1="212" y1="140" x2="212" y2="172" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="206" y="145" width="12" height="22" fill="#ef4444" rx="1"/>
+          <!-- C8 bearish, wick hits support → 1st touch -->
+          <line x1="235" y1="158" x2="235" y2="214" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="229" y="163" width="12" height="38" fill="#ef4444" rx="1"/>
+          <circle cx="235" cy="214" r="6" fill="none" stroke="#3b82f6" stroke-width="1.8"/>
+          <text x="235" y="242" fill="rgba(59,130,246,0.65)" font-size="9" font-family="monospace" text-anchor="middle">①</text>
+          <!-- C9 bullish reversal -->
+          <line x1="258" y1="188" x2="258" y2="214" stroke="#22c55e" stroke-width="1.5"/>
+          <rect x="252" y="174" width="12" height="36" fill="#22c55e" rx="1"/>
+          <!-- C10 green -->
+          <line x1="281" y1="160" x2="281" y2="190" stroke="#22c55e" stroke-width="1.5"/>
+          <rect x="275" y="164" width="12" height="22" fill="#22c55e" rx="1"/>
+          <!-- C11 green -->
+          <line x1="304" y1="142" x2="304" y2="168" stroke="#22c55e" stroke-width="1.5"/>
+          <rect x="298" y="146" width="12" height="18" fill="#22c55e" rx="1"/>
+          <!-- C12 green bounce up -->
+          <line x1="327" y1="126" x2="327" y2="150" stroke="#22c55e" stroke-width="1.5"/>
+          <rect x="321" y="130" width="12" height="17" fill="#22c55e" rx="1"/>
+          <!-- C13 small red near resistance -->
+          <line x1="350" y1="108" x2="350" y2="135" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="344" y="113" width="12" height="18" fill="#ef4444" rx="1"/>
+          <!-- C14 red -->
+          <line x1="373" y1="120" x2="373" y2="148" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="367" y="124" width="12" height="20" fill="#ef4444" rx="1"/>
+          <!-- C15 red falls -->
+          <line x1="396" y1="138" x2="396" y2="166" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="390" y="143" width="12" height="18" fill="#ef4444" rx="1"/>
+          <!-- C16 red -->
+          <line x1="419" y1="156" x2="419" y2="188" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="413" y="162" width="12" height="22" fill="#ef4444" rx="1"/>
+          <!-- C17 wick to support → 2nd touch -->
+          <line x1="442" y1="176" x2="442" y2="214" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="436" y="181" width="12" height="26" fill="#ef4444" rx="1"/>
+          <circle cx="442" cy="214" r="6" fill="none" stroke="#3b82f6" stroke-width="1.8"/>
+          <text x="442" y="242" fill="rgba(59,130,246,0.65)" font-size="9" font-family="monospace" text-anchor="middle">②</text>
+          <!-- C18 bullish -->
+          <line x1="465" y1="174" x2="465" y2="214" stroke="#22c55e" stroke-width="1.5"/>
+          <rect x="459" y="163" width="12" height="34" fill="#22c55e" rx="1"/>
+          <!-- C19 small green -->
+          <line x1="488" y1="156" x2="488" y2="176" stroke="#22c55e" stroke-width="1.5"/>
+          <rect x="482" y="159" width="12" height="14" fill="#22c55e" rx="1"/>
+          <!-- C20 doji -->
+          <line x1="511" y1="150" x2="511" y2="174" stroke="#6b7280" stroke-width="1.5"/>
+          <rect x="505" y="156" width="12" height="10" fill="#6b7280" rx="1"/>
+          <!-- C21 red -->
+          <line x1="534" y1="158" x2="534" y2="184" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="528" y="163" width="12" height="17" fill="#ef4444" rx="1"/>
+          <!-- C22 red falls -->
+          <line x1="557" y1="174" x2="557" y2="204" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="551" y="180" width="12" height="20" fill="#ef4444" rx="1"/>
+          <!-- C23 wick to support → 3rd touch ENTRY -->
+          <line x1="580" y1="184" x2="580" y2="214" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="574" y="188" width="12" height="20" fill="#ef4444" rx="1"/>
+          <circle cx="580" cy="214" r="7" fill="rgba(34,197,94,0.1)" stroke="#22c55e" stroke-width="2"/>
+          <!-- entry arrow -->
+          <line x1="580" y1="224" x2="580" y2="244" stroke="#22c55e" stroke-width="1.2" stroke-dasharray="3,2"/>
+          <polygon points="575,244 585,244 580,252" fill="#22c55e"/>
+          <rect x="552" y="254" width="56" height="17" fill="rgba(34,197,94,0.15)" rx="3" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
+          <text x="580" y="266" fill="#22c55e" font-size="9" font-family="monospace" text-anchor="middle" font-weight="700">⑧ ENTRY</text>
+          <!-- C24 strong green breakout -->
+          <line x1="603" y1="162" x2="603" y2="214" stroke="#22c55e" stroke-width="1.5"/>
+          <rect x="597" y="150" width="12" height="52" fill="#22c55e" rx="1"/>
+          <!-- upward gradient zone -->
+          <rect x="597" y="70" width="117" height="144" fill="url(#upMove)"/>
+          <!-- C25 green -->
+          <line x1="626" y1="126" x2="626" y2="158" stroke="#22c55e" stroke-width="1.5"/>
+          <rect x="620" y="130" width="12" height="26" fill="#22c55e" rx="1"/>
+          <!-- C26 green -->
+          <line x1="649" y1="100" x2="649" y2="133" stroke="#22c55e" stroke-width="1.5"/>
+          <rect x="643" y="104" width="12" height="26" fill="#22c55e" rx="1"/>
+          <!-- C27 green, approaching resistance -->
+          <line x1="672" y1="76" x2="672" y2="108" stroke="#22c55e" stroke-width="1.5"/>
+          <rect x="666" y="80" width="12" height="25" fill="#22c55e" rx="1"/>
+          <!-- C28 wick to resistance, rejection -->
+          <line x1="695" y1="60" x2="695" y2="96" stroke="#ef4444" stroke-width="1.5"/>
+          <rect x="689" y="67" width="12" height="22" fill="#ef4444" rx="1"/>
+          <circle cx="695" cy="62" r="6" fill="none" stroke="#f97316" stroke-width="1.8"/>
+
+          <!-- VOLUME BARS -->
+          <rect x="68" y="272" width="12" height="22" fill="rgba(239,68,68,0.45)" rx="1"/>
+          <rect x="91" y="275" width="12" height="19" fill="rgba(239,68,68,0.45)" rx="1"/>
+          <rect x="114" y="284" width="12" height="10" fill="rgba(34,197,94,0.45)" rx="1"/>
+          <rect x="137" y="277" width="12" height="17" fill="rgba(239,68,68,0.45)" rx="1"/>
+          <rect x="160" y="274" width="12" height="20" fill="rgba(239,68,68,0.45)" rx="1"/>
+          <rect x="183" y="287" width="12" height="7" fill="rgba(107,114,128,0.45)" rx="1"/>
+          <rect x="206" y="276" width="12" height="18" fill="rgba(239,68,68,0.45)" rx="1"/>
+          <rect x="229" y="261" width="12" height="33" fill="rgba(239,68,68,0.6)" rx="1"/>
+          <rect x="252" y="263" width="12" height="31" fill="rgba(34,197,94,0.6)" rx="1"/>
+          <rect x="275" y="272" width="12" height="22" fill="rgba(34,197,94,0.45)" rx="1"/>
+          <rect x="298" y="276" width="12" height="18" fill="rgba(34,197,94,0.45)" rx="1"/>
+          <rect x="321" y="279" width="12" height="15" fill="rgba(34,197,94,0.45)" rx="1"/>
+          <rect x="344" y="277" width="12" height="17" fill="rgba(239,68,68,0.45)" rx="1"/>
+          <rect x="367" y="279" width="12" height="15" fill="rgba(239,68,68,0.45)" rx="1"/>
+          <rect x="390" y="278" width="12" height="16" fill="rgba(239,68,68,0.45)" rx="1"/>
+          <rect x="413" y="274" width="12" height="20" fill="rgba(239,68,68,0.45)" rx="1"/>
+          <rect x="436" y="263" width="12" height="31" fill="rgba(239,68,68,0.6)" rx="1"/>
+          <rect x="459" y="265" width="12" height="29" fill="rgba(34,197,94,0.6)" rx="1"/>
+          <rect x="482" y="281" width="12" height="13" fill="rgba(34,197,94,0.45)" rx="1"/>
+          <rect x="505" y="284" width="12" height="10" fill="rgba(107,114,128,0.45)" rx="1"/>
+          <rect x="528" y="278" width="12" height="16" fill="rgba(239,68,68,0.45)" rx="1"/>
+          <rect x="551" y="275" width="12" height="19" fill="rgba(239,68,68,0.45)" rx="1"/>
+          <rect x="574" y="262" width="12" height="32" fill="rgba(239,68,68,0.6)" rx="1"/>
+          <rect x="597" y="255" width="12" height="39" fill="rgba(34,197,94,0.7)" rx="1"/>
+          <rect x="620" y="259" width="12" height="35" fill="rgba(34,197,94,0.7)" rx="1"/>
+          <rect x="643" y="263" width="12" height="31" fill="rgba(34,197,94,0.65)" rx="1"/>
+          <rect x="666" y="267" width="12" height="27" fill="rgba(34,197,94,0.65)" rx="1"/>
+          <rect x="689" y="273" width="12" height="21" fill="rgba(239,68,68,0.5)" rx="1"/>
+
+          <!-- volume baseline -->
+          <line x1="58" y1="294" x2="714" y2="294" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <text x="62" y="303" fill="rgba(255,255,255,0.2)" font-size="8" font-family="monospace">VOL</text>
+        </svg>
+      </div>
+
+      <!-- UNIQUE TECH FEATURES -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:48px;">
+        <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3b82f6;margin-bottom:8px;">Multi-Touch S/R Detection</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;">Levels are only validated after 3+ confirmed price reactions. The algorithm measures wick precision and body rejection — not just proximity. No guesswork, no lagging indicators.</div>
+        </div>
+        <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#22c55e;margin-bottom:8px;">Wick-Only Entry Filter</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;">Entry triggers only on 5m wick contact with the level — never on a body breakout. The same technique used by institutional desks to get filled at exact levels without chasing.</div>
+        </div>
+        <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f97316;margin-bottom:8px;">Volume Pattern Confirmation</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;">Volume spikes at the level confirm institutional participation. Low-volume touches are skipped — they signal retail noise, not real support. Only high-conviction setups are taken.</div>
+        </div>
+        <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#a855f7;margin-bottom:8px;">Ranging Market Filter</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;">Detects choppy, low-structure phases and pauses trading automatically. Prevents the repeated stop-losses that destroy most bots during consolidation. Trades only when structure is clear.</div>
+        </div>
       </div>
 
       <!-- Risk management callout -->
