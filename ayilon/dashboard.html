@@ -920,7 +920,7 @@
             <div style="display:flex;align-items:center;gap:16px;">
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                 <input type="checkbox" id="demoMode" onchange="updateDemoLabel()" style="accent-color:var(--white);width:15px;height:15px;">
-                <span style="font-size:13px;color:var(--gray-400);">데모 모드</span>
+                <span style="font-size:13px;color:var(--gray-400);">Demo Mode</span>
                 <span id="demoBadge" style="display:none;font-size:10px;font-weight:700;padding:2px 7px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:4px;color:#fbbf24;letter-spacing:0.05em;">DEMO</span>
               </label>
               <button id="botToggleBtn" onclick="toggleBot()" style="padding:10px 24px;background:var(--white);color:var(--black);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.2s;">Start Bot</button>
@@ -940,7 +940,7 @@
               </div>
               <input type="range" id="posSize" min="1" max="100" value="12" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
               <div id="posSizeWarn" style="display:none;font-size:12px;color:#f59e0b;margin-top:6px;">⚠️ Over 40% risks compounding — Kelly Criterion recommends staying below this threshold.</div>
-              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ Kelly Half-Criterion 추천: 총 12% (3회 분할 시 회당 4%)</div>
+              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ Recommended 12% total (4% per entry × 3) — Half-Kelly Criterion</div>
             </div>
 
             <div>
@@ -950,7 +950,7 @@
               </div>
               <input type="range" id="leverage" min="1" max="100" value="5" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
               <div id="leverageWarn" style="display:none;font-size:12px;color:#f59e0b;margin-top:6px;">⚠️ Over 20x leverage significantly increases liquidation risk. Mathematically unsustainable for compounding.</div>
-              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON 추천 5x — SL 3~6% 기준 청산 버퍼 3배 이상 확보</div>
+              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON recommends 5x — 3× liquidation buffer at 3–6% SL</div>
             </div>
 
           </div>
@@ -1046,7 +1046,7 @@
               </div>
               <input type="range" id="numEntries" min="2" max="10" value="3" oninput="document.getElementById('entriesLabel').textContent=this.value" style="width:100%;accent-color:var(--white);">
               <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-600);margin-top:4px;"><span>2</span><span>10</span></div>
-              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON 추천 3회 — EV 최적, 레벨 이탈 시 손실 제한</div>
+              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON recommends 3 — optimal EV, limits loss on level breakout</div>
             </div>
 
             <div>
@@ -2341,7 +2341,7 @@
           var badge = document.getElementById('lastScanBadge');
           if (badge) {
             var ago = Math.round((Date.now() - new Date(data.lastScan)) / 1000);
-            badge.textContent = '마지막 스캔 ' + (ago < 60 ? ago + '초 전' : Math.round(ago/60) + '분 전');
+            badge.textContent = 'Last scan ' + (ago < 60 ? ago + 's ago' : Math.round(ago/60) + 'm ago');
             badge.style.display = 'inline';
           }
         }
