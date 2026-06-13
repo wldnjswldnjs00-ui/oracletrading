@@ -874,26 +874,39 @@ function detectSignal(c5, levels) {
     return { type: 'long', level: s.price, grade: s.grade || 'B', stopLoss: swingLow };
   }
 
-  // ── SHORT: large bearish impulse + volume → retest of 전고점 ─────────────
-  // Find the bearish impulse candle (any of the last 3 closed candles)
+  // ── SHORT: bearish impulse + volume → scale in during retracement ─────────
+  // Entry triggers (can fire on separate cron ticks for scale-in):
+  //   Trigger A — price at 50% of bearish candle range (캔들 range 기준 중간값)
+  //   Trigger B — price at a resistance level between 50% and candle high
+  // SL = 3-candle swing high (전고점 이탈 시 손절)
   for (const bear of [prev1, prev2, prev3]) {
     const bO = bear[1], bC = bear[4], bH = bear[2], bL = bear[3], bV = bear[5];
     const range = bH - bL;
     if (range <= 0) continue;
-    if ((bO - bC) / range < 0.40) continue;  // body < 40% of range → not a large bearish candle
-    if (bV < avgVol * 1.4) continue;          // no volume spike
+    if ((bO - bC) / range < 0.40) continue; // body < 40% of range
+    if (bV < avgVol * 1.4) continue;         // no volume spike
 
-    // Current price retesting the impulse candle's high (전고점)
-    if (Math.abs(curPrice - bH) / bH > TOUCH_TOL) continue;
-    // Ensure price hasn't closed above the high (breakout, not retest)
-    if (prev1[4] > bH * 1.003 && bear !== prev1) continue;
+    const mid50 = bH - range * 0.50; // 50% 되돌림 레벨 (range 기준)
+
+    // Price must be inside retracement zone [mid50, swingHigh]
+    if (curPrice < mid50 * 0.998) continue;       // fell below 50% → invalid
+    if (curPrice > swingHigh * 1.003) continue;   // broke above candle high → SL zone
 
     const slDist = Math.abs(swingHigh - curPrice) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
 
-    // Grade: check if a resistance level is nearby; impulse+volume alone = 'A'
-    const nearRes = levels.resistances.find(r => Math.abs(r.price - bH) / bH <= 0.01);
-    const grade   = nearRes ? nearRes.grade : 'A'; // confluence with S/R = upgrade
+    // Trigger A: at 50% retracement
+    const atMid50 = Math.abs(curPrice - mid50) / mid50 <= TOUCH_TOL;
+
+    // Trigger B: at resistance level inside retracement zone
+    const nearRes = levels.resistances.find(r =>
+      r.price >= mid50 * 0.998 && r.price <= swingHigh * 1.003 &&
+      Math.abs(curPrice - r.price) / r.price <= TOUCH_TOL
+    );
+
+    if (!atMid50 && !nearRes) continue; // not at any entry trigger
+
+    const grade = nearRes ? nearRes.grade : 'A';
     return { type: 'short', level: bH, grade, stopLoss: swingHigh };
   }
 
