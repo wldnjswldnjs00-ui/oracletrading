@@ -2430,9 +2430,10 @@
           neutral: { text: '↔ Neutral',   bg: 'rgba(163,163,163,0.15)', color: '#a3a3a3' }
         };
         var t = tMap[md.trend] || tMap.neutral;
-        trendEl.textContent = t.text;
-        trendEl.style.background = t.bg;
-        trendEl.style.color = t.color;
+        var strengthLabel = md.trendStrong === false ? ' · Weak' : '';
+        trendEl.textContent = t.text + strengthLabel;
+        trendEl.style.background = md.trendStrong === false ? 'rgba(163,163,163,0.1)' : t.bg;
+        trendEl.style.color = md.trendStrong === false ? '#6b7280' : t.color;
       }
 
       // Active position summary (from bot:position_state KV)

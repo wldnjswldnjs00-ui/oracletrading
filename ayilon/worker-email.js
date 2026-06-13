@@ -437,7 +437,7 @@ async function runBot(env) {
     // ── Save market snapshot for dashboard (non-fatal background write) ────────
     try {
       await env.USERS_KV.put('bot:market_data', JSON.stringify({
-        price: currentPrice, trend, levels, updatedAt: Date.now()
+        price: currentPrice, trend: trend.dir, trendStrong: trend.strong, levels, updatedAt: Date.now()
       }), { expirationTtl: 300 });
     } catch {}
 
@@ -507,14 +507,30 @@ async function runBot(env) {
       }
     }
 
+    // ── Volatility gate: skip if 1H price range too tight (< 1.5% over 20h) ───
+    if (candles1H.length >= 20) {
+      const slice20 = candles1H.slice(0, 20);
+      const h1High  = Math.max(...slice20.map(c => parseFloat(c[2])));
+      const h1Low   = Math.min(...slice20.map(c => parseFloat(c[3])));
+      if ((h1High - h1Low) / (h1Low || 1) < 0.015) return; // market too compressed
+    }
+
     // ── 5m entry signal ───────────────────────────────────────
     const signal = detectSignal(c5, levels);
     if (!signal) return;
 
-    // ── Trend + grade filter ──────────────────────────────────
-    if (trend === 'up'      && signal.type === 'short') return;  // counter-trend
-    if (trend === 'down'    && signal.type === 'long')  return;  // counter-trend
-    if (trend === 'neutral' && signal.grade === 'B')    return;  // sideways: B급 too noisy
+    // ── Trend strength + direction filter ────────────────────
+    if (trend.dir === 'up'   && signal.type === 'short') return; // counter-trend
+    if (trend.dir === 'down' && signal.type === 'long')  return; // counter-trend
+    if (!trend.strong && signal.grade !== 'S') return;           // weak/ranging → S등급만
+
+    // ── 1H confirmation for SHORT (must align with 1H context) ──────────────
+    if (signal.type === 'short') {
+      const h1c     = candles1H[0]?.map(parseFloat);
+      const h1Bear  = h1c && h1c[4] < h1c[1];  // 1H closing bearish
+      const h1NRes  = sr1H.resistances.some(r => Math.abs(currentPrice - r.price) / r.price <= 0.01);
+      if (!h1Bear && !h1NRes) return; // no 1H alignment — skip
+    }
 
     // If existing position in OPPOSITE direction → skip (no flip)
     if (state.direction && state.direction !== signal.type) return;
@@ -608,7 +624,7 @@ async function runBot(env) {
       }
       const tpStr    = useTP ? ` | TP:${tp.toFixed(2)}` : '';
       const gradeStr = signal.grade ? `[${signal.grade}급] ` : '';
-      const trendStr = trend !== 'neutral' ? ` | trend:${trend}` : '';
+      const trendStr = trend.dir !== 'neutral' ? ` | trend:${trend.dir}${trend.strong ? '' : '(w)'}` : '';
       const slStr    = state.algoId ? `nSL:${state.stopLoss.toFixed(2)}` : `SL(sw):${state.stopLoss.toFixed(2)}`;
       await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${fillPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | ${slStr}${tpStr}${trendStr} | sz:${sz}`);
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
@@ -703,18 +719,26 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
 }
 
 // ── DAILY TREND FILTER (EMA20 / EMA50) ───────────────────────
-// up:      price > EMA20 > EMA50 → only longs
-// down:    price < EMA20 < EMA50 → only shorts
-// neutral: mixed → both directions allowed
+// up/down/neutral direction + strong/weak strength
+// strong = EMA20 slope AND EMA20/50 spread both meaningful
 function detectTrend(candles, currentPrice) {
-  if (candles.length < 50) return 'neutral';
-  // OKX returns newest first — reverse for oldest-first EMA calc
-  const closes = candles.slice(0, 55).map(c => parseFloat(c[4])).reverse();
-  const ema20 = calcEMA(closes, 20);
-  const ema50 = calcEMA(closes, 50);
-  if (currentPrice > ema20 && ema20 > ema50) return 'up';
-  if (currentPrice < ema20 && ema20 < ema50) return 'down';
-  return 'neutral';
+  if (candles.length < 55) return { dir: 'neutral', strong: false };
+  const closes   = candles.slice(0, 55).map(c => parseFloat(c[4])).reverse();
+  const closes5  = candles.slice(5, 60).map(c => parseFloat(c[4])).reverse();
+  const ema20    = calcEMA(closes, 20);
+  const ema50    = calcEMA(closes, 50);
+  const ema20_5  = closes5.length >= 20 ? calcEMA(closes5, 20) : ema20;
+
+  const slope  = Math.abs(ema20 - ema20_5) / (ema20_5 || 1); // EMA20 rate of change over 5 days
+  const spread = Math.abs(ema20 - ema50)   / (ema50   || 1); // EMA20/50 gap
+  const strong = slope > 0.002 && spread > 0.008;            // 0.2%/5d slope + 0.8% spread
+
+  let dir;
+  if (currentPrice > ema20 && ema20 > ema50)      dir = 'up';
+  else if (currentPrice < ema20 && ema20 < ema50) dir = 'down';
+  else                                              dir = 'neutral';
+
+  return { dir, strong };
 }
 
 function calcEMA(closes, period) {
