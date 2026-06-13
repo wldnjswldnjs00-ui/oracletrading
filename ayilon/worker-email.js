@@ -834,49 +834,67 @@ function mergeLevels(a, b) {
 }
 
 // ── ENTRY SIGNAL ──────────────────────────────────────────────
-// Trigger: prev candle TOUCHED the S/R level (by wick or close)
-// Entry:   current candle (price bouncing off level)
-// SL:      3-candle swing low (long) or swing high (short)
+// LONG:  prev candle wick/close touched support → entry on current candle (bounce)
+//        SL = 3-candle swing low (전저점)
+//
+// SHORT: large bearish candle (body ≥ 40%, volume ≥ 1.4× avg) detected in prev 3 candles
+//        → price retraces back up to that candle's high (전고점 되돌림)
+//        → SHORT entry at retest
+//        SL = 3-candle swing high (전고점 이탈 시 손절)
 function detectSignal(c5, levels) {
   if (c5.length < 4) return null;
 
   const cur   = c5[0].map(parseFloat); // current forming candle
-  const prev1 = c5[1].map(parseFloat); // last closed candle (signal candle)
+  const prev1 = c5[1].map(parseFloat); // last closed
   const prev2 = c5[2].map(parseFloat);
   const prev3 = c5[3].map(parseFloat);
 
   const curPrice = cur[4];
 
-  // 3-candle swing SL (most reliable structural level)
+  // Average volume from up to last 10 closed candles
+  const volSlice = c5.slice(1, Math.min(11, c5.length));
+  const avgVol   = volSlice.reduce((s, c) => s + parseFloat(c[5]), 0) / volSlice.length;
+
+  // 3-candle swing structural SL levels
   const swingLow  = Math.min(prev1[3], prev2[3], prev3[3]);
   const swingHigh = Math.max(prev1[2], prev2[2], prev3[2]);
 
-  const TOUCH_TOL = 0.005; // 0.5% — prev candle wick must be within this of the level
-  const SL_MIN    = 0.01;  // 1% — minimum SL distance (tight structures)
-  const SL_MAX    = 0.07;  // 7% — maximum SL distance
+  const TOUCH_TOL = 0.005; // 0.5% proximity tolerance
+  const SL_MIN    = 0.01;  // 1% min SL distance
+  const SL_MAX    = 0.07;  // 7% max SL distance
 
+  // ── LONG: support touch → bounce ─────────────────────────────────────────
   for (const s of levels.supports) {
-    // prev candle touched support by its low or close
-    const touchedByWick  = Math.abs(prev1[3] - s.price) / s.price <= TOUCH_TOL;
-    const touchedByClose = Math.abs(prev1[4] - s.price) / s.price <= TOUCH_TOL;
-    if (!touchedByWick && !touchedByClose) continue;
-    // Current price still above support (not broken through)
-    if (curPrice < s.price * 0.997) continue;
+    const byWick  = Math.abs(prev1[3] - s.price) / s.price <= TOUCH_TOL;
+    const byClose = Math.abs(prev1[4] - s.price) / s.price <= TOUCH_TOL;
+    if (!byWick && !byClose) continue;
+    if (curPrice < s.price * 0.997) continue; // support broken — skip
     const slDist = Math.abs(curPrice - swingLow) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
-    return { type: 'long', level: s.price, grade: s.grade || '', stopLoss: swingLow };
+    return { type: 'long', level: s.price, grade: s.grade || 'B', stopLoss: swingLow };
   }
 
-  for (const r of levels.resistances) {
-    // prev candle touched resistance by its high or close
-    const touchedByWick  = Math.abs(prev1[2] - r.price) / r.price <= TOUCH_TOL;
-    const touchedByClose = Math.abs(prev1[4] - r.price) / r.price <= TOUCH_TOL;
-    if (!touchedByWick && !touchedByClose) continue;
-    // Current price still below resistance (not broken through)
-    if (curPrice > r.price * 1.003) continue;
+  // ── SHORT: large bearish impulse + volume → retest of 전고점 ─────────────
+  // Find the bearish impulse candle (any of the last 3 closed candles)
+  for (const bear of [prev1, prev2, prev3]) {
+    const bO = bear[1], bC = bear[4], bH = bear[2], bL = bear[3], bV = bear[5];
+    const range = bH - bL;
+    if (range <= 0) continue;
+    if ((bO - bC) / range < 0.40) continue;  // body < 40% of range → not a large bearish candle
+    if (bV < avgVol * 1.4) continue;          // no volume spike
+
+    // Current price retesting the impulse candle's high (전고점)
+    if (Math.abs(curPrice - bH) / bH > TOUCH_TOL) continue;
+    // Ensure price hasn't closed above the high (breakout, not retest)
+    if (prev1[4] > bH * 1.003 && bear !== prev1) continue;
+
     const slDist = Math.abs(swingHigh - curPrice) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
-    return { type: 'short', level: r.price, grade: r.grade || '', stopLoss: swingHigh };
+
+    // Grade: check if a resistance level is nearby; impulse+volume alone = 'A'
+    const nearRes = levels.resistances.find(r => Math.abs(r.price - bH) / bH <= 0.01);
+    const grade   = nearRes ? nearRes.grade : 'A'; // confluence with S/R = upgrade
+    return { type: 'short', level: bH, grade, stopLoss: swingHigh };
   }
 
   return null;
