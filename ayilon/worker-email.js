@@ -594,6 +594,8 @@ async function runBot(env) {
       lossLimitEnabled = true, lossLimit = 5,
       notifyEmail = true, notifyTelegram = false,
       telegramToken, telegramChatId, userEmail } = cfg;
+    const srTimeframe = strategy === 'swing' ? '4H' : '1H';
+    const srTouch = 3;
 
     if (!apiKey || !apiSecret || !apiPassphrase) return;
 
