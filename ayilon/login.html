@@ -289,7 +289,7 @@
     function resendCode() { alert('A new code has been sent.'); }
 
     // ── FORGOT PASSWORD ──────────────────────────────────────────
-    var forgotSentCode = null;
+    var forgotEmailForVerify = null;
 
     function startForgot() { showStep(4); }
 
@@ -325,7 +325,7 @@
         });
         var data = await res.json();
         if (data.success) {
-          forgotSentCode = data.code;
+          forgotEmailForVerify = email;
           document.getElementById('forgotVerifyTitle').textContent = 'Email Verification';
           document.getElementById('forgotVerifyDesc').textContent  = 'Enter the 6-digit code sent to ' + email;
           showStep(5);
@@ -346,14 +346,26 @@
       if (el.value && idx < 5) document.querySelectorAll('.otp-forgot')[idx + 1].focus();
     }
 
-    function verifyForgotOTP() {
+    async function verifyForgotOTP() {
       var digits = document.querySelectorAll('.otp-forgot');
       var code   = Array.from(digits).map(function(d) { return d.value; }).join('');
       var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
       var isAuth  = methods.indexOf('authenticator') !== -1 && methods.indexOf('email') === -1;
-      if (code.length === 6 && (isAuth || code === forgotSentCode)) {
-        showStep(6);
-      } else {
+      if (code.length !== 6) return;
+      if (isAuth) { showStep(6); return; }
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/verify-code', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: forgotEmailForVerify, code: code })
+        });
+        var data = await res.json();
+        if (data.valid) {
+          showStep(6);
+        } else {
+          Array.from(digits).forEach(function(d) { d.style.borderColor = '#ef4444'; });
+          setTimeout(function() { Array.from(digits).forEach(function(d) { d.style.borderColor = ''; }); }, 800);
+        }
+      } catch(e) {
         Array.from(digits).forEach(function(d) { d.style.borderColor = '#ef4444'; });
         setTimeout(function() { Array.from(digits).forEach(function(d) { d.style.borderColor = ''; }); }, 800);
       }

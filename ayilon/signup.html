@@ -177,7 +177,7 @@
     const WORKER_URL = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
     let timerInterval = null;
     let emailVerified = false;
-    let sentCode = null;
+    let verifiedEmail = null; // email whose code was confirmed server-side
 
     async function sendVerificationCode() {
       const email = document.getElementById('email').value;
@@ -218,7 +218,6 @@
         });
         const data = await res.json();
         if (data.success) {
-          sentCode = data.code;
           document.getElementById('sendCodeBtn').textContent = 'Sent';
           document.getElementById('codeWrap').classList.add('show');
           startTimer();
@@ -251,19 +250,31 @@
       }, 1000);
     }
 
-    function confirmCode() {
+    async function confirmCode() {
       const code = document.getElementById('verifyCode').value;
       const hint = document.getElementById('codeHint');
-      if (code.length === 6 && code === sentCode) {
-        emailVerified = true;
-        clearInterval(timerInterval);
-        document.getElementById('verifyCode').classList.add('success');
-        document.getElementById('verifyCode').disabled = true;
-        hint.className = 'form-hint success';
-        hint.textContent = '✓ Email verified successfully';
-      } else {
+      const email = document.getElementById('email').value;
+      if (code.length !== 6) { hint.className = 'form-hint error'; hint.textContent = 'Enter the 6-digit code'; return; }
+      try {
+        const res = await fetch(WORKER_URL + '/verify-code', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code })
+        });
+        const data = await res.json();
+        if (data.valid) {
+          emailVerified = true;
+          clearInterval(timerInterval);
+          document.getElementById('verifyCode').classList.add('success');
+          document.getElementById('verifyCode').disabled = true;
+          hint.className = 'form-hint success';
+          hint.textContent = '✓ Email verified successfully';
+        } else {
+          hint.className = 'form-hint error';
+          hint.textContent = 'Invalid or expired verification code';
+        }
+      } catch {
         hint.className = 'form-hint error';
-        hint.textContent = 'Invalid verification code';
+        hint.textContent = 'Verification failed. Please try again.';
       }
     }
 

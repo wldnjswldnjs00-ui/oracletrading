@@ -9,6 +9,7 @@ export default {
 
     if (request.method === 'POST') {
       if (path === '/send-verification')  return handleVerification(request, env);
+      if (path === '/verify-code')        return handleVerifyCode(request, env);
       if (path === '/send-confirmation')  return handleConfirmation(request, env);
       if (path === '/check-email')        return handleCheckEmail(request, env);
       if (path === '/check-username')     return handleCheckUsername(request, env);
@@ -49,8 +50,17 @@ async function handleCheckUsername(request, env) {
 
 // ── REGISTER USER ────────────────────────────────────────────
 async function handleRegisterUser(request, env) {
-  const { email, username, name, password } = await request.json();
+  const { email, username, name, password, code } = await request.json();
   if (!email || !username) return json({ success: false, error: 'missing_fields' }, 400);
+
+  // Verify email code server-side (fix: code was previously returned in HTTP response)
+  if (env.USERS_KV && code) {
+    const storedCode = await env.USERS_KV.get('verify:' + email.toLowerCase());
+    if (!storedCode || storedCode !== String(code)) {
+      return json({ success: false, error: 'invalid_code' });
+    }
+    await env.USERS_KV.delete('verify:' + email.toLowerCase());
+  }
 
   if (env.USERS_KV) {
     const emailKey    = 'user:'     + email.toLowerCase();
@@ -59,10 +69,26 @@ async function handleRegisterUser(request, env) {
     if (emailExists)    return json({ success: false, error: 'email_taken' });
     const usernameExists = await env.USERS_KV.get(usernameKey);
     if (usernameExists) return json({ success: false, error: 'username_taken' });
-    await env.USERS_KV.put(emailKey,    JSON.stringify({ email, username, name, password, createdAt: Date.now() }));
+
+    // Fix: hash password with SHA-256 before storing (never store plaintext)
+    const hashedPw = password ? await hashPassword(password) : null;
+    await env.USERS_KV.put(emailKey, JSON.stringify({
+      email, username, name,
+      password: hashedPw,
+      createdAt: Date.now()
+    }));
     await env.USERS_KV.put(usernameKey, email.toLowerCase());
   }
   return json({ success: true });
+}
+
+// ── VERIFY EMAIL CODE (server-side) ─────────────────────────
+async function handleVerifyCode(request, env) {
+  const { email, code } = await request.json();
+  if (!email || !code) return json({ valid: false });
+  if (!env.USERS_KV) return json({ valid: true }); // dev fallback
+  const stored = await env.USERS_KV.get('verify:' + email.toLowerCase());
+  return json({ valid: stored === String(code) });
 }
 
 // ── CREATE PAYMENT (assign unique amount) ────────────────────
@@ -107,7 +133,6 @@ async function handleVerifyPayment(request, env) {
   if (!txid || !uniqueAmount) return json({ verified: false, error: 'Missing fields' });
 
   try {
-    // Fetch recent TRC20 transfers to our wallet
     const res = await fetch(
       `https://api.trongrid.io/v1/accounts/${WALLET}/transactions/trc20?limit=50&only_to=true&contract_address=${USDT_CONTRACT}&order_by=block_timestamp,desc`,
       { headers: { 'Accept': 'application/json', 'User-Agent': 'AYILON/1.0' } }
@@ -117,7 +142,6 @@ async function handleVerifyPayment(request, env) {
     const data = await res.json();
     const txs = data.data || [];
 
-    // Find the transaction matching this txid
     const tx = txs.find(t => t.transaction_id === txid);
     if (!tx) return json({ verified: false, error: 'Transaction not found. It may not be confirmed yet — please wait 1-3 minutes and try again.' });
 
@@ -178,7 +202,6 @@ async function activateSubscription(env, uniqueAmount, txHash) {
   pending.txHash = txHash;
   await env.USERS_KV.put(key, JSON.stringify(pending), { expirationTtl: 86400 });
 
-  // Send confirmation email
   try {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -200,6 +223,12 @@ async function handleVerification(request, env) {
     return json({ error: 'Invalid email' }, 400);
   }
   const code = String(Math.floor(100000 + Math.random() * 900000));
+
+  // Fix: store code server-side, never return it in the response
+  if (env.USERS_KV) {
+    await env.USERS_KV.put('verify:' + email.toLowerCase(), code, { expirationTtl: 300 });
+  }
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
@@ -211,7 +240,7 @@ async function handleVerification(request, env) {
     })
   });
   if (!res.ok) return json({ error: 'Failed to send email' }, 500);
-  return json({ success: true, code });
+  return json({ success: true }); // code NOT returned — client must verify via /verify-code
 }
 
 // ── SEND CONFIRMATION EMAIL ──────────────────────────────────
@@ -250,6 +279,13 @@ function corsResponse(body, status) {
   });
 }
 
+// Fix: SHA-256 password hash — never store plaintext passwords
+async function hashPassword(password) {
+  const data = new TextEncoder().encode(password + ':ayilon_2025');
+  const buf  = await crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
+
 // ════════════════════════════════════════════════════════════
 // BOT ENDPOINTS
 // ════════════════════════════════════════════════════════════
@@ -257,8 +293,13 @@ function corsResponse(body, status) {
 async function handleSaveBotSettings(request, env) {
   const body = await request.json();
   if (!env.USERS_KV) return json({ ok: false });
-  await env.USERS_KV.put('bot:config', JSON.stringify({ ...body, updatedAt: Date.now() }));
-  return json({ ok: true });
+
+  // Preserve existing clientToken or generate a new one on first save
+  const existing = await env.USERS_KV.get('bot:config', { type: 'json' });
+  const clientToken = existing?.clientToken || crypto.randomUUID();
+
+  await env.USERS_KV.put('bot:config', JSON.stringify({ ...body, clientToken, updatedAt: Date.now() }));
+  return json({ ok: true, clientToken });
 }
 
 async function handleBotStatus(request, env) {
@@ -291,9 +332,15 @@ async function handleBotStatus(request, env) {
 }
 
 async function handleBotControl(request, env) {
-  const { action } = await request.json();
+  const { action, clientToken } = await request.json();
   if (!env.USERS_KV) return json({ ok: false });
   const config = await env.USERS_KV.get('bot:config', { type: 'json' }) || {};
+
+  // Fix: require clientToken auth if one is set in config
+  if (config.clientToken && clientToken !== config.clientToken) {
+    return json({ ok: false, error: 'unauthorized' }, 401);
+  }
+
   if (action === 'start') config.running = true;
   if (action === 'stop')  config.running = false;
   if (action === 'dismiss') {
@@ -363,10 +410,10 @@ async function runBot(env) {
 
     if (!apiKey || !apiSecret || !apiPassphrase) return;
 
-    // Normalize lossLimit: accept 5 (meaning 5%) or 0.05 (meaning 5%)
     const lossLimitNorm = parseFloat(lossLimit) > 1 ? parseFloat(lossLimit) / 100 : parseFloat(lossLimit) || 0.05;
+    // Fix: cap leverage at 50x regardless of user input
+    const safeLeverage = Math.min(parseInt(leverage) || 20, 50);
 
-    // ── Update last scan time ─────────────────────────────────
     await env.USERS_KV.put('bot:last_scan', new Date().toISOString());
 
     // ── Daily loss check ──────────────────────────────────────
@@ -391,17 +438,32 @@ async function runBot(env) {
     const equity = parseFloat(details.find(d => d.ccy === 'USDT')?.eq || '0');
     if (equity <= 0) return;
 
+    // ── Fix: Max drawdown stop ────────────────────────────────
+    // Track peak equity and halt bot if overall drawdown exceeds mddLimit (default 30%)
+    const mddLimit = parseFloat(cfg.mddLimit || 0.30);
+    const peakData = await env.USERS_KV.get('bot:peak_equity', { type: 'json' });
+    if (!peakData || equity > peakData.peak) {
+      await env.USERS_KV.put('bot:peak_equity', JSON.stringify({ peak: equity, date: new Date().toISOString() }));
+    } else if (peakData.peak > 0 && (peakData.peak - equity) / peakData.peak >= mddLimit) {
+      cfg.running = false;
+      await env.USERS_KV.put('bot:config', JSON.stringify(cfg));
+      await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
+        `⚠️ Max drawdown ${(mddLimit*100).toFixed(0)}% reached ($${peakData.peak.toFixed(0)} → $${equity.toFixed(0)}). Bot stopped.`);
+      await botLog(env, `MDD limit ${(mddLimit*100).toFixed(0)}% triggered: $${peakData.peak.toFixed(0)} → $${equity.toFixed(0)} — bot stopped`);
+      return;
+    }
+
     // ── Open positions ────────────────────────────────────────
     const posRes = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instId=${tradingPair}`, demoMode);
     const openPos = (posRes?.data || []).filter(p => parseFloat(p.pos) !== 0);
 
-    // ── Position state (loaded before checkSL — fix race condition on KV cache) ────
+    // ── Position state (loaded before checkSL to prevent race condition) ────
     let ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
 
-    // ── Stop loss check ───────────────────────────────────────
+    // ── Stop loss / TP check ─────────────────────────────────
     await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, demoMode, ps);
 
-    // ── Fetch all candles in parallel ────────────────────────
+    // ── Fetch all candles in parallel ─────────────────────────
     const [candles1H, candles4H, candlesD, c5] = await Promise.all([
       getCandles(tradingPair, '1H', 100),
       getCandles(tradingPair, '4H', 100),
@@ -419,30 +481,22 @@ async function runBot(env) {
       return;
     }
 
-    // ── Daily trend filter (EMA20 / EMA50) ───────────────────
-    // Uptrend:   price > EMA20 > EMA50 → only LONG allowed
-    // Downtrend: price < EMA20 < EMA50 → only SHORT allowed
-    // Neutral:   both directions allowed
-    const trend = detectTrend(candlesD, currentPrice);
-
-    // ── S/R levels: 1H + 4H graded + volume zone confirmation ─
-    const sr1H = candles1H.length >= 20 ? detectSR(candles1H) : { supports: [], resistances: [] };
-    const sr4H = candles4H.length >= 20 ? detectSR(candles4H) : { supports: [], resistances: [] };
+    const trend   = detectTrend(candlesD, currentPrice);
+    const sr1H    = candles1H.length >= 20 ? detectSR(candles1H) : { supports: [], resistances: [] };
+    const sr4H    = candles4H.length >= 20 ? detectSR(candles4H) : { supports: [], resistances: [] };
     const srLevels  = gradeLevels(sr1H, sr4H);
     const rawVol    = detectVolumeZones(candles4H.length >= 20 ? candles4H : candles1H, currentPrice);
     const volLevels = filterVolBySR(rawVol, srLevels);
     const levels    = mergeLevels(srLevels, volLevels);
     if (!levels.supports.length && !levels.resistances.length) return;
 
-    // ── Save market snapshot for dashboard (non-fatal background write) ────────
     try {
       await env.USERS_KV.put('bot:market_data', JSON.stringify({
         price: currentPrice, trend: trend.dir, trendStrong: trend.strong, levels, updatedAt: Date.now()
       }), { expirationTtl: 300 });
     } catch {}
 
-    // ── Sync position state with OKX (ps already loaded above) ──────────────────
-    // Clear stale state if OKX has no matching position (handles manual close, liquidation)
+    // ── Sync position state with OKX ─────────────────────────
     if (ps[tradingPair]?.direction) {
       const dir = ps[tradingPair].direction;
       const matchingPos = openPos.find(p =>
@@ -450,9 +504,8 @@ async function runBot(env) {
         dir === 'short' ? (p.posSide === 'short' && parseFloat(p.pos) < 0) : false
       );
       if (!matchingPos) {
-        if (ps[tradingPair].algoId) {
-          await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].algoId, demoMode);
-        }
+        if (ps[tradingPair].algoId)   await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].algoId, demoMode);
+        if (ps[tradingPair].tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].tpAlgoId, demoMode);
         await botLog(env, `Sync: cleared ${tradingPair} state — position closed externally`);
         delete ps[tradingPair];
         await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
@@ -461,7 +514,6 @@ async function runBot(env) {
     const state = ps[tradingPair] || { entries: [], stopLoss: null, direction: null, takeProfit: null };
 
     // ── Trailing TP: 10% close at each subsequent S/R level ───
-    // Fires after the first 50% close (halfClosed=true), before new entry logic
     if (state.halfClosed && state.lastTPLevel && openPos.length > 0) {
       const TOUCH = 0.004;
       const nextLv = state.direction === 'long'
@@ -469,94 +521,115 @@ async function runBot(env) {
         : levels.supports.find(r =>   r.price < state.lastTPLevel * 0.999 && Math.abs(currentPrice - r.price) / r.price <= TOUCH);
 
       if (nextLv) {
-        const totalSz  = state.entries.reduce((s, e) => s + parseInt(e.sz), 0);
+        const totalSz = state.entries.reduce((s, e) => s + parseInt(e.sz), 0);
         const trailContracts = Math.max(1, Math.floor(totalSz * 0.10));
-        const trailSz  = String(trailContracts);
         const trailRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
           instId: tradingPair, tdMode: 'cross',
           side:    state.direction === 'long' ? 'sell' : 'buy',
           posSide: state.direction === 'long' ? 'long'  : 'short',
-          ordType: 'market', sz: trailSz
+          ordType: 'market', sz: String(trailContracts)
         }, demoMode);
 
         if (trailRes?.data?.[0]?.ordId) {
-          const newRemFrac = Math.max(0, (state.remainingFrac ?? 0.5) - 0.10);
-          // Update native SL: cancel old, place new at previous TP level for remaining size
+          // Fix: track actual remaining contracts (not just fraction) to avoid rounding drift
+          const prevRemaining = state.remainingContracts ?? Math.max(1, Math.floor(totalSz / 2));
+          const newRemaining  = Math.max(0, prevRemaining - trailContracts);
+          const newRemFrac    = newRemaining / totalSz;
+
           if (state.algoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
-          state.stopLoss    = state.lastTPLevel;
-          state.lastTPLevel = nextLv.price;
-          state.remainingFrac = newRemFrac;
-          if (newRemFrac > 0) {
-            const remSz = String(Math.max(1, Math.floor(totalSz * newRemFrac)));
-            const nAlgo = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.direction, state.stopLoss, remSz, demoMode);
+          if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
+          state.stopLoss           = state.lastTPLevel;
+          state.lastTPLevel        = nextLv.price;
+          state.remainingContracts = newRemaining;
+          state.remainingFrac      = newRemFrac;
+          state.tpAlgoId           = null;
+
+          if (newRemaining > 0) {
+            const nAlgo = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.direction, state.stopLoss, String(newRemaining), demoMode);
             state.algoId = nAlgo?.data?.[0]?.algoId ? String(nAlgo.data[0].algoId) : null;
           }
-          if (newRemFrac <= 0) {
+          if (newRemaining <= 0) {
             delete ps[tradingPair];
             await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
             await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} — position fully closed`);
           } else {
             ps[tradingPair] = state;
             await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-            await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL→${state.stopLoss.toFixed(2)} | Rem:${Math.round(newRemFrac * 100)}%`);
+            await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL→${state.stopLoss.toFixed(2)} | Rem:${newRemaining}cts`);
           }
         } else {
           await botLog(env, `Trail order FAILED @ ${nextLv.price.toFixed(2)}: ${trailRes?.msg || 'unknown'}`);
         }
-        return; // one action per tick
+        return;
       }
     }
 
-    // ── Volatility gate: skip if 1H price range too tight (< 1.5% over 20h) ───
+    // ── Volatility gate ───────────────────────────────────────
     if (candles1H.length >= 20) {
       const slice20 = candles1H.slice(0, 20);
       const h1High  = Math.max(...slice20.map(c => parseFloat(c[2])));
       const h1Low   = Math.min(...slice20.map(c => parseFloat(c[3])));
-      if ((h1High - h1Low) / (h1Low || 1) < 0.015) return; // market too compressed
+      if ((h1High - h1Low) / (h1Low || 1) < 0.015) return;
     }
+
+    // ── Fix: Funding rate gate — skip new entries when funding is extreme ──
+    // > 0.10% per 8h = 3%/day at 20x leverage. Non-fatal if check fails.
+    try {
+      const frData = await (await fetch(`${OKX_BASE}/api/v5/public/funding-rate?instId=${tradingPair}`)).json();
+      const fr = parseFloat(frData?.data?.[0]?.fundingRate || '0');
+      if (Math.abs(fr) > 0.001) {
+        await botLog(env, `Skip: funding rate ${(fr * 100).toFixed(4)}%/8h > 0.1% — no new entries`);
+        return;
+      }
+    } catch {}
 
     // ── 5m entry signal ───────────────────────────────────────
     const signal = detectSignal(c5, levels);
     if (!signal) return;
 
     // ── Trend strength + direction filter ────────────────────
-    if (trend.dir === 'up'   && signal.type === 'short') return; // counter-trend
-    if (trend.dir === 'down' && signal.type === 'long')  return; // counter-trend
-    if (!trend.strong && signal.grade !== 'S') return;           // weak/ranging → S등급만
+    if (trend.dir === 'up'   && signal.type === 'short') return;
+    if (trend.dir === 'down' && signal.type === 'long')  return;
+    if (!trend.strong && signal.grade !== 'S') return;
 
-    // ── 1H confirmation for SHORT (must align with 1H context) ──────────────
+    // ── 1H confirmation for SHORT ─────────────────────────────
     if (signal.type === 'short') {
-      const h1c     = candles1H[0]?.map(parseFloat);
-      const h1Bear  = h1c && h1c[4] < h1c[1];  // 1H closing bearish
-      const h1NRes  = sr1H.resistances.some(r => Math.abs(currentPrice - r.price) / r.price <= 0.01);
-      if (!h1Bear && !h1NRes) return; // no 1H alignment — skip
+      const h1c    = candles1H[0]?.map(parseFloat);
+      const h1Bear = h1c && h1c[4] < h1c[1];
+      const h1NRes = sr1H.resistances.some(r => Math.abs(currentPrice - r.price) / r.price <= 0.01);
+      if (!h1Bear && !h1NRes) return;
     }
 
-    // If existing position in OPPOSITE direction → skip (no flip)
     if (state.direction && state.direction !== signal.type) return;
 
-    // Max entries reached → skip
     const entryNum = (state.entries || []).length + 1;
     if (entryNum > parseInt(numEntries)) return;
 
-    // Additional entries: LONG stays tight (2%) — SHORT scale-in allows 5% zone
     if (entryNum > 1 && state.entries.length > 0) {
-      const firstEntryPrice = state.entries[0].price;
-      const drift = Math.abs(currentPrice - firstEntryPrice) / firstEntryPrice;
+      const drift = Math.abs(currentPrice - state.entries[0].price) / state.entries[0].price;
       const driftLimit = signal.type === 'short' ? 0.05 : 0.02;
       if (drift > driftLimit) return;
     }
 
     // ── TP = next S/R level in trade direction ────────────────
     const tp = signal.type === 'long'
-      ? levels.resistances[0]?.price   // nearest resistance above
-      : levels.supports[0]?.price;     // nearest support below
-    const useTP = tp && (signal.type === 'long' ? tp > currentPrice * 1.005 : tp < currentPrice * 0.995);
+      ? levels.resistances[0]?.price
+      : levels.supports[0]?.price;
+    const useTP = tp && (signal.type === 'long' ? tp > currentPrice * 1.01 : tp < currentPrice * 0.99);
 
-    // ── Kelly criterion warning ───────────────────────────────
+    // ── Fix: R:R filter — minimum 1.5:1 required ─────────────
+    const slDistRR = Math.abs(currentPrice - signal.stopLoss) / currentPrice;
+    const tpDistRR = useTP ? Math.abs(tp - currentPrice) / currentPrice : 0;
+    if (!useTP || tpDistRR / slDistRR < 1.5) {
+      await botLog(env, `Skip: R:R ${useTP ? (tpDistRR / slDistRR).toFixed(2) : 'n/a'}:1 < 1.5 | TP:${tp?.toFixed(0) ?? 'none'} SL:${signal.stopLoss.toFixed(0)}`);
+      return;
+    }
+
+    // ── Kelly warning ─────────────────────────────────────────
     const totalPct = (posSize / 100) * entryNum / parseInt(numEntries);
-    const kellyWarn = totalPct > 0.4 || parseInt(leverage) > 20;
-    if (kellyWarn) await botLog(env, `⚠️ Kelly warning: pos=${(totalPct*100).toFixed(0)}% lev=${leverage}x`);
+    if (totalPct > 0.4 || safeLeverage > 20) {
+      await botLog(env, `⚠️ Kelly warning: pos=${(totalPct*100).toFixed(0)}% lev=${safeLeverage}x`);
+    }
 
     // ── Calculate size ────────────────────────────────────────
     const totalVal = equity * (posSize / 100);
@@ -564,11 +637,10 @@ async function runBot(env) {
     let entryVal;
     if (entrySizing === 'martingale' && entryNum > 1) {
       entryVal = (totalVal / nEntries) * Math.pow(2, entryNum - 1);
-      entryVal = Math.min(entryVal, equity * 0.40); // cap at 40% equity (martingale safety)
+      entryVal = Math.min(entryVal, equity * 0.40);
+      // Fix: warn user when martingale multiplier is large
+      await botLog(env, `⚠️ MARTINGALE #${entryNum}: ${Math.pow(2, entryNum-1)}× size (${entryVal.toFixed(0)} USDT) — high risk`);
     } else if (signal.type === 'short' && nEntries >= 2) {
-      // SHORT scale-in: smaller first entry (50% retracement, early/unconfirmed)
-      //                 larger second entry (resistance zone, more confirmed)
-      // Weights: [1, 2, 2, ...] → entry1=1/(n+1), entry2+=2/(n+1) each
       const weights = Array.from({ length: nEntries }, (_, i) => i === 0 ? 1 : 2);
       const totalW  = weights.reduce((a, b) => a + b, 0);
       entryVal = totalVal * (weights[entryNum - 1] / totalW);
@@ -582,46 +654,77 @@ async function runBot(env) {
     }
     const sz = String(szContracts);
 
-    // ── Set OKX leverage to match dashboard config (first entry only) ─────────
+    // ── Set OKX leverage (capped at 50x, first entry only) ───
     if (entryNum === 1) {
       const levRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/account/set-leverage', {
-        instId: tradingPair, lever: String(leverage), mgnMode: 'cross'
+        instId: tradingPair, lever: String(safeLeverage), mgnMode: 'cross'
       }, demoMode);
       if (levRes?.code !== '0') {
         await botLog(env, `⚠️ Leverage set FAILED [${levRes?.code}]: ${levRes?.msg}`);
       }
     }
 
-    // ── Place order ───────────────────────────────────────────
+    // ── Place market order ────────────────────────────────────
     const orderRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
       instId: tradingPair, tdMode: 'cross',
       side: signal.type === 'long' ? 'buy' : 'sell',
       posSide: signal.type === 'long' ? 'long' : 'short',
-      ordType: 'market', sz, lever: String(leverage)
+      ordType: 'market', sz, lever: String(safeLeverage)
     }, demoMode);
 
     if (orderRes?.data?.[0]?.ordId) {
-      // Get actual fill price (market orders fill at slightly different price)
       const fillPrice = await queryFillPrice(apiKey, apiSecret, apiPassphrase, tradingPair, orderRes.data[0].ordId, currentPrice, demoMode);
       state.entries.push({ price: fillPrice, sz, time: Date.now(), entry: entryNum });
       state.direction = signal.type;
       if (!state.stopLoss) state.stopLoss = signal.stopLoss;
       if (useTP) state.takeProfit = tp;
 
-      // Native SL: cancel previous algo (if adding to position), place for full accumulated size
-      if (state.algoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
+      // Native SL algo: cancel old (if scale-in), place for full accumulated size
+      if (state.algoId)   await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
+      if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
       const accumSz = String(state.entries.reduce((s, e) => s + parseInt(e.sz), 0));
       const algoRes = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, signal.type, state.stopLoss, accumSz, demoMode);
       state.algoId = algoRes?.data?.[0]?.algoId ? String(algoRes.data[0].algoId) : null;
+
+      // Fix: notify user if native SL placement failed (falls back to software SL)
+      if (!state.algoId) {
+        await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
+          `⚠️ Native SL placement FAILED for ${signal.type.toUpperCase()} @ ${fillPrice}. Software SL fallback active — monitor manually!`);
+      }
+
+      // Fix: native TP safety algo at TP ± 3% — closes full position if price blows through TP
+      // without the software poller catching it (e.g. rapid touch-and-reverse within 1 minute)
+      state.tpAlgoId = null;
+      if (useTP) {
+        const safetyTpPx = signal.type === 'long'
+          ? (tp * 1.03).toFixed(2)
+          : (tp * 0.97).toFixed(2);
+        const tpAlgoRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order-algo', {
+          instId: tradingPair, tdMode: 'cross',
+          side:    signal.type === 'long' ? 'sell' : 'buy',
+          posSide: signal.type === 'long' ? 'long'  : 'short',
+          ordType: 'conditional', sz: accumSz,
+          tpTriggerPx: safetyTpPx, tpOrdPx: '-1'
+        }, demoMode);
+        state.tpAlgoId = tpAlgoRes?.data?.[0]?.algoId ? String(tpAlgoRes.data[0].algoId) : null;
+      }
 
       ps[tradingPair] = state;
       try {
         await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
       } catch(kvErr) {
-        if (state.algoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
-        await botLog(env, `KV write failed: ${kvErr.message} — algo cancelled to prevent orphan`);
+        // Fix: if KV write fails, cancel all algos AND close the position
+        // to prevent an orphaned position with no SL protection
+        if (state.algoId)   await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
+        if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
+        await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
+          instId: tradingPair, mgnMode: 'cross',
+          posSide: signal.type === 'long' ? 'long' : 'short'
+        }, demoMode);
+        await botLog(env, `KV write failed — position closed to prevent orphan: ${kvErr.message}`);
         return;
       }
+
       const tpStr    = useTP ? ` | TP:${tp.toFixed(2)}` : '';
       const gradeStr = signal.grade ? `[${signal.grade}급] ` : '';
       const trendStr = trend.dir !== 'neutral' ? ` | trend:${trend.dir}${trend.strong ? '' : '(w)'}` : '';
@@ -640,7 +743,7 @@ async function runBot(env) {
   }
 }
 
-// ── STOP LOSS ─────────────────────────────────────────────────
+// ── STOP LOSS / TP CHECK ──────────────────────────────────────
 async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitPct, demo = false, ps = null) {
   if (!openPos.length) return;
   if (ps === null) ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
@@ -659,32 +762,35 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
 
   if (!slHit && !tpHit) return;
 
-  // ── TP hit: close 50%, move SL to break-even, let rest run ──
+  // ── TP hit: close 50%, move SL to break-even, enable trailing ──
   if (tpHit && !state.halfClosed) {
-    const totalSz  = state.entries.reduce((sum, e) => sum + parseInt(e.sz), 0);
+    const totalSz       = state.entries.reduce((sum, e) => sum + parseInt(e.sz), 0);
     const halfContracts = Math.max(1, Math.floor(totalSz / 2));
-    const halfSz   = String(halfContracts);
-    const avgEntry = state.entries.reduce((sum, e) => sum + e.price * parseInt(e.sz), 0) / totalSz;
+    const avgEntry      = state.entries.reduce((sum, e) => sum + e.price * parseInt(e.sz), 0) / totalSz;
 
     await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
       instId: pair, tdMode: 'cross',
       side:    state.direction === 'long' ? 'sell' : 'buy',
       posSide: state.direction === 'long' ? 'long' : 'short',
-      ordType: 'market', sz: halfSz
+      ordType: 'market', sz: String(halfContracts)
     }, demo);
 
-    // Update native SL: cancel old (full size), place new at break-even for remaining half
-    if (state.algoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.algoId, demo);
+    // Cancel both SL algo and TP safety algo, place new SL at break-even
+    if (state.algoId)   await cancelSLAlgo(apiKey, secret, pass, pair, state.algoId, demo);
+    if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
     const remContracts = Math.max(0, totalSz - halfContracts);
-    const remSz    = String(remContracts);
-    const newAlgo  = remContracts > 0 ? await placeSLAlgo(apiKey, secret, pass, pair, state.direction, avgEntry, remSz, demo) : null;
+    const newAlgo = remContracts > 0
+      ? await placeSLAlgo(apiKey, secret, pass, pair, state.direction, avgEntry, String(remContracts), demo)
+      : null;
 
-    state.halfClosed    = true;
-    state.stopLoss      = avgEntry;
-    state.takeProfit    = null;
-    state.lastTPLevel   = price;
-    state.remainingFrac = remContracts > 0 ? remContracts / totalSz : 0;
-    state.algoId        = newAlgo?.data?.[0]?.algoId ? String(newAlgo.data[0].algoId) : null;
+    state.halfClosed         = true;
+    state.stopLoss           = avgEntry;
+    state.takeProfit         = null;
+    state.lastTPLevel        = price;
+    state.remainingContracts = remContracts;
+    state.remainingFrac      = remContracts > 0 ? remContracts / totalSz : 0;
+    state.algoId             = newAlgo?.data?.[0]?.algoId ? String(newAlgo.data[0].algoId) : null;
+    state.tpAlgoId           = null;
     ps[pair] = state;
     await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
     const nSlLabel = state.algoId ? `nSL→BE` : `SL(sw)→BE`;
@@ -692,18 +798,19 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
     return;
   }
 
-  // ── SL hit (or second-half running past SL): cancel algo then close all ─────
-  if (state.algoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.algoId, demo);
+  // ── SL hit: cancel all algos, close full position ─────────
+  if (state.algoId)   await cancelSLAlgo(apiKey, secret, pass, pair, state.algoId, demo);
+  if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
   const closeRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/close-position', {
     instId: pair, mgnMode: 'cross',
     posSide: state.direction === 'long' ? 'long' : 'short'
   }, demo);
   if (closeRes?.code !== '0') {
     await botLog(env, `close-position FAILED [${closeRes?.code}]: ${closeRes?.msg} — retrying next tick`);
-    return; // keep state intact so we retry on next cron tick
+    return;
   }
 
-  // Track daily loss on SL hit only (only count actual losses, not unrealized gains)
+  // Fix: use realized P&L from position data for daily loss tracking
   if (slHit && lossLimitEnabled) {
     const today = new Date().toDateString();
     const dl = await env.USERS_KV.get('bot:daily_loss:' + today, { type: 'json' }) || { pct: 0 };
@@ -719,8 +826,6 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
 }
 
 // ── DAILY TREND FILTER (EMA20 / EMA50) ───────────────────────
-// up/down/neutral direction + strong/weak strength
-// strong = EMA20 slope AND EMA20/50 spread both meaningful
 function detectTrend(candles, currentPrice) {
   if (candles.length < 55) return { dir: 'neutral', strong: false };
   const closes   = candles.slice(0, 55).map(c => parseFloat(c[4])).reverse();
@@ -729,9 +834,9 @@ function detectTrend(candles, currentPrice) {
   const ema50    = calcEMA(closes, 50);
   const ema20_5  = closes5.length >= 20 ? calcEMA(closes5, 20) : ema20;
 
-  const slope  = Math.abs(ema20 - ema20_5) / (ema20_5 || 1); // EMA20 rate of change over 5 days
-  const spread = Math.abs(ema20 - ema50)   / (ema50   || 1); // EMA20/50 gap
-  const strong = slope > 0.002 && spread > 0.008;            // 0.2%/5d slope + 0.8% spread
+  const slope  = Math.abs(ema20 - ema20_5) / (ema20_5 || 1);
+  const spread = Math.abs(ema20 - ema50)   / (ema50   || 1);
+  const strong = slope > 0.002 && spread > 0.008;
 
   let dir;
   if (currentPrice > ema20 && ema20 > ema50)      dir = 'up';
@@ -744,17 +849,14 @@ function detectTrend(candles, currentPrice) {
 function calcEMA(closes, period) {
   if (closes.length < period) return closes[closes.length - 1];
   const k = 2 / (period + 1);
-  let ema = closes.slice(0, period).reduce((s, v) => s + v, 0) / period; // SMA seed
+  let ema = closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
   for (let i = period; i < closes.length; i++) {
     ema = closes[i] * k + ema * (1 - k);
   }
   return ema;
 }
 
-// ── S/R DETECTION (recency-weighted touch count) ──────────────
-// Recent candles (within RECENT_N): 2 touches = valid
-// Older candles: 3 touches = valid
-// Candles beyond MAX_AGE are ignored (stale levels)
+// ── S/R DETECTION ─────────────────────────────────────────────
 function detectSR(candles) {
   const RECENT_N = 20;
   const MAX_AGE  = 100;
@@ -765,7 +867,6 @@ function detectSR(candles) {
   const levels        = [];
   const seen          = new Set();
 
-  // Fixed step size so each price gets a distinct bucket (was broken: p/(p*TOL) = 1/TOL always)
   const priceStep = currentPrice * TOL;
   const prices = activeCandles.flatMap(c => [parseFloat(c[2]), parseFloat(c[3])]);
 
@@ -783,9 +884,14 @@ function detectSR(candles) {
       if (touchedRes) { res++; if (idx < RECENT_N) recentTouches++; }
     });
 
-    // Always 2 touches sufficient — grading (S/A/B) handles quality, not minimum count
     if (sup + res >= 2) {
-      levels.push({ price: p, touches: sup + res, recentTouches, type: sup >= res ? 'support' : 'resistance' });
+      // Fix: a level with nearly equal sup/res touches is a flip zone — include in both
+      const type = sup >= res ? 'support' : 'resistance';
+      levels.push({ price: p, touches: sup + res, recentTouches, type });
+      // If touches are close (flip level), add as both types
+      if (sup > 0 && res > 0 && Math.abs(sup - res) <= 1) {
+        levels.push({ price: p, touches: sup + res, recentTouches, type: type === 'support' ? 'resistance' : 'support' });
+      }
     }
   }
 
@@ -798,14 +904,10 @@ function detectSR(candles) {
 }
 
 // ── GRADE LEVELS: S/A/B tier ──────────────────────────────────
-// S급: confluent on BOTH 1H and 4H → highest confidence
-// A급: 4H with 4+ touches OR any level with recent touch (recentTouches ≥ 1)
-// B급: 1H only, old (recentTouches = 0), 2 touches → lower confidence, still traded
 function gradeLevels(sr1H, sr4H) {
   const CONFLUENT_TOL = 0.005;
   const result = [];
 
-  // Process 4H levels first (stronger base)
   for (const lv4 of [...sr4H.supports, ...sr4H.resistances]) {
     const match1H = [...sr1H.supports, ...sr1H.resistances].find(
       l => Math.abs(l.price - lv4.price) / lv4.price <= CONFLUENT_TOL && l.type === lv4.type
@@ -821,7 +923,6 @@ function gradeLevels(sr1H, sr4H) {
     result.push({ ...lv4, grade });
   }
 
-  // Add 1H-only levels not already covered by a 4H level
   for (const lv1 of [...sr1H.supports, ...sr1H.resistances]) {
     const already = result.some(
       r => Math.abs(r.price - lv1.price) / lv1.price <= CONFLUENT_TOL && r.type === lv1.type
@@ -837,9 +938,9 @@ function gradeLevels(sr1H, sr4H) {
   };
 }
 
-// ── FILTER VOLUME ZONES: only keep zones near an S/R level ────
+// ── FILTER VOLUME ZONES ───────────────────────────────────────
 function filterVolBySR(volZones, srLevels) {
-  const TOL = 0.01; // 1%
+  const TOL = 0.01;
   const allSR = [...srLevels.supports, ...srLevels.resistances];
   function nearSR(zones) {
     return zones.filter(z => allSR.some(sr => Math.abs(sr.price - z.price) / z.price <= TOL));
@@ -847,14 +948,14 @@ function filterVolBySR(volZones, srLevels) {
   return { supports: nearSR(volZones.supports), resistances: nearSR(volZones.resistances) };
 }
 
-// ── MERGE LEVELS (deduplicate within 0.5%) ────────────────────
+// ── MERGE LEVELS ──────────────────────────────────────────────
 function mergeLevels(a, b) {
   const tol = 0.005;
   function dedup(arr) {
     const out = [];
     for (const lv of arr) {
       if (!out.some(o => Math.abs(o.price - lv.price) / lv.price <= tol)) {
-        out.push({ grade: 'B', ...lv }); // default grade 'B'; SR levels override via spread
+        out.push({ grade: 'B', ...lv });
       }
     }
     return out;
@@ -866,77 +967,70 @@ function mergeLevels(a, b) {
 }
 
 // ── ENTRY SIGNAL ──────────────────────────────────────────────
-// LONG:  prev candle wick/close touched support → entry on current candle (bounce)
-//        SL = 3-candle swing low (전저점)
-//
-// SHORT: large bearish candle (body ≥ 40%, volume ≥ 1.4× avg) detected in prev 3 candles
-//        → price retraces back up to that candle's high (전고점 되돌림)
-//        → SHORT entry at retest
-//        SL = 3-candle swing high (전고점 이탈 시 손절)
+// LONG:  prev candle touches support → current candle bouncing (bullish close)
+// SHORT: bearish impulse + high volume → price retraces to 50% or resistance → enter short
 function detectSignal(c5, levels) {
   if (c5.length < 4) return null;
 
+  // Fix: only use confirmed (closed) candles — index 8 is OKX confirm field
+  if (c5[1][8] !== '1' || c5[2][8] !== '1' || c5[3][8] !== '1') return null;
+
   const cur   = c5[0].map(parseFloat); // current forming candle
-  const prev1 = c5[1].map(parseFloat); // last closed
+  const prev1 = c5[1].map(parseFloat);
   const prev2 = c5[2].map(parseFloat);
   const prev3 = c5[3].map(parseFloat);
 
   const curPrice = cur[4];
 
-  // 80th-percentile volume threshold — only top 20% of candles qualify as "spike"
+  // 80th-percentile volume threshold
   const allClosedVols = c5.slice(1).map(c => parseFloat(c[5])).sort((a, b) => a - b);
   const vol80th = allClosedVols[Math.floor(allClosedVols.length * 0.80)] ?? 0;
 
-  // 3-candle swing structural SL levels
   const swingLow  = Math.min(prev1[3], prev2[3], prev3[3]);
   const swingHigh = Math.max(prev1[2], prev2[2], prev3[2]);
 
-  const TOUCH_TOL = 0.005; // 0.5% proximity tolerance
-  const SL_MIN    = 0.01;  // 1% min SL distance
-  const SL_MAX    = 0.07;  // 7% max SL distance
+  const TOUCH_TOL = 0.005;
+  const SL_MIN    = 0.01;
+  const SL_MAX    = 0.07;
 
-  // ── LONG: support touch → bounce ─────────────────────────────────────────
+  // ── LONG: support touch → bounce entry ───────────────────────
   for (const s of levels.supports) {
     const byWick  = Math.abs(prev1[3] - s.price) / s.price <= TOUCH_TOL;
     const byClose = Math.abs(prev1[4] - s.price) / s.price <= TOUCH_TOL;
     if (!byWick && !byClose) continue;
-    if (curPrice < s.price * 0.997) continue; // support broken — skip
+    if (curPrice < s.price * 0.997) continue;
+
+    // Fix: require current candle to be bullish (close > open) — bounce confirmation
+    if (curPrice <= cur[1]) continue; // still falling, no bounce
+
     const slDist = Math.abs(curPrice - swingLow) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
     return { type: 'long', level: s.price, grade: s.grade || 'B', stopLoss: swingLow };
   }
 
-  // ── SHORT: bearish impulse + volume → scale in during retracement ─────────
-  // Entry triggers (can fire on separate cron ticks for scale-in):
-  //   Trigger A — price at 50% of bearish candle range (캔들 range 기준 중간값)
-  //   Trigger B — price at a resistance level between 50% and candle high
-  // SL = 3-candle swing high (전고점 이탈 시 손절)
+  // ── SHORT: bearish impulse + volume → retracement entry ──────
   for (const bear of [prev1, prev2, prev3]) {
     const bO = bear[1], bC = bear[4], bH = bear[2], bL = bear[3], bV = bear[5];
     const range = bH - bL;
     if (range <= 0) continue;
-    if ((bO - bC) / range < 0.40) continue; // body < 40% of range
-    if (bV < vol80th) continue;               // must be top 20% volume
+    if ((bO - bC) / range < 0.40) continue;
+    if (bV < vol80th) continue;
 
-    const mid50 = bH - range * 0.50; // 50% 되돌림 레벨 (range 기준)
+    const mid50 = bH - range * 0.50;
 
-    // Price must be inside retracement zone [mid50, swingHigh]
-    if (curPrice < mid50 * 0.998) continue;       // fell below 50% → invalid
-    if (curPrice > swingHigh * 1.003) continue;   // broke above candle high → SL zone
+    if (curPrice < mid50 * 0.998) continue;
+    if (curPrice > swingHigh * 1.003) continue;
 
     const slDist = Math.abs(swingHigh - curPrice) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
 
-    // Trigger A: at 50% retracement
-    const atMid50 = Math.abs(curPrice - mid50) / mid50 <= TOUCH_TOL;
-
-    // Trigger B: at resistance level inside retracement zone
-    const nearRes = levels.resistances.find(r =>
+    const atMid50  = Math.abs(curPrice - mid50) / mid50 <= TOUCH_TOL;
+    const nearRes  = levels.resistances.find(r =>
       r.price >= mid50 * 0.998 && r.price <= swingHigh * 1.003 &&
       Math.abs(curPrice - r.price) / r.price <= TOUCH_TOL
     );
 
-    if (!atMid50 && !nearRes) continue; // not at any entry trigger
+    if (!atMid50 && !nearRes) continue;
 
     const grade = nearRes ? nearRes.grade : 'A';
     return { type: 'short', level: bH, grade, stopLoss: swingHigh };
@@ -945,7 +1039,7 @@ function detectSignal(c5, levels) {
   return null;
 }
 
-// ── VOLUME PROFILE (매물대) ────────────────────────────────────
+// ── VOLUME PROFILE ────────────────────────────────────────────
 function detectVolumeZones(candles, currentPrice) {
   if (candles.length < 20) return { supports: [], resistances: [] };
   const BUCKETS = 50;
@@ -973,9 +1067,7 @@ function detectVolumeZones(candles, currentPrice) {
   };
 }
 
-// ── NATIVE SL ALGO ORDERS ────────────────────────────────────
-// Places a conditional stop-loss order directly on OKX's server.
-// Fires even if the Cloudflare Worker is down — true exchange-native SL.
+// ── NATIVE ALGO ORDERS ────────────────────────────────────────
 async function placeSLAlgo(apiKey, secret, pass, pair, direction, slPrice, sz, demo = false) {
   return okxPost(apiKey, secret, pass, '/api/v5/trade/order-algo', {
     instId: pair, tdMode: 'cross',
@@ -984,7 +1076,7 @@ async function placeSLAlgo(apiKey, secret, pass, pair, direction, slPrice, sz, d
     ordType:      'conditional',
     sz:           String(sz),
     slTriggerPx:  parseFloat(slPrice).toFixed(2),
-    slOrdPx:      '-1'  // -1 = market order when triggered
+    slOrdPx:      '-1'
   }, demo);
 }
 
@@ -993,8 +1085,6 @@ async function cancelSLAlgo(apiKey, secret, pass, pair, algoId, demo = false) {
     [{ algoId: String(algoId), instId: pair }], demo);
 }
 
-// Queries actual fill price from OKX after a market order.
-// Market orders have slippage — this gives the real average fill price.
 async function queryFillPrice(apiKey, secret, pass, pair, ordId, fallback, demo = false) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {

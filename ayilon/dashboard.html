@@ -1418,8 +1418,6 @@
       return key.match(/.{1,4}/g).join(' ');
     }
 
-    var twoFaEmailCode = null;
-
     async function sendTwoFaEmailCode() {
       var email = localStorage.getItem('ayilon_email') || '';
       if (!email) return;
@@ -1431,13 +1429,12 @@
         });
         var data = await res.json();
         if (data.success) {
-          twoFaEmailCode = data.code;
           document.getElementById('send2faStatus').style.display = 'block';
         }
       } catch(e) {}
     }
 
-    function confirm2faSetup() {
+    async function confirm2faSetup() {
       var overlay = document.getElementById('twoFaSetupOverlay');
       var method = overlay.dataset.method;
       var code = document.getElementById('twoFaSetupCode').value.trim();
@@ -1445,9 +1442,16 @@
 
       if (code.length !== 6) { hint.textContent = 'Enter the 6-digit code.'; return; }
 
-      if (method === 'email' && code !== twoFaEmailCode) {
-        hint.textContent = 'Incorrect code. Please try again.';
-        return;
+      if (method === 'email') {
+        try {
+          var email = localStorage.getItem('ayilon_email') || '';
+          var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/verify-code', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, code: code })
+          });
+          var vd = await res.json();
+          if (!vd.valid) { hint.textContent = 'Incorrect code. Please try again.'; return; }
+        } catch(e) { hint.textContent = 'Verification failed. Try again.'; return; }
       }
 
       var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
@@ -2061,7 +2065,7 @@
       // Stop bot and clear API from KV
       fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'stop' })
+        body: JSON.stringify({ action: 'stop', clientToken: localStorage.getItem('ayilon_client_token') || '' })
       }).catch(function(){});
       loadApiPage();
       updateBotStatus();
@@ -2296,10 +2300,12 @@
       };
       localStorage.setItem('ayilon_bot_settings', JSON.stringify(s));
       try {
-        await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/save-bot-settings', {
+        var saveRes = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/save-bot-settings', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(s)
         });
+        var saveData = await saveRes.json();
+        if (saveData.clientToken) localStorage.setItem('ayilon_client_token', saveData.clientToken);
       } catch(e) {}
       var saved = document.getElementById('botSettingsSaved');
       saved.style.display = 'block';
@@ -2342,7 +2348,7 @@
       try {
         await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: newState ? 'start' : 'stop' })
+          body: JSON.stringify({ action: newState ? 'start' : 'stop', clientToken: localStorage.getItem('ayilon_client_token') || '' })
         });
       } catch(e) {}
       updateBotStatus();
@@ -2354,7 +2360,7 @@
       try {
         await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'dismiss' })
+          body: JSON.stringify({ action: 'dismiss', clientToken: localStorage.getItem('ayilon_client_token') || '' })
         });
       } catch(e) {}
       updateBotStatus();
@@ -2366,7 +2372,7 @@
       try {
         await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'resume' })
+          body: JSON.stringify({ action: 'resume', clientToken: localStorage.getItem('ayilon_client_token') || '' })
         });
       } catch(e) {}
       updateBotStatus();
