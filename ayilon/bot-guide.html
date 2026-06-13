@@ -580,20 +580,21 @@
     </div>
   </div>
 
-  <h3>Condition 3 — Stop Loss Distance Filter (3–6%)</h3>
-  <p>The natural stop loss distance is calculated from the <strong>previous 5m candle's wick</strong>:</p>
+  <h3>Condition 3 — Stop Loss Distance Filter (3–6%, spot basis)</h3>
+  <p>All percentages below are <strong>spot price distances</strong>, not leveraged returns. The natural SL is the previous 5m candle's wick:</p>
   <ul>
     <li>For LONG: SL = previous candle's low. Distance = <code>(current_price − prev_low) / current_price</code></li>
     <li>For SHORT: SL = previous candle's high. Distance = <code>(prev_high − current_price) / current_price</code></li>
   </ul>
   <table>
-    <thead><tr><th>SL Distance</th><th>Action</th><th>Reason</th></tr></thead>
+    <thead><tr><th>SL Distance (spot)</th><th>At 5× leverage</th><th>Action</th><th>Reason</th></tr></thead>
     <tbody>
-      <tr><td class="td-label">Less than 3%</td><td><span class="badge badge-red">Skip</span></td><td>Too tight — random noise will stop you out</td></tr>
-      <tr><td class="td-label">3% – 6%</td><td><span class="badge badge-green">Enter</span></td><td>Optimal risk window — clear structure, reasonable loss</td></tr>
-      <tr><td class="td-label">More than 6%</td><td><span class="badge badge-red">Skip</span></td><td>Too wide — risk/reward ratio becomes unfavorable</td></tr>
+      <tr><td class="td-label">Less than 3%</td><td>−15% on position</td><td><span class="badge badge-red">Skip</span></td><td>Too tight — noise will stop you out</td></tr>
+      <tr><td class="td-label">3% – 6%</td><td>−15% to −30% on position</td><td><span class="badge badge-green">Enter</span></td><td>Optimal — clear structure, manageable loss</td></tr>
+      <tr><td class="td-label">More than 6%</td><td>−30%+ on position</td><td><span class="badge badge-red">Skip</span></td><td>Too wide — poor risk/reward</td></tr>
     </tbody>
   </table>
+  <p style="font-size:12px;color:var(--gray-600);">Account-level impact: with 12% position size and 5× leverage, a 3% SL = 12% × 15% = <strong>1.8% account loss</strong> per entry.</p>
 
   <div class="callout">
     <div class="callout-label">All 3 conditions required</div>
@@ -690,7 +691,8 @@
     <div class="callout-label">Key Concept — "반 익절" explained</div>
     <strong>"50%"는 수익률이 아닙니다 — 포지션 수량의 절반을 청산하는 것입니다.</strong><br><br>
     예: 0.01 BTC 롱 → 다음 저항선 도달 → 0.005 BTC 청산 (나머지 0.005 BTC는 계속 보유).<br>
-    TP 트리거는 "50% 수익"이 아니라 <strong>다음 S/R 레벨 도달</strong>입니다 (보통 3~8% 이동).
+    TP 트리거는 "50% 수익"이 아니라 <strong>다음 S/R 레벨 도달</strong>입니다.<br>
+    이동폭은 <strong>현물(spot) 기준</strong>이며 보통 3~8%. 5배 레버리지 적용 시 실제 포지션 수익률은 15~40%입니다.
   </div>
 
   <h3>TP Level Selection</h3>
