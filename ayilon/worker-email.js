@@ -381,17 +381,57 @@ async function runBot(env) {
     const levels    = mergeLevels(srLevels, volLevels);
     if (!levels.supports.length && !levels.resistances.length) return;
 
+    // ── Position state (load once, sync with OKX) ────────────
+    const ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
+    // Sync: if bot thinks position is open but OKX shows nothing → clear stale state
+    // (handles manual close, forced liquidation, or silent order failure)
+    if (ps[tradingPair]?.direction && !openPos.length) {
+      await botLog(env, `Sync: cleared stale ${tradingPair} state — no OKX position found`);
+      delete ps[tradingPair];
+      await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+    }
+    const state = ps[tradingPair] || { entries: [], stopLoss: null, direction: null, takeProfit: null };
+
+    // ── Trailing TP: 10% close at each subsequent S/R level ───
+    // Fires after the first 50% close (halfClosed=true), before new entry logic
+    if (state.halfClosed && state.lastTPLevel && openPos.length > 0) {
+      const TOUCH = 0.004;
+      const nextLv = state.direction === 'long'
+        ? levels.resistances.find(r => r.price > state.lastTPLevel * 1.001 && Math.abs(currentPrice - r.price) / r.price <= TOUCH)
+        : levels.supports.find(r =>   r.price < state.lastTPLevel * 0.999 && Math.abs(currentPrice - r.price) / r.price <= TOUCH);
+
+      if (nextLv) {
+        const totalSz  = state.entries.reduce((s, e) => s + parseFloat(e.sz), 0);
+        const trailSz  = (totalSz * 0.10).toFixed(4);
+        const trailRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
+          instId: tradingPair, tdMode: 'cross',
+          side:    state.direction === 'long' ? 'sell' : 'buy',
+          posSide: state.direction === 'long' ? 'long'  : 'short',
+          ordType: 'market', sz: trailSz
+        }, demoMode);
+
+        if (trailRes?.data?.[0]?.ordId) {
+          state.stopLoss      = state.lastTPLevel;                        // trail SL to prev level
+          state.lastTPLevel   = nextLv.price;                             // new high-water mark
+          state.remainingFrac = Math.max(0, (state.remainingFrac ?? 0.5) - 0.10);
+          ps[tradingPair] = state;
+          await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+          await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL→${state.stopLoss.toFixed(2)} | Rem:${Math.round(state.remainingFrac * 100)}%`);
+        } else {
+          await botLog(env, `Trail order FAILED @ ${nextLv.price.toFixed(2)}: ${trailRes?.msg || 'unknown'}`);
+        }
+        return; // one action per tick
+      }
+    }
+
     // ── 5m entry signal ───────────────────────────────────────
     const signal = detectSignal(c5, levels);
     if (!signal) return;
 
-    // ── Trend filter: block counter-trend entries ─────────────
-    if (trend === 'up'   && signal.type === 'short') return;
-    if (trend === 'down' && signal.type === 'long')  return;
-
-    // ── Position state ────────────────────────────────────────
-    const ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
-    const state = ps[tradingPair] || { entries: [], stopLoss: null, direction: null, takeProfit: null };
+    // ── Trend + grade filter ──────────────────────────────────
+    if (trend === 'up'      && signal.type === 'short') return;  // counter-trend
+    if (trend === 'down'    && signal.type === 'long')  return;  // counter-trend
+    if (trend === 'neutral' && signal.grade === 'B')    return;  // sideways: B급 too noisy
 
     // If existing position in OPPOSITE direction → skip (no flip)
     if (state.direction && state.direction !== signal.type) return;
@@ -440,7 +480,6 @@ async function runBot(env) {
     if (orderRes?.data?.[0]?.ordId) {
       state.entries.push({ price: currentPrice, sz, time: Date.now(), entry: entryNum });
       state.direction  = signal.type;
-      // Keep first entry SL; update TP to latest level
       if (!state.stopLoss) state.stopLoss = signal.stopLoss;
       if (useTP) state.takeProfit = tp;
       ps[tradingPair] = state;
@@ -451,6 +490,11 @@ async function runBot(env) {
       await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${currentPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | SL:${state.stopLoss.toFixed(2)}${tpStr}${trendStr} | sz:${sz}`);
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
         `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${currentPrice} USDT${tpStr}`);
+    } else {
+      // Order rejected by OKX — log the reason without updating state
+      const errCode = orderRes?.code || '?';
+      const errMsg  = orderRes?.msg || orderRes?.data?.[0]?.sMsg || 'unknown';
+      await botLog(env, `Order FAILED [${errCode}]: ${signal.type.toUpperCase()} @ ${currentPrice} — ${errMsg}`);
     }
 
   } catch(e) {
@@ -490,12 +534,14 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
       ordType: 'market', sz: halfSz
     }, demo);
 
-    state.halfClosed  = true;
-    state.stopLoss    = avgEntry;  // SL → break-even
-    state.takeProfit  = null;      // no fixed TP for second half
+    state.halfClosed   = true;
+    state.stopLoss     = avgEntry;   // SL → break-even
+    state.takeProfit   = null;
+    state.lastTPLevel  = price;      // first TP price (becomes SL floor for trailing)
+    state.remainingFrac = 0.5;       // 50% of original position remains
     ps[pair] = state;
     await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-    await botLog(env, `TP hit @ ${price} — 50% closed, SL moved to break-even ${avgEntry.toFixed(2)}`);
+    await botLog(env, `TP hit @ ${price} — 50% closed | SL→BE ${avgEntry.toFixed(2)} | trailing 10% active`);
     return;
   }
 
