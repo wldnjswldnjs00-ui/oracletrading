@@ -545,7 +545,7 @@ async function handleGetPositions(request, env) {
   if (!apiKey || !apiSecret || !apiPassphrase) return json({ positions: [] });
 
   const instId = body.instId || tradingPair || 'BTC-USDT-SWAP';
-  if (!/^[A-Z0-9]{1,15}-[A-Z]{3,4}(-SWAP)?$/.test(instId)) {
+  if (!['BTC-USDT-SWAP', 'ETH-USDT-SWAP'].includes(instId)) {
     return json({ positions: [], error: 'Invalid instId' }, 400);
   }
   try {
@@ -598,6 +598,7 @@ async function runBot(env) {
     const srTouch = 3;
 
     if (!apiKey || !apiSecret || !apiPassphrase) return;
+    if (!['BTC-USDT-SWAP', 'ETH-USDT-SWAP'].includes(tradingPair)) return;
 
     const lossLimitNorm = parseFloat(lossLimit) > 1 ? parseFloat(lossLimit) / 100 : parseFloat(lossLimit) || 0.05;
     // Fix: cap leverage at 50x regardless of user input
