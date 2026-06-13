@@ -355,19 +355,21 @@ async function runBot(env) {
     // ── Stop loss check ───────────────────────────────────────
     await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimit / 100, demoMode);
 
-    // ── S/R candles: 1H + 4H + 매물대 combined ───────────────
+    // ── S/R candles: 1H + 4H graded + volume zone confirmation ──
     const [candles1H, candles4H] = await Promise.all([
       getCandles(tradingPair, '1H', 100),
       getCandles(tradingPair, '4H', 100)
     ]);
     if (candles1H.length < 20 && candles4H.length < 20) return;
     const currentPrice = parseFloat((await (await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${tradingPair}`)).json())?.data?.[0]?.last || '0');
-    const srLevels  = mergeLevels(
-      candles1H.length >= 20 ? detectSR(candles1H) : { supports: [], resistances: [] },
-      candles4H.length >= 20 ? detectSR(candles4H) : { supports: [], resistances: [] }
-    );
-    const volLevels = detectVolumeZones(candles4H.length >= 20 ? candles4H : candles1H, currentPrice);
-    const levels    = mergeLevels(srLevels, volLevels);
+    const sr1H = candles1H.length >= 20 ? detectSR(candles1H) : { supports: [], resistances: [] };
+    const sr4H = candles4H.length >= 20 ? detectSR(candles4H) : { supports: [], resistances: [] };
+    // Grade levels: S = confluent 1H+4H, A = strong 4H or recent, B = skip
+    const srLevels   = gradeLevels(sr1H, sr4H);
+    // Volume zones only count if they coincide with an S/R level (±1%)
+    const rawVol     = detectVolumeZones(candles4H.length >= 20 ? candles4H : candles1H, currentPrice);
+    const volLevels  = filterVolBySR(rawVol, srLevels);
+    const levels     = mergeLevels(srLevels, volLevels);
     if (!levels.supports.length && !levels.resistances.length) return;
 
     // ── 5m entry candles ──────────────────────────────────────
@@ -432,8 +434,9 @@ async function runBot(env) {
       if (useTP) state.takeProfit = tp;
       ps[tradingPair] = state;
       await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-      const tpStr = useTP ? ` | TP: ${tp.toFixed(2)}` : '';
-      await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${currentPrice} | SL: ${state.stopLoss.toFixed(2)}${tpStr} | sz: ${sz}`);
+      const tpStr    = useTP ? ` | TP:${tp.toFixed(2)}` : '';
+      const gradeStr = signal.grade ? `[${signal.grade}급] ` : '';
+      await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${currentPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | SL:${state.stopLoss.toFixed(2)}${tpStr} | sz:${sz}`);
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
         `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${currentPrice} USDT${tpStr}`);
     }
@@ -549,10 +552,58 @@ function detectSR(candles) {
                        .sort((a, b) => a.price - b.price).slice(0, 4)
   };
 }
+
+// ── GRADE LEVELS: S/A/B tier ──────────────────────────────────
+// S급: confluent on BOTH 1H and 4H → highest confidence
+// A급: 4H with 4+ touches OR any level with recent touch (recentTouches ≥ 1)
+// B급: 1H only, old (recentTouches = 0), 2 touches → skip
+function gradeLevels(sr1H, sr4H) {
+  const CONFLUENT_TOL = 0.005;
+  const result = [];
+
+  // Process 4H levels first (stronger base)
+  for (const lv4 of [...sr4H.supports, ...sr4H.resistances]) {
+    const match1H = [...sr1H.supports, ...sr1H.resistances].find(
+      l => Math.abs(l.price - lv4.price) / lv4.price <= CONFLUENT_TOL && l.type === lv4.type
+    );
+    let grade;
+    if (match1H) {
+      grade = 'S';
+    } else if (lv4.touches >= 4 || lv4.recentTouches >= 1) {
+      grade = 'A';
+    } else {
+      continue; // B급 — skip
+    }
+    result.push({ ...lv4, grade });
+  }
+
+  // Add 1H-only levels that are recent (A급) — not already covered by a 4H level
+  for (const lv1 of [...sr1H.supports, ...sr1H.resistances]) {
+    const already = result.some(
+      r => Math.abs(r.price - lv1.price) / lv1.price <= CONFLUENT_TOL && r.type === lv1.type
+    );
+    if (already) continue;
+    if (lv1.recentTouches >= 1) result.push({ ...lv1, grade: 'A' });
+    // 1H-only, old → B급, skip
+  }
+
+  return {
+    supports:    result.filter(l => l.type === 'support').sort((a, b) => b.price - a.price).slice(0, 5),
+    resistances: result.filter(l => l.type === 'resistance').sort((a, b) => a.price - b.price).slice(0, 5)
   };
 }
 
-// ── MERGE 1H + 4H LEVELS (deduplicate within 0.5%) ────────────
+// ── FILTER VOLUME ZONES: only keep zones near an S/R level ────
+function filterVolBySR(volZones, srLevels) {
+  const TOL = 0.01; // 1%
+  const allSR = [...srLevels.supports, ...srLevels.resistances];
+  function nearSR(zones) {
+    return zones.filter(z => allSR.some(sr => Math.abs(sr.price - z.price) / z.price <= TOL));
+  }
+  return { supports: nearSR(volZones.supports), resistances: nearSR(volZones.resistances) };
+}
+
+// ── MERGE LEVELS (deduplicate within 0.5%) ────────────────────
 function mergeLevels(a, b) {
   const tol = 0.005;
   function dedup(arr) {
@@ -596,7 +647,7 @@ function detectSignal(c5, levels) {
     if (Math.abs(curPrice - s.price) / s.price > TOUCH_TOL) continue;
     const slDist = (curPrice - prevLow) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
-    return { type: 'long', level: s.price, stopLoss: prevLow };
+    return { type: 'long', level: s.price, grade: s.grade || '', stopLoss: prevLow };
   }
 
   for (const r of levels.resistances) {
@@ -604,7 +655,7 @@ function detectSignal(c5, levels) {
     if (Math.abs(curPrice - r.price) / r.price > TOUCH_TOL) continue;
     const slDist = (prevHigh - curPrice) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
-    return { type: 'short', level: r.price, stopLoss: prevHigh };
+    return { type: 'short', level: r.price, grade: r.grade || '', stopLoss: prevHigh };
   }
 
   return null;
