@@ -268,7 +268,22 @@ async function handleBotStatus(request, env) {
   const alert    = await env.USERS_KV.get('bot:daily_loss_triggered', { type: 'json' });
   const pos      = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
   const lastScan = await env.USERS_KV.get('bot:last_scan');
-  return json({ running: config.running === true, logs, alert, positions: pos, lastScan });
+
+  // Funding rate — public endpoint, no auth
+  let fundingRate = null;
+  try {
+    const pair = config.tradingPair || 'BTC-USDT-SWAP';
+    const frRes = await fetch(`https://www.okx.com/api/v5/public/funding-rate?instId=${pair}`);
+    const frData = await frRes.json();
+    const fr = frData?.data?.[0];
+    if (fr) fundingRate = {
+      rate:     parseFloat(fr.fundingRate),
+      nextRate: parseFloat(fr.nextFundingRate),
+      nextTime: parseInt(fr.fundingTime)   // ms timestamp
+    };
+  } catch {}
+
+  return json({ running: config.running === true, logs, alert, positions: pos, lastScan, fundingRate });
 }
 
 async function handleBotControl(request, env) {

@@ -926,6 +926,26 @@
               <button id="botToggleBtn" onclick="toggleBot()" style="padding:10px 24px;background:var(--white);color:var(--black);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.2s;">Start Bot</button>
             </div>
           </div>
+          <!-- Funding Rate Bar -->
+          <div id="fundingRateBar" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--gray-800);display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;">Funding Rate</span>
+              <span id="fundingRateVal" style="font-size:13px;font-weight:600;"></span>
+              <span id="fundingRateWho" style="font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600;"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;">Next</span>
+              <span id="fundingRateNext" style="font-size:13px;font-weight:600;"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;">Settlement</span>
+              <span id="fundingRateTime" style="font-size:13px;font-weight:600;"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;">Annualized</span>
+              <span id="fundingRateAnnual" style="font-size:13px;font-weight:600;"></span>
+            </div>
+          </div>
         </div>
 
         <!-- RISK MANAGEMENT -->
@@ -2347,8 +2367,64 @@
         }
         // Render logs
         renderBotLogs(data.logs || []);
-      } catch(e) {}
 
+        // Funding rate
+        if (data.fundingRate) renderFundingRate(data.fundingRate);
+      } catch(e) {}
+    }
+
+    function renderFundingRate(fr) {
+      var bar = document.getElementById('fundingRateBar');
+      if (!bar) return;
+      bar.style.display = 'flex';
+
+      var rate = fr.rate;
+      var pct  = (rate * 100).toFixed(4) + '%';
+      var isPositive = rate >= 0;
+
+      // Value
+      var valEl = document.getElementById('fundingRateVal');
+      valEl.textContent = (isPositive ? '+' : '') + pct;
+      valEl.style.color = isPositive ? '#ef4444' : '#22c55e'; // positive = longs pay (bad for longs), negative = longs receive
+
+      // Who pays
+      var whoEl = document.getElementById('fundingRateWho');
+      if (rate > 0.0001) {
+        whoEl.textContent = 'Longs pay';
+        whoEl.style.background = 'rgba(239,68,68,0.15)';
+        whoEl.style.color = '#ef4444';
+      } else if (rate < -0.0001) {
+        whoEl.textContent = 'Shorts pay';
+        whoEl.style.background = 'rgba(34,197,94,0.15)';
+        whoEl.style.color = '#22c55e';
+      } else {
+        whoEl.textContent = 'Neutral';
+        whoEl.style.background = 'rgba(163,163,163,0.15)';
+        whoEl.style.color = '#a3a3a3';
+      }
+
+      // Next rate
+      var nextEl = document.getElementById('fundingRateNext');
+      var nextPct = (fr.nextRate * 100).toFixed(4) + '%';
+      nextEl.textContent = (fr.nextRate >= 0 ? '+' : '') + nextPct;
+      nextEl.style.color = fr.nextRate >= 0 ? '#ef4444' : '#22c55e';
+
+      // Time to settlement
+      var timeEl = document.getElementById('fundingRateTime');
+      var msLeft = fr.nextTime - Date.now();
+      if (msLeft > 0) {
+        var h = Math.floor(msLeft / 3600000);
+        var m = Math.floor((msLeft % 3600000) / 60000);
+        timeEl.textContent = h + 'h ' + m + 'm';
+      } else {
+        timeEl.textContent = 'Soon';
+      }
+
+      // Annualized (3 settlements/day × 365)
+      var annEl = document.getElementById('fundingRateAnnual');
+      var annual = (rate * 3 * 365 * 100).toFixed(1) + '%';
+      annEl.textContent = (rate >= 0 ? '+' : '') + annual + ' / yr';
+      annEl.style.color = rate >= 0 ? '#ef4444' : '#22c55e';
     }
 
     function renderBotLogs(logs) {
