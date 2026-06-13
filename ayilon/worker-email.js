@@ -556,7 +556,7 @@ function detectSR(candles) {
 // ── GRADE LEVELS: S/A/B tier ──────────────────────────────────
 // S급: confluent on BOTH 1H and 4H → highest confidence
 // A급: 4H with 4+ touches OR any level with recent touch (recentTouches ≥ 1)
-// B급: 1H only, old (recentTouches = 0), 2 touches → skip
+// B급: 1H only, old (recentTouches = 0), 2 touches → lower confidence, still traded
 function gradeLevels(sr1H, sr4H) {
   const CONFLUENT_TOL = 0.005;
   const result = [];
@@ -572,19 +572,19 @@ function gradeLevels(sr1H, sr4H) {
     } else if (lv4.touches >= 4 || lv4.recentTouches >= 1) {
       grade = 'A';
     } else {
-      continue; // B급 — skip
+      grade = 'B';
     }
     result.push({ ...lv4, grade });
   }
 
-  // Add 1H-only levels that are recent (A급) — not already covered by a 4H level
+  // Add 1H-only levels not already covered by a 4H level
   for (const lv1 of [...sr1H.supports, ...sr1H.resistances]) {
     const already = result.some(
       r => Math.abs(r.price - lv1.price) / lv1.price <= CONFLUENT_TOL && r.type === lv1.type
     );
     if (already) continue;
-    if (lv1.recentTouches >= 1) result.push({ ...lv1, grade: 'A' });
-    // 1H-only, old → B급, skip
+    const grade = lv1.recentTouches >= 1 ? 'A' : 'B';
+    result.push({ ...lv1, grade });
   }
 
   return {
