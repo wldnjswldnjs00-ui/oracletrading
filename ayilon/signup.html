@@ -422,13 +422,32 @@
         }
       } catch { /* KV not set up — allow signup */ }
 
-      // Save to localStorage
-      localStorage.setItem('ayilon_logged_in', 'true');
-      localStorage.setItem('ayilon_email', email);
-      localStorage.setItem('ayilon_name', name);
-      localStorage.setItem('ayilon_username', nickname);
-      localStorage.setItem('ayilon_password', password);
+      // Auto-login to get session token — never store password client-side
+      try {
+        const loginRes  = await fetch(WORKER_URL + '/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const loginData = await loginRes.json();
+        if (loginData.ok && loginData.sessionToken) {
+          localStorage.setItem('ayilon_session_token', loginData.sessionToken);
+          localStorage.setItem('ayilon_email',    loginData.email    || email);
+          localStorage.setItem('ayilon_username', loginData.username || nickname);
+          localStorage.setItem('ayilon_name',     loginData.name     || name);
+        } else {
+          // KV not ready yet — store basic info, session will be issued on next login
+          localStorage.setItem('ayilon_email',    email);
+          localStorage.setItem('ayilon_username', nickname);
+          localStorage.setItem('ayilon_name',     name);
+        }
+      } catch {
+        localStorage.setItem('ayilon_email',    email);
+        localStorage.setItem('ayilon_username', nickname);
+        localStorage.setItem('ayilon_name',     name);
+      }
 
+      localStorage.setItem('ayilon_logged_in', 'true');
+      localStorage.removeItem('ayilon_password'); // ensure no plaintext password is stored
       window.location.href = 'dashboard.html?page=mypage';
     }
   </script>

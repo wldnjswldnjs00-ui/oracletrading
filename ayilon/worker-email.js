@@ -32,10 +32,16 @@ export default {
       if (path === '/create-payment')     return handleCreatePayment(request, env);
       if (path === '/verify-payment')     return handleVerifyPayment(request, env);
       if (path === '/check-payment')      return handleCheckPayment(request, env);
-      if (path === '/save-bot-settings')  return handleSaveBotSettings(request, env);
-      if (path === '/bot-status')         return handleBotStatus(request, env);
-      if (path === '/bot-control')        return handleBotControl(request, env);
-      if (path === '/get-positions')      return handleGetPositions(request, env);
+      if (path === '/login')             return handleLogin(request, env);
+      if (path === '/logout')            return handleLogout(request, env);
+      if (path === '/me')                return handleMe(request, env);
+      if (path === '/change-password')   return handleChangePassword(request, env);
+      if (path === '/reset-password')    return handleResetPassword(request, env);
+      if (path === '/update-profile')    return handleUpdateProfile(request, env);
+      if (path === '/save-bot-settings') return handleSaveBotSettings(request, env);
+      if (path === '/bot-status')        return handleBotStatus(request, env);
+      if (path === '/bot-control')       return handleBotControl(request, env);
+      if (path === '/get-positions')     return handleGetPositions(request, env);
     }
 
     return corsResponse(JSON.stringify({ error: 'Not found' }), 404);
@@ -336,12 +342,129 @@ async function hashPassword(password) {
 }
 
 // ════════════════════════════════════════════════════════════
+// SESSION AUTH
+// ════════════════════════════════════════════════════════════
+
+async function requireSession(body, env) {
+  const token = body?.sessionToken;
+  if (!token || !env.USERS_KV) return null;
+  return env.USERS_KV.get('session:' + token, { type: 'json' });
+}
+
+async function handleLogin(request, env) {
+  const { email, password } = await request.json();
+  if (!email || !password) return json({ ok: false, error: 'missing_fields' }, 400);
+  if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
+
+  const user = await env.USERS_KV.get('user:' + email.toLowerCase(), { type: 'json' });
+  if (!user) return json({ ok: false, error: 'invalid_credentials' }, 401);
+
+  const hashedPw = await hashPassword(password);
+  if (!user.password || user.password !== hashedPw) return json({ ok: false, error: 'invalid_credentials' }, 401);
+
+  const sessionToken = crypto.randomUUID();
+  await env.USERS_KV.put('session:' + sessionToken, JSON.stringify({
+    email: user.email, username: user.username, name: user.name
+  }), { expirationTtl: 604800 }); // 7 days
+
+  return json({ ok: true, sessionToken, email: user.email, username: user.username || '', name: user.name || '' });
+}
+
+async function handleLogout(request, env) {
+  const body = await request.json().catch(() => ({}));
+  if (body.sessionToken && env.USERS_KV) {
+    await env.USERS_KV.delete('session:' + body.sessionToken);
+  }
+  return json({ ok: true });
+}
+
+async function handleMe(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env);
+  if (!session) return json({ authenticated: false }, 401);
+  return json({ authenticated: true, email: session.email, username: session.username, name: session.name });
+}
+
+async function handleChangePassword(request, env) {
+  const body = await request.json();
+  const session = await requireSession(body, env);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+
+  const { currentPassword, newPassword } = body;
+  if (!currentPassword || !newPassword) return json({ ok: false, error: 'missing_fields' }, 400);
+  if (newPassword.length < 8) return json({ ok: false, error: 'password_too_short' }, 400);
+
+  const user = await env.USERS_KV.get('user:' + session.email.toLowerCase(), { type: 'json' });
+  if (!user) return json({ ok: false, error: 'user_not_found' }, 404);
+
+  if (user.password !== await hashPassword(currentPassword)) {
+    return json({ ok: false, error: 'invalid_current_password' }, 401);
+  }
+  user.password = await hashPassword(newPassword);
+  await env.USERS_KV.put('user:' + session.email.toLowerCase(), JSON.stringify(user));
+  return json({ ok: true });
+}
+
+async function handleResetPassword(request, env) {
+  const { email, code, newPassword } = await request.json();
+  if (!email || !code || !newPassword) return json({ ok: false, error: 'missing_fields' }, 400);
+  if (newPassword.length < 8) return json({ ok: false, error: 'password_too_short' }, 400);
+  if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
+
+  const attemptsKey = 'rate:code_attempt:' + email.toLowerCase();
+  const attempts    = await env.USERS_KV.get(attemptsKey, { type: 'json' });
+  if ((attempts?.count || 0) >= 5) {
+    await env.USERS_KV.delete('verify:' + email.toLowerCase());
+    return json({ ok: false, error: 'too_many_attempts' });
+  }
+  const stored = await env.USERS_KV.get('verify:' + email.toLowerCase());
+  if (!stored || stored !== String(code)) {
+    await env.USERS_KV.put(attemptsKey, JSON.stringify({ count: (attempts?.count || 0) + 1 }), { expirationTtl: 300 });
+    return json({ ok: false, error: 'invalid_code' });
+  }
+  await env.USERS_KV.delete('verify:' + email.toLowerCase());
+  await env.USERS_KV.delete(attemptsKey);
+
+  const user = await env.USERS_KV.get('user:' + email.toLowerCase(), { type: 'json' });
+  if (!user) return json({ ok: false, error: 'user_not_found' });
+  user.password = await hashPassword(newPassword);
+  await env.USERS_KV.put('user:' + email.toLowerCase(), JSON.stringify(user));
+  return json({ ok: true });
+}
+
+async function handleUpdateProfile(request, env) {
+  const body = await request.json();
+  const session = await requireSession(body, env);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
+
+  const { name, username } = body;
+  const emailKey = 'user:' + session.email.toLowerCase();
+  const user = await env.USERS_KV.get(emailKey, { type: 'json' });
+  if (!user) return json({ ok: false, error: 'user_not_found' }, 404);
+
+  if (username && username.toLowerCase() !== (user.username || '').toLowerCase()) {
+    const newKey = 'username:' + username.toLowerCase();
+    if (await env.USERS_KV.get(newKey)) return json({ ok: false, error: 'username_taken' });
+    if (user.username) await env.USERS_KV.delete('username:' + user.username.toLowerCase());
+    await env.USERS_KV.put(newKey, session.email.toLowerCase());
+    user.username = username;
+  }
+  if (name !== undefined) user.name = name;
+  await env.USERS_KV.put(emailKey, JSON.stringify(user));
+  return json({ ok: true });
+}
+
+// ════════════════════════════════════════════════════════════
 // BOT ENDPOINTS
 // ════════════════════════════════════════════════════════════
 
 async function handleSaveBotSettings(request, env) {
   const body = await request.json();
   if (!env.USERS_KV) return json({ ok: false });
+
+  const session = await requireSession(body, env);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
 
   // Preserve existing clientToken or generate a new one on first save
   const existing = await env.USERS_KV.get('bot:config', { type: 'json' });
@@ -353,6 +476,10 @@ async function handleSaveBotSettings(request, env) {
 
 async function handleBotStatus(request, env) {
   if (!env.USERS_KV) return json({ running: false, logs: [] });
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env);
+  if (!session) return json({ running: false, logs: [], error: 'unauthorized' }, 401);
+
   const [config, logs, alert, pos, lastScan, marketData] = await Promise.all([
     env.USERS_KV.get('bot:config',               { type: 'json' }),
     env.USERS_KV.get('bot:logs',                 { type: 'json' }),
@@ -407,15 +534,22 @@ async function handleBotControl(request, env) {
 }
 
 async function handleGetPositions(request, env) {
-  const { apiKey, apiSecret, apiPassphrase, instId } = await request.json();
+  if (!env.USERS_KV) return json({ positions: [] });
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env);
+  if (!session) return json({ positions: [], error: 'unauthorized' }, 401);
+
+  // Use stored API keys from bot:config — never accept from client
+  const config = await env.USERS_KV.get('bot:config', { type: 'json' });
+  const { apiKey, apiSecret, apiPassphrase, tradingPair } = config || {};
   if (!apiKey || !apiSecret || !apiPassphrase) return json({ positions: [] });
-  // Validate instId to prevent path injection (e.g. BTC-USDT-SWAP, ETH-USDT-SWAP)
-  if (instId && !/^[A-Z0-9]{1,15}-[A-Z]{3,4}(-SWAP)?$/.test(instId)) {
+
+  const instId = body.instId || tradingPair || 'BTC-USDT-SWAP';
+  if (!/^[A-Z0-9]{1,15}-[A-Z]{3,4}(-SWAP)?$/.test(instId)) {
     return json({ positions: [], error: 'Invalid instId' }, 400);
   }
   try {
-    const path = instId ? `/api/v5/account/positions?instId=${instId}` : '/api/v5/account/positions';
-    const data = await okxGet(apiKey, apiSecret, apiPassphrase, path);
+    const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instId=${instId}`);
     return json({ positions: data?.data || [] });
   } catch(e) { return json({ positions: [], error: e.message }); }
 }

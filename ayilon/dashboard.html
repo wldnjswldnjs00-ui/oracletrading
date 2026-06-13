@@ -1257,8 +1257,11 @@
   </div>
 
   <script>
-    var ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
+    var ADMIN_EMAIL  = 'wldnjswldnjs00@gmail.com';
+    var WORKER_URL   = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
     var LOCKED_PAGES = ['dashboard', 'bots', 'positions', 'analytics', 'history', 'api'];
+
+    function getSessionToken() { return localStorage.getItem('ayilon_session_token') || ''; }
 
     (function checkAccess() {
       var loggedIn = localStorage.getItem('ayilon_logged_in');
@@ -1274,10 +1277,27 @@
         document.getElementById('sidebarName').textContent = uname || email;
       }
 
-      if (!loggedIn && !isAdmin) {
+      // Immediate client-side check (prevents flash of dashboard before redirect)
+      if (!loggedIn) {
         window.location.replace('login.html');
         return;
       }
+
+      // Background server-side session validation — redirect if token is invalid
+      (function() {
+        var token = getSessionToken();
+        if (!token) return; // no token yet (e.g. legacy session) — allow through
+        fetch(WORKER_URL + '/me', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken: token })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+          if (d && d.authenticated === false) {
+            localStorage.removeItem('ayilon_logged_in');
+            localStorage.removeItem('ayilon_session_token');
+            window.location.replace('login.html');
+          }
+        }).catch(function() { /* network error — allow through */ });
+      })();
 
       var hasAccess = isAdmin || !!subscription;
 
@@ -1330,8 +1350,18 @@
       history.replaceState(null, '', '?page=' + name);
     }
 
-    function doLogout() {
+    async function doLogout() {
+      var token = getSessionToken();
+      if (token) {
+        try {
+          await fetch(WORKER_URL + '/logout', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken: token })
+          });
+        } catch(e) {}
+      }
       localStorage.removeItem('ayilon_logged_in');
+      localStorage.removeItem('ayilon_session_token');
       window.location.href = 'index.html';
     }
 
@@ -1621,14 +1651,13 @@
         return;
       }
 
-      // If username changed, update on server
+      // Update profile on server (name / username change)
       var oldUsername = localStorage.getItem('ayilon_username') || '';
-      if (username && username.toLowerCase() !== oldUsername.toLowerCase()) {
+      if (name !== localStorage.getItem('ayilon_name') || (username && username.toLowerCase() !== oldUsername.toLowerCase())) {
         try {
-          var email = localStorage.getItem('ayilon_email') || '';
-          await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/register-user', {
+          await fetch(WORKER_URL + '/update-profile', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, username, name, password: localStorage.getItem('ayilon_password') || '', update: true })
+            body: JSON.stringify({ sessionToken: getSessionToken(), name, username })
           });
         } catch { /* offline fallback */ }
       }
@@ -1729,19 +1758,30 @@
     }
 
     // ── PASSWORD CHANGE ──────────────────────────────────
-    function changePassword() {
+    async function changePassword() {
       var current = document.getElementById('pwCurrent').value;
       var newPw   = document.getElementById('pwNew').value;
       var confirm = document.getElementById('pwConfirm').value;
       var hint    = document.getElementById('pwHint');
-      var stored  = localStorage.getItem('ayilon_password') || '';
 
-      if (!newPw || !confirm) { hint.style.color='#ef4444'; hint.textContent='Please fill in all fields.'; return; }
-      if (stored && current !== stored) { hint.style.color='#ef4444'; hint.textContent='Current password is incorrect.'; return; }
+      if (!current || !newPw || !confirm) { hint.style.color='#ef4444'; hint.textContent='Please fill in all fields.'; return; }
       if (newPw.length < 8) { hint.style.color='#ef4444'; hint.textContent='Password must be at least 8 characters.'; return; }
       if (newPw !== confirm) { hint.style.color='#ef4444'; hint.textContent='New passwords do not match.'; return; }
 
-      localStorage.setItem('ayilon_password', newPw);
+      try {
+        var res = await fetch(WORKER_URL + '/change-password', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken: getSessionToken(), currentPassword: current, newPassword: newPw })
+        });
+        var data = await res.json();
+        if (!data.ok) {
+          hint.style.color = '#ef4444';
+          hint.textContent = data.error === 'invalid_current_password' ? 'Current password is incorrect.' : 'Password update failed. Try again.';
+          return;
+        }
+      } catch(e) {
+        hint.style.color = '#ef4444'; hint.textContent = 'Network error. Try again.'; return;
+      }
       hint.style.color = '#22c55e';
       hint.textContent = 'Password updated successfully.';
       ['pwCurrent','pwNew','pwConfirm'].forEach(function(id){ document.getElementById(id).value=''; });
@@ -2115,8 +2155,9 @@
       var el = document.getElementById('historyContent');
       if (!el) return;
       try {
-        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-status', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+        var res = await fetch(WORKER_URL + '/bot-status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken: getSessionToken() })
         });
         var data = await res.json();
         var logs = data.logs || [];
@@ -2171,9 +2212,9 @@
       }
 
       try {
-        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/get-positions', {
+        var res = await fetch(WORKER_URL + '/get-positions', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey, apiSecret, apiPassphrase })
+          body: JSON.stringify({ sessionToken: getSessionToken() })
         });
         var data = await res.json();
         var positions = data.positions || [];
@@ -2306,9 +2347,9 @@
       };
       localStorage.setItem('ayilon_bot_settings', JSON.stringify(s));
       try {
-        var saveRes = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/save-bot-settings', {
+        var saveRes = await fetch(WORKER_URL + '/save-bot-settings', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(s)
+          body: JSON.stringify(Object.assign({}, s, { sessionToken: getSessionToken() }))
         });
         var saveData = await saveRes.json();
         if (saveData.clientToken) localStorage.setItem('ayilon_client_token', saveData.clientToken);
@@ -2388,8 +2429,9 @@
       var alertEl = document.getElementById('dailyLossAlert');
       if (!alertEl) return;
       try {
-        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-status', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+        var res = await fetch(WORKER_URL + '/bot-status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken: getSessionToken() })
         });
         var data = await res.json();
         // Sync running state
