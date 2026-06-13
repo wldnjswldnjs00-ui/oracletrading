@@ -498,41 +498,32 @@
           <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--gray-600);text-transform:uppercase;">ENTRY LOGIC</span>
         </div>
         <svg viewBox="0 0 760 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+          <defs>
+            <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.08)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </linearGradient>
+          </defs>
           <rect width="760" height="210" fill="#0d0d0d"/>
           <line x1="10" y1="82" x2="748" y2="82" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
           <line x1="10" y1="130" x2="748" y2="130" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+          <!-- resistance: orange -->
           <line x1="10" y1="40" x2="748" y2="40" stroke="#f97316" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
           <text x="12" y="35" fill="#f97316" font-size="8" font-family="monospace" opacity="0.85" font-weight="600">RESISTANCE</text>
-          <line x1="10" y1="190" x2="748" y2="190" stroke="#3b82f6" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
-          <text x="12" y="184" fill="#3b82f6" font-size="8" font-family="monospace" opacity="0.85" font-weight="600">SUPPORT</text>
-          <!-- resistance touch -->
-          <circle cx="10" cy="46" r="5.5" fill="rgba(249,115,22,0.14)" stroke="#f97316" stroke-width="1.6"/>
-          <!-- downtrend: big red drops, small green bounces -->
-          <line x1="10" y1="46" x2="62" y2="80" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="62" y1="80" x2="82" y2="66" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="82" y1="66" x2="134" y2="100" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="134" y1="100" x2="156" y2="85" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="156" y1="85" x2="208" y2="120" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="208" y1="120" x2="230" y2="105" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="230" y1="105" x2="282" y2="140" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="282" y1="140" x2="304" y2="124" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="304" y1="124" x2="356" y2="158" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="356" y1="158" x2="378" y2="143" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="378" y1="143" x2="430" y2="174" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="430" y1="174" x2="452" y2="158" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="452" y1="158" x2="498" y2="186" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>
-          <!-- support touch 1 -->
-          <circle cx="498" cy="188" r="5.5" fill="rgba(59,130,246,0.14)" stroke="#3b82f6" stroke-width="1.6"/>
-          <!-- bouncing at support but still no real recovery -->
-          <line x1="498" y1="186" x2="522" y2="170" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="522" y1="170" x2="570" y2="186" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>
-          <!-- support touch 2 -->
-          <circle cx="570" cy="188" r="5" fill="rgba(59,130,246,0.13)" stroke="#3b82f6" stroke-width="1.5"/>
-          <line x1="570" y1="186" x2="596" y2="172" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="596" y1="172" x2="644" y2="184" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="644" y1="184" x2="668" y2="168" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="668" y1="168" x2="716" y2="182" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round"/>
-          <line x1="716" y1="182" x2="748" y2="170" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round"/>
+          <!-- support: green -->
+          <line x1="10" y1="190" x2="748" y2="190" stroke="#22c55e" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
+          <text x="12" y="184" fill="#22c55e" font-size="8" font-family="monospace" opacity="0.85" font-weight="600">SUPPORT</text>
+          <!-- area fill under price line -->
+          <polygon points="10,46 62,80 82,66 134,100 156,85 208,120 230,105 282,140 304,124 356,158 378,143 430,174 452,158 498,186 522,170 570,186 596,172 644,184 668,168 716,182 748,170 748,210 10,210"
+                   fill="url(#priceGrad)"/>
+          <!-- white price line -->
+          <polyline points="10,46 62,80 82,66 134,100 156,85 208,120 230,105 282,140 304,124 356,158 378,143 430,174 452,158 498,186 522,170 570,186 596,172 644,184 668,168 716,182 748,170"
+                    fill="none" stroke="rgba(255,255,255,0.88)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- resistance touch: orange -->
+          <circle cx="10" cy="46" r="5.5" fill="rgba(249,115,22,0.15)" stroke="#f97316" stroke-width="1.6"/>
+          <!-- support touches: green -->
+          <circle cx="498" cy="188" r="5.5" fill="rgba(34,197,94,0.15)" stroke="#22c55e" stroke-width="1.6"/>
+          <circle cx="570" cy="188" r="5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.5"/>
         </svg>
       </div>
 
