@@ -386,7 +386,10 @@ async function runBot(env) {
     // Sync: if bot thinks position is open but OKX shows nothing → clear stale state
     // (handles manual close, forced liquidation, or silent order failure)
     if (ps[tradingPair]?.direction && !openPos.length) {
-      await botLog(env, `Sync: cleared stale ${tradingPair} state — no OKX position found`);
+      if (ps[tradingPair].algoId) {
+        await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].algoId, demoMode);
+      }
+      await botLog(env, `Sync: cleared ${tradingPair} state — position closed externally`);
       delete ps[tradingPair];
       await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
     }
@@ -411,17 +414,25 @@ async function runBot(env) {
         }, demoMode);
 
         if (trailRes?.data?.[0]?.ordId) {
-          state.stopLoss      = state.lastTPLevel;                        // trail SL to prev level
-          state.lastTPLevel   = nextLv.price;                             // new high-water mark
-          state.remainingFrac = Math.max(0, (state.remainingFrac ?? 0.5) - 0.10);
-          if (state.remainingFrac <= 0) {
-            delete ps[tradingPair]; // position fully exited via trailing TP
+          const newRemFrac = Math.max(0, (state.remainingFrac ?? 0.5) - 0.10);
+          // Update native SL: cancel old, place new at previous TP level for remaining size
+          if (state.algoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
+          state.stopLoss    = state.lastTPLevel;
+          state.lastTPLevel = nextLv.price;
+          state.remainingFrac = newRemFrac;
+          if (newRemFrac > 0) {
+            const remSz = (totalSz * newRemFrac).toFixed(4);
+            const nAlgo = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.direction, state.stopLoss, remSz, demoMode);
+            state.algoId = nAlgo?.data?.[0]?.algoId || null;
+          }
+          if (newRemFrac <= 0) {
+            delete ps[tradingPair];
             await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
             await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} — position fully closed`);
           } else {
             ps[tradingPair] = state;
             await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-            await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL→${state.stopLoss.toFixed(2)} | Rem:${Math.round(state.remainingFrac * 100)}%`);
+            await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL→${state.stopLoss.toFixed(2)} | Rem:${Math.round(newRemFrac * 100)}%`);
           }
         } else {
           await botLog(env, `Trail order FAILED @ ${nextLv.price.toFixed(2)}: ${trailRes?.msg || 'unknown'}`);
@@ -484,20 +495,29 @@ async function runBot(env) {
     }, demoMode);
 
     if (orderRes?.data?.[0]?.ordId) {
-      state.entries.push({ price: currentPrice, sz, time: Date.now(), entry: entryNum });
-      state.direction  = signal.type;
+      // Get actual fill price (market orders fill at slightly different price)
+      const fillPrice = await queryFillPrice(apiKey, apiSecret, apiPassphrase, tradingPair, orderRes.data[0].ordId, currentPrice, demoMode);
+      state.entries.push({ price: fillPrice, sz, time: Date.now(), entry: entryNum });
+      state.direction = signal.type;
       if (!state.stopLoss) state.stopLoss = signal.stopLoss;
       if (useTP) state.takeProfit = tp;
+
+      // Native SL: cancel previous algo (if adding to position), place for full accumulated size
+      if (state.algoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
+      const accumSz = state.entries.reduce((s, e) => s + parseFloat(e.sz), 0).toFixed(4);
+      const algoRes = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, signal.type, state.stopLoss, accumSz, demoMode);
+      state.algoId = algoRes?.data?.[0]?.algoId || null;
+
       ps[tradingPair] = state;
       await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
       const tpStr    = useTP ? ` | TP:${tp.toFixed(2)}` : '';
       const gradeStr = signal.grade ? `[${signal.grade}급] ` : '';
       const trendStr = trend !== 'neutral' ? ` | trend:${trend}` : '';
-      await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${currentPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | SL:${state.stopLoss.toFixed(2)}${tpStr}${trendStr} | sz:${sz}`);
+      const slStr    = state.algoId ? `nSL:${state.stopLoss.toFixed(2)}` : `SL(sw):${state.stopLoss.toFixed(2)}`;
+      await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${fillPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | ${slStr}${tpStr}${trendStr} | sz:${sz}`);
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
-        `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${currentPrice} USDT${tpStr}`);
+        `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${fillPrice} USDT${tpStr}`);
     } else {
-      // Order rejected by OKX — log the reason without updating state
       const errCode = orderRes?.code || '?';
       const errMsg  = orderRes?.msg || orderRes?.data?.[0]?.sMsg || 'unknown';
       await botLog(env, `Order FAILED [${errCode}]: ${signal.type.toUpperCase()} @ ${currentPrice} — ${errMsg}`);
@@ -529,8 +549,8 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
 
   // ── TP hit: close 50%, move SL to break-even, let rest run ──
   if (tpHit && !state.halfClosed) {
-    const totalSz = state.entries.reduce((sum, e) => sum + parseFloat(e.sz), 0);
-    const halfSz  = (totalSz / 2).toFixed(4);
+    const totalSz  = state.entries.reduce((sum, e) => sum + parseFloat(e.sz), 0);
+    const halfSz   = (totalSz / 2).toFixed(4);
     const avgEntry = state.entries.reduce((sum, e) => sum + e.price * parseFloat(e.sz), 0) / totalSz;
 
     await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
@@ -540,14 +560,21 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
       ordType: 'market', sz: halfSz
     }, demo);
 
-    state.halfClosed   = true;
-    state.stopLoss     = avgEntry;   // SL → break-even
-    state.takeProfit   = null;
-    state.lastTPLevel  = price;      // first TP price (becomes SL floor for trailing)
-    state.remainingFrac = 0.5;       // 50% of original position remains
+    // Update native SL: cancel old (full size), place new at break-even for remaining half
+    if (state.algoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.algoId, demo);
+    const remSz    = (totalSz / 2).toFixed(4);
+    const newAlgo  = await placeSLAlgo(apiKey, secret, pass, pair, state.direction, avgEntry, remSz, demo);
+
+    state.halfClosed    = true;
+    state.stopLoss      = avgEntry;
+    state.takeProfit    = null;
+    state.lastTPLevel   = price;
+    state.remainingFrac = 0.5;
+    state.algoId        = newAlgo?.data?.[0]?.algoId || null;
     ps[pair] = state;
     await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-    await botLog(env, `TP hit @ ${price} — 50% closed | SL→BE ${avgEntry.toFixed(2)} | trailing 10% active`);
+    const nSlLabel = state.algoId ? `nSL→BE` : `SL(sw)→BE`;
+    await botLog(env, `TP hit @ ${price} — 50% closed | ${nSlLabel} ${avgEntry.toFixed(2)} | trailing 10% active`);
     return;
   }
 
@@ -776,6 +803,36 @@ function detectVolumeZones(candles, currentPrice) {
     supports:    zones.filter(z => z.type === 'support').sort((a, b) => b.price - a.price).slice(0, 3),
     resistances: zones.filter(z => z.type === 'resistance').sort((a, b) => a.price - b.price).slice(0, 3)
   };
+}
+
+// ── NATIVE SL ALGO ORDERS ────────────────────────────────────
+// Places a conditional stop-loss order directly on OKX's server.
+// Fires even if the Cloudflare Worker is down — true exchange-native SL.
+async function placeSLAlgo(apiKey, secret, pass, pair, direction, slPrice, sz, demo = false) {
+  return okxPost(apiKey, secret, pass, '/api/v5/trade/order-algo', {
+    instId: pair, tdMode: 'cross',
+    side:         direction === 'long' ? 'sell' : 'buy',
+    posSide:      direction === 'long' ? 'long' : 'short',
+    ordType:      'conditional',
+    sz:           String(sz),
+    slTriggerPx:  parseFloat(slPrice).toFixed(2),
+    slOrdPx:      '-1'  // -1 = market order when triggered
+  }, demo);
+}
+
+async function cancelSLAlgo(apiKey, secret, pass, pair, algoId, demo = false) {
+  return okxPost(apiKey, secret, pass, '/api/v5/trade/cancel-algos',
+    [{ algoId, instId: pair }], demo);
+}
+
+// Queries actual fill price from OKX after a market order.
+// Market orders have slippage — this gives the real average fill price.
+async function queryFillPrice(apiKey, secret, pass, pair, ordId, fallback, demo = false) {
+  try {
+    const res = await okxGet(apiKey, secret, pass, `/api/v5/trade/order?instId=${pair}&ordId=${ordId}`, demo);
+    const px = parseFloat(res?.data?.[0]?.avgPx || '0');
+    return px > 0 ? px : fallback;
+  } catch { return fallback; }
 }
 
 // ── OKX API ───────────────────────────────────────────────────
