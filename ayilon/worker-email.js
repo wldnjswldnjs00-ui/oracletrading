@@ -322,6 +322,14 @@ async function handleGetPositions(request, env) {
 
 const OKX_BASE = 'https://www.okx.com';
 
+async function getCtVal(instId) {
+  try {
+    const res = await fetch(`${OKX_BASE}/api/v5/public/instruments?instType=SWAP&instId=${instId}`);
+    const data = await res.json();
+    return parseFloat(data?.data?.[0]?.ctVal || '0.01');
+  } catch { return 0.01; }
+}
+
 async function runBot(env) {
   if (!env.USERS_KV) return;
   try {
@@ -338,6 +346,9 @@ async function runBot(env) {
 
     if (!apiKey || !apiSecret || !apiPassphrase) return;
 
+    // Normalize lossLimit: accept 5 (meaning 5%) or 0.05 (meaning 5%)
+    const lossLimitNorm = parseFloat(lossLimit) > 1 ? parseFloat(lossLimit) / 100 : parseFloat(lossLimit) || 0.05;
+
     // ── Update last scan time ─────────────────────────────────
     await env.USERS_KV.put('bot:last_scan', new Date().toISOString());
 
@@ -345,7 +356,7 @@ async function runBot(env) {
     if (lossLimitEnabled) {
       const today = new Date().toDateString();
       const dl = await env.USERS_KV.get('bot:daily_loss:' + today, { type: 'json' }) || { pct: 0 };
-      if (dl.pct >= lossLimit / 100) {
+      if (dl.pct >= lossLimitNorm) {
         cfg.running = false;
         await env.USERS_KV.put('bot:config', JSON.stringify(cfg));
         await env.USERS_KV.put('bot:daily_loss_triggered', JSON.stringify({
@@ -367,8 +378,11 @@ async function runBot(env) {
     const posRes = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instId=${tradingPair}`, demoMode);
     const openPos = (posRes?.data || []).filter(p => parseFloat(p.pos) !== 0);
 
+    // ── Position state (loaded before checkSL — fix race condition on KV cache) ────
+    let ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
+
     // ── Stop loss check ───────────────────────────────────────
-    await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimit / 100, demoMode);
+    await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, demoMode, ps);
 
     // ── Fetch all candles in parallel ────────────────────────
     const [candles1H, candles4H, candlesD, c5] = await Promise.all([
@@ -379,7 +393,15 @@ async function runBot(env) {
     ]);
     if (candles1H.length < 20 && candles4H.length < 20) return;
     if (c5.length < 4) return;
-    const currentPrice = parseFloat((await (await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${tradingPair}`)).json())?.data?.[0]?.last || '0');
+    const [tickerData, ctVal] = await Promise.all([
+      fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${tradingPair}`).then(r => r.json()),
+      getCtVal(tradingPair)
+    ]);
+    const currentPrice = parseFloat(tickerData?.data?.[0]?.last || '0');
+    if (!currentPrice || currentPrice <= 0) {
+      await botLog(env, 'Skip: failed to fetch current price');
+      return;
+    }
 
     // ── Daily trend filter (EMA20 / EMA50) ───────────────────
     // Uptrend:   price > EMA20 > EMA50 → only LONG allowed
@@ -396,17 +418,22 @@ async function runBot(env) {
     const levels    = mergeLevels(srLevels, volLevels);
     if (!levels.supports.length && !levels.resistances.length) return;
 
-    // ── Position state (load once, sync with OKX) ────────────
-    const ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
-    // Sync: if bot thinks position is open but OKX shows nothing → clear stale state
-    // (handles manual close, forced liquidation, or silent order failure)
-    if (ps[tradingPair]?.direction && !openPos.length) {
-      if (ps[tradingPair].algoId) {
-        await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].algoId, demoMode);
+    // ── Sync position state with OKX (ps already loaded above) ──────────────────
+    // Clear stale state if OKX has no matching position (handles manual close, liquidation)
+    if (ps[tradingPair]?.direction) {
+      const dir = ps[tradingPair].direction;
+      const matchingPos = openPos.find(p =>
+        dir === 'long'  ? (p.posSide === 'long'  && parseFloat(p.pos) > 0) :
+        dir === 'short' ? (p.posSide === 'short' && parseFloat(p.pos) < 0) : false
+      );
+      if (!matchingPos) {
+        if (ps[tradingPair].algoId) {
+          await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].algoId, demoMode);
+        }
+        await botLog(env, `Sync: cleared ${tradingPair} state — position closed externally`);
+        delete ps[tradingPair];
+        await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
       }
-      await botLog(env, `Sync: cleared ${tradingPair} state — position closed externally`);
-      delete ps[tradingPair];
-      await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
     }
     const state = ps[tradingPair] || { entries: [], stopLoss: null, direction: null, takeProfit: null };
 
@@ -419,8 +446,9 @@ async function runBot(env) {
         : levels.supports.find(r =>   r.price < state.lastTPLevel * 0.999 && Math.abs(currentPrice - r.price) / r.price <= TOUCH);
 
       if (nextLv) {
-        const totalSz  = state.entries.reduce((s, e) => s + parseFloat(e.sz), 0);
-        const trailSz  = (totalSz * 0.10).toFixed(4);
+        const totalSz  = state.entries.reduce((s, e) => s + parseInt(e.sz), 0);
+        const trailContracts = Math.max(1, Math.floor(totalSz * 0.10));
+        const trailSz  = String(trailContracts);
         const trailRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
           instId: tradingPair, tdMode: 'cross',
           side:    state.direction === 'long' ? 'sell' : 'buy',
@@ -436,9 +464,9 @@ async function runBot(env) {
           state.lastTPLevel = nextLv.price;
           state.remainingFrac = newRemFrac;
           if (newRemFrac > 0) {
-            const remSz = (totalSz * newRemFrac).toFixed(4);
+            const remSz = String(Math.max(1, Math.floor(totalSz * newRemFrac)));
             const nAlgo = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.direction, state.stopLoss, remSz, demoMode);
-            state.algoId = nAlgo?.data?.[0]?.algoId || null;
+            state.algoId = nAlgo?.data?.[0]?.algoId ? String(nAlgo.data[0].algoId) : null;
           }
           if (newRemFrac <= 0) {
             delete ps[tradingPair];
@@ -496,10 +524,16 @@ async function runBot(env) {
     let entryVal;
     if (entrySizing === 'martingale' && entryNum > 1) {
       entryVal = (totalVal / parseInt(numEntries)) * Math.pow(2, entryNum - 1);
+      entryVal = Math.min(entryVal, equity * 0.40); // cap at 40% equity (martingale safety)
     } else {
       entryVal = totalVal / parseInt(numEntries);
     }
-    const sz = (entryVal / currentPrice).toFixed(4);
+    const szContracts = Math.floor(entryVal / (currentPrice * ctVal));
+    if (szContracts < 1) {
+      await botLog(env, `Skip: position too small (${entryVal.toFixed(2)} USDT < 1 contract min)`);
+      return;
+    }
+    const sz = String(szContracts);
 
     // ── Place order ───────────────────────────────────────────
     const orderRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
@@ -519,12 +553,18 @@ async function runBot(env) {
 
       // Native SL: cancel previous algo (if adding to position), place for full accumulated size
       if (state.algoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
-      const accumSz = state.entries.reduce((s, e) => s + parseFloat(e.sz), 0).toFixed(4);
+      const accumSz = String(state.entries.reduce((s, e) => s + parseInt(e.sz), 0));
       const algoRes = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, signal.type, state.stopLoss, accumSz, demoMode);
-      state.algoId = algoRes?.data?.[0]?.algoId || null;
+      state.algoId = algoRes?.data?.[0]?.algoId ? String(algoRes.data[0].algoId) : null;
 
       ps[tradingPair] = state;
-      await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+      try {
+        await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+      } catch(kvErr) {
+        if (state.algoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
+        await botLog(env, `KV write failed: ${kvErr.message} — algo cancelled to prevent orphan`);
+        return;
+      }
       const tpStr    = useTP ? ` | TP:${tp.toFixed(2)}` : '';
       const gradeStr = signal.grade ? `[${signal.grade}급] ` : '';
       const trendStr = trend !== 'neutral' ? ` | trend:${trend}` : '';
@@ -544,9 +584,9 @@ async function runBot(env) {
 }
 
 // ── STOP LOSS ─────────────────────────────────────────────────
-async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitPct, demo = false) {
+async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitPct, demo = false, ps = null) {
   if (!openPos.length) return;
-  const ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
+  if (ps === null) ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
   const state = ps[pair];
   if (!state?.stopLoss) return;
 
@@ -564,9 +604,10 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
 
   // ── TP hit: close 50%, move SL to break-even, let rest run ──
   if (tpHit && !state.halfClosed) {
-    const totalSz  = state.entries.reduce((sum, e) => sum + parseFloat(e.sz), 0);
-    const halfSz   = (totalSz / 2).toFixed(4);
-    const avgEntry = state.entries.reduce((sum, e) => sum + e.price * parseFloat(e.sz), 0) / totalSz;
+    const totalSz  = state.entries.reduce((sum, e) => sum + parseInt(e.sz), 0);
+    const halfContracts = Math.max(1, Math.floor(totalSz / 2));
+    const halfSz   = String(halfContracts);
+    const avgEntry = state.entries.reduce((sum, e) => sum + e.price * parseInt(e.sz), 0) / totalSz;
 
     await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
       instId: pair, tdMode: 'cross',
@@ -577,15 +618,16 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
 
     // Update native SL: cancel old (full size), place new at break-even for remaining half
     if (state.algoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.algoId, demo);
-    const remSz    = (totalSz / 2).toFixed(4);
-    const newAlgo  = await placeSLAlgo(apiKey, secret, pass, pair, state.direction, avgEntry, remSz, demo);
+    const remContracts = Math.max(0, totalSz - halfContracts);
+    const remSz    = String(remContracts);
+    const newAlgo  = remContracts > 0 ? await placeSLAlgo(apiKey, secret, pass, pair, state.direction, avgEntry, remSz, demo) : null;
 
     state.halfClosed    = true;
     state.stopLoss      = avgEntry;
     state.takeProfit    = null;
     state.lastTPLevel   = price;
-    state.remainingFrac = 0.5;
-    state.algoId        = newAlgo?.data?.[0]?.algoId || null;
+    state.remainingFrac = remContracts > 0 ? remContracts / totalSz : 0;
+    state.algoId        = newAlgo?.data?.[0]?.algoId ? String(newAlgo.data[0].algoId) : null;
     ps[pair] = state;
     await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
     const nSlLabel = state.algoId ? `nSL→BE` : `SL(sw)→BE`;
@@ -593,17 +635,22 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
     return;
   }
 
-  // ── SL hit (or second-half running past SL): close all ───────
-  await okxPost(apiKey, secret, pass, '/api/v5/trade/close-position', {
+  // ── SL hit (or second-half running past SL): cancel algo then close all ─────
+  if (state.algoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.algoId, demo);
+  const closeRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/close-position', {
     instId: pair, mgnMode: 'cross',
     posSide: state.direction === 'long' ? 'long' : 'short'
   }, demo);
+  if (closeRes?.code !== '0') {
+    await botLog(env, `close-position FAILED [${closeRes?.code}]: ${closeRes?.msg} — retrying next tick`);
+    return; // keep state intact so we retry on next cron tick
+  }
 
-  // Track daily loss on SL hit only
+  // Track daily loss on SL hit only (only count actual losses, not unrealized gains)
   if (slHit && lossLimitEnabled) {
     const today = new Date().toDateString();
     const dl = await env.USERS_KV.get('bot:daily_loss:' + today, { type: 'json' }) || { pct: 0 };
-    const realizedLoss = openPos.reduce((s, p) => s + Math.abs(parseFloat(p.upl || '0')), 0);
+    const realizedLoss = openPos.reduce((s, p) => s + Math.max(0, -parseFloat(p.upl || '0')), 0);
     dl.pct = (dl.pct || 0) + realizedLoss / equity;
     await env.USERS_KV.put('bot:daily_loss:' + today, JSON.stringify(dl), { expirationTtl: 86400 });
   }
@@ -741,7 +788,9 @@ function mergeLevels(a, b) {
   function dedup(arr) {
     const out = [];
     for (const lv of arr) {
-      if (!out.some(o => Math.abs(o.price - lv.price) / lv.price <= tol)) out.push(lv);
+      if (!out.some(o => Math.abs(o.price - lv.price) / lv.price <= tol)) {
+        out.push({ grade: 'B', ...lv }); // default grade 'B'; SR levels override via spread
+      }
     }
     return out;
   }
@@ -777,7 +826,7 @@ function detectSignal(c5, levels) {
   for (const s of levels.supports) {
     if (!falling) continue;
     if (Math.abs(curPrice - s.price) / s.price > TOUCH_TOL) continue;
-    const slDist = (curPrice - prevLow) / curPrice;
+    const slDist = Math.abs(curPrice - prevLow) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
     return { type: 'long', level: s.price, grade: s.grade || '', stopLoss: prevLow };
   }
@@ -785,7 +834,7 @@ function detectSignal(c5, levels) {
   for (const r of levels.resistances) {
     if (!rising) continue;
     if (Math.abs(curPrice - r.price) / r.price > TOUCH_TOL) continue;
-    const slDist = (prevHigh - curPrice) / curPrice;
+    const slDist = Math.abs(prevHigh - curPrice) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
     return { type: 'short', level: r.price, grade: r.grade || '', stopLoss: prevHigh };
   }
@@ -800,6 +849,7 @@ function detectVolumeZones(candles, currentPrice) {
   const minP = Math.min(...candles.map(c => parseFloat(c[3])));
   const maxP = Math.max(...candles.map(c => parseFloat(c[2])));
   const step = (maxP - minP) / BUCKETS;
+  if (step <= 0) return { supports: [], resistances: [] };
   const vols = new Array(BUCKETS).fill(0);
   for (const c of candles) {
     const lo = parseFloat(c[3]), hi = parseFloat(c[2]), vol = parseFloat(c[5]);
@@ -837,17 +887,21 @@ async function placeSLAlgo(apiKey, secret, pass, pair, direction, slPrice, sz, d
 
 async function cancelSLAlgo(apiKey, secret, pass, pair, algoId, demo = false) {
   return okxPost(apiKey, secret, pass, '/api/v5/trade/cancel-algos',
-    [{ algoId, instId: pair }], demo);
+    [{ algoId: String(algoId), instId: pair }], demo);
 }
 
 // Queries actual fill price from OKX after a market order.
 // Market orders have slippage — this gives the real average fill price.
 async function queryFillPrice(apiKey, secret, pass, pair, ordId, fallback, demo = false) {
-  try {
-    const res = await okxGet(apiKey, secret, pass, `/api/v5/trade/order?instId=${pair}&ordId=${ordId}`, demo);
-    const px = parseFloat(res?.data?.[0]?.avgPx || '0');
-    return px > 0 ? px : fallback;
-  } catch { return fallback; }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 500 * attempt));
+      const res = await okxGet(apiKey, secret, pass, `/api/v5/trade/order?instId=${pair}&ordId=${ordId}`, demo);
+      const px = parseFloat(res?.data?.[0]?.avgPx || '0');
+      if (px > 0) return px;
+    } catch {}
+  }
+  return fallback;
 }
 
 // ── OKX API ───────────────────────────────────────────────────
