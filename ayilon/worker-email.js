@@ -263,11 +263,12 @@ async function handleSaveBotSettings(request, env) {
 
 async function handleBotStatus(request, env) {
   if (!env.USERS_KV) return json({ running: false, logs: [] });
-  const config = await env.USERS_KV.get('bot:config', { type: 'json' }) || {};
-  const logs   = await env.USERS_KV.get('bot:logs',   { type: 'json' }) || [];
-  const alert  = await env.USERS_KV.get('bot:daily_loss_triggered', { type: 'json' });
-  const pos    = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
-  return json({ running: config.running === true, logs, alert, positions: pos });
+  const config   = await env.USERS_KV.get('bot:config', { type: 'json' }) || {};
+  const logs     = await env.USERS_KV.get('bot:logs',   { type: 'json' }) || [];
+  const alert    = await env.USERS_KV.get('bot:daily_loss_triggered', { type: 'json' });
+  const pos      = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
+  const lastScan = await env.USERS_KV.get('bot:last_scan');
+  return json({ running: config.running === true, logs, alert, positions: pos, lastScan });
 }
 
 async function handleBotControl(request, env) {
@@ -319,6 +320,9 @@ async function runBot(env) {
     const srTouch = 3;
 
     if (!apiKey || !apiSecret || !apiPassphrase) return;
+
+    // ── Update last scan time ─────────────────────────────────
+    await env.USERS_KV.put('bot:last_scan', new Date().toISOString());
 
     // ── Daily loss check ──────────────────────────────────────
     if (lossLimitEnabled) {

@@ -1069,7 +1069,10 @@
 
       <!-- BOT ACTIVITY LOG -->
       <div class="card" style="margin-top:20px;">
-        <div class="card-header"><span class="card-title">Activity Log</span></div>
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="card-title">Activity Log</span>
+          <span id="lastScanBadge" style="display:none;font-size:11px;color:var(--gray-600);"></span>
+        </div>
         <div id="botLogsWrap" style="max-height:300px;overflow-y:auto;">
           <div style="font-size:13px;color:var(--gray-600);text-align:center;padding:20px;">No activity yet</div>
         </div>
@@ -2316,6 +2319,15 @@
           alertEl.style.display = 'flex';
           document.getElementById('dailyLossAlertText').textContent =
             'Daily loss limit reached (' + data.alert.loss + '). Bot paused. Resume trading?';
+        }
+        // Last scan time
+        if (data.lastScan) {
+          var badge = document.getElementById('lastScanBadge');
+          if (badge) {
+            var ago = Math.round((Date.now() - new Date(data.lastScan)) / 1000);
+            badge.textContent = '마지막 스캔 ' + (ago < 60 ? ago + '초 전' : Math.round(ago/60) + '분 전');
+            badge.style.display = 'inline';
+          }
         }
         // Render logs
         renderBotLogs(data.logs || []);
