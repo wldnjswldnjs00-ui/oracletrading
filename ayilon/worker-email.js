@@ -463,6 +463,29 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
 
   if (!slHit && !tpHit) return;
 
+  // ── TP hit: close 50%, move SL to break-even, let rest run ──
+  if (tpHit && !state.halfClosed) {
+    const totalSz = state.entries.reduce((sum, e) => sum + parseFloat(e.sz), 0);
+    const halfSz  = (totalSz / 2).toFixed(4);
+    const avgEntry = state.entries.reduce((sum, e) => sum + e.price * parseFloat(e.sz), 0) / totalSz;
+
+    await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
+      instId: pair, tdMode: 'cross',
+      side:    state.direction === 'long' ? 'sell' : 'buy',
+      posSide: state.direction === 'long' ? 'long' : 'short',
+      ordType: 'market', sz: halfSz
+    }, demo);
+
+    state.halfClosed  = true;
+    state.stopLoss    = avgEntry;  // SL → break-even
+    state.takeProfit  = null;      // no fixed TP for second half
+    ps[pair] = state;
+    await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+    await botLog(env, `TP hit @ ${price} — 50% closed, SL moved to break-even ${avgEntry.toFixed(2)}`);
+    return;
+  }
+
+  // ── SL hit (or second-half running past SL): close all ───────
   await okxPost(apiKey, secret, pass, '/api/v5/trade/close-position', {
     instId: pair, mgnMode: 'cross',
     posSide: state.direction === 'long' ? 'long' : 'short'
@@ -479,8 +502,8 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
 
   delete ps[pair];
   await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-  const reason = tpHit ? `TP hit @ ${price}` : `SL hit @ ${price}`;
-  await botLog(env, `${reason} — all positions closed`);
+  const reason = state.halfClosed ? `SL(break-even) hit @ ${price}` : `SL hit @ ${price}`;
+  await botLog(env, `${reason} — remaining position closed`);
 }
 
 // ── S/R DETECTION ─────────────────────────────────────────────
