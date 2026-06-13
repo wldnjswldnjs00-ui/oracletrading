@@ -2004,14 +2004,20 @@
     }
 
     function disconnectApi() {
-      if (!confirm('Disconnect your OKX API key? Your bots will stop running.')) return;
       localStorage.removeItem('ayilon_api_key');
       localStorage.removeItem('ayilon_api_secret');
       localStorage.removeItem('ayilon_api_passphrase');
+      localStorage.setItem('ayilon_bot_running', 'false');
       document.getElementById('inputApiKey').value = '';
       document.getElementById('inputApiSecret').value = '';
       document.getElementById('inputApiPass').value = '';
+      // Stop bot and clear API from KV
+      fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'stop' })
+      }).catch(function(){});
       loadApiPage();
+      updateBotStatus();
     }
 
     // Render dynamic content when pages are shown
