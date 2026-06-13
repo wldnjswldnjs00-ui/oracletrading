@@ -277,6 +277,10 @@ async function handleBotControl(request, env) {
   const config = await env.USERS_KV.get('bot:config', { type: 'json' }) || {};
   if (action === 'start') config.running = true;
   if (action === 'stop')  config.running = false;
+  if (action === 'dismiss') {
+    await env.USERS_KV.delete('bot:daily_loss_triggered');
+    return json({ ok: true });
+  }
   if (action === 'resume') {
     config.running = true;
     await env.USERS_KV.delete('bot:daily_loss_triggered');

@@ -893,7 +893,7 @@
       <div class="topbar"><h1>Bot Settings</h1></div>
 
       <!-- DAILY LOSS LIMIT ALERT (shown when limit hit) -->
-      <div id="dailyLossAlert" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+      <div id="dailyLossAlert" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:20px 24px;margin-bottom:24px;align-items:center;justify-content:space-between;gap:16px;">
         <div>
           <div style="font-size:14px;font-weight:600;color:#ef4444;margin-bottom:4px;">⚠️ Daily Loss Limit Reached</div>
           <div id="dailyLossAlertText" style="font-size:13px;color:var(--gray-400);">Bot has been paused. Resume trading?</div>
@@ -2283,7 +2283,7 @@
       try {
         await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'stop' })
+          body: JSON.stringify({ action: 'dismiss' })
         });
       } catch(e) {}
       updateBotStatus();
