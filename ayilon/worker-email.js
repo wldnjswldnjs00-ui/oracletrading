@@ -334,6 +334,19 @@ async function getCtVal(instId) {
   } catch { return 0.01; }
 }
 
+async function getTicker(instId) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 600 * attempt));
+      const res = await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${instId}`);
+      const data = await res.json();
+      const price = parseFloat(data?.data?.[0]?.last || '0');
+      if (price > 0) return price;
+    } catch {}
+  }
+  return 0;
+}
+
 async function runBot(env) {
   if (!env.USERS_KV) return;
   try {
@@ -397,13 +410,12 @@ async function runBot(env) {
     ]);
     if (candles1H.length < 20 && candles4H.length < 20) return;
     if (c5.length < 4) return;
-    const [tickerData, ctVal] = await Promise.all([
-      fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${tradingPair}`).then(r => r.json()),
+    const [currentPrice, ctVal] = await Promise.all([
+      getTicker(tradingPair),
       getCtVal(tradingPair)
     ]);
-    const currentPrice = parseFloat(tickerData?.data?.[0]?.last || '0');
     if (!currentPrice || currentPrice <= 0) {
-      await botLog(env, 'Skip: failed to fetch current price');
+      await botLog(env, `Skip: failed to fetch current price for ${tradingPair} (3 retries)`);
       return;
     }
 
