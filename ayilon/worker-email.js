@@ -1,9 +1,24 @@
 const WALLET = 'TBvtft3H8B4Rv4cEHTotyak3Ds2mLur99E';
 const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
+const ALLOWED_ORIGINS = ['https://oracletrading-01o.pages.dev'];
+
 export default {
   async fetch(request, env) {
-    if (request.method === 'OPTIONS') return corsResponse('', 204);
+    const origin = request.headers.get('Origin') || '';
+    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    if (request.method === 'OPTIONS') {
+      return new Response('', { status: 204, headers: {
+        'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0],
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Vary': 'Origin'
+      }});
+    }
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -87,8 +102,24 @@ async function handleVerifyCode(request, env) {
   const { email, code } = await request.json();
   if (!email || !code) return json({ valid: false });
   if (!env.USERS_KV) return json({ valid: true }); // dev fallback
+
+  // Brute-force protection: max 5 attempts per code, then auto-invalidate
+  const attemptsKey = 'rate:code_attempt:' + email.toLowerCase();
+  const attempts = await env.USERS_KV.get(attemptsKey, { type: 'json' });
+  if ((attempts?.count || 0) >= 5) {
+    await env.USERS_KV.delete('verify:' + email.toLowerCase());
+    return json({ valid: false, error: 'too_many_attempts' });
+  }
+
   const stored = await env.USERS_KV.get('verify:' + email.toLowerCase());
-  return json({ valid: stored === String(code) });
+  const valid = stored === String(code);
+  if (!valid) {
+    const newCount = (attempts?.count || 0) + 1;
+    await env.USERS_KV.put(attemptsKey, JSON.stringify({ count: newCount }), { expirationTtl: 300 });
+  } else {
+    await env.USERS_KV.delete(attemptsKey);
+  }
+  return json({ valid });
 }
 
 // ── CREATE PAYMENT (assign unique amount) ────────────────────
@@ -222,6 +253,24 @@ async function handleVerification(request, env) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return json({ error: 'Invalid email' }, 400);
   }
+
+  // Rate limit: max 3 emails per address per 15 min, max 10 per IP per 15 min
+  if (env.USERS_KV) {
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const emailRateKey = 'rate:verify:email:' + email.toLowerCase();
+    const ipRateKey    = 'rate:verify:ip:' + ip;
+    const [emailRate, ipRate] = await Promise.all([
+      env.USERS_KV.get(emailRateKey, { type: 'json' }),
+      env.USERS_KV.get(ipRateKey,    { type: 'json' })
+    ]);
+    if ((emailRate?.count || 0) >= 3) return json({ error: 'Too many code requests. Wait 15 minutes.' }, 429);
+    if ((ipRate?.count    || 0) >= 10) return json({ error: 'Too many requests. Wait 15 minutes.' }, 429);
+    await Promise.all([
+      env.USERS_KV.put(emailRateKey, JSON.stringify({ count: (emailRate?.count || 0) + 1 }), { expirationTtl: 900 }),
+      env.USERS_KV.put(ipRateKey,    JSON.stringify({ count: (ipRate?.count    || 0) + 1 }), { expirationTtl: 900 })
+    ]);
+  }
+
   const code = String(Math.floor(100000 + Math.random() * 900000));
 
   // Fix: store code server-side, never return it in the response
@@ -360,6 +409,10 @@ async function handleBotControl(request, env) {
 async function handleGetPositions(request, env) {
   const { apiKey, apiSecret, apiPassphrase, instId } = await request.json();
   if (!apiKey || !apiSecret || !apiPassphrase) return json({ positions: [] });
+  // Validate instId to prevent path injection (e.g. BTC-USDT-SWAP, ETH-USDT-SWAP)
+  if (instId && !/^[A-Z0-9]{1,15}-[A-Z]{3,4}(-SWAP)?$/.test(instId)) {
+    return json({ positions: [], error: 'Invalid instId' }, 400);
+  }
   try {
     const path = instId ? `/api/v5/account/positions?instId=${instId}` : '/api/v5/account/positions';
     const data = await okxGet(apiKey, apiSecret, apiPassphrase, path);
@@ -572,16 +625,21 @@ async function runBot(env) {
       if ((h1High - h1Low) / (h1Low || 1) < 0.015) return;
     }
 
-    // ── Fix: Funding rate gate — skip new entries when funding is extreme ──
-    // > 0.10% per 8h = 3%/day at 20x leverage. Non-fatal if check fails.
+    // ── Fix: Funding rate gate — fail-safe: abort on fetch error ────────
+    // > 0.10% per 8h = 3%/day at 20x leverage. Hard abort if check fails.
     try {
-      const frData = await (await fetch(`${OKX_BASE}/api/v5/public/funding-rate?instId=${tradingPair}`)).json();
-      const fr = parseFloat(frData?.data?.[0]?.fundingRate || '0');
+      const frRes  = await fetch(`${OKX_BASE}/api/v5/public/funding-rate?instId=${tradingPair}`);
+      const frData = await frRes.json();
+      if (!frData?.data?.[0]) throw new Error('empty funding rate response');
+      const fr = parseFloat(frData.data[0].fundingRate);
       if (Math.abs(fr) > 0.001) {
         await botLog(env, `Skip: funding rate ${(fr * 100).toFixed(4)}%/8h > 0.1% — no new entries`);
         return;
       }
-    } catch {}
+    } catch(frErr) {
+      await botLog(env, `Skip: could not verify funding rate (${frErr.message}) — no new entries`);
+      return;
+    }
 
     // ── 5m entry signal ───────────────────────────────────────
     const signal = detectSignal(c5, levels);
@@ -660,9 +718,19 @@ async function runBot(env) {
         instId: tradingPair, lever: String(safeLeverage), mgnMode: 'cross'
       }, demoMode);
       if (levRes?.code !== '0') {
-        await botLog(env, `⚠️ Leverage set FAILED [${levRes?.code}]: ${levRes?.msg}`);
+        await botLog(env, `⚠️ Leverage set FAILED [${levRes?.code}]: ${levRes?.msg} — aborting entry`);
+        return;
       }
     }
+
+    // ── Entry lock: prevent duplicate orders from concurrent cron instances ──
+    const lockKey = 'bot:entry_lock:' + tradingPair;
+    const existingLock = await env.USERS_KV.get(lockKey);
+    if (existingLock) {
+      await botLog(env, `Skip: entry lock active — concurrent execution prevented`);
+      return;
+    }
+    await env.USERS_KV.put(lockKey, '1', { expirationTtl: 30 });
 
     // ── Place market order ────────────────────────────────────
     const orderRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
@@ -672,9 +740,18 @@ async function runBot(env) {
       ordType: 'market', sz, lever: String(safeLeverage)
     }, demoMode);
 
+    // Release lock regardless of order outcome
+    await env.USERS_KV.delete(lockKey).catch(() => {});
+
     if (orderRes?.data?.[0]?.ordId) {
-      const fillPrice = await queryFillPrice(apiKey, apiSecret, apiPassphrase, tradingPair, orderRes.data[0].ordId, currentPrice, demoMode);
-      state.entries.push({ price: fillPrice, sz, time: Date.now(), entry: entryNum });
+      const { price: fillPrice, filledSz } = await queryFillPrice(apiKey, apiSecret, apiPassphrase, tradingPair, orderRes.data[0].ordId, currentPrice, szContracts, demoMode);
+      // Partial fill guard: if less than 90% filled, don't track — state mismatch risk
+      if (filledSz < szContracts * 0.90) {
+        await botLog(env, `Partial fill: ${filledSz}/${szContracts} contracts — skipping state update`);
+        return;
+      }
+      const actualSz = String(Math.floor(filledSz));
+      state.entries.push({ price: fillPrice, sz: actualSz, time: Date.now(), entry: entryNum });
       state.direction = signal.type;
       if (!state.stopLoss) state.stopLoss = signal.stopLoss;
       if (useTP) state.takeProfit = tp;
@@ -1085,16 +1162,18 @@ async function cancelSLAlgo(apiKey, secret, pass, pair, algoId, demo = false) {
     [{ algoId: String(algoId), instId: pair }], demo);
 }
 
-async function queryFillPrice(apiKey, secret, pass, pair, ordId, fallback, demo = false) {
+async function queryFillPrice(apiKey, secret, pass, pair, ordId, fallbackPx, requestedSz, demo = false) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       if (attempt > 0) await new Promise(r => setTimeout(r, 500 * attempt));
-      const res = await okxGet(apiKey, secret, pass, `/api/v5/trade/order?instId=${pair}&ordId=${ordId}`, demo);
-      const px = parseFloat(res?.data?.[0]?.avgPx || '0');
-      if (px > 0) return px;
+      const res    = await okxGet(apiKey, secret, pass, `/api/v5/trade/order?instId=${pair}&ordId=${ordId}`, demo);
+      const d      = res?.data?.[0];
+      const px     = parseFloat(d?.avgPx    || '0');
+      const filled = parseFloat(d?.accFillSz || '0');
+      if (px > 0 && filled > 0) return { price: px, filledSz: filled };
     } catch {}
   }
-  return fallback;
+  return { price: fallbackPx, filledSz: requestedSz }; // assume full fill as last resort
 }
 
 // ── OKX API ───────────────────────────────────────────────────
