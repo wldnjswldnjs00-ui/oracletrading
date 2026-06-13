@@ -314,7 +314,7 @@ async function runBot(env) {
     if (!cfg || cfg.running !== true) return;
 
     const { apiKey, apiSecret, apiPassphrase, tradingPair = 'BTC-USDT-SWAP',
-      strategy = 'daytrading',
+      strategy = 'daytrading', demoMode = false,
       numEntries = 3, entrySizing = 'equal',
       posSize = 40, leverage = 20,
       lossLimitEnabled = true, lossLimit = 5,
@@ -345,17 +345,17 @@ async function runBot(env) {
     }
 
     // ── Account equity ────────────────────────────────────────
-    const balRes = await okxGet(apiKey, apiSecret, apiPassphrase, '/api/v5/account/balance?ccy=USDT');
+    const balRes = await okxGet(apiKey, apiSecret, apiPassphrase, '/api/v5/account/balance?ccy=USDT', demoMode);
     const details = balRes?.data?.[0]?.details || [];
     const equity = parseFloat(details.find(d => d.ccy === 'USDT')?.eq || '0');
     if (equity <= 0) return;
 
     // ── Open positions ────────────────────────────────────────
-    const posRes = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instId=${tradingPair}`);
+    const posRes = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instId=${tradingPair}`, demoMode);
     const openPos = (posRes?.data || []).filter(p => parseFloat(p.pos) !== 0);
 
     // ── Stop loss check ───────────────────────────────────────
-    await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimit / 100);
+    await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimit / 100, demoMode);
 
     // ── S/R candles ───────────────────────────────────────────
     const srCandles = await getCandles(tradingPair, srTimeframe, 100);
@@ -395,7 +395,7 @@ async function runBot(env) {
       side: signal.type === 'long' ? 'buy' : 'sell',
       posSide: signal.type === 'long' ? 'long' : 'short',
       ordType: 'market', sz, lever: String(leverage)
-    });
+    }, demoMode);
 
     if (orderRes?.data?.[0]?.ordId) {
       const ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
@@ -415,7 +415,7 @@ async function runBot(env) {
 }
 
 // ── STOP LOSS ─────────────────────────────────────────────────
-async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitPct) {
+async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitPct, demo = false) {
   if (!openPos.length) return;
   const ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
   const state = ps[pair];
@@ -432,7 +432,7 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
   await okxPost(apiKey, secret, pass, '/api/v5/trade/close-position', {
     instId: pair, mgnMode: 'cross',
     posSide: state.direction === 'long' ? 'long' : 'short'
-  });
+  }, demo);
 
   // Track daily loss (estimate from realized PnL)
   if (lossLimitEnabled) {
@@ -520,33 +520,35 @@ async function getCandles(instId, bar, limit) {
   } catch { return []; }
 }
 
-async function okxGet(apiKey, secret, pass, path) {
+async function okxGet(apiKey, secret, pass, path, demo = false) {
   const ts = new Date().toISOString();
   const sign = await hmac(secret, ts + 'GET' + path);
   const res = await fetch(OKX_BASE + path, {
-    headers: okxHeaders(apiKey, sign, ts, pass)
+    headers: okxHeaders(apiKey, sign, ts, pass, demo)
   });
   return res.json();
 }
 
-async function okxPost(apiKey, secret, pass, path, body) {
+async function okxPost(apiKey, secret, pass, path, body, demo = false) {
   const ts = new Date().toISOString();
   const bodyStr = JSON.stringify(body);
   const sign = await hmac(secret, ts + 'POST' + path + bodyStr);
   const res = await fetch(OKX_BASE + path, {
     method: 'POST',
-    headers: okxHeaders(apiKey, sign, ts, pass),
+    headers: okxHeaders(apiKey, sign, ts, pass, demo),
     body: bodyStr
   });
   return res.json();
 }
 
-function okxHeaders(key, sign, ts, pass) {
-  return {
+function okxHeaders(key, sign, ts, pass, demo = false) {
+  const h = {
     'OK-ACCESS-KEY': key, 'OK-ACCESS-SIGN': sign,
     'OK-ACCESS-TIMESTAMP': ts, 'OK-ACCESS-PASSPHRASE': pass,
     'Content-Type': 'application/json'
   };
+  if (demo) h['x-simulated-trading'] = '1';
+  return h;
 }
 
 async function hmac(secret, message) {

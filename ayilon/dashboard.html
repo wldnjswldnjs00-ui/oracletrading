@@ -917,7 +917,14 @@
                 <div id="botStatusSub" style="font-size:12px;color:var(--gray-400);">Configure settings below and start the bot</div>
               </div>
             </div>
-            <button id="botToggleBtn" onclick="toggleBot()" style="padding:10px 24px;background:var(--white);color:var(--black);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.2s;">Start Bot</button>
+            <div style="display:flex;align-items:center;gap:16px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="demoMode" onchange="updateDemoLabel()" style="accent-color:var(--white);width:15px;height:15px;">
+                <span style="font-size:13px;color:var(--gray-400);">데모 모드</span>
+                <span id="demoBadge" style="display:none;font-size:10px;font-weight:700;padding:2px 7px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:4px;color:#fbbf24;letter-spacing:0.05em;">DEMO</span>
+              </label>
+              <button id="botToggleBtn" onclick="toggleBot()" style="padding:10px 24px;background:var(--white);color:var(--black);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.2s;">Start Bot</button>
+            </div>
           </div>
         </div>
 
@@ -2154,12 +2161,12 @@
       toggleTelegramFields();
       if (s.tradingPair) { document.getElementById('tradingPair').value = s.tradingPair; }
       if (s.strategy) { var el = document.getElementById('strat-' + s.strategy); if(el) el.checked = true; }
-      if (s.srTimeframe) { var el = document.getElementById('tf-' + s.srTimeframe.toLowerCase()); if(el) el.checked = true; }
-      if (s.srTouch) { var el = document.getElementById('touch-' + s.srTouch); if(el) el.checked = true; }
+      if (s.demoMode) { var dm = document.getElementById('demoMode'); if(dm) dm.checked = true; }
       if (s.numEntries) { document.getElementById('numEntries').value = s.numEntries; document.getElementById('entriesLabel').textContent = s.numEntries; }
       if (s.entrySizing) { var el = document.getElementById('entry-' + s.entrySizing); if(el) el.checked = true; }
       updateRiskLabels();
       updateStratLabels();
+      updateDemoLabel();
       updateBotStatus();
     }
 
@@ -2195,6 +2202,12 @@
       }
     }
 
+    function updateDemoLabel() {
+      var isDemo = document.getElementById('demoMode') && document.getElementById('demoMode').checked;
+      var badge = document.getElementById('demoBadge');
+      if (badge) badge.style.display = isDemo ? 'inline' : 'none';
+    }
+
     function toggleTelegramFields() {
       var show = document.getElementById('notifyTelegram').checked;
       var el = document.getElementById('telegramFields');
@@ -2213,8 +2226,7 @@
         telegramChatId: (document.getElementById('telegramChatId') || {}).value || '',
         tradingPair: document.getElementById('tradingPair').value.trim(),
         strategy: (document.querySelector('input[name="strategy"]:checked') || {}).value || 'daytrading',
-        srTimeframe: (document.querySelector('input[name="srTimeframe"]:checked') || {}).value || '1H',
-        srTouch: (document.querySelector('input[name="srTouch"]:checked') || {}).value || '2',
+        demoMode: document.getElementById('demoMode').checked,
         numEntries: document.getElementById('numEntries').value,
         entrySizing: (document.querySelector('input[name="entrySizing"]:checked') || {}).value || 'equal',
         apiKey: localStorage.getItem('ayilon_api_key') || '',
