@@ -893,7 +893,7 @@
       <div class="topbar"><h1>Bot Settings</h1></div>
 
       <!-- DAILY LOSS LIMIT ALERT (shown when limit hit) -->
-      <div id="dailyLossAlert" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+      <div id="dailyLossAlert" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:20px 24px;margin-bottom:24px;align-items:center;justify-content:space-between;gap:16px;">
         <div>
           <div style="font-size:14px;font-weight:600;color:#ef4444;margin-bottom:4px;">⚠️ Daily Loss Limit Reached</div>
           <div id="dailyLossAlertText" style="font-size:13px;color:var(--gray-400);">Bot has been paused. Resume trading?</div>
@@ -917,7 +917,61 @@
                 <div id="botStatusSub" style="font-size:12px;color:var(--gray-400);">Configure settings below and start the bot</div>
               </div>
             </div>
-            <button id="botToggleBtn" onclick="toggleBot()" style="padding:10px 24px;background:var(--white);color:var(--black);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.2s;">Start Bot</button>
+            <div style="display:flex;align-items:center;gap:16px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="demoMode" onchange="updateDemoLabel()" style="accent-color:var(--white);width:15px;height:15px;">
+                <span style="font-size:13px;color:var(--gray-400);">Demo Mode</span>
+                <span id="demoBadge" style="display:none;font-size:10px;font-weight:700;padding:2px 7px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);border-radius:4px;color:#fbbf24;letter-spacing:0.05em;">DEMO</span>
+              </label>
+              <button id="botToggleBtn" onclick="toggleBot()" style="padding:10px 24px;background:var(--white);color:var(--black);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.2s;">Start Bot</button>
+            </div>
+          </div>
+          <!-- Funding Rate Bar -->
+          <div id="fundingRateBar" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--gray-800);display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;">Funding Rate</span>
+              <span id="fundingRateVal" style="font-size:13px;font-weight:600;"></span>
+              <span id="fundingRateWho" style="font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600;"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;">Next</span>
+              <span id="fundingRateNext" style="font-size:13px;font-weight:600;"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;">Settlement</span>
+              <span id="fundingRateTime" style="font-size:13px;font-weight:600;"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;">Annualized</span>
+              <span id="fundingRateAnnual" style="font-size:13px;font-weight:600;"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MARKET INTELLIGENCE -->
+        <div class="card" id="marketDataCard" style="grid-column:1/-1;display:none;">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;padding-bottom:0;">
+            <span class="card-title">Market Intelligence</span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span id="mktTrend" style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:0.05em;"></span>
+              <span id="mktPrice" style="font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;"></span>
+            </div>
+          </div>
+          <!-- Active Position Summary -->
+          <div id="mktPositionSummary" style="display:none;margin:14px 0 16px;padding:12px 14px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
+            <div style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Active Position</div>
+            <div id="mktPosCells" style="display:flex;flex-wrap:wrap;gap:20px;"></div>
+          </div>
+          <!-- S/R Level Tables -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;">
+            <div>
+              <div style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Resistance Levels</div>
+              <div id="mktResTable"></div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Support Levels</div>
+              <div id="mktSupTable"></div>
+            </div>
           </div>
         </div>
 
@@ -931,9 +985,9 @@
                 <label style="font-size:13px;color:var(--gray-400);">Max Position Size</label>
                 <span id="posLabel" style="font-size:13px;font-weight:600;">40%</span>
               </div>
-              <input type="range" id="posSize" min="1" max="100" value="40" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
+              <input type="range" id="posSize" min="1" max="100" value="12" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
               <div id="posSizeWarn" style="display:none;font-size:12px;color:#f59e0b;margin-top:6px;">⚠️ Over 40% risks compounding — Kelly Criterion recommends staying below this threshold.</div>
-              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ Kelly Criterion recommends ≤25% for consistent compounding</div>
+              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ Recommended 12% total (4% per entry × 3) — Half-Kelly Criterion</div>
             </div>
 
             <div>
@@ -941,9 +995,9 @@
                 <label style="font-size:13px;color:var(--gray-400);">Max Leverage</label>
                 <span id="levLabel" style="font-size:13px;font-weight:600;">20x</span>
               </div>
-              <input type="range" id="leverage" min="1" max="100" value="20" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
+              <input type="range" id="leverage" min="1" max="100" value="5" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
               <div id="leverageWarn" style="display:none;font-size:12px;color:#f59e0b;margin-top:6px;">⚠️ Over 20x leverage significantly increases liquidation risk. Mathematically unsustainable for compounding.</div>
-              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON recommends ≤10x — lower leverage compounds faster long-term</div>
+              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON recommends 5x — 3× liquidation buffer at 3–6% SL</div>
             </div>
 
           </div>
@@ -1016,7 +1070,7 @@
 
             <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;padding:12px 14px;margin-bottom:16px;">
               <div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:6px;">Auto-Applied Settings</div>
-              <div id="autoAppliedText" style="font-size:12px;color:var(--gray-400);line-height:1.7;">1H S/R detection · 3-touch confirmation · 5m entry timing · Wick-based entry filter · Previous high/low stop loss</div>
+              <div id="autoAppliedText" style="font-size:12px;color:var(--gray-400);line-height:1.7;">1H + 4H S/R detection · 3-touch confirmation · 5m entry timing · Wick-based entry filter · Previous high/low stop loss</div>
             </div>
 
             <div>
@@ -1039,7 +1093,7 @@
               </div>
               <input type="range" id="numEntries" min="2" max="10" value="3" oninput="document.getElementById('entriesLabel').textContent=this.value" style="width:100%;accent-color:var(--white);">
               <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-600);margin-top:4px;"><span>2</span><span>10</span></div>
-              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON recommends 3-5 entries for optimal cost averaging</div>
+              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON recommends 3 — optimal EV, limits loss on level breakout</div>
             </div>
 
             <div>
@@ -1069,7 +1123,10 @@
 
       <!-- BOT ACTIVITY LOG -->
       <div class="card" style="margin-top:20px;">
-        <div class="card-header"><span class="card-title">Activity Log</span></div>
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="card-title">Activity Log</span>
+          <span id="lastScanBadge" style="display:none;font-size:11px;color:var(--gray-600);"></span>
+        </div>
         <div id="botLogsWrap" style="max-height:300px;overflow-y:auto;">
           <div style="font-size:13px;color:var(--gray-600);text-align:center;padding:20px;">No activity yet</div>
         </div>
@@ -1200,8 +1257,11 @@
   </div>
 
   <script>
-    var ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
+    var ADMIN_EMAIL  = 'wldnjswldnjs00@gmail.com';
+    var WORKER_URL   = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
     var LOCKED_PAGES = ['dashboard', 'bots', 'positions', 'analytics', 'history', 'api'];
+
+    function getSessionToken() { return localStorage.getItem('ayilon_session_token') || ''; }
 
     (function checkAccess() {
       var loggedIn = localStorage.getItem('ayilon_logged_in');
@@ -1217,10 +1277,27 @@
         document.getElementById('sidebarName').textContent = uname || email;
       }
 
-      if (!loggedIn && !isAdmin) {
+      // Immediate client-side check (prevents flash of dashboard before redirect)
+      if (!loggedIn) {
         window.location.replace('login.html');
         return;
       }
+
+      // Background server-side session validation — redirect if token is invalid
+      (function() {
+        var token = getSessionToken();
+        if (!token) return; // no token yet (e.g. legacy session) — allow through
+        fetch(WORKER_URL + '/me', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken: token })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+          if (d && d.authenticated === false) {
+            localStorage.removeItem('ayilon_logged_in');
+            localStorage.removeItem('ayilon_session_token');
+            window.location.replace('login.html');
+          }
+        }).catch(function() { /* network error — allow through */ });
+      })();
 
       var hasAccess = isAdmin || !!subscription;
 
@@ -1273,8 +1350,18 @@
       history.replaceState(null, '', '?page=' + name);
     }
 
-    function doLogout() {
+    async function doLogout() {
+      var token = getSessionToken();
+      if (token) {
+        try {
+          await fetch(WORKER_URL + '/logout', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionToken: token })
+          });
+        } catch(e) {}
+      }
       localStorage.removeItem('ayilon_logged_in');
+      localStorage.removeItem('ayilon_session_token');
       window.location.href = 'index.html';
     }
 
@@ -1361,8 +1448,6 @@
       return key.match(/.{1,4}/g).join(' ');
     }
 
-    var twoFaEmailCode = null;
-
     async function sendTwoFaEmailCode() {
       var email = localStorage.getItem('ayilon_email') || '';
       if (!email) return;
@@ -1374,13 +1459,12 @@
         });
         var data = await res.json();
         if (data.success) {
-          twoFaEmailCode = data.code;
           document.getElementById('send2faStatus').style.display = 'block';
         }
       } catch(e) {}
     }
 
-    function confirm2faSetup() {
+    async function confirm2faSetup() {
       var overlay = document.getElementById('twoFaSetupOverlay');
       var method = overlay.dataset.method;
       var code = document.getElementById('twoFaSetupCode').value.trim();
@@ -1388,9 +1472,16 @@
 
       if (code.length !== 6) { hint.textContent = 'Enter the 6-digit code.'; return; }
 
-      if (method === 'email' && code !== twoFaEmailCode) {
-        hint.textContent = 'Incorrect code. Please try again.';
-        return;
+      if (method === 'email') {
+        try {
+          var email = localStorage.getItem('ayilon_email') || '';
+          var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/verify-code', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, code: code })
+          });
+          var vd = await res.json();
+          if (!vd.valid) { hint.textContent = 'Incorrect code. Please try again.'; return; }
+        } catch(e) { hint.textContent = 'Verification failed. Try again.'; return; }
       }
 
       var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
@@ -1421,7 +1512,6 @@
     document.addEventListener('DOMContentLoaded', update2faUI);
 
     // Profile / Email change
-    var emailChangeCode = null;
 
     function loadProfilePage() {
       _usernameAvail = true; _usernameChecking = false;
@@ -1561,14 +1651,13 @@
         return;
       }
 
-      // If username changed, update on server
+      // Update profile on server (name / username change)
       var oldUsername = localStorage.getItem('ayilon_username') || '';
-      if (username && username.toLowerCase() !== oldUsername.toLowerCase()) {
+      if (name !== localStorage.getItem('ayilon_name') || (username && username.toLowerCase() !== oldUsername.toLowerCase())) {
         try {
-          var email = localStorage.getItem('ayilon_email') || '';
-          await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/register-user', {
+          await fetch(WORKER_URL + '/update-profile', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, username, name, password: localStorage.getItem('ayilon_password') || '', update: true })
+            body: JSON.stringify({ sessionToken: getSessionToken(), name, username })
           });
         } catch { /* offline fallback */ }
       }
@@ -1596,16 +1685,22 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: email })
         });
-        var data = await res.json();
-        if (data.success) emailChangeCode = data.code;
+        await res.json();
       } catch(e) {}
     }
 
-    function confirmEmailChange() {
+    async function confirmEmailChange() {
       var code = document.getElementById('emailChangeCode').value;
       var hint = document.getElementById('emailChangeHint');
-      if (code !== emailChangeCode) { hint.textContent = 'Invalid code.'; return; }
       var newEmail = document.getElementById('newEmailInput').value;
+      try {
+        var vRes = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/verify-code', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: newEmail, code: code })
+        });
+        var vd = await vRes.json();
+        if (!vd.valid) { hint.textContent = 'Invalid or expired code.'; return; }
+      } catch(e) { hint.textContent = 'Verification failed. Try again.'; return; }
       document.getElementById('profileEmail').value = newEmail;
       localStorage.setItem('ayilon_email', newEmail);
       document.getElementById('emailChangeWrap').style.display = 'none';
@@ -1663,19 +1758,30 @@
     }
 
     // ── PASSWORD CHANGE ──────────────────────────────────
-    function changePassword() {
+    async function changePassword() {
       var current = document.getElementById('pwCurrent').value;
       var newPw   = document.getElementById('pwNew').value;
       var confirm = document.getElementById('pwConfirm').value;
       var hint    = document.getElementById('pwHint');
-      var stored  = localStorage.getItem('ayilon_password') || '';
 
-      if (!newPw || !confirm) { hint.style.color='#ef4444'; hint.textContent='Please fill in all fields.'; return; }
-      if (stored && current !== stored) { hint.style.color='#ef4444'; hint.textContent='Current password is incorrect.'; return; }
+      if (!current || !newPw || !confirm) { hint.style.color='#ef4444'; hint.textContent='Please fill in all fields.'; return; }
       if (newPw.length < 8) { hint.style.color='#ef4444'; hint.textContent='Password must be at least 8 characters.'; return; }
       if (newPw !== confirm) { hint.style.color='#ef4444'; hint.textContent='New passwords do not match.'; return; }
 
-      localStorage.setItem('ayilon_password', newPw);
+      try {
+        var res = await fetch(WORKER_URL + '/change-password', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken: getSessionToken(), currentPassword: current, newPassword: newPw })
+        });
+        var data = await res.json();
+        if (!data.ok) {
+          hint.style.color = '#ef4444';
+          hint.textContent = data.error === 'invalid_current_password' ? 'Current password is incorrect.' : 'Password update failed. Try again.';
+          return;
+        }
+      } catch(e) {
+        hint.style.color = '#ef4444'; hint.textContent = 'Network error. Try again.'; return;
+      }
       hint.style.color = '#22c55e';
       hint.textContent = 'Password updated successfully.';
       ['pwCurrent','pwNew','pwConfirm'].forEach(function(id){ document.getElementById(id).value=''; });
@@ -1994,17 +2100,24 @@
     }
 
     function disconnectApi() {
-      if (!confirm('Disconnect your OKX API key? Your bots will stop running.')) return;
       localStorage.removeItem('ayilon_api_key');
       localStorage.removeItem('ayilon_api_secret');
       localStorage.removeItem('ayilon_api_passphrase');
+      localStorage.setItem('ayilon_bot_running', 'false');
       document.getElementById('inputApiKey').value = '';
       document.getElementById('inputApiSecret').value = '';
       document.getElementById('inputApiPass').value = '';
+      // Stop bot and clear API from KV
+      fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'stop', clientToken: localStorage.getItem('ayilon_client_token') || '' })
+      }).catch(function(){});
       loadApiPage();
+      updateBotStatus();
     }
 
     // Render dynamic content when pages are shown
+    var _botPollInterval = null;
     var _origShowPage = showPage;
     showPage = function(name, el) {
       _origShowPage(name, el);
@@ -2015,7 +2128,14 @@
       if (name === 'overview') initOverviewChart();
       if (name === 'analytics') initPerfCharts();
       if (name === 'api')      loadApiPage();
-      if (name === 'botsettings') { loadBotSettings(); checkDailyLossAlert(); }
+      if (name === 'botsettings') {
+        loadBotSettings();
+        checkDailyLossAlert();
+        if (_botPollInterval) clearInterval(_botPollInterval);
+        _botPollInterval = setInterval(checkDailyLossAlert, 30000);
+      } else {
+        if (_botPollInterval) { clearInterval(_botPollInterval); _botPollInterval = null; }
+      }
     };
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -2035,8 +2155,9 @@
       var el = document.getElementById('historyContent');
       if (!el) return;
       try {
-        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-status', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+        var res = await fetch(WORKER_URL + '/bot-status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken: getSessionToken() })
         });
         var data = await res.json();
         var logs = data.logs || [];
@@ -2054,6 +2175,7 @@
           var isWarn = l.msg.includes('⚠️');
           var isError = l.msg.includes('error') || l.msg.includes('Error');
           var color = isEntry ? '#22c55e' : isSL ? '#ef4444' : isWarn ? '#f59e0b' : isError ? '#ef4444' : 'var(--gray-400)';
+          var safeMsg = escapeHtml(l.msg || '');
           var tag = isEntry ? '<span style="background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">ENTRY</span>' :
                     isSL ? '<span style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">SL</span>' :
                     isWarn ? '<span style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">WARN</span>' :
@@ -2061,7 +2183,7 @@
           return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
             '<td style="padding:12px 16px;font-size:12px;color:var(--gray-600);font-family:monospace;white-space:nowrap;">' + dateStr + '</td>' +
             '<td style="padding:12px 16px;">' + tag + '</td>' +
-            '<td style="padding:12px 16px;font-size:13px;color:' + color + ';">' + l.msg + '</td>' +
+            '<td style="padding:12px 16px;font-size:13px;color:' + color + ';">' + safeMsg + '</td>' +
             '</tr>';
         }).join('');
 
@@ -2090,9 +2212,9 @@
       }
 
       try {
-        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/get-positions', {
+        var res = await fetch(WORKER_URL + '/get-positions', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey, apiSecret, apiPassphrase })
+          body: JSON.stringify({ sessionToken: getSessionToken() })
         });
         var data = await res.json();
         var positions = data.positions || [];
@@ -2151,12 +2273,12 @@
       toggleTelegramFields();
       if (s.tradingPair) { document.getElementById('tradingPair').value = s.tradingPair; }
       if (s.strategy) { var el = document.getElementById('strat-' + s.strategy); if(el) el.checked = true; }
-      if (s.srTimeframe) { var el = document.getElementById('tf-' + s.srTimeframe.toLowerCase()); if(el) el.checked = true; }
-      if (s.srTouch) { var el = document.getElementById('touch-' + s.srTouch); if(el) el.checked = true; }
+      if (s.demoMode) { var dm = document.getElementById('demoMode'); if(dm) dm.checked = true; }
       if (s.numEntries) { document.getElementById('numEntries').value = s.numEntries; document.getElementById('entriesLabel').textContent = s.numEntries; }
       if (s.entrySizing) { var el = document.getElementById('entry-' + s.entrySizing); if(el) el.checked = true; }
       updateRiskLabels();
       updateStratLabels();
+      updateDemoLabel();
       updateBotStatus();
     }
 
@@ -2186,10 +2308,14 @@
       var isSwing = document.getElementById('strat-swing') && document.getElementById('strat-swing').checked;
       var autoText = document.getElementById('autoAppliedText');
       if (autoText) {
-        autoText.textContent = isSwing
-          ? '4H S/R detection · 3-touch confirmation · 5m entry timing · Wick-based entry filter · Previous high/low stop loss'
-          : '1H S/R detection · 3-touch confirmation · 5m entry timing · Wick-based entry filter · Previous high/low stop loss';
+        autoText.textContent = '1H + 4H S/R detection · 3-touch confirmation · 5m entry timing · Wick-based entry filter · Previous high/low stop loss';
       }
+    }
+
+    function updateDemoLabel() {
+      var isDemo = document.getElementById('demoMode') && document.getElementById('demoMode').checked;
+      var badge = document.getElementById('demoBadge');
+      if (badge) badge.style.display = isDemo ? 'inline' : 'none';
     }
 
     function toggleTelegramFields() {
@@ -2210,8 +2336,7 @@
         telegramChatId: (document.getElementById('telegramChatId') || {}).value || '',
         tradingPair: document.getElementById('tradingPair').value.trim(),
         strategy: (document.querySelector('input[name="strategy"]:checked') || {}).value || 'daytrading',
-        srTimeframe: (document.querySelector('input[name="srTimeframe"]:checked') || {}).value || '1H',
-        srTouch: (document.querySelector('input[name="srTouch"]:checked') || {}).value || '2',
+        demoMode: document.getElementById('demoMode').checked,
         numEntries: document.getElementById('numEntries').value,
         entrySizing: (document.querySelector('input[name="entrySizing"]:checked') || {}).value || 'equal',
         apiKey: localStorage.getItem('ayilon_api_key') || '',
@@ -2222,10 +2347,12 @@
       };
       localStorage.setItem('ayilon_bot_settings', JSON.stringify(s));
       try {
-        await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/save-bot-settings', {
+        var saveRes = await fetch(WORKER_URL + '/save-bot-settings', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(s)
+          body: JSON.stringify(Object.assign({}, s, { sessionToken: getSessionToken() }))
         });
+        var saveData = await saveRes.json();
+        if (saveData.clientToken) localStorage.setItem('ayilon_client_token', saveData.clientToken);
       } catch(e) {}
       var saved = document.getElementById('botSettingsSaved');
       saved.style.display = 'block';
@@ -2268,7 +2395,7 @@
       try {
         await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: newState ? 'start' : 'stop' })
+          body: JSON.stringify({ action: newState ? 'start' : 'stop', clientToken: localStorage.getItem('ayilon_client_token') || '' })
         });
       } catch(e) {}
       updateBotStatus();
@@ -2280,7 +2407,7 @@
       try {
         await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'stop' })
+          body: JSON.stringify({ action: 'dismiss', clientToken: localStorage.getItem('ayilon_client_token') || '' })
         });
       } catch(e) {}
       updateBotStatus();
@@ -2292,7 +2419,7 @@
       try {
         await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'resume' })
+          body: JSON.stringify({ action: 'resume', clientToken: localStorage.getItem('ayilon_client_token') || '' })
         });
       } catch(e) {}
       updateBotStatus();
@@ -2302,8 +2429,9 @@
       var alertEl = document.getElementById('dailyLossAlert');
       if (!alertEl) return;
       try {
-        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-status', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+        var res = await fetch(WORKER_URL + '/bot-status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken: getSessionToken() })
         });
         var data = await res.json();
         // Sync running state
@@ -2317,10 +2445,172 @@
           document.getElementById('dailyLossAlertText').textContent =
             'Daily loss limit reached (' + data.alert.loss + '). Bot paused. Resume trading?';
         }
+        // Last scan time
+        if (data.lastScan) {
+          var badge = document.getElementById('lastScanBadge');
+          if (badge) {
+            var ago = Math.round((Date.now() - new Date(data.lastScan)) / 1000);
+            badge.textContent = 'Last scan ' + (ago < 60 ? ago + 's ago' : Math.round(ago/60) + 'm ago');
+            badge.style.display = 'inline';
+          }
+        }
         // Render logs
         renderBotLogs(data.logs || []);
-      } catch(e) {}
 
+        // Funding rate
+        if (data.fundingRate) renderFundingRate(data.fundingRate);
+        // Market intelligence
+        if (data.marketData) renderMarketData(data.marketData, data.positions);
+      } catch(e) {}
+    }
+
+    function renderMarketData(md, positions) {
+      var card = document.getElementById('marketDataCard');
+      if (!card || !md) return;
+      card.style.display = 'block';
+
+      // Price
+      var priceEl = document.getElementById('mktPrice');
+      if (priceEl && md.price) {
+        priceEl.textContent = '$' + md.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      // Trend badge
+      var trendEl = document.getElementById('mktTrend');
+      if (trendEl && md.trend) {
+        var tMap = {
+          up:      { text: '↑ Uptrend',   bg: 'rgba(34,197,94,0.15)',  color: '#22c55e' },
+          down:    { text: '↓ Downtrend', bg: 'rgba(239,68,68,0.15)',  color: '#ef4444' },
+          neutral: { text: '↔ Neutral',   bg: 'rgba(163,163,163,0.15)', color: '#a3a3a3' }
+        };
+        var t = tMap[md.trend] || tMap.neutral;
+        var strengthLabel = md.trendStrong === false ? ' · Weak' : '';
+        trendEl.textContent = t.text + strengthLabel;
+        trendEl.style.background = md.trendStrong === false ? 'rgba(163,163,163,0.1)' : t.bg;
+        trendEl.style.color = md.trendStrong === false ? '#6b7280' : t.color;
+      }
+
+      // Active position summary (from bot:position_state KV)
+      var posWrap = document.getElementById('mktPositionSummary');
+      var posCells = document.getElementById('mktPosCells');
+      if (posWrap && posCells && positions) {
+        var pair = Object.keys(positions)[0];
+        var st = pair ? positions[pair] : null;
+        if (st && st.direction) {
+          posWrap.style.display = 'block';
+          var dirColor = st.direction === 'long' ? '#22c55e' : '#ef4444';
+          var dirLabel = st.direction === 'long' ? 'LONG' : 'SHORT';
+          var avgEntry = st.entries && st.entries.length
+            ? (st.entries.reduce(function(s,e){ return s + e.price * parseInt(e.sz||1); }, 0) /
+               st.entries.reduce(function(s,e){ return s + parseInt(e.sz||1); }, 0)).toFixed(2)
+            : '—';
+          var unrealizedPct = (md.price && avgEntry !== '—')
+            ? (((md.price - parseFloat(avgEntry)) / parseFloat(avgEntry)) * 100 * (st.direction === 'long' ? 1 : -1)).toFixed(2)
+            : null;
+          var cells = [
+            { label: 'Direction', val: '<span style="font-weight:700;color:' + dirColor + ';">' + dirLabel + '</span>' },
+            { label: 'Entries',   val: (st.entries ? st.entries.length : 0) + ' filled' },
+            { label: 'Avg Entry', val: '$' + avgEntry },
+            { label: 'Unrealized', val: unrealizedPct !== null ? (unrealizedPct > 0 ? '+' : '') + unrealizedPct + '%' : '—',
+              color: unrealizedPct > 0 ? '#22c55e' : unrealizedPct < 0 ? '#ef4444' : '' },
+            { label: 'Stop Loss',  val: st.stopLoss ? '$' + parseFloat(st.stopLoss).toFixed(2) : '—' },
+            { label: 'SL Type',    val: st.algoId ? '<span style="color:#22c55e;">Native (OKX)</span>' : '<span style="color:#f59e0b;">Software</span>' }
+          ];
+          if (st.takeProfit) cells.push({ label: 'Take Profit', val: '$' + parseFloat(st.takeProfit).toFixed(2), color: '#22c55e' });
+          if (st.halfClosed) cells.push({ label: 'Status', val: '<span style="color:#a855f7;">Trailing ' + Math.round((st.remainingFrac||0)*100) + '% rem</span>' });
+          posCells.innerHTML = cells.map(function(c) {
+            return '<div style="min-width:100px;">'
+              + '<div style="font-size:11px;color:var(--gray-600);margin-bottom:3px;">' + c.label + '</div>'
+              + '<div style="font-size:13px;font-weight:600;' + (c.color ? 'color:' + c.color + ';' : '') + '">' + c.val + '</div>'
+              + '</div>';
+          }).join('');
+        } else {
+          posWrap.style.display = 'none';
+        }
+      }
+
+      // S/R level tables
+      function gradeColor(g) { return g==='S'?'#a855f7':g==='A'?'#f59e0b':'#6b7280'; }
+      function renderLevels(arr, price) {
+        if (!arr || !arr.length) return '<div style="font-size:12px;color:var(--gray-600);padding:8px 0;">No levels detected</div>';
+        return arr.map(function(lv) {
+          var dist = price ? (((lv.price - price) / price) * 100) : 0;
+          var distStr = (dist >= 0 ? '+' : '') + dist.toFixed(2) + '%';
+          var gc = gradeColor(lv.grade || 'B');
+          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);">'
+            + '<span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:' + gc + '22;color:' + gc + ';flex-shrink:0;width:16px;text-align:center;">' + (lv.grade||'B') + '</span>'
+            + '<span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;flex:1;">'
+            + lv.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>'
+            + '<span style="font-size:11px;color:var(--gray-400);font-variant-numeric:tabular-nums;">' + distStr + '</span>'
+            + '<span style="font-size:11px;color:var(--gray-600);">×' + (lv.touches||1) + '</span>'
+            + '</div>';
+        }).join('');
+      }
+
+      var cp = md.price;
+      var lvs = md.levels || {};
+      document.getElementById('mktResTable').innerHTML = renderLevels(lvs.resistances, cp);
+      document.getElementById('mktSupTable').innerHTML = renderLevels(lvs.supports, cp);
+    }
+
+    function renderFundingRate(fr) {
+      var bar = document.getElementById('fundingRateBar');
+      if (!bar) return;
+      bar.style.display = 'flex';
+
+      var rate = fr.rate;
+      var pct  = (rate * 100).toFixed(4) + '%';
+      var isPositive = rate >= 0;
+
+      // Value
+      var valEl = document.getElementById('fundingRateVal');
+      valEl.textContent = (isPositive ? '+' : '') + pct;
+      valEl.style.color = isPositive ? '#ef4444' : '#22c55e'; // positive = longs pay (bad for longs), negative = longs receive
+
+      // Who pays
+      var whoEl = document.getElementById('fundingRateWho');
+      if (rate > 0.0001) {
+        whoEl.textContent = 'Longs pay';
+        whoEl.style.background = 'rgba(239,68,68,0.15)';
+        whoEl.style.color = '#ef4444';
+      } else if (rate < -0.0001) {
+        whoEl.textContent = 'Shorts pay';
+        whoEl.style.background = 'rgba(34,197,94,0.15)';
+        whoEl.style.color = '#22c55e';
+      } else {
+        whoEl.textContent = 'Neutral';
+        whoEl.style.background = 'rgba(163,163,163,0.15)';
+        whoEl.style.color = '#a3a3a3';
+      }
+
+      // Next rate
+      var nextEl = document.getElementById('fundingRateNext');
+      var nextPct = (fr.nextRate * 100).toFixed(4) + '%';
+      nextEl.textContent = (fr.nextRate >= 0 ? '+' : '') + nextPct;
+      nextEl.style.color = fr.nextRate >= 0 ? '#ef4444' : '#22c55e';
+
+      // Time to settlement
+      var timeEl = document.getElementById('fundingRateTime');
+      var msLeft = fr.nextTime - Date.now();
+      if (msLeft > 0) {
+        var h = Math.floor(msLeft / 3600000);
+        var m = Math.floor((msLeft % 3600000) / 60000);
+        timeEl.textContent = h + 'h ' + m + 'm';
+      } else {
+        timeEl.textContent = 'Soon';
+      }
+
+      // Annualized (3 settlements/day × 365)
+      var annEl = document.getElementById('fundingRateAnnual');
+      var annual = (rate * 3 * 365 * 100).toFixed(1) + '%';
+      annEl.textContent = (rate >= 0 ? '+' : '') + annual + ' / yr';
+      annEl.style.color = rate >= 0 ? '#ef4444' : '#22c55e';
+    }
+
+    function escapeHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
     }
 
     function renderBotLogs(logs) {
@@ -2329,8 +2619,9 @@
       if (!logs.length) { el.innerHTML = '<div style="font-size:13px;color:var(--gray-600);text-align:center;padding:20px;">No activity yet</div>'; return; }
       el.innerHTML = logs.slice(0, 20).map(function(l) {
         var t = new Date(l.time).toLocaleTimeString();
+        var safeMsg = escapeHtml(l.msg || '');
         var color = l.msg.includes('error') || l.msg.includes('Error') ? '#ef4444' : l.msg.includes('⚠️') ? '#f59e0b' : '#a3a3a3';
-        return '<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;"><span style="color:var(--gray-600);flex-shrink:0;font-family:monospace;">' + t + '</span><span style="color:' + color + ';">' + l.msg + '</span></div>';
+        return '<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;"><span style="color:var(--gray-600);flex-shrink:0;font-family:monospace;">' + t + '</span><span style="color:' + color + ';">' + safeMsg + '</span></div>';
       }).join('');
     }
   </script>

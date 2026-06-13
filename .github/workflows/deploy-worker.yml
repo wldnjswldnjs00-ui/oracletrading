@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - claude/trading-bot-website-plan-2tjg13
     paths:
       - 'ayilon/worker-email.js'
       - 'ayilon/wrangler.toml'

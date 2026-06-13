@@ -1,14 +1,30 @@
 const WALLET = 'TBvtft3H8B4Rv4cEHTotyak3Ds2mLur99E';
 const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
+const ALLOWED_ORIGINS = ['https://oracletrading-01o.pages.dev'];
+
 export default {
   async fetch(request, env) {
-    if (request.method === 'OPTIONS') return corsResponse('', 204);
+    const origin = request.headers.get('Origin') || '';
+    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    if (request.method === 'OPTIONS') {
+      return new Response('', { status: 204, headers: {
+        'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0],
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Vary': 'Origin'
+      }});
+    }
     const url = new URL(request.url);
     const path = url.pathname;
 
     if (request.method === 'POST') {
       if (path === '/send-verification')  return handleVerification(request, env);
+      if (path === '/verify-code')        return handleVerifyCode(request, env);
       if (path === '/send-confirmation')  return handleConfirmation(request, env);
       if (path === '/check-email')        return handleCheckEmail(request, env);
       if (path === '/check-username')     return handleCheckUsername(request, env);
@@ -16,10 +32,16 @@ export default {
       if (path === '/create-payment')     return handleCreatePayment(request, env);
       if (path === '/verify-payment')     return handleVerifyPayment(request, env);
       if (path === '/check-payment')      return handleCheckPayment(request, env);
-      if (path === '/save-bot-settings')  return handleSaveBotSettings(request, env);
-      if (path === '/bot-status')         return handleBotStatus(request, env);
-      if (path === '/bot-control')        return handleBotControl(request, env);
-      if (path === '/get-positions')      return handleGetPositions(request, env);
+      if (path === '/login')             return handleLogin(request, env);
+      if (path === '/logout')            return handleLogout(request, env);
+      if (path === '/me')                return handleMe(request, env);
+      if (path === '/change-password')   return handleChangePassword(request, env);
+      if (path === '/reset-password')    return handleResetPassword(request, env);
+      if (path === '/update-profile')    return handleUpdateProfile(request, env);
+      if (path === '/save-bot-settings') return handleSaveBotSettings(request, env);
+      if (path === '/bot-status')        return handleBotStatus(request, env);
+      if (path === '/bot-control')       return handleBotControl(request, env);
+      if (path === '/get-positions')     return handleGetPositions(request, env);
     }
 
     return corsResponse(JSON.stringify({ error: 'Not found' }), 404);
@@ -49,8 +71,17 @@ async function handleCheckUsername(request, env) {
 
 // ── REGISTER USER ────────────────────────────────────────────
 async function handleRegisterUser(request, env) {
-  const { email, username, name, password } = await request.json();
+  const { email, username, name, password, code } = await request.json();
   if (!email || !username) return json({ success: false, error: 'missing_fields' }, 400);
+
+  // Verify email code server-side (fix: code was previously returned in HTTP response)
+  if (env.USERS_KV && code) {
+    const storedCode = await env.USERS_KV.get('verify:' + email.toLowerCase());
+    if (!storedCode || storedCode !== String(code)) {
+      return json({ success: false, error: 'invalid_code' });
+    }
+    await env.USERS_KV.delete('verify:' + email.toLowerCase());
+  }
 
   if (env.USERS_KV) {
     const emailKey    = 'user:'     + email.toLowerCase();
@@ -59,10 +90,42 @@ async function handleRegisterUser(request, env) {
     if (emailExists)    return json({ success: false, error: 'email_taken' });
     const usernameExists = await env.USERS_KV.get(usernameKey);
     if (usernameExists) return json({ success: false, error: 'username_taken' });
-    await env.USERS_KV.put(emailKey,    JSON.stringify({ email, username, name, password, createdAt: Date.now() }));
+
+    // Fix: hash password with SHA-256 before storing (never store plaintext)
+    const hashedPw = password ? await hashPassword(password) : null;
+    await env.USERS_KV.put(emailKey, JSON.stringify({
+      email, username, name,
+      password: hashedPw,
+      createdAt: Date.now()
+    }));
     await env.USERS_KV.put(usernameKey, email.toLowerCase());
   }
   return json({ success: true });
+}
+
+// ── VERIFY EMAIL CODE (server-side) ─────────────────────────
+async function handleVerifyCode(request, env) {
+  const { email, code } = await request.json();
+  if (!email || !code) return json({ valid: false });
+  if (!env.USERS_KV) return json({ valid: true }); // dev fallback
+
+  // Brute-force protection: max 5 attempts per code, then auto-invalidate
+  const attemptsKey = 'rate:code_attempt:' + email.toLowerCase();
+  const attempts = await env.USERS_KV.get(attemptsKey, { type: 'json' });
+  if ((attempts?.count || 0) >= 5) {
+    await env.USERS_KV.delete('verify:' + email.toLowerCase());
+    return json({ valid: false, error: 'too_many_attempts' });
+  }
+
+  const stored = await env.USERS_KV.get('verify:' + email.toLowerCase());
+  const valid = stored === String(code);
+  if (!valid) {
+    const newCount = (attempts?.count || 0) + 1;
+    await env.USERS_KV.put(attemptsKey, JSON.stringify({ count: newCount }), { expirationTtl: 300 });
+  } else {
+    await env.USERS_KV.delete(attemptsKey);
+  }
+  return json({ valid });
 }
 
 // ── CREATE PAYMENT (assign unique amount) ────────────────────
@@ -107,7 +170,6 @@ async function handleVerifyPayment(request, env) {
   if (!txid || !uniqueAmount) return json({ verified: false, error: 'Missing fields' });
 
   try {
-    // Fetch recent TRC20 transfers to our wallet
     const res = await fetch(
       `https://api.trongrid.io/v1/accounts/${WALLET}/transactions/trc20?limit=50&only_to=true&contract_address=${USDT_CONTRACT}&order_by=block_timestamp,desc`,
       { headers: { 'Accept': 'application/json', 'User-Agent': 'AYILON/1.0' } }
@@ -117,7 +179,6 @@ async function handleVerifyPayment(request, env) {
     const data = await res.json();
     const txs = data.data || [];
 
-    // Find the transaction matching this txid
     const tx = txs.find(t => t.transaction_id === txid);
     if (!tx) return json({ verified: false, error: 'Transaction not found. It may not be confirmed yet — please wait 1-3 minutes and try again.' });
 
@@ -178,7 +239,6 @@ async function activateSubscription(env, uniqueAmount, txHash) {
   pending.txHash = txHash;
   await env.USERS_KV.put(key, JSON.stringify(pending), { expirationTtl: 86400 });
 
-  // Send confirmation email
   try {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -199,7 +259,31 @@ async function handleVerification(request, env) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return json({ error: 'Invalid email' }, 400);
   }
+
+  // Rate limit: max 3 emails per address per 15 min, max 10 per IP per 15 min
+  if (env.USERS_KV) {
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const emailRateKey = 'rate:verify:email:' + email.toLowerCase();
+    const ipRateKey    = 'rate:verify:ip:' + ip;
+    const [emailRate, ipRate] = await Promise.all([
+      env.USERS_KV.get(emailRateKey, { type: 'json' }),
+      env.USERS_KV.get(ipRateKey,    { type: 'json' })
+    ]);
+    if ((emailRate?.count || 0) >= 3) return json({ error: 'Too many code requests. Wait 15 minutes.' }, 429);
+    if ((ipRate?.count    || 0) >= 10) return json({ error: 'Too many requests. Wait 15 minutes.' }, 429);
+    await Promise.all([
+      env.USERS_KV.put(emailRateKey, JSON.stringify({ count: (emailRate?.count || 0) + 1 }), { expirationTtl: 900 }),
+      env.USERS_KV.put(ipRateKey,    JSON.stringify({ count: (ipRate?.count    || 0) + 1 }), { expirationTtl: 900 })
+    ]);
+  }
+
   const code = String(Math.floor(100000 + Math.random() * 900000));
+
+  // Fix: store code server-side, never return it in the response
+  if (env.USERS_KV) {
+    await env.USERS_KV.put('verify:' + email.toLowerCase(), code, { expirationTtl: 300 });
+  }
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
@@ -211,7 +295,7 @@ async function handleVerification(request, env) {
     })
   });
   if (!res.ok) return json({ error: 'Failed to send email' }, 500);
-  return json({ success: true, code });
+  return json({ success: true }); // code NOT returned — client must verify via /verify-code
 }
 
 // ── SEND CONFIRMATION EMAIL ──────────────────────────────────
@@ -250,6 +334,127 @@ function corsResponse(body, status) {
   });
 }
 
+// Fix: SHA-256 password hash — never store plaintext passwords
+async function hashPassword(password) {
+  const data = new TextEncoder().encode(password + ':ayilon_2025');
+  const buf  = await crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
+
+// ════════════════════════════════════════════════════════════
+// SESSION AUTH
+// ════════════════════════════════════════════════════════════
+
+async function requireSession(body, env) {
+  const token = body?.sessionToken;
+  if (!token || !env.USERS_KV) return null;
+  return env.USERS_KV.get('session:' + token, { type: 'json' });
+}
+
+async function handleLogin(request, env) {
+  const { email, password } = await request.json();
+  if (!email || !password) return json({ ok: false, error: 'missing_fields' }, 400);
+  if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
+
+  const user = await env.USERS_KV.get('user:' + email.toLowerCase(), { type: 'json' });
+  if (!user) return json({ ok: false, error: 'invalid_credentials' }, 401);
+
+  const hashedPw = await hashPassword(password);
+  if (!user.password || user.password !== hashedPw) return json({ ok: false, error: 'invalid_credentials' }, 401);
+
+  const sessionToken = crypto.randomUUID();
+  await env.USERS_KV.put('session:' + sessionToken, JSON.stringify({
+    email: user.email, username: user.username, name: user.name
+  }), { expirationTtl: 604800 }); // 7 days
+
+  return json({ ok: true, sessionToken, email: user.email, username: user.username || '', name: user.name || '' });
+}
+
+async function handleLogout(request, env) {
+  const body = await request.json().catch(() => ({}));
+  if (body.sessionToken && env.USERS_KV) {
+    await env.USERS_KV.delete('session:' + body.sessionToken);
+  }
+  return json({ ok: true });
+}
+
+async function handleMe(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env);
+  if (!session) return json({ authenticated: false }, 401);
+  return json({ authenticated: true, email: session.email, username: session.username, name: session.name });
+}
+
+async function handleChangePassword(request, env) {
+  const body = await request.json();
+  const session = await requireSession(body, env);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+
+  const { currentPassword, newPassword } = body;
+  if (!currentPassword || !newPassword) return json({ ok: false, error: 'missing_fields' }, 400);
+  if (newPassword.length < 8) return json({ ok: false, error: 'password_too_short' }, 400);
+
+  const user = await env.USERS_KV.get('user:' + session.email.toLowerCase(), { type: 'json' });
+  if (!user) return json({ ok: false, error: 'user_not_found' }, 404);
+
+  if (user.password !== await hashPassword(currentPassword)) {
+    return json({ ok: false, error: 'invalid_current_password' }, 401);
+  }
+  user.password = await hashPassword(newPassword);
+  await env.USERS_KV.put('user:' + session.email.toLowerCase(), JSON.stringify(user));
+  return json({ ok: true });
+}
+
+async function handleResetPassword(request, env) {
+  const { email, code, newPassword } = await request.json();
+  if (!email || !code || !newPassword) return json({ ok: false, error: 'missing_fields' }, 400);
+  if (newPassword.length < 8) return json({ ok: false, error: 'password_too_short' }, 400);
+  if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
+
+  const attemptsKey = 'rate:code_attempt:' + email.toLowerCase();
+  const attempts    = await env.USERS_KV.get(attemptsKey, { type: 'json' });
+  if ((attempts?.count || 0) >= 5) {
+    await env.USERS_KV.delete('verify:' + email.toLowerCase());
+    return json({ ok: false, error: 'too_many_attempts' });
+  }
+  const stored = await env.USERS_KV.get('verify:' + email.toLowerCase());
+  if (!stored || stored !== String(code)) {
+    await env.USERS_KV.put(attemptsKey, JSON.stringify({ count: (attempts?.count || 0) + 1 }), { expirationTtl: 300 });
+    return json({ ok: false, error: 'invalid_code' });
+  }
+  await env.USERS_KV.delete('verify:' + email.toLowerCase());
+  await env.USERS_KV.delete(attemptsKey);
+
+  const user = await env.USERS_KV.get('user:' + email.toLowerCase(), { type: 'json' });
+  if (!user) return json({ ok: false, error: 'user_not_found' });
+  user.password = await hashPassword(newPassword);
+  await env.USERS_KV.put('user:' + email.toLowerCase(), JSON.stringify(user));
+  return json({ ok: true });
+}
+
+async function handleUpdateProfile(request, env) {
+  const body = await request.json();
+  const session = await requireSession(body, env);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
+
+  const { name, username } = body;
+  const emailKey = 'user:' + session.email.toLowerCase();
+  const user = await env.USERS_KV.get(emailKey, { type: 'json' });
+  if (!user) return json({ ok: false, error: 'user_not_found' }, 404);
+
+  if (username && username.toLowerCase() !== (user.username || '').toLowerCase()) {
+    const newKey = 'username:' + username.toLowerCase();
+    if (await env.USERS_KV.get(newKey)) return json({ ok: false, error: 'username_taken' });
+    if (user.username) await env.USERS_KV.delete('username:' + user.username.toLowerCase());
+    await env.USERS_KV.put(newKey, session.email.toLowerCase());
+    user.username = username;
+  }
+  if (name !== undefined) user.name = name;
+  await env.USERS_KV.put(emailKey, JSON.stringify(user));
+  return json({ ok: true });
+}
+
 // ════════════════════════════════════════════════════════════
 // BOT ENDPOINTS
 // ════════════════════════════════════════════════════════════
@@ -257,25 +462,67 @@ function corsResponse(body, status) {
 async function handleSaveBotSettings(request, env) {
   const body = await request.json();
   if (!env.USERS_KV) return json({ ok: false });
-  await env.USERS_KV.put('bot:config', JSON.stringify({ ...body, updatedAt: Date.now() }));
-  return json({ ok: true });
+
+  const session = await requireSession(body, env);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+
+  // Preserve existing clientToken or generate a new one on first save
+  const existing = await env.USERS_KV.get('bot:config', { type: 'json' });
+  const clientToken = existing?.clientToken || crypto.randomUUID();
+
+  await env.USERS_KV.put('bot:config', JSON.stringify({ ...body, clientToken, updatedAt: Date.now() }));
+  return json({ ok: true, clientToken });
 }
 
 async function handleBotStatus(request, env) {
   if (!env.USERS_KV) return json({ running: false, logs: [] });
-  const config = await env.USERS_KV.get('bot:config', { type: 'json' }) || {};
-  const logs   = await env.USERS_KV.get('bot:logs',   { type: 'json' }) || [];
-  const alert  = await env.USERS_KV.get('bot:daily_loss_triggered', { type: 'json' });
-  const pos    = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
-  return json({ running: config.running === true, logs, alert, positions: pos });
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env);
+  if (!session) return json({ running: false, logs: [], error: 'unauthorized' }, 401);
+
+  const [config, logs, alert, pos, lastScan, marketData] = await Promise.all([
+    env.USERS_KV.get('bot:config',               { type: 'json' }),
+    env.USERS_KV.get('bot:logs',                 { type: 'json' }),
+    env.USERS_KV.get('bot:daily_loss_triggered', { type: 'json' }),
+    env.USERS_KV.get('bot:position_state',       { type: 'json' }),
+    env.USERS_KV.get('bot:last_scan'),
+    env.USERS_KV.get('bot:market_data',          { type: 'json' })
+  ]);
+  const _config = config || {}, _logs = logs || [], _pos = pos || {};
+
+  // Funding rate — public endpoint, no auth
+  let fundingRate = null;
+  try {
+    const pair = _config.tradingPair || 'BTC-USDT-SWAP';
+    const frRes = await fetch(`https://www.okx.com/api/v5/public/funding-rate?instId=${pair}`);
+    const frData = await frRes.json();
+    const fr = frData?.data?.[0];
+    if (fr) fundingRate = {
+      rate:     parseFloat(fr.fundingRate),
+      nextRate: parseFloat(fr.nextFundingRate),
+      nextTime: parseInt(fr.fundingTime)
+    };
+  } catch {}
+
+  return json({ running: _config.running === true, logs: _logs, alert, positions: _pos, lastScan, fundingRate, marketData });
 }
 
 async function handleBotControl(request, env) {
-  const { action } = await request.json();
+  const { action, clientToken } = await request.json();
   if (!env.USERS_KV) return json({ ok: false });
   const config = await env.USERS_KV.get('bot:config', { type: 'json' }) || {};
+
+  // Fix: require clientToken auth if one is set in config
+  if (config.clientToken && clientToken !== config.clientToken) {
+    return json({ ok: false, error: 'unauthorized' }, 401);
+  }
+
   if (action === 'start') config.running = true;
   if (action === 'stop')  config.running = false;
+  if (action === 'dismiss') {
+    await env.USERS_KV.delete('bot:daily_loss_triggered');
+    return json({ ok: true });
+  }
   if (action === 'resume') {
     config.running = true;
     await env.USERS_KV.delete('bot:daily_loss_triggered');
@@ -287,11 +534,22 @@ async function handleBotControl(request, env) {
 }
 
 async function handleGetPositions(request, env) {
-  const { apiKey, apiSecret, apiPassphrase, instId } = await request.json();
+  if (!env.USERS_KV) return json({ positions: [] });
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env);
+  if (!session) return json({ positions: [], error: 'unauthorized' }, 401);
+
+  // Use stored API keys from bot:config — never accept from client
+  const config = await env.USERS_KV.get('bot:config', { type: 'json' });
+  const { apiKey, apiSecret, apiPassphrase, tradingPair } = config || {};
   if (!apiKey || !apiSecret || !apiPassphrase) return json({ positions: [] });
+
+  const instId = body.instId || tradingPair || 'BTC-USDT-SWAP';
+  if (!/^[A-Z0-9]{1,15}-[A-Z]{3,4}(-SWAP)?$/.test(instId)) {
+    return json({ positions: [], error: 'Invalid instId' }, 400);
+  }
   try {
-    const path = instId ? `/api/v5/account/positions?instId=${instId}` : '/api/v5/account/positions';
-    const data = await okxGet(apiKey, apiSecret, apiPassphrase, path);
+    const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instId=${instId}`);
     return json({ positions: data?.data || [] });
   } catch(e) { return json({ positions: [], error: e.message }); }
 }
@@ -302,6 +560,27 @@ async function handleGetPositions(request, env) {
 
 const OKX_BASE = 'https://www.okx.com';
 
+async function getCtVal(instId) {
+  try {
+    const res = await fetch(`${OKX_BASE}/api/v5/public/instruments?instType=SWAP&instId=${instId}`);
+    const data = await res.json();
+    return parseFloat(data?.data?.[0]?.ctVal || '0.01');
+  } catch { return 0.01; }
+}
+
+async function getTicker(instId) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 600 * attempt));
+      const res = await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${instId}`);
+      const data = await res.json();
+      const price = parseFloat(data?.data?.[0]?.last || '0');
+      if (price > 0) return price;
+    } catch {}
+  }
+  return 0;
+}
+
 async function runBot(env) {
   if (!env.USERS_KV) return;
   try {
@@ -309,7 +588,7 @@ async function runBot(env) {
     if (!cfg || cfg.running !== true) return;
 
     const { apiKey, apiSecret, apiPassphrase, tradingPair = 'BTC-USDT-SWAP',
-      strategy = 'daytrading',
+      strategy = 'daytrading', demoMode = false,
       numEntries = 3, entrySizing = 'equal',
       posSize = 40, leverage = 20,
       lossLimitEnabled = true, lossLimit = 5,
@@ -320,11 +599,17 @@ async function runBot(env) {
 
     if (!apiKey || !apiSecret || !apiPassphrase) return;
 
+    const lossLimitNorm = parseFloat(lossLimit) > 1 ? parseFloat(lossLimit) / 100 : parseFloat(lossLimit) || 0.05;
+    // Fix: cap leverage at 50x regardless of user input
+    const safeLeverage = Math.min(parseInt(leverage) || 20, 50);
+
+    await env.USERS_KV.put('bot:last_scan', new Date().toISOString());
+
     // ── Daily loss check ──────────────────────────────────────
     if (lossLimitEnabled) {
       const today = new Date().toDateString();
       const dl = await env.USERS_KV.get('bot:daily_loss:' + today, { type: 'json' }) || { pct: 0 };
-      if (dl.pct >= lossLimit / 100) {
+      if (dl.pct >= lossLimitNorm) {
         cfg.running = false;
         await env.USERS_KV.put('bot:config', JSON.stringify(cfg));
         await env.USERS_KV.put('bot:daily_loss_triggered', JSON.stringify({
@@ -337,68 +622,333 @@ async function runBot(env) {
     }
 
     // ── Account equity ────────────────────────────────────────
-    const balRes = await okxGet(apiKey, apiSecret, apiPassphrase, '/api/v5/account/balance?ccy=USDT');
+    const balRes = await okxGet(apiKey, apiSecret, apiPassphrase, '/api/v5/account/balance?ccy=USDT', demoMode);
     const details = balRes?.data?.[0]?.details || [];
     const equity = parseFloat(details.find(d => d.ccy === 'USDT')?.eq || '0');
     if (equity <= 0) return;
 
+    // ── Fix: Max drawdown stop ────────────────────────────────
+    // Track peak equity and halt bot if overall drawdown exceeds mddLimit (default 30%)
+    const mddLimit = parseFloat(cfg.mddLimit || 0.30);
+    const peakData = await env.USERS_KV.get('bot:peak_equity', { type: 'json' });
+    if (!peakData || equity > peakData.peak) {
+      await env.USERS_KV.put('bot:peak_equity', JSON.stringify({ peak: equity, date: new Date().toISOString() }));
+    } else if (peakData.peak > 0 && (peakData.peak - equity) / peakData.peak >= mddLimit) {
+      cfg.running = false;
+      await env.USERS_KV.put('bot:config', JSON.stringify(cfg));
+      await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
+        `⚠️ Max drawdown ${(mddLimit*100).toFixed(0)}% reached ($${peakData.peak.toFixed(0)} → $${equity.toFixed(0)}). Bot stopped.`);
+      await botLog(env, `MDD limit ${(mddLimit*100).toFixed(0)}% triggered: $${peakData.peak.toFixed(0)} → $${equity.toFixed(0)} — bot stopped`);
+      return;
+    }
+
     // ── Open positions ────────────────────────────────────────
-    const posRes = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instId=${tradingPair}`);
+    const posRes = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instId=${tradingPair}`, demoMode);
     const openPos = (posRes?.data || []).filter(p => parseFloat(p.pos) !== 0);
 
-    // ── Stop loss check ───────────────────────────────────────
-    await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimit / 100);
+    // ── Position state (loaded before checkSL to prevent race condition) ────
+    let ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
 
-    // ── S/R candles ───────────────────────────────────────────
-    const srCandles = await getCandles(tradingPair, srTimeframe, 100);
-    if (srCandles.length < 20) return;
-    const levels = detectSR(srCandles, parseInt(srTouch));
+    // ── Stop loss / TP check ─────────────────────────────────
+    await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, demoMode, ps);
+
+    // ── Fetch all candles in parallel ─────────────────────────
+    const [candles1H, candles4H, candlesD, c5] = await Promise.all([
+      getCandles(tradingPair, '1H', 100),
+      getCandles(tradingPair, '4H', 100),
+      getCandles(tradingPair, '1D', 60),
+      getCandles(tradingPair, '5m', 20)
+    ]);
+    if (candles1H.length < 20 && candles4H.length < 20) return;
+    if (c5.length < 4) return;
+    const [currentPrice, ctVal] = await Promise.all([
+      getTicker(tradingPair),
+      getCtVal(tradingPair)
+    ]);
+    if (!currentPrice || currentPrice <= 0) {
+      await botLog(env, `Skip: failed to fetch current price for ${tradingPair} (3 retries)`);
+      return;
+    }
+
+    const trend   = detectTrend(candlesD, currentPrice);
+    const sr1H    = candles1H.length >= 20 ? detectSR(candles1H) : { supports: [], resistances: [] };
+    const sr4H    = candles4H.length >= 20 ? detectSR(candles4H) : { supports: [], resistances: [] };
+    const srLevels  = gradeLevels(sr1H, sr4H);
+    const rawVol    = detectVolumeZones(candles4H.length >= 20 ? candles4H : candles1H, currentPrice);
+    const volLevels = filterVolBySR(rawVol, srLevels);
+    const levels    = mergeLevels(srLevels, volLevels);
     if (!levels.supports.length && !levels.resistances.length) return;
 
-    // ── 5m entry candles ──────────────────────────────────────
-    const c5 = await getCandles(tradingPair, '5m', 20);
-    if (c5.length < 3) return;
+    try {
+      await env.USERS_KV.put('bot:market_data', JSON.stringify({
+        price: currentPrice, trend: trend.dir, trendStrong: trend.strong, levels, updatedAt: Date.now()
+      }), { expirationTtl: 300 });
+    } catch {}
+
+    // ── Sync position state with OKX ─────────────────────────
+    if (ps[tradingPair]?.direction) {
+      const dir = ps[tradingPair].direction;
+      const matchingPos = openPos.find(p =>
+        dir === 'long'  ? (p.posSide === 'long'  && parseFloat(p.pos) > 0) :
+        dir === 'short' ? (p.posSide === 'short' && parseFloat(p.pos) < 0) : false
+      );
+      if (!matchingPos) {
+        if (ps[tradingPair].algoId)   await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].algoId, demoMode);
+        if (ps[tradingPair].tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].tpAlgoId, demoMode);
+        await botLog(env, `Sync: cleared ${tradingPair} state — position closed externally`);
+        delete ps[tradingPair];
+        await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+      }
+    }
+    const state = ps[tradingPair] || { entries: [], stopLoss: null, direction: null, takeProfit: null };
+
+    // ── Trailing TP: 10% close at each subsequent S/R level ───
+    if (state.halfClosed && state.lastTPLevel && openPos.length > 0) {
+      const TOUCH = 0.004;
+      const nextLv = state.direction === 'long'
+        ? levels.resistances.find(r => r.price > state.lastTPLevel * 1.001 && Math.abs(currentPrice - r.price) / r.price <= TOUCH)
+        : levels.supports.find(r =>   r.price < state.lastTPLevel * 0.999 && Math.abs(currentPrice - r.price) / r.price <= TOUCH);
+
+      if (nextLv) {
+        const totalSz = state.entries.reduce((s, e) => s + parseInt(e.sz), 0);
+        const trailContracts = Math.max(1, Math.floor(totalSz * 0.10));
+        const trailRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
+          instId: tradingPair, tdMode: 'cross',
+          side:    state.direction === 'long' ? 'sell' : 'buy',
+          posSide: state.direction === 'long' ? 'long'  : 'short',
+          ordType: 'market', sz: String(trailContracts)
+        }, demoMode);
+
+        if (trailRes?.data?.[0]?.ordId) {
+          // Fix: track actual remaining contracts (not just fraction) to avoid rounding drift
+          const prevRemaining = state.remainingContracts ?? Math.max(1, Math.floor(totalSz / 2));
+          const newRemaining  = Math.max(0, prevRemaining - trailContracts);
+          const newRemFrac    = newRemaining / totalSz;
+
+          if (state.algoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
+          if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
+          state.stopLoss           = state.lastTPLevel;
+          state.lastTPLevel        = nextLv.price;
+          state.remainingContracts = newRemaining;
+          state.remainingFrac      = newRemFrac;
+          state.tpAlgoId           = null;
+
+          if (newRemaining > 0) {
+            const nAlgo = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.direction, state.stopLoss, String(newRemaining), demoMode);
+            state.algoId = nAlgo?.data?.[0]?.algoId ? String(nAlgo.data[0].algoId) : null;
+          }
+          if (newRemaining <= 0) {
+            delete ps[tradingPair];
+            await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+            await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} — position fully closed`);
+          } else {
+            ps[tradingPair] = state;
+            await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+            await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL→${state.stopLoss.toFixed(2)} | Rem:${newRemaining}cts`);
+          }
+        } else {
+          await botLog(env, `Trail order FAILED @ ${nextLv.price.toFixed(2)}: ${trailRes?.msg || 'unknown'}`);
+        }
+        return;
+      }
+    }
+
+    // ── Volatility gate ───────────────────────────────────────
+    if (candles1H.length >= 20) {
+      const slice20 = candles1H.slice(0, 20);
+      const h1High  = Math.max(...slice20.map(c => parseFloat(c[2])));
+      const h1Low   = Math.min(...slice20.map(c => parseFloat(c[3])));
+      if ((h1High - h1Low) / (h1Low || 1) < 0.015) return;
+    }
+
+    // ── Fix: Funding rate gate — fail-safe: abort on fetch error ────────
+    // > 0.10% per 8h = 3%/day at 20x leverage. Hard abort if check fails.
+    try {
+      const frRes  = await fetch(`${OKX_BASE}/api/v5/public/funding-rate?instId=${tradingPair}`);
+      const frData = await frRes.json();
+      if (!frData?.data?.[0]) throw new Error('empty funding rate response');
+      const fr = parseFloat(frData.data[0].fundingRate);
+      if (Math.abs(fr) > 0.001) {
+        await botLog(env, `Skip: funding rate ${(fr * 100).toFixed(4)}%/8h > 0.1% — no new entries`);
+        return;
+      }
+    } catch(frErr) {
+      await botLog(env, `Skip: could not verify funding rate (${frErr.message}) — no new entries`);
+      return;
+    }
+
+    // ── 5m entry signal ───────────────────────────────────────
     const signal = detectSignal(c5, levels);
     if (!signal) return;
 
-    // Max entries reached → skip
-    if (openPos.length >= parseInt(numEntries)) return;
-    const entryNum = openPos.length + 1;
+    // ── Trend strength + direction filter ────────────────────
+    if (trend.dir === 'up'   && signal.type === 'short') return;
+    if (trend.dir === 'down' && signal.type === 'long')  return;
+    if (!trend.strong && signal.grade !== 'S') return;
 
-    // ── Kelly criterion warning ───────────────────────────────
+    // ── 1H confirmation for SHORT ─────────────────────────────
+    if (signal.type === 'short') {
+      const h1c    = candles1H[0]?.map(parseFloat);
+      const h1Bear = h1c && h1c[4] < h1c[1];
+      const h1NRes = sr1H.resistances.some(r => Math.abs(currentPrice - r.price) / r.price <= 0.01);
+      if (!h1Bear && !h1NRes) return;
+    }
+
+    if (state.direction && state.direction !== signal.type) return;
+
+    const entryNum = (state.entries || []).length + 1;
+    if (entryNum > parseInt(numEntries)) return;
+
+    if (entryNum > 1 && state.entries.length > 0) {
+      const drift = Math.abs(currentPrice - state.entries[0].price) / state.entries[0].price;
+      const driftLimit = signal.type === 'short' ? 0.05 : 0.02;
+      if (drift > driftLimit) return;
+    }
+
+    // ── TP = next S/R level in trade direction ────────────────
+    const tp = signal.type === 'long'
+      ? levels.resistances[0]?.price
+      : levels.supports[0]?.price;
+    const useTP = tp && (signal.type === 'long' ? tp > currentPrice * 1.01 : tp < currentPrice * 0.99);
+
+    // ── Fix: R:R filter — minimum 1.5:1 required ─────────────
+    const slDistRR = Math.abs(currentPrice - signal.stopLoss) / currentPrice;
+    const tpDistRR = useTP ? Math.abs(tp - currentPrice) / currentPrice : 0;
+    if (!useTP || tpDistRR / slDistRR < 1.5) {
+      await botLog(env, `Skip: R:R ${useTP ? (tpDistRR / slDistRR).toFixed(2) : 'n/a'}:1 < 1.5 | TP:${tp?.toFixed(0) ?? 'none'} SL:${signal.stopLoss.toFixed(0)}`);
+      return;
+    }
+
+    // ── Kelly warning ─────────────────────────────────────────
     const totalPct = (posSize / 100) * entryNum / parseInt(numEntries);
-    const kellyWarn = totalPct > 0.4 || parseInt(leverage) > 20;
-    if (kellyWarn) await botLog(env, `⚠️ Kelly warning: pos=${(totalPct*100).toFixed(0)}% lev=${leverage}x`);
+    if (totalPct > 0.4 || safeLeverage > 20) {
+      await botLog(env, `⚠️ Kelly warning: pos=${(totalPct*100).toFixed(0)}% lev=${safeLeverage}x`);
+    }
 
     // ── Calculate size ────────────────────────────────────────
     const totalVal = equity * (posSize / 100);
+    const nEntries = parseInt(numEntries);
     let entryVal;
     if (entrySizing === 'martingale' && entryNum > 1) {
-      entryVal = (totalVal / parseInt(numEntries)) * Math.pow(2, entryNum - 1);
+      entryVal = (totalVal / nEntries) * Math.pow(2, entryNum - 1);
+      entryVal = Math.min(entryVal, equity * 0.40);
+      // Fix: warn user when martingale multiplier is large
+      await botLog(env, `⚠️ MARTINGALE #${entryNum}: ${Math.pow(2, entryNum-1)}× size (${entryVal.toFixed(0)} USDT) — high risk`);
+    } else if (signal.type === 'short' && nEntries >= 2) {
+      const weights = Array.from({ length: nEntries }, (_, i) => i === 0 ? 1 : 2);
+      const totalW  = weights.reduce((a, b) => a + b, 0);
+      entryVal = totalVal * (weights[entryNum - 1] / totalW);
     } else {
-      entryVal = totalVal / parseInt(numEntries);
+      entryVal = totalVal / nEntries;
     }
-    const currentPrice = parseFloat(c5[0][4]);
-    const sz = (entryVal / currentPrice).toFixed(4);
+    const szContracts = Math.floor(entryVal / (currentPrice * ctVal));
+    if (szContracts < 1) {
+      await botLog(env, `Skip: position too small (${entryVal.toFixed(2)} USDT < 1 contract min)`);
+      return;
+    }
+    const sz = String(szContracts);
 
-    // ── Place order ───────────────────────────────────────────
+    // ── Set OKX leverage (capped at 50x, first entry only) ───
+    if (entryNum === 1) {
+      const levRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/account/set-leverage', {
+        instId: tradingPair, lever: String(safeLeverage), mgnMode: 'cross'
+      }, demoMode);
+      if (levRes?.code !== '0') {
+        await botLog(env, `⚠️ Leverage set FAILED [${levRes?.code}]: ${levRes?.msg} — aborting entry`);
+        return;
+      }
+    }
+
+    // ── Entry lock: prevent duplicate orders from concurrent cron instances ──
+    const lockKey = 'bot:entry_lock:' + tradingPair;
+    const existingLock = await env.USERS_KV.get(lockKey);
+    if (existingLock) {
+      await botLog(env, `Skip: entry lock active — concurrent execution prevented`);
+      return;
+    }
+    await env.USERS_KV.put(lockKey, '1', { expirationTtl: 30 });
+
+    // ── Place market order ────────────────────────────────────
     const orderRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
       instId: tradingPair, tdMode: 'cross',
       side: signal.type === 'long' ? 'buy' : 'sell',
       posSide: signal.type === 'long' ? 'long' : 'short',
-      ordType: 'market', sz, lever: String(leverage)
-    });
+      ordType: 'market', sz, lever: String(safeLeverage)
+    }, demoMode);
+
+    // Release lock regardless of order outcome
+    await env.USERS_KV.delete(lockKey).catch(() => {});
 
     if (orderRes?.data?.[0]?.ordId) {
-      const ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
-      ps[tradingPair] = ps[tradingPair] || { entries: [], stopLoss: null, direction: null };
-      ps[tradingPair].entries.push({ price: currentPrice, sz, time: Date.now(), entry: entryNum });
-      ps[tradingPair].direction = signal.type;
-      ps[tradingPair].stopLoss  = signal.stopLoss;
-      await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-      await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${currentPrice} | SL: ${signal.stopLoss.toFixed(2)} | sz: ${sz}`);
+      const { price: fillPrice, filledSz } = await queryFillPrice(apiKey, apiSecret, apiPassphrase, tradingPair, orderRes.data[0].ordId, currentPrice, szContracts, demoMode);
+      // Partial fill guard: if less than 90% filled, don't track — state mismatch risk
+      if (filledSz < szContracts * 0.90) {
+        await botLog(env, `Partial fill: ${filledSz}/${szContracts} contracts — skipping state update`);
+        return;
+      }
+      const actualSz = String(Math.floor(filledSz));
+      state.entries.push({ price: fillPrice, sz: actualSz, time: Date.now(), entry: entryNum });
+      state.direction = signal.type;
+      if (!state.stopLoss) state.stopLoss = signal.stopLoss;
+      if (useTP) state.takeProfit = tp;
+
+      // Native SL algo: cancel old (if scale-in), place for full accumulated size
+      if (state.algoId)   await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
+      if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
+      const accumSz = String(state.entries.reduce((s, e) => s + parseInt(e.sz), 0));
+      const algoRes = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, signal.type, state.stopLoss, accumSz, demoMode);
+      state.algoId = algoRes?.data?.[0]?.algoId ? String(algoRes.data[0].algoId) : null;
+
+      // Fix: notify user if native SL placement failed (falls back to software SL)
+      if (!state.algoId) {
+        await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
+          `⚠️ Native SL placement FAILED for ${signal.type.toUpperCase()} @ ${fillPrice}. Software SL fallback active — monitor manually!`);
+      }
+
+      // Fix: native TP safety algo at TP ± 3% — closes full position if price blows through TP
+      // without the software poller catching it (e.g. rapid touch-and-reverse within 1 minute)
+      state.tpAlgoId = null;
+      if (useTP) {
+        const safetyTpPx = signal.type === 'long'
+          ? (tp * 1.03).toFixed(2)
+          : (tp * 0.97).toFixed(2);
+        const tpAlgoRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order-algo', {
+          instId: tradingPair, tdMode: 'cross',
+          side:    signal.type === 'long' ? 'sell' : 'buy',
+          posSide: signal.type === 'long' ? 'long'  : 'short',
+          ordType: 'conditional', sz: accumSz,
+          tpTriggerPx: safetyTpPx, tpOrdPx: '-1'
+        }, demoMode);
+        state.tpAlgoId = tpAlgoRes?.data?.[0]?.algoId ? String(tpAlgoRes.data[0].algoId) : null;
+      }
+
+      ps[tradingPair] = state;
+      try {
+        await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+      } catch(kvErr) {
+        // Fix: if KV write fails, cancel all algos AND close the position
+        // to prevent an orphaned position with no SL protection
+        if (state.algoId)   await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
+        if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
+        await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
+          instId: tradingPair, mgnMode: 'cross',
+          posSide: signal.type === 'long' ? 'long' : 'short'
+        }, demoMode);
+        await botLog(env, `KV write failed — position closed to prevent orphan: ${kvErr.message}`);
+        return;
+      }
+
+      const tpStr    = useTP ? ` | TP:${tp.toFixed(2)}` : '';
+      const gradeStr = signal.grade ? `[${signal.grade}급] ` : '';
+      const trendStr = trend.dir !== 'neutral' ? ` | trend:${trend.dir}${trend.strong ? '' : '(w)'}` : '';
+      const slStr    = state.algoId ? `nSL:${state.stopLoss.toFixed(2)}` : `SL(sw):${state.stopLoss.toFixed(2)}`;
+      await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${fillPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | ${slStr}${tpStr}${trendStr} | sz:${sz}`);
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
-        `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${currentPrice} USDT`);
+        `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${fillPrice} USDT${tpStr}`);
+    } else {
+      const errCode = orderRes?.code || '?';
+      const errMsg  = orderRes?.msg || orderRes?.data?.[0]?.sMsg || 'unknown';
+      await botLog(env, `Order FAILED [${errCode}]: ${signal.type.toUpperCase()} @ ${currentPrice} — ${errMsg}`);
     }
 
   } catch(e) {
@@ -406,10 +956,10 @@ async function runBot(env) {
   }
 }
 
-// ── STOP LOSS ─────────────────────────────────────────────────
-async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitPct) {
+// ── STOP LOSS / TP CHECK ──────────────────────────────────────
+async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitPct, demo = false, ps = null) {
   if (!openPos.length) return;
-  const ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
+  if (ps === null) ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
   const state = ps[pair];
   if (!state?.stopLoss) return;
 
@@ -418,90 +968,348 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
   const price = parseFloat(tk?.data?.[0]?.last || '0');
   if (!price) return;
 
-  const hit = state.direction === 'long' ? price <= state.stopLoss : price >= state.stopLoss;
-  if (!hit) return;
+  const slHit = state.direction === 'long' ? price <= state.stopLoss : price >= state.stopLoss;
+  const tpHit = state.takeProfit
+    ? (state.direction === 'long' ? price >= state.takeProfit : price <= state.takeProfit)
+    : false;
 
-  await okxPost(apiKey, secret, pass, '/api/v5/trade/close-position', {
+  if (!slHit && !tpHit) return;
+
+  // ── TP hit: close 50%, move SL to break-even, enable trailing ──
+  if (tpHit && !state.halfClosed) {
+    const totalSz       = state.entries.reduce((sum, e) => sum + parseInt(e.sz), 0);
+    const halfContracts = Math.max(1, Math.floor(totalSz / 2));
+    const avgEntry      = state.entries.reduce((sum, e) => sum + e.price * parseInt(e.sz), 0) / totalSz;
+
+    await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
+      instId: pair, tdMode: 'cross',
+      side:    state.direction === 'long' ? 'sell' : 'buy',
+      posSide: state.direction === 'long' ? 'long' : 'short',
+      ordType: 'market', sz: String(halfContracts)
+    }, demo);
+
+    // Cancel both SL algo and TP safety algo, place new SL at break-even
+    if (state.algoId)   await cancelSLAlgo(apiKey, secret, pass, pair, state.algoId, demo);
+    if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
+    const remContracts = Math.max(0, totalSz - halfContracts);
+    const newAlgo = remContracts > 0
+      ? await placeSLAlgo(apiKey, secret, pass, pair, state.direction, avgEntry, String(remContracts), demo)
+      : null;
+
+    state.halfClosed         = true;
+    state.stopLoss           = avgEntry;
+    state.takeProfit         = null;
+    state.lastTPLevel        = price;
+    state.remainingContracts = remContracts;
+    state.remainingFrac      = remContracts > 0 ? remContracts / totalSz : 0;
+    state.algoId             = newAlgo?.data?.[0]?.algoId ? String(newAlgo.data[0].algoId) : null;
+    state.tpAlgoId           = null;
+    ps[pair] = state;
+    await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+    const nSlLabel = state.algoId ? `nSL→BE` : `SL(sw)→BE`;
+    await botLog(env, `TP hit @ ${price} — 50% closed | ${nSlLabel} ${avgEntry.toFixed(2)} | trailing 10% active`);
+    return;
+  }
+
+  // ── SL hit: cancel all algos, close full position ─────────
+  if (state.algoId)   await cancelSLAlgo(apiKey, secret, pass, pair, state.algoId, demo);
+  if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
+  const closeRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/close-position', {
     instId: pair, mgnMode: 'cross',
     posSide: state.direction === 'long' ? 'long' : 'short'
-  });
+  }, demo);
+  if (closeRes?.code !== '0') {
+    await botLog(env, `close-position FAILED [${closeRes?.code}]: ${closeRes?.msg} — retrying next tick`);
+    return;
+  }
 
-  // Track daily loss (estimate from realized PnL)
-  if (lossLimitEnabled) {
+  // Fix: use realized P&L from position data for daily loss tracking
+  if (slHit && lossLimitEnabled) {
     const today = new Date().toDateString();
     const dl = await env.USERS_KV.get('bot:daily_loss:' + today, { type: 'json' }) || { pct: 0 };
-    const realizedLoss = openPos.reduce((s, p) => s + Math.abs(parseFloat(p.upl || '0')), 0);
+    const realizedLoss = openPos.reduce((s, p) => s + Math.max(0, -parseFloat(p.upl || '0')), 0);
     dl.pct = (dl.pct || 0) + realizedLoss / equity;
     await env.USERS_KV.put('bot:daily_loss:' + today, JSON.stringify(dl), { expirationTtl: 86400 });
   }
 
   delete ps[pair];
   await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-  await botLog(env, `SL hit @ ${price} — all positions closed`);
+  const reason = state.halfClosed ? `SL(break-even) hit @ ${price}` : `SL hit @ ${price}`;
+  await botLog(env, `${reason} — remaining position closed`);
+}
+
+// ── DAILY TREND FILTER (EMA20 / EMA50) ───────────────────────
+function detectTrend(candles, currentPrice) {
+  if (candles.length < 55) return { dir: 'neutral', strong: false };
+  const closes   = candles.slice(0, 55).map(c => parseFloat(c[4])).reverse();
+  const closes5  = candles.slice(5, 60).map(c => parseFloat(c[4])).reverse();
+  const ema20    = calcEMA(closes, 20);
+  const ema50    = calcEMA(closes, 50);
+  const ema20_5  = closes5.length >= 20 ? calcEMA(closes5, 20) : ema20;
+
+  const slope  = Math.abs(ema20 - ema20_5) / (ema20_5 || 1);
+  const spread = Math.abs(ema20 - ema50)   / (ema50   || 1);
+  const strong = slope > 0.002 && spread > 0.008;
+
+  let dir;
+  if (currentPrice > ema20 && ema20 > ema50)      dir = 'up';
+  else if (currentPrice < ema20 && ema20 < ema50) dir = 'down';
+  else                                              dir = 'neutral';
+
+  return { dir, strong };
+}
+
+function calcEMA(closes, period) {
+  if (closes.length < period) return closes[closes.length - 1];
+  const k = 2 / (period + 1);
+  let ema = closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
+  for (let i = period; i < closes.length; i++) {
+    ema = closes[i] * k + ema * (1 - k);
+  }
+  return ema;
 }
 
 // ── S/R DETECTION ─────────────────────────────────────────────
-function detectSR(candles, minTouches) {
-  const tol = 0.003;
-  const prices = candles.flatMap(c => [parseFloat(c[2]), parseFloat(c[3])]);
-  const currentPrice = parseFloat(candles[0][4]);
-  const levels = [];
-  const seen = new Set();
+function detectSR(candles) {
+  const RECENT_N = 20;
+  const MAX_AGE  = 100;
+  const TOL      = 0.003;
+
+  const activeCandles = candles.slice(0, MAX_AGE);
+  const currentPrice  = parseFloat(candles[0][4]);
+  const levels        = [];
+  const seen          = new Set();
+
+  const priceStep = currentPrice * TOL;
+  const prices = activeCandles.flatMap(c => [parseFloat(c[2]), parseFloat(c[3])]);
 
   for (const p of prices) {
-    const bucket = Math.round(p / (p * tol));
+    const bucket = Math.round(p / priceStep);
     if (seen.has(bucket)) continue;
     seen.add(bucket);
 
-    let sup = 0, res = 0;
-    for (const c of candles) {
+    let sup = 0, res = 0, recentTouches = 0;
+    activeCandles.forEach((c, idx) => {
       const hi = parseFloat(c[2]), lo = parseFloat(c[3]);
-      if (Math.abs(lo - p) / p <= tol) sup++;
-      else if (Math.abs(hi - p) / p <= tol) res++;
+      const touchedSup = Math.abs(lo - p) / p <= TOL;
+      const touchedRes = Math.abs(hi - p) / p <= TOL;
+      if (touchedSup) { sup++; if (idx < RECENT_N) recentTouches++; }
+      if (touchedRes) { res++; if (idx < RECENT_N) recentTouches++; }
+    });
+
+    if (sup + res >= 2) {
+      // Fix: a level with nearly equal sup/res touches is a flip zone — include in both
+      const type = sup >= res ? 'support' : 'resistance';
+      levels.push({ price: p, touches: sup + res, recentTouches, type });
+      // If touches are close (flip level), add as both types
+      if (sup > 0 && res > 0 && Math.abs(sup - res) <= 1) {
+        levels.push({ price: p, touches: sup + res, recentTouches, type: type === 'support' ? 'resistance' : 'support' });
+      }
     }
-    const touches = sup + res;
-    if (touches >= minTouches) levels.push({ price: p, touches, type: sup >= res ? 'support' : 'resistance' });
   }
 
   return {
-    supports: levels.filter(l => l.type === 'support' && l.price <= currentPrice * 1.005)
-                     .sort((a, b) => b.price - a.price).slice(0, 3),
+    supports:    levels.filter(l => l.type === 'support'    && l.price <= currentPrice * 1.005)
+                       .sort((a, b) => b.price - a.price).slice(0, 4),
     resistances: levels.filter(l => l.type === 'resistance' && l.price >= currentPrice * 0.995)
-                        .sort((a, b) => a.price - b.price).slice(0, 3)
+                       .sort((a, b) => a.price - b.price).slice(0, 4)
+  };
+}
+
+// ── GRADE LEVELS: S/A/B tier ──────────────────────────────────
+function gradeLevels(sr1H, sr4H) {
+  const CONFLUENT_TOL = 0.005;
+  const result = [];
+
+  for (const lv4 of [...sr4H.supports, ...sr4H.resistances]) {
+    const match1H = [...sr1H.supports, ...sr1H.resistances].find(
+      l => Math.abs(l.price - lv4.price) / lv4.price <= CONFLUENT_TOL && l.type === lv4.type
+    );
+    let grade;
+    if (match1H) {
+      grade = 'S';
+    } else if (lv4.touches >= 4 || lv4.recentTouches >= 1) {
+      grade = 'A';
+    } else {
+      grade = 'B';
+    }
+    result.push({ ...lv4, grade });
+  }
+
+  for (const lv1 of [...sr1H.supports, ...sr1H.resistances]) {
+    const already = result.some(
+      r => Math.abs(r.price - lv1.price) / lv1.price <= CONFLUENT_TOL && r.type === lv1.type
+    );
+    if (already) continue;
+    const grade = lv1.recentTouches >= 1 ? 'A' : 'B';
+    result.push({ ...lv1, grade });
+  }
+
+  return {
+    supports:    result.filter(l => l.type === 'support').sort((a, b) => b.price - a.price).slice(0, 5),
+    resistances: result.filter(l => l.type === 'resistance').sort((a, b) => a.price - b.price).slice(0, 5)
+  };
+}
+
+// ── FILTER VOLUME ZONES ───────────────────────────────────────
+function filterVolBySR(volZones, srLevels) {
+  const TOL = 0.01;
+  const allSR = [...srLevels.supports, ...srLevels.resistances];
+  function nearSR(zones) {
+    return zones.filter(z => allSR.some(sr => Math.abs(sr.price - z.price) / z.price <= TOL));
+  }
+  return { supports: nearSR(volZones.supports), resistances: nearSR(volZones.resistances) };
+}
+
+// ── MERGE LEVELS ──────────────────────────────────────────────
+function mergeLevels(a, b) {
+  const tol = 0.005;
+  function dedup(arr) {
+    const out = [];
+    for (const lv of arr) {
+      if (!out.some(o => Math.abs(o.price - lv.price) / lv.price <= tol)) {
+        out.push({ grade: 'B', ...lv });
+      }
+    }
+    return out;
+  }
+  return {
+    supports: dedup([...a.supports, ...b.supports]).sort((x, y) => y.price - x.price).slice(0, 5),
+    resistances: dedup([...a.resistances, ...b.resistances]).sort((x, y) => x.price - y.price).slice(0, 5)
   };
 }
 
 // ── ENTRY SIGNAL ──────────────────────────────────────────────
+// LONG:  prev candle touches support → current candle bouncing (bullish close)
+// SHORT: bearish impulse + high volume → price retraces to 50% or resistance → enter short
 function detectSignal(c5, levels) {
-  const [, , , prevLow, prevClose] = c5[1].map(parseFloat);
-  const [, prevOpen2, prevHigh2] = c5[1].map(parseFloat);
-  const curPrice = parseFloat(c5[0][4]);
-  const recentLows  = c5.slice(1, 10).map(c => parseFloat(c[3]));
-  const recentHighs = c5.slice(1, 10).map(c => parseFloat(c[2]));
-  const swingLow  = Math.min(...recentLows);
-  const swingHigh = Math.max(...recentHighs);
+  if (c5.length < 4) return null;
 
+  // Fix: only use confirmed (closed) candles — index 8 is OKX confirm field
+  if (c5[1][8] !== '1' || c5[2][8] !== '1' || c5[3][8] !== '1') return null;
+
+  const cur   = c5[0].map(parseFloat); // current forming candle
+  const prev1 = c5[1].map(parseFloat);
+  const prev2 = c5[2].map(parseFloat);
+  const prev3 = c5[3].map(parseFloat);
+
+  const curPrice = cur[4];
+
+  // 80th-percentile volume threshold
+  const allClosedVols = c5.slice(1).map(c => parseFloat(c[5])).sort((a, b) => a - b);
+  const vol80th = allClosedVols[Math.floor(allClosedVols.length * 0.80)] ?? 0;
+
+  const swingLow  = Math.min(prev1[3], prev2[3], prev3[3]);
+  const swingHigh = Math.max(prev1[2], prev2[2], prev3[2]);
+
+  const TOUCH_TOL = 0.005;
+  const SL_MIN    = 0.01;
+  const SL_MAX    = 0.07;
+
+  // ── LONG: support touch → bounce entry ───────────────────────
   for (const s of levels.supports) {
-    if (Math.abs(curPrice - s.price) / s.price > 0.005) continue;
-    // Body fully through support (no wick) → skip
-    if (prevClose < s.price && Math.abs(prevClose - prevLow) / prevClose < 0.001) continue;
-    // Wick: low touched or pierced support but close is above
-    if (prevLow <= s.price * 1.002 && prevClose > s.price) {
-      return { type: 'long', level: s.price, stopLoss: swingLow * 0.9985 };
-    }
+    const byWick  = Math.abs(prev1[3] - s.price) / s.price <= TOUCH_TOL;
+    const byClose = Math.abs(prev1[4] - s.price) / s.price <= TOUCH_TOL;
+    if (!byWick && !byClose) continue;
+    if (curPrice < s.price * 0.997) continue;
+
+    // Fix: require current candle to be bullish (close > open) — bounce confirmation
+    if (curPrice <= cur[1]) continue; // still falling, no bounce
+
+    const slDist = Math.abs(curPrice - swingLow) / curPrice;
+    if (slDist < SL_MIN || slDist > SL_MAX) continue;
+    return { type: 'long', level: s.price, grade: s.grade || 'B', stopLoss: swingLow };
   }
 
-  for (const r of levels.resistances) {
-    if (Math.abs(curPrice - r.price) / r.price > 0.005) continue;
-    // Body fully through resistance → skip
-    if (prevClose > r.price && Math.abs(prevHigh2 - prevClose) / prevClose < 0.001) continue;
-    // Wick: high touched/pierced resistance but close is below
-    if (prevHigh2 >= r.price * 0.998 && prevClose < r.price) {
-      return { type: 'short', level: r.price, stopLoss: swingHigh * 1.0015 };
-    }
+  // ── SHORT: bearish impulse + volume → retracement entry ──────
+  for (const bear of [prev1, prev2, prev3]) {
+    const bO = bear[1], bC = bear[4], bH = bear[2], bL = bear[3], bV = bear[5];
+    const range = bH - bL;
+    if (range <= 0) continue;
+    if ((bO - bC) / range < 0.40) continue;
+    if (bV < vol80th) continue;
+
+    const mid50 = bH - range * 0.50;
+
+    if (curPrice < mid50 * 0.998) continue;
+    if (curPrice > swingHigh * 1.003) continue;
+
+    const slDist = Math.abs(swingHigh - curPrice) / curPrice;
+    if (slDist < SL_MIN || slDist > SL_MAX) continue;
+
+    const atMid50  = Math.abs(curPrice - mid50) / mid50 <= TOUCH_TOL;
+    const nearRes  = levels.resistances.find(r =>
+      r.price >= mid50 * 0.998 && r.price <= swingHigh * 1.003 &&
+      Math.abs(curPrice - r.price) / r.price <= TOUCH_TOL
+    );
+
+    if (!atMid50 && !nearRes) continue;
+
+    const grade = nearRes ? nearRes.grade : 'A';
+    return { type: 'short', level: bH, grade, stopLoss: swingHigh };
   }
 
   return null;
+}
+
+// ── VOLUME PROFILE ────────────────────────────────────────────
+function detectVolumeZones(candles, currentPrice) {
+  if (candles.length < 20) return { supports: [], resistances: [] };
+  const BUCKETS = 50;
+  const minP = Math.min(...candles.map(c => parseFloat(c[3])));
+  const maxP = Math.max(...candles.map(c => parseFloat(c[2])));
+  const step = (maxP - minP) / BUCKETS;
+  if (step <= 0) return { supports: [], resistances: [] };
+  const vols = new Array(BUCKETS).fill(0);
+  for (const c of candles) {
+    const lo = parseFloat(c[3]), hi = parseFloat(c[2]), vol = parseFloat(c[5]);
+    const b0 = Math.max(0, Math.floor((lo - minP) / step));
+    const b1 = Math.min(BUCKETS - 1, Math.ceil((hi - minP) / step));
+    for (let b = b0; b <= b1; b++) vols[b] += vol;
+  }
+  const avgVol = vols.reduce((s, v) => s + v, 0) / BUCKETS;
+  const zones  = [];
+  for (let b = 0; b < BUCKETS; b++) {
+    if (vols[b] < avgVol * 2) continue;
+    const zonePrice = minP + (b + 0.5) * step;
+    zones.push({ price: zonePrice, touches: Math.round(vols[b] / avgVol), type: zonePrice <= currentPrice ? 'support' : 'resistance' });
+  }
+  return {
+    supports:    zones.filter(z => z.type === 'support').sort((a, b) => b.price - a.price).slice(0, 3),
+    resistances: zones.filter(z => z.type === 'resistance').sort((a, b) => a.price - b.price).slice(0, 3)
+  };
+}
+
+// ── NATIVE ALGO ORDERS ────────────────────────────────────────
+async function placeSLAlgo(apiKey, secret, pass, pair, direction, slPrice, sz, demo = false) {
+  return okxPost(apiKey, secret, pass, '/api/v5/trade/order-algo', {
+    instId: pair, tdMode: 'cross',
+    side:         direction === 'long' ? 'sell' : 'buy',
+    posSide:      direction === 'long' ? 'long' : 'short',
+    ordType:      'conditional',
+    sz:           String(sz),
+    slTriggerPx:  parseFloat(slPrice).toFixed(2),
+    slOrdPx:      '-1'
+  }, demo);
+}
+
+async function cancelSLAlgo(apiKey, secret, pass, pair, algoId, demo = false) {
+  return okxPost(apiKey, secret, pass, '/api/v5/trade/cancel-algos',
+    [{ algoId: String(algoId), instId: pair }], demo);
+}
+
+async function queryFillPrice(apiKey, secret, pass, pair, ordId, fallbackPx, requestedSz, demo = false) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 500 * attempt));
+      const res    = await okxGet(apiKey, secret, pass, `/api/v5/trade/order?instId=${pair}&ordId=${ordId}`, demo);
+      const d      = res?.data?.[0];
+      const px     = parseFloat(d?.avgPx    || '0');
+      const filled = parseFloat(d?.accFillSz || '0');
+      if (px > 0 && filled > 0) return { price: px, filledSz: filled };
+    } catch {}
+  }
+  return { price: fallbackPx, filledSz: requestedSz }; // assume full fill as last resort
 }
 
 // ── OKX API ───────────────────────────────────────────────────
@@ -512,33 +1320,35 @@ async function getCandles(instId, bar, limit) {
   } catch { return []; }
 }
 
-async function okxGet(apiKey, secret, pass, path) {
+async function okxGet(apiKey, secret, pass, path, demo = false) {
   const ts = new Date().toISOString();
   const sign = await hmac(secret, ts + 'GET' + path);
   const res = await fetch(OKX_BASE + path, {
-    headers: okxHeaders(apiKey, sign, ts, pass)
+    headers: okxHeaders(apiKey, sign, ts, pass, demo)
   });
   return res.json();
 }
 
-async function okxPost(apiKey, secret, pass, path, body) {
+async function okxPost(apiKey, secret, pass, path, body, demo = false) {
   const ts = new Date().toISOString();
   const bodyStr = JSON.stringify(body);
   const sign = await hmac(secret, ts + 'POST' + path + bodyStr);
   const res = await fetch(OKX_BASE + path, {
     method: 'POST',
-    headers: okxHeaders(apiKey, sign, ts, pass),
+    headers: okxHeaders(apiKey, sign, ts, pass, demo),
     body: bodyStr
   });
   return res.json();
 }
 
-function okxHeaders(key, sign, ts, pass) {
-  return {
+function okxHeaders(key, sign, ts, pass, demo = false) {
+  const h = {
     'OK-ACCESS-KEY': key, 'OK-ACCESS-SIGN': sign,
     'OK-ACCESS-TIMESTAMP': ts, 'OK-ACCESS-PASSPHRASE': pass,
     'Content-Type': 'application/json'
   };
+  if (demo) h['x-simulated-trading'] = '1';
+  return h;
 }
 
 async function hmac(secret, message) {

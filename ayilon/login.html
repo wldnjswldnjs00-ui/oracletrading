@@ -203,7 +203,7 @@
       el.nextElementSibling.textContent = el.type === 'password' ? 'Show' : 'Hide';
     }
 
-    function handleLogin(e) {
+    async function handleLogin(e) {
       e.preventDefault();
       var email = document.getElementById('loginEmail').value.trim().toLowerCase();
       var pw    = document.getElementById('loginPassword').value;
@@ -212,30 +212,43 @@
       var errEl = document.getElementById('errorMsg');
       errEl.classList.remove('show');
 
-      var storedEmail = (localStorage.getItem('ayilon_email') || '').toLowerCase();
-      var storedPw    = localStorage.getItem('ayilon_password') || '';
+      var btn = document.getElementById('loginBtn');
+      if (btn) { btn.textContent = 'Signing in...'; btn.disabled = true; }
 
-      var ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
-      var ADMIN_PW    = 'Ayilon2026!';
-      var isAdmin = (email === ADMIN_EMAIL && pw === ADMIN_PW);
-
-      if (!isAdmin && (email !== storedEmail || pw !== storedPw)) {
-        errEl.textContent = 'Incorrect email or password.';
-        errEl.classList.add('show');
-        return;
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: pw })
+        });
+        var data = await res.json();
+        if (!data.ok) {
+          errEl.textContent = 'Incorrect email or password.';
+          errEl.classList.add('show');
+          if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+          return;
+        }
+        // Store session token — never store password
+        localStorage.setItem('ayilon_session_token', data.sessionToken);
+        localStorage.setItem('ayilon_email',    data.email    || email);
+        localStorage.setItem('ayilon_username', data.username || '');
+        localStorage.setItem('ayilon_name',     data.name     || '');
+        localStorage.removeItem('ayilon_password'); // remove any old plaintext password
+      } catch(e) {
+        // Fallback: if Worker is unreachable, allow login with locally stored credentials
+        var storedEmail = (localStorage.getItem('ayilon_email') || '').toLowerCase();
+        if (email !== storedEmail) {
+          errEl.textContent = 'Login failed. Please check your connection.';
+          errEl.classList.add('show');
+          if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+          return;
+        }
       }
+
+      if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
 
       var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
-
-      if (methods.length === 0) {
-        finishLogin();
-        return;
-      }
-
-      if (methods.length === 1) {
-        selectMethod(methods[0]);
-        return;
-      }
+      if (methods.length === 0) { finishLogin(); return; }
+      if (methods.length === 1) { selectMethod(methods[0]); return; }
 
       var methodInfo = {
         email:         { icon: '&#128231;', title: 'Email Code',        desc: 'Send a 6-digit code to your email address' },
@@ -289,7 +302,8 @@
     function resendCode() { alert('A new code has been sent.'); }
 
     // ── FORGOT PASSWORD ──────────────────────────────────────────
-    var forgotSentCode = null;
+    var forgotEmailForVerify = null;
+    var forgotVerifiedCode   = null;
 
     function startForgot() { showStep(4); }
 
@@ -325,7 +339,7 @@
         });
         var data = await res.json();
         if (data.success) {
-          forgotSentCode = data.code;
+          forgotEmailForVerify = email;
           document.getElementById('forgotVerifyTitle').textContent = 'Email Verification';
           document.getElementById('forgotVerifyDesc').textContent  = 'Enter the 6-digit code sent to ' + email;
           showStep(5);
@@ -346,20 +360,33 @@
       if (el.value && idx < 5) document.querySelectorAll('.otp-forgot')[idx + 1].focus();
     }
 
-    function verifyForgotOTP() {
+    async function verifyForgotOTP() {
       var digits = document.querySelectorAll('.otp-forgot');
       var code   = Array.from(digits).map(function(d) { return d.value; }).join('');
       var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
       var isAuth  = methods.indexOf('authenticator') !== -1 && methods.indexOf('email') === -1;
-      if (code.length === 6 && (isAuth || code === forgotSentCode)) {
-        showStep(6);
-      } else {
+      if (code.length !== 6) return;
+      if (isAuth) { showStep(6); return; }
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/verify-code', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: forgotEmailForVerify, code: code })
+        });
+        var data = await res.json();
+        if (data.valid) {
+          forgotVerifiedCode = code;
+          showStep(6);
+        } else {
+          Array.from(digits).forEach(function(d) { d.style.borderColor = '#ef4444'; });
+          setTimeout(function() { Array.from(digits).forEach(function(d) { d.style.borderColor = ''; }); }, 800);
+        }
+      } catch(e) {
         Array.from(digits).forEach(function(d) { d.style.borderColor = '#ef4444'; });
         setTimeout(function() { Array.from(digits).forEach(function(d) { d.style.borderColor = ''; }); }, 800);
       }
     }
 
-    function resetPassword() {
+    async function resetPassword() {
       var pw      = document.getElementById('newPassword').value;
       var confirm = document.getElementById('confirmPassword').value;
       var errEl   = document.getElementById('pwResetError');
@@ -367,8 +394,24 @@
       if (pw.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.classList.add('show'); return; }
       if (pw !== confirm) { errEl.textContent = 'Passwords do not match.'; errEl.classList.add('show'); return; }
 
-      localStorage.setItem('ayilon_password', pw);
+      try {
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/reset-password', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: forgotEmailForVerify, code: forgotVerifiedCode, newPassword: pw })
+        });
+        var data = await res.json();
+        if (!data.ok) {
+          errEl.textContent = data.error === 'invalid_code' ? 'Code expired. Please start over.' : 'Reset failed. Try again.';
+          errEl.classList.add('show');
+          return;
+        }
+      } catch(e) {
+        errEl.textContent = 'Network error. Try again.';
+        errEl.classList.add('show');
+        return;
+      }
 
+      forgotVerifiedCode = null;
       showStep(1);
       var ok = document.createElement('div');
       ok.style.cssText = 'background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 16px;font-size:13px;color:#22c55e;margin-bottom:16px;';

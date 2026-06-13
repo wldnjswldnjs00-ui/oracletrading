@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AYILON Bot — Complete Trading Logic</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --black: #000;
+    --white: #fff;
+    --gray-50: #fafafa;
+    --gray-100: #f5f5f5;
+    --gray-200: #e5e5e5;
+    --gray-400: #a3a3a3;
+    --gray-600: #525252;
+    --gray-800: #262626;
+    --green: #22c55e;
+    --yellow: #fbbf24;
+    --red: #ef4444;
+    --blue: #3b82f6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--white);
+    color: var(--black);
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 48px;
+  }
+
+  /* ── COVER ─────────────────────────────────────── */
+  .cover {
+    page-break-after: always;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: 1px solid var(--gray-200);
+    padding-bottom: 60px;
+  }
+  .cover-tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 24px;
+  }
+  .cover-title {
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+  .cover-sub {
+    font-size: 18px;
+    color: var(--gray-600);
+    font-weight: 400;
+    margin-bottom: 48px;
+    max-width: 520px;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 32px;
+    border-top: 1px solid var(--gray-200);
+    padding-top: 32px;
+  }
+  .cover-meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .cover-meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); }
+  .cover-meta-value { font-size: 14px; font-weight: 600; }
+
+  /* ── SECTION ────────────────────────────────────── */
+  .section {
+    margin-bottom: 64px;
+    page-break-inside: avoid;
+  }
+  .section-num {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 6px;
+  }
+  .section-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--black);
+  }
+
+  /* ── SUBSECTION ─────────────────────────────────── */
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 28px;
+    margin-bottom: 10px;
+  }
+  h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+
+  p { margin-bottom: 10px; color: var(--gray-800); }
+
+  /* ── TABLE ──────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+  thead tr { border-bottom: 2px solid var(--black); }
+  thead th {
+    text-align: left;
+    padding: 8px 12px 10px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gray-600);
+  }
+  tbody tr { border-bottom: 1px solid var(--gray-200); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 10px 12px; vertical-align: top; }
+  .td-label { font-weight: 600; white-space: nowrap; }
+  .td-mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  /* ── CALLOUT ────────────────────────────────────── */
+  .callout {
+    border-left: 3px solid var(--black);
+    padding: 14px 18px;
+    background: var(--gray-50);
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout.green  { border-color: var(--green);  background: #f0fdf4; }
+  .callout.yellow { border-color: var(--yellow); background: #fffbeb; }
+  .callout.red    { border-color: var(--red);    background: #fef2f2; }
+  .callout.blue   { border-color: var(--blue);   background: #eff6ff; }
+  .callout-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+    opacity: 0.6;
+  }
+
+  /* ── CODE ───────────────────────────────────────── */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--gray-100);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--gray-100);
+    padding: 16px 20px;
+    border-radius: 6px;
+    margin: 12px 0;
+    overflow-x: auto;
+    line-height: 1.8;
+    border: 1px solid var(--gray-200);
+  }
+
+  /* ── BADGE ──────────────────────────────────────── */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+  }
+  .badge-s  { background: #fef08a; color: #713f12; }
+  .badge-a  { background: #bbf7d0; color: #14532d; }
+  .badge-b  { background: #e5e7eb; color: #374151; }
+  .badge-green  { background: #dcfce7; color: #166534; }
+  .badge-red    { background: #fee2e2; color: #991b1b; }
+  .badge-yellow { background: #fef9c3; color: #854d0e; }
+
+  /* ── FLOW ───────────────────────────────────────── */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 16px 0;
+  }
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .flow-step:last-child { border-bottom: none; }
+  .flow-num {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    background: var(--black);
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .flow-content { flex: 1; }
+  .flow-name { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
+  .flow-desc { font-size: 12px; color: var(--gray-600); }
+
+  /* ── GRID ───────────────────────────────────────── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .card {
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-400); margin-bottom: 6px; }
+  .card-value { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .card-desc  { font-size: 12px; color: var(--gray-600); margin-top: 4px; }
+
+  /* ── TOC ────────────────────────────────────────── */
+  .toc { margin: 32px 0 48px; }
+  .toc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 7px 0;
+    border-bottom: 1px dotted var(--gray-200);
+    font-size: 13px;
+  }
+  .toc-num { color: var(--gray-400); font-size: 11px; margin-right: 10px; }
+  .toc-title { font-weight: 500; }
+  .toc-page  { color: var(--gray-400); font-size: 12px; }
+
+  /* ── FORMULA ────────────────────────────────────── */
+  .formula {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 20px;
+    background: var(--gray-100);
+    border-radius: 6px;
+    margin: 12px 0;
+    letter-spacing: 0.02em;
+    border: 1px solid var(--gray-200);
+  }
+
+  /* ── PAGE BREAK ─────────────────────────────────── */
+  .page-break { page-break-before: always; padding-top: 48px; }
+
+  /* ── PRINT ──────────────────────────────────────── */
+  @media print {
+    body { padding: 0; font-size: 12px; }
+    .cover { min-height: auto; padding-bottom: 40px; }
+    .cover-title { font-size: 42px; }
+    .section { margin-bottom: 40px; }
+    a { color: inherit; text-decoration: none; }
+    .no-print { display: none; }
+  }
+
+  /* ── PRINT BUTTON ───────────────────────────────── */
+  .print-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--black);
+    color: var(--white);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 999;
+    font-size: 13px;
+  }
+  .print-btn {
+    background: var(--white);
+    color: var(--black);
+    border: none;
+    padding: 7px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+  .print-btn:hover { background: #e5e5e5; }
+  @media print { .print-bar { display: none; } body { padding-top: 0; } }
+  @media screen { body { padding-top: 96px; } }
+
+  ul, ol { padding-left: 20px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; color: var(--gray-800); }
+</style>
+</head>
+<body>
+
+<div class="print-bar no-print">
+  <span>AYILON Bot — Trading Logic Document</span>
+  <button class="print-btn" onclick="window.print()">⬇ Save as PDF</button>
+</div>
+
+<!-- ══════════════════════ COVER ══════════════════════ -->
+<div class="cover">
+  <div class="cover-tag">AYILON · Automated Trading System</div>
+  <div class="cover-title">Trading Bot<br>Logic Guide</div>
+  <div class="cover-sub">Complete documentation of how the AYILON bot analyzes markets, enters positions, manages risk, and exits trades.</div>
+
+  <div class="toc">
+    <div class="toc-row"><span><span class="toc-num">01</span><span class="toc-title">System Overview</span></span><span class="toc-page">2</span></div>
+    <div class="toc-row"><span><span class="toc-num">02</span><span class="toc-title">Market Analysis — S/R Level Detection</span></span><span class="toc-page">2</span></div>
+    <div class="toc-row"><span><span class="toc-num">03</span><span class="toc-title">Level Grading — S / A / B Tiers</span></span><span class="toc-page">3</span></div>
+    <div class="toc-row"><span><span class="toc-num">04</span><span class="toc-title">Volume Zone (매물대) Analysis</span></span><span class="toc-page">4</span></div>
+    <div class="toc-row"><span><span class="toc-num">05</span><span class="toc-title">Entry Signal Detection</span></span><span class="toc-page">4</span></div>
+    <div class="toc-row"><span><span class="toc-num">06</span><span class="toc-title">Position Sizing & Kelly Criterion</span></span><span class="toc-page">5</span></div>
+    <div class="toc-row"><span><span class="toc-num">07</span><span class="toc-title">Entry Safety Rules</span></span><span class="toc-page">6</span></div>
+    <div class="toc-row"><span><span class="toc-num">08</span><span class="toc-title">Take Profit — Partial Close Strategy</span></span><span class="toc-page">6</span></div>
+    <div class="toc-row"><span><span class="toc-num">09</span><span class="toc-title">Stop Loss</span></span><span class="toc-page">7</span></div>
+    <div class="toc-row"><span><span class="toc-num">10</span><span class="toc-title">Daily Loss Limit</span></span><span class="toc-page">7</span></div>
+    <div class="toc-row"><span><span class="toc-num">11</span><span class="toc-title">Full Trade Lifecycle (Example)</span></span><span class="toc-page">8</span></div>
+    <div class="toc-row"><span><span class="toc-num">12</span><span class="toc-title">Default Parameters</span></span><span class="toc-page">9</span></div>
+    <div class="toc-row"><span><span class="toc-num">13</span><span class="toc-title">Demo Mode</span></span><span class="toc-page">9</span></div>
+  </div>
+
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <span class="cover-meta-label">Exchange</span>
+      <span class="cover-meta-value">OKX (Perpetual Swaps)</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="cover-meta-label">Infrastructure</span>
+      <span class="cover-meta-value">Cloudflare Workers</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="cover-meta-label">Execution Frequency</span>
+      <span class="cover-meta-value">Every minute (cron)</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="cover-meta-label">Version</span>
+      <span class="cover-meta-value">2.0</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ 01 OVERVIEW ══════════════════════ -->
+<div class="section page-break">
+  <div class="section-num">01</div>
+  <div class="section-title">System Overview</div>
+
+  <p>AYILON is a fully automated perpetual swap trading bot running on Cloudflare Workers. Every minute, a scheduled cron job wakes the bot, fetches live market data, runs the analysis pipeline, and places orders via the OKX API if conditions are met.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">
+        <div class="flow-name">Cron Trigger (every minute)</div>
+        <div class="flow-desc">Cloudflare Workers scheduled event fires. Bot reads config from KV store and checks if <code>running = true</code>.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content">
+        <div class="flow-name">Daily Loss Gate</div>
+        <div class="flow-desc">If today's realized loss already exceeds the user-set limit, bot halts immediately and sends alert.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">
+        <div class="flow-name">S/R Level Detection</div>
+        <div class="flow-desc">Fetches 100 × 1H candles and 100 × 4H candles. Detects support/resistance levels with recency-weighted touch counting.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content">
+        <div class="flow-name">Level Grading + Volume Confirmation</div>
+        <div class="flow-desc">Grades each level S/A/B based on timeframe confluence. Adds volume profile zones that overlap with S/R levels (±1%).</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-content">
+        <div class="flow-name">Entry Signal Check (5m candles)</div>
+        <div class="flow-desc">Checks if current price is touching a level, 3-candle momentum confirms direction, and SL distance is 3–6%.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-content">
+        <div class="flow-name">Order Placement</div>
+        <div class="flow-desc">If all conditions pass, places a market order via OKX API. Records entry in KV state.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">7</div>
+      <div class="flow-content">
+        <div class="flow-name">SL / TP Monitoring (every cron)</div>
+        <div class="flow-desc">On every tick: checks if price has hit TP (→ 50% partial close, SL to break-even) or SL (→ full close).</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ 02 S/R DETECTION ══════════════════════ -->
+<div class="section page-break">
+  <div class="section-num">02</div>
+  <div class="section-title">Market Analysis — S/R Level Detection</div>
+
+  <p>The bot fetches <strong>100 candles each</strong> from the 1H and 4H timeframes simultaneously. It scans every high and low price across these candles to identify support and resistance levels.</p>
+
+  <h3>Touch Counting Algorithm</h3>
+  <p>For each candidate price level, the bot counts how many candles touched it. A candle "touches" a level if its high or low is within a <code>±0.3%</code> tolerance band of that level.</p>
+
+  <div class="callout blue">
+    <div class="callout-label">Recency Weighting</div>
+    A level's required touch count depends on <strong>how recent</strong> those touches are. This reflects the real-world observation that recent price reactions carry more weight than old ones.
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Age of touches</th>
+        <th>Required touches to be valid</th>
+        <th>Reasoning</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="td-label">Within last 20 candles</td>
+        <td><span class="badge badge-green">2 touches</span></td>
+        <td>Market recently respected this level — likely still active</td>
+      </tr>
+      <tr>
+        <td class="td-label">Older than 20 candles</td>
+        <td><span class="badge badge-yellow">3 touches</span></td>
+        <td>Needs more confirmation since it hasn't been tested recently</td>
+      </tr>
+      <tr>
+        <td class="td-label">Older than 100 candles</td>
+        <td><span class="badge badge-red">Ignored</span></td>
+        <td>Too stale — market structure has likely changed</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Level Deduplication</h3>
+  <p>After collecting all valid levels, nearby duplicates are merged. Any two levels within <strong>0.5%</strong> of each other are considered the same zone. The top 4 supports (below price) and top 4 resistances (above price) are kept per timeframe.</p>
+
+  <h3>Final Level Pool</h3>
+  <p>After grading and merging 1H + 4H levels, the final set is capped at <strong>5 supports + 5 resistances</strong>, sorted by proximity to current price.</p>
+</div>
+
+<!-- ══════════════════════ 03 GRADING ══════════════════════ -->
+<div class="section page-break">
+  <div class="section-num">03</div>
+  <div class="section-title">Level Grading — S / A / B Tiers</div>
+
+  <p>Every detected level is assigned a grade based on how many timeframes confirm it and how strong the touch history is. The grade is logged with each trade so performance by tier can be tracked over time.</p>
+
+  <div class="grid3">
+    <div class="card">
+      <div class="card-label">S급 (S Tier)</div>
+      <div class="card-value"><span class="badge badge-s">S</span></div>
+      <div class="card-desc">Level appears on <strong>both 1H and 4H</strong> within 0.5% tolerance. Highest confluence. Strongest signal.</div>
+    </div>
+    <div class="card">
+      <div class="card-label">A급 (A Tier)</div>
+      <div class="card-value"><span class="badge badge-a">A</span></div>
+      <div class="card-desc">4H level with <strong>4+ touches</strong>, OR any level with at least <strong>1 recent touch</strong> (within 20 candles).</div>
+    </div>
+    <div class="card">
+      <div class="card-label">B급 (B Tier)</div>
+      <div class="card-value"><span class="badge badge-b">B</span></div>
+      <div class="card-desc">1H-only level, older touches, minimum 2 confirmations. Lower confidence — still traded, logged separately.</div>
+    </div>
+  </div>
+
+  <h3>Grading Logic</h3>
+  <table>
+    <thead>
+      <tr><th>Condition</th><th>Grade</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Found on 1H <em>and</em> 4H (within 0.5%)</td>
+        <td><span class="badge badge-s">S</span></td>
+        <td>Trade — highest priority</td>
+      </tr>
+      <tr>
+        <td>4H only, 4+ total touches</td>
+        <td><span class="badge badge-a">A</span></td>
+        <td>Trade</td>
+      </tr>
+      <tr>
+        <td>Any level with ≥1 touch in last 20 candles</td>
+        <td><span class="badge badge-a">A</span></td>
+        <td>Trade</td>
+      </tr>
+      <tr>
+        <td>1H only, old touches, exactly 2 touches</td>
+        <td><span class="badge badge-b">B</span></td>
+        <td>Trade — lower confidence</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="callout-label">Log Format</div>
+    Each trade log shows the grade: <code>LONG #1/3 @ 105000 | [S급] L:104800 | SL:101200 | TP:108500 | sz:0.0042</code>
+  </div>
+</div>
+
+<!-- ══════════════════════ 04 VOLUME ZONES ══════════════════════ -->
+<div class="section">
+  <div class="section-num">04</div>
+  <div class="section-title">Volume Zone (매물대) Analysis</div>
+
+  <p>On top of price-based S/R, the bot builds a <strong>volume profile</strong> from 4H candles to find high-volume price clusters where the market has historically spent significant time and energy.</p>
+
+  <h3>How It Works</h3>
+  <ol>
+    <li>The full 4H price range (100 candles) is divided into <strong>50 equal buckets</strong>.</li>
+    <li>Each candle's volume is distributed proportionally across the buckets it spans.</li>
+    <li>Buckets with volume <strong>≥ 2× the average</strong> are flagged as high-volume zones.</li>
+    <li>Each zone is classified as support (below current price) or resistance (above).</li>
+  </ol>
+
+  <div class="callout yellow">
+    <div class="callout-label">Noise Filter — Critical Rule</div>
+    Volume zones are <strong>only included</strong> if they fall within <strong>±1%</strong> of an existing S/R level. This prevents the bot from chasing isolated volume spikes that have no price structure backing them.
+  </div>
+
+  <p>After filtering, up to <strong>3 volume-confirmed supports + 3 resistances</strong> are merged into the main level pool. These volume-backed S/R levels carry extra weight in the final signal decision.</p>
+</div>
+
+<!-- ══════════════════════ 05 ENTRY SIGNAL ══════════════════════ -->
+<div class="section page-break">
+  <div class="section-num">05</div>
+  <div class="section-title">Entry Signal Detection</div>
+
+  <p>Entry timing is done on the <strong>5-minute chart</strong> (last 20 candles). Three conditions must all pass simultaneously for a signal to trigger.</p>
+
+  <h3>Condition 1 — Price Touching an S/R Level</h3>
+  <p>The current 5m candle's close price must be within <strong>±0.4%</strong> of a support or resistance level.</p>
+  <div class="formula">|current_price − level_price| / level_price ≤ 0.004</div>
+
+  <h3>Condition 2 — 3-Candle Momentum Confirmation</h3>
+  <p>Before entering, the bot checks the direction of the last 3 closed 5m candles to confirm momentum:</p>
+
+  <div class="grid2">
+    <div class="callout green">
+      <div class="callout-label">LONG Signal</div>
+      Price is touching a <strong>support</strong> level AND the previous 3 candles are <strong>falling</strong> (each close lower than the previous). This confirms the market is reaching down to the support — a bounce setup.
+    </div>
+    <div class="callout red">
+      <div class="callout-label">SHORT Signal</div>
+      Price is touching a <strong>resistance</strong> level AND the previous 3 candles are <strong>rising</strong> (each close higher than the previous). This confirms the market is pushing up into resistance — a rejection setup.
+    </div>
+  </div>
+
+  <h3>Condition 3 — Stop Loss Distance Filter (3–6%, spot basis)</h3>
+  <p>All percentages below are <strong>spot price distances</strong>, not leveraged returns. The natural SL is the previous 5m candle's wick:</p>
+  <ul>
+    <li>For LONG: SL = previous candle's low. Distance = <code>(current_price − prev_low) / current_price</code></li>
+    <li>For SHORT: SL = previous candle's high. Distance = <code>(prev_high − current_price) / current_price</code></li>
+  </ul>
+  <table>
+    <thead><tr><th>SL Distance (spot)</th><th>At 5× leverage</th><th>Action</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td class="td-label">Less than 3%</td><td>−15% on position</td><td><span class="badge badge-red">Skip</span></td><td>Too tight — noise will stop you out</td></tr>
+      <tr><td class="td-label">3% – 6%</td><td>−15% to −30% on position</td><td><span class="badge badge-green">Enter</span></td><td>Optimal — clear structure, manageable loss</td></tr>
+      <tr><td class="td-label">More than 6%</td><td>−30%+ on position</td><td><span class="badge badge-red">Skip</span></td><td>Too wide — poor risk/reward</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--gray-600);">Account-level impact: with 12% position size and 5× leverage, a 3% SL = 12% × 15% = <strong>1.8% account loss</strong> per entry.</p>
+
+  <div class="callout">
+    <div class="callout-label">All 3 conditions required</div>
+    A signal is only generated when <strong>all three conditions</strong> pass: level touch + momentum direction + SL in 3–6% range. If any one fails, the bot waits for the next cron cycle.
+  </div>
+</div>
+
+<!-- ══════════════════════ 06 SIZING ══════════════════════ -->
+<div class="section page-break">
+  <div class="section-num">06</div>
+  <div class="section-title">Position Sizing & Kelly Criterion</div>
+
+  <h3>Why 12% Total, 5x Leverage, 3 Entries?</h3>
+  <p>These defaults are derived from the <strong>Half-Kelly Criterion</strong> — a mathematical framework that maximizes long-term compounding while limiting ruin risk.</p>
+
+  <div class="grid3">
+    <div class="card">
+      <div class="card-label">Total Position Size</div>
+      <div class="card-value">12%</div>
+      <div class="card-desc">Of total equity per trade setup. 4% per entry × 3 entries.</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Max Leverage</div>
+      <div class="card-value">5×</div>
+      <div class="card-desc">3× liquidation buffer at 3–6% SL. Sustainable for compounding.</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Number of Entries</div>
+      <div class="card-value">3</div>
+      <div class="card-desc">Optimal EV split. Caps loss exposure if level fails early.</div>
+    </div>
+  </div>
+
+  <h3>Kelly Criterion Basis</h3>
+  <p>Full Kelly suggests risking ~25% of equity per trade given typical win rates. <strong>Half-Kelly = 12.5%</strong>, rounded to 12% for safety. This balances growth rate with drawdown protection.</p>
+
+  <div class="formula">
+    Entry size = (Total Equity × posSize%) ÷ numEntries
+  </div>
+
+  <h3>Entry Sizing Modes</h3>
+  <table>
+    <thead><tr><th>Mode</th><th>How it works</th><th>Best for</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="td-label">Equal</td>
+        <td>Each entry gets the same dollar value: <code>totalVal / numEntries</code></td>
+        <td>Safe, recommended for most users</td>
+      </tr>
+      <tr>
+        <td class="td-label">Martingale</td>
+        <td>Each subsequent entry doubles: <code>baseVal × 2^(entryNum−1)</code></td>
+        <td>Aggressive averaging — higher risk, higher average improvement</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout yellow">
+    <div class="callout-label">Kelly Warning</div>
+    If total position size exceeds <strong>40%</strong> of equity OR leverage exceeds <strong>20×</strong>, the bot logs a warning: <code>⚠️ Kelly warning: pos=X% lev=Xx</code>. Trading is not blocked, but the risk is flagged.
+  </div>
+</div>
+
+<!-- ══════════════════════ 07 ENTRY SAFETY ══════════════════════ -->
+<div class="section">
+  <div class="section-num">07</div>
+  <div class="section-title">Entry Safety Rules</div>
+
+  <h3>Rule 1 — No Direction Flip</h3>
+  <p>If the bot already holds an open position in one direction (e.g., LONG), it will <strong>never open a SHORT</strong> until that position is fully closed. This prevents being caught on both sides of the market simultaneously.</p>
+
+  <h3>Rule 2 — Maximum Entry Count</h3>
+  <p>The bot tracks how many entries have been placed in the current setup. Once the user-configured <code>numEntries</code> limit is reached (default: 3), no further entries are allowed for this setup.</p>
+
+  <h3>Rule 3 — ±2% Fractional Entry Range</h3>
+  <p>For entries #2 and #3, the current price must be <strong>within ±2% of the first entry price</strong>.</p>
+
+  <div class="formula">
+    |current_price − first_entry_price| / first_entry_price ≤ 0.02
+  </div>
+
+  <div class="callout red">
+    <div class="callout-label">Why This Matters</div>
+    Without this rule, the bot could keep averaging down as price falls, multiplying leveraged losses with each entry. At 5× leverage, a 10% move against you is a 50% account hit. The ±2% cap keeps all entries in a tight cluster so the average entry doesn't drift far from the original level.
+  </div>
+</div>
+
+<!-- ══════════════════════ 08 TAKE PROFIT ══════════════════════ -->
+<div class="section page-break">
+  <div class="section-num">08</div>
+  <div class="section-title">Take Profit — Half-Position Close Strategy</div>
+
+  <div class="callout blue">
+    <div class="callout-label">Key Concept — "반 익절" explained</div>
+    <strong>"50%"는 수익률이 아닙니다 — 포지션 수량의 절반을 청산하는 것입니다.</strong><br><br>
+    예: 0.01 BTC 롱 → 다음 저항선 도달 → 0.005 BTC 청산 (나머지 0.005 BTC는 계속 보유).<br>
+    TP 트리거는 "50% 수익"이 아니라 <strong>다음 S/R 레벨 도달</strong>입니다.<br>
+    이동폭은 <strong>현물(spot) 기준</strong>이며 보통 3~8%. 5배 레버리지 적용 시 실제 포지션 수익률은 15~40%입니다.
+  </div>
+
+  <h3>TP Level Selection</h3>
+  <p>TP is the nearest structural level in the trade direction — not a fixed profit percentage.</p>
+  <ul>
+    <li><strong>LONG:</strong> TP = nearest resistance above entry (must be at least +0.5% away)</li>
+    <li><strong>SHORT:</strong> TP = nearest support below entry (must be at least −0.5% away)</li>
+  </ul>
+
+  <h3>What Happens on TP Hit</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">
+        <div class="flow-name">Close half the position size (반 익절)</div>
+        <div class="flow-desc">Bot places a market order to close exactly <strong>half the total size held</strong>. e.g. 0.01 BTC → sell 0.005 BTC at the TP level. Profit is locked in on this half.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content">
+        <div class="flow-name">SL Moves to Average Entry (본절)</div>
+        <div class="flow-desc">Stop loss is moved to the weighted average entry price across all entries. If price pulls back to this level, the remaining half closes at break-even — no loss.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">
+        <div class="flow-name">Remaining Half Rides Free</div>
+        <div class="flow-desc">No fixed TP for the second half. It stays open until the break-even SL is hit, capturing any further move beyond the first level.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout green">
+    <div class="callout-label">The Logic</div>
+    Enter at support with a tight SL (3–6%). Price bounces to the next resistance → close half, lock profit. If it pulls back to your average entry → close the rest at break-even (zero loss). If it keeps going → ride the second half for free. Worst case: small profit on the first half, zero on the second.
+  </div>
+
+  <div class="formula">
+    Break-even SL = (Σ entry_price × entry_size) / Σ entry_size
+  </div>
+</div>
+
+<!-- ══════════════════════ 09 STOP LOSS ══════════════════════ -->
+<div class="section">
+  <div class="section-num">09</div>
+  <div class="section-title">Stop Loss</div>
+
+  <h3>SL Setting</h3>
+  <p>The stop loss is set from the <strong>first entry only</strong> and is based on the natural structure of the 5m chart at entry time:</p>
+  <ul>
+    <li><strong>LONG SL:</strong> low of the previous 5m candle at entry</li>
+    <li><strong>SHORT SL:</strong> high of the previous 5m candle at entry</li>
+  </ul>
+  <p>Additional entries (#2, #3) do <em>not</em> change the SL — they share the same stop level, which is why the ±2% range rule exists.</p>
+
+  <h3>SL After Partial TP</h3>
+  <p>Once 50% is closed at TP, the SL moves to the <strong>weighted average entry price</strong> (break-even). From here, the trade can only result in a gain or a zero — never a new loss on this setup.</p>
+
+  <h3>SL Execution</h3>
+  <p>The bot does <strong>not</strong> place native stop-loss orders on the exchange. Instead, every cron tick it compares current price to the stored SL level. When price crosses the SL:</p>
+  <ol>
+    <li>Bot calls OKX <code>close-position</code> API (full close of remaining position)</li>
+    <li>Realized loss is calculated from open P&L and added to today's daily loss tracker</li>
+    <li>Position state is cleared from KV store</li>
+  </ol>
+
+  <div class="callout yellow">
+    <div class="callout-label">Note on SL Slippage</div>
+    Since SL is checked every minute (not tick-by-tick), high volatility candles can cause the close price to be worse than the SL level. In calm markets this difference is minimal.
+  </div>
+</div>
+
+<!-- ══════════════════════ 10 DAILY LOSS ══════════════════════ -->
+<div class="section page-break">
+  <div class="section-num">10</div>
+  <div class="section-title">Daily Loss Limit</div>
+
+  <p>The daily loss limit is a circuit breaker that stops the bot from trading after a bad day, preventing a series of losses from compounding into a catastrophic drawdown.</p>
+
+  <table>
+    <thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="td-label">Enabled</td><td>Yes</td><td>Active by default — strongly recommended to keep on</td></tr>
+      <tr><td class="td-label">Limit</td><td>5%</td><td>Bot pauses if today's realized loss reaches 5% of equity</td></tr>
+      <tr><td class="td-label">Reset</td><td>Daily</td><td>Loss counter resets at midnight UTC each day</td></tr>
+    </tbody>
+  </table>
+
+  <h3>What Happens When Limit Is Hit</h3>
+  <ol>
+    <li>Bot sets <code>running = false</code> in config</li>
+    <li>Alert banner appears on the dashboard</li>
+    <li>Notification sent via email (and Telegram if configured)</li>
+    <li>No further orders placed until manually resumed</li>
+  </ol>
+
+  <h3>How to Resume</h3>
+  <p>From the dashboard, you can either:</p>
+  <ul>
+    <li><strong>Dismiss:</strong> Hides the alert and re-enables the bot <em>without</em> resetting today's loss counter (next SL hit will re-trigger the limit)</li>
+    <li><strong>Resume:</strong> Re-enables the bot and resets today's loss counter (fresh start)</li>
+  </ul>
+</div>
+
+<!-- ══════════════════════ 11 EXAMPLE ══════════════════════ -->
+<div class="section page-break">
+  <div class="section-num">11</div>
+  <div class="section-title">Full Trade Lifecycle (Example)</div>
+
+  <p>Walk-through of a complete LONG trade on BTC-USDT-SWAP with default settings:</p>
+
+  <table>
+    <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Equity</td><td>$10,000 USDT</td></tr>
+      <tr><td>Max Position Size</td><td>12%  →  $1,200 total</td></tr>
+      <tr><td>Leverage</td><td>5×</td></tr>
+      <tr><td>Entries</td><td>3 (equal: $400 each)</td></tr>
+      <tr><td>BTC price at entry</td><td>$100,000</td></tr>
+    </tbody>
+  </table>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">
+        <div class="flow-name">Analysis finds [S급] support at $100,000</div>
+        <div class="flow-desc">Level exists on both 1H and 4H. Volume profile confirms high volume at this zone. Grade: S.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content">
+        <div class="flow-name">5m momentum: 3 consecutive falling candles → LONG signal</div>
+        <div class="flow-desc">Prev 5m candle low = $97,100. SL distance = 2.9% → too tight, bot skips this tick.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">
+        <div class="flow-name">Next cron: prev candle low = $96,800 → SL distance = 3.2% ✓</div>
+        <div class="flow-desc">All 3 conditions pass. Entry #1 placed: LONG $400 (0.002 BTC × 5× = $2,000 notional). SL set at $96,800. TP = nearest resistance at $105,000.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content">
+        <div class="flow-name">Price dips to $99,500 → Entry #2 triggered</div>
+        <div class="flow-desc">Still within ±2% of first entry ($100,000). Signal re-triggers at support. Entry #2: $400 more. Avg entry ≈ $99,750.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-content">
+        <div class="flow-name">Price recovers, hits TP at $105,000 → Partial close</div>
+        <div class="flow-desc">50% of total position closed at $105,000. Profit on first half: ~$260. SL moved to break-even ($99,750).</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-content">
+        <div class="flow-name">Price pushes to $108,000 then pulls back to $99,750</div>
+        <div class="flow-desc">SL (break-even) hit. Remaining 50% closed at $99,750. Net on second half: ~$0 (minus fees). Total trade: +~$260 profit.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ 12 PARAMETERS ══════════════════════ -->
+<div class="section">
+  <div class="section-num">12</div>
+  <div class="section-title">Default Parameters Reference</div>
+
+  <table>
+    <thead><tr><th>Parameter</th><th>Default</th><th>Range</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="td-label">Max Position Size</td><td>12%</td><td>1–100%</td><td>Half-Kelly default</td></tr>
+      <tr><td class="td-label">Max Leverage</td><td>5×</td><td>1–100×</td><td>Warning triggers above 20×</td></tr>
+      <tr><td class="td-label">Number of Entries</td><td>3</td><td>2–10</td><td>Kelly warning above 40% total</td></tr>
+      <tr><td class="td-label">Entry Sizing</td><td>Equal</td><td>Equal / Martingale</td><td>Equal recommended</td></tr>
+      <tr><td class="td-label">Daily Loss Limit</td><td>5%</td><td>0.1–10%</td><td>Enabled by default</td></tr>
+      <tr><td class="td-label">S/R tolerance (detection)</td><td>0.3%</td><td>Fixed</td><td>Touch band for level confirmation</td></tr>
+      <tr><td class="td-label">S/R tolerance (dedup)</td><td>0.5%</td><td>Fixed</td><td>Merge nearby duplicate levels</td></tr>
+      <tr><td class="td-label">Entry touch tolerance</td><td>0.4%</td><td>Fixed</td><td>Distance from level for entry</td></tr>
+      <tr><td class="td-label">SL distance range</td><td>3–6%</td><td>Fixed</td><td>Below 3% or above 6% = skip</td></tr>
+      <tr><td class="td-label">Fractional entry range</td><td>±2%</td><td>Fixed</td><td>Max drift from first entry for #2/#3</td></tr>
+      <tr><td class="td-label">Recency window</td><td>20 candles</td><td>Fixed</td><td>2 touches sufficient within this range</td></tr>
+      <tr><td class="td-label">Max S/R age</td><td>100 candles</td><td>Fixed</td><td>Older levels ignored</td></tr>
+      <tr><td class="td-label">Volume profile buckets</td><td>50</td><td>Fixed</td><td>Granularity of volume zones</td></tr>
+      <tr><td class="td-label">Volume zone threshold</td><td>2× avg</td><td>Fixed</td><td>Min volume to count as a zone</td></tr>
+      <tr><td class="td-label">Vol zone ↔ S/R overlap</td><td>±1%</td><td>Fixed</td><td>Zone must be near S/R to be used</td></tr>
+      <tr><td class="td-label">Partial close on TP</td><td>50%</td><td>Fixed</td><td>SL moves to break-even after</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════ 13 DEMO MODE ══════════════════════ -->
+<div class="section page-break">
+  <div class="section-num">13</div>
+  <div class="section-title">Demo Mode</div>
+
+  <p>Demo Mode routes all API calls to OKX's <strong>paper trading environment</strong>. All analysis logic, order placement, and SL/TP monitoring run identically — but no real money is used.</p>
+
+  <h3>How It Works</h3>
+  <p>When Demo Mode is enabled, the bot adds the <code>x-simulated-trading: 1</code> header to every OKX API request. OKX's server routes these requests to their simulated trading system automatically.</p>
+
+  <div class="callout yellow">
+    <div class="callout-label">Important — Separate API Keys Required</div>
+    OKX Demo Trading uses a <strong>different set of API keys</strong> from your live account. You must log into OKX, navigate to "Demo Trading", and create a new API key there. The demo API key will not work on the live API, and vice versa.
+  </div>
+
+  <table>
+    <thead><tr><th></th><th>Live Mode</th><th>Demo Mode</th></tr></thead>
+    <tbody>
+      <tr><td class="td-label">API Header</td><td>Standard OKX headers</td><td>+ <code>x-simulated-trading: 1</code></td></tr>
+      <tr><td class="td-label">API Keys</td><td>Live account keys</td><td>OKX Demo account keys</td></tr>
+      <tr><td class="td-label">Funds</td><td>Real USDT</td><td>Virtual balance</td></tr>
+      <tr><td class="td-label">Bot logic</td><td>Identical</td><td>Identical</td></tr>
+      <tr><td class="td-label">Dashboard badge</td><td>—</td><td><span class="badge badge-yellow">DEMO</span> shown</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Recommended Usage</h3>
+  <p>Run Demo Mode for at least 2–4 weeks before switching to live trading. This lets you verify that the bot's entry and exit behavior matches your expectations across different market conditions without financial risk.</p>
+</div>
+
+<!-- ── FOOTER ─────────────────────────────────────── -->
+<div style="margin-top:80px;padding-top:24px;border-top:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center;color:var(--gray-400);font-size:12px;">
+  <span>AYILON — Automated Trading System</span>
+  <span>oracletrading-01o.pages.dev</span>
+</div>
+
+</body>
+</html>
