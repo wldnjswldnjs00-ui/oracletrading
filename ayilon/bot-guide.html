@@ -684,14 +684,20 @@
 <!-- ══════════════════════ 08 TAKE PROFIT ══════════════════════ -->
 <div class="section page-break">
   <div class="section-num">08</div>
-  <div class="section-title">Take Profit — Partial Close Strategy</div>
+  <div class="section-title">Take Profit — Half-Position Close Strategy</div>
 
-  <p>Rather than a fixed percentage TP, AYILON uses the <strong>next S/R level</strong> in the trade direction as the take profit target. This is a structural TP — the market has historically stalled or reversed at these levels.</p>
+  <div class="callout blue">
+    <div class="callout-label">Key Concept — "반 익절" explained</div>
+    <strong>"50%"는 수익률이 아닙니다 — 포지션 수량의 절반을 청산하는 것입니다.</strong><br><br>
+    예: 0.01 BTC 롱 → 다음 저항선 도달 → 0.005 BTC 청산 (나머지 0.005 BTC는 계속 보유).<br>
+    TP 트리거는 "50% 수익"이 아니라 <strong>다음 S/R 레벨 도달</strong>입니다 (보통 3~8% 이동).
+  </div>
 
   <h3>TP Level Selection</h3>
+  <p>TP is the nearest structural level in the trade direction — not a fixed profit percentage.</p>
   <ul>
-    <li><strong>LONG:</strong> TP = nearest resistance above current price (must be at least +0.5% away)</li>
-    <li><strong>SHORT:</strong> TP = nearest support below current price (must be at least −0.5% away)</li>
+    <li><strong>LONG:</strong> TP = nearest resistance above entry (must be at least +0.5% away)</li>
+    <li><strong>SHORT:</strong> TP = nearest support below entry (must be at least −0.5% away)</li>
   </ul>
 
   <h3>What Happens on TP Hit</h3>
@@ -699,29 +705,29 @@
     <div class="flow-step">
       <div class="flow-num">1</div>
       <div class="flow-content">
-        <div class="flow-name">50% Partial Close</div>
-        <div class="flow-desc">Bot places a market order to close exactly half the total position size. Locks in profit on first half.</div>
+        <div class="flow-name">Close half the position size (반 익절)</div>
+        <div class="flow-desc">Bot places a market order to close exactly <strong>half the total size held</strong>. e.g. 0.01 BTC → sell 0.005 BTC at the TP level. Profit is locked in on this half.</div>
       </div>
     </div>
     <div class="flow-step">
       <div class="flow-num">2</div>
       <div class="flow-content">
-        <div class="flow-name">SL Moves to Break-Even</div>
-        <div class="flow-desc">Stop loss is updated to the average entry price of all entries. The second half of the trade is now risk-free.</div>
+        <div class="flow-name">SL Moves to Average Entry (본절)</div>
+        <div class="flow-desc">Stop loss is moved to the weighted average entry price across all entries. If price pulls back to this level, the remaining half closes at break-even — no loss.</div>
       </div>
     </div>
     <div class="flow-step">
       <div class="flow-num">3</div>
       <div class="flow-content">
-        <div class="flow-name">Second Half Runs Free</div>
-        <div class="flow-desc">No fixed TP for the remaining 50%. It runs until the new SL (break-even) is hit, capturing any extended move.</div>
+        <div class="flow-name">Remaining Half Rides Free</div>
+        <div class="flow-desc">No fixed TP for the second half. It stays open until the break-even SL is hit, capturing any further move beyond the first level.</div>
       </div>
     </div>
   </div>
 
   <div class="callout green">
     <div class="callout-label">The Logic</div>
-    Half-close at the first S/R target locks in a real profit while the remaining half "rides for free" — worst case you break even on the full trade (minus fees). This asymmetric structure is why small moves can still be profitable: you don't need a 3× move to make money.
+    Enter at support with a tight SL (3–6%). Price bounces to the next resistance → close half, lock profit. If it pulls back to your average entry → close the rest at break-even (zero loss). If it keeps going → ride the second half for free. Worst case: small profit on the first half, zero on the second.
   </div>
 
   <div class="formula">
