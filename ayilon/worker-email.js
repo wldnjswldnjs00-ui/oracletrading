@@ -320,7 +320,6 @@ async function runBot(env) {
       lossLimitEnabled = true, lossLimit = 5,
       notifyEmail = true, notifyTelegram = false,
       telegramToken, telegramChatId, userEmail } = cfg;
-    const srTouch = 3;
 
     if (!apiKey || !apiSecret || !apiPassphrase) return;
 
@@ -364,8 +363,8 @@ async function runBot(env) {
     if (candles1H.length < 20 && candles4H.length < 20) return;
     const currentPrice = parseFloat((await (await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${tradingPair}`)).json())?.data?.[0]?.last || '0');
     const srLevels  = mergeLevels(
-      candles1H.length >= 20 ? detectSR(candles1H, srTouch) : { supports: [], resistances: [] },
-      candles4H.length >= 20 ? detectSR(candles4H, srTouch) : { supports: [], resistances: [] }
+      candles1H.length >= 20 ? detectSR(candles1H) : { supports: [], resistances: [] },
+      candles4H.length >= 20 ? detectSR(candles4H) : { supports: [], resistances: [] }
     );
     const volLevels = detectVolumeZones(candles4H.length >= 20 ? candles4H : candles1H, currentPrice);
     const levels    = mergeLevels(srLevels, volLevels);
@@ -506,34 +505,50 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
   await botLog(env, `${reason} — remaining position closed`);
 }
 
-// ── S/R DETECTION ─────────────────────────────────────────────
-function detectSR(candles, minTouches) {
-  const tol = 0.003;
-  const prices = candles.flatMap(c => [parseFloat(c[2]), parseFloat(c[3])]);
-  const currentPrice = parseFloat(candles[0][4]);
-  const levels = [];
-  const seen = new Set();
+// ── S/R DETECTION (recency-weighted touch count) ──────────────
+// Recent candles (within RECENT_N): 2 touches = valid
+// Older candles: 3 touches = valid
+// Candles beyond MAX_AGE are ignored (stale levels)
+function detectSR(candles) {
+  const RECENT_N = 20;   // within 20 candles → 2 touches ok
+  const MAX_AGE  = 100;  // beyond 100 candles → ignore
+  const TOL      = 0.003;
+
+  const activeCandles = candles.slice(0, MAX_AGE);
+  const currentPrice  = parseFloat(candles[0][4]);
+  const levels        = [];
+  const seen          = new Set();
+
+  const prices = activeCandles.flatMap(c => [parseFloat(c[2]), parseFloat(c[3])]);
 
   for (const p of prices) {
-    const bucket = Math.round(p / (p * tol));
+    const bucket = Math.round(p / (p * TOL));
     if (seen.has(bucket)) continue;
     seen.add(bucket);
 
-    let sup = 0, res = 0;
-    for (const c of candles) {
+    let sup = 0, res = 0, recentTouches = 0;
+    activeCandles.forEach((c, idx) => {
       const hi = parseFloat(c[2]), lo = parseFloat(c[3]);
-      if (Math.abs(lo - p) / p <= tol) sup++;
-      else if (Math.abs(hi - p) / p <= tol) res++;
+      const touchedSup = Math.abs(lo - p) / p <= TOL;
+      const touchedRes = Math.abs(hi - p) / p <= TOL;
+      if (touchedSup) { sup++; if (idx < RECENT_N) recentTouches++; }
+      if (touchedRes) { res++; if (idx < RECENT_N) recentTouches++; }
+    });
+
+    const touches  = sup + res;
+    const required = recentTouches >= 1 ? 2 : 3; // recent level → 2 touches ok
+    if (touches >= required) {
+      levels.push({ price: p, touches, recentTouches, type: sup >= res ? 'support' : 'resistance' });
     }
-    const touches = sup + res;
-    if (touches >= minTouches) levels.push({ price: p, touches, type: sup >= res ? 'support' : 'resistance' });
   }
 
   return {
-    supports: levels.filter(l => l.type === 'support' && l.price <= currentPrice * 1.005)
-                     .sort((a, b) => b.price - a.price).slice(0, 3),
+    supports:    levels.filter(l => l.type === 'support'    && l.price <= currentPrice * 1.005)
+                       .sort((a, b) => b.price - a.price).slice(0, 4),
     resistances: levels.filter(l => l.type === 'resistance' && l.price >= currentPrice * 0.995)
-                        .sort((a, b) => a.price - b.price).slice(0, 3)
+                       .sort((a, b) => a.price - b.price).slice(0, 4)
+  };
+}
   };
 }
 

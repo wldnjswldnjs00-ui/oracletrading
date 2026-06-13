@@ -938,9 +938,9 @@
                 <label style="font-size:13px;color:var(--gray-400);">Max Position Size</label>
                 <span id="posLabel" style="font-size:13px;font-weight:600;">40%</span>
               </div>
-              <input type="range" id="posSize" min="1" max="100" value="40" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
+              <input type="range" id="posSize" min="1" max="100" value="12" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
               <div id="posSizeWarn" style="display:none;font-size:12px;color:#f59e0b;margin-top:6px;">⚠️ Over 40% risks compounding — Kelly Criterion recommends staying below this threshold.</div>
-              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ Kelly Criterion recommends ≤25% for consistent compounding</div>
+              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ Kelly Half-Criterion 추천: 총 12% (3회 분할 시 회당 4%)</div>
             </div>
 
             <div>
@@ -948,9 +948,9 @@
                 <label style="font-size:13px;color:var(--gray-400);">Max Leverage</label>
                 <span id="levLabel" style="font-size:13px;font-weight:600;">20x</span>
               </div>
-              <input type="range" id="leverage" min="1" max="100" value="20" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
+              <input type="range" id="leverage" min="1" max="100" value="5" oninput="updateRiskLabels()" style="width:100%;accent-color:var(--white);">
               <div id="leverageWarn" style="display:none;font-size:12px;color:#f59e0b;margin-top:6px;">⚠️ Over 20x leverage significantly increases liquidation risk. Mathematically unsustainable for compounding.</div>
-              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON recommends ≤10x — lower leverage compounds faster long-term</div>
+              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON 추천 5x — SL 3~6% 기준 청산 버퍼 3배 이상 확보</div>
             </div>
 
           </div>
@@ -1046,7 +1046,7 @@
               </div>
               <input type="range" id="numEntries" min="2" max="10" value="3" oninput="document.getElementById('entriesLabel').textContent=this.value" style="width:100%;accent-color:var(--white);">
               <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-600);margin-top:4px;"><span>2</span><span>10</span></div>
-              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON recommends 3-5 entries for optimal cost averaging</div>
+              <div style="font-size:12px;color:#22c55e;margin-top:4px;">✓ AYILON 추천 3회 — EV 최적, 레벨 이탈 시 손실 제한</div>
             </div>
 
             <div>
