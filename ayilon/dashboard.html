@@ -1075,7 +1075,14 @@
 
             <div>
               <label style="font-size:12px;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:8px;">Trading Pair</label>
-              <input type="text" id="tradingPair" value="BTC-USDT-SWAP" class="d-form-input" style="font-family:monospace;" placeholder="e.g. BTC-USDT-SWAP">
+              <div style="display:flex;gap:8px;">
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;" id="pair-btc-label">
+                  <input type="radio" name="tradingPair" value="BTC-USDT-SWAP" id="pair-btc" checked style="accent-color:var(--white);"> BTC/USDT
+                </label>
+                <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;" id="pair-eth-label">
+                  <input type="radio" name="tradingPair" value="ETH-USDT-SWAP" id="pair-eth" style="accent-color:var(--white);"> ETH/USDT
+                </label>
+              </div>
             </div>
 
           </div>
@@ -1215,13 +1222,8 @@
         <label class="d-form-label">Trading Pair</label>
         <select class="d-form-input" id="botPair" style="cursor:pointer;">
           <option value="">Select pair...</option>
-          <option>BTC/USDT</option>
-          <option>ETH/USDT</option>
-          <option>SOL/USDT</option>
-          <option>BNB/USDT</option>
-          <option>AVAX/USDT</option>
-          <option>DOGE/USDT</option>
-          <option>XRP/USDT</option>
+          <option value="BTC-USDT-SWAP">BTC/USDT</option>
+          <option value="ETH-USDT-SWAP">ETH/USDT</option>
           <option>ADA/USDT</option>
         </select>
       </div>
@@ -2271,7 +2273,7 @@
       if (s.telegramToken) document.getElementById('telegramToken').value = s.telegramToken;
       if (s.telegramChatId) document.getElementById('telegramChatId').value = s.telegramChatId;
       toggleTelegramFields();
-      if (s.tradingPair) { document.getElementById('tradingPair').value = s.tradingPair; }
+      if (s.tradingPair) { var pairEl = document.querySelector('input[name="tradingPair"][value="' + s.tradingPair + '"]'); if (pairEl) pairEl.checked = true; }
       if (s.strategy) { var el = document.getElementById('strat-' + s.strategy); if(el) el.checked = true; }
       if (s.demoMode) { var dm = document.getElementById('demoMode'); if(dm) dm.checked = true; }
       if (s.numEntries) { document.getElementById('numEntries').value = s.numEntries; document.getElementById('entriesLabel').textContent = s.numEntries; }
@@ -2334,7 +2336,7 @@
         notifyTelegram: document.getElementById('notifyTelegram').checked,
         telegramToken: (document.getElementById('telegramToken') || {}).value || '',
         telegramChatId: (document.getElementById('telegramChatId') || {}).value || '',
-        tradingPair: document.getElementById('tradingPair').value.trim(),
+        tradingPair: (document.querySelector('input[name="tradingPair"]:checked') || {}).value || 'BTC-USDT-SWAP',
         strategy: (document.querySelector('input[name="strategy"]:checked') || {}).value || 'daytrading',
         demoMode: document.getElementById('demoMode').checked,
         numEntries: document.getElementById('numEntries').value,
