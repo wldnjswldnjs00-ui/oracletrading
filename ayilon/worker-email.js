@@ -320,7 +320,6 @@ async function runBot(env) {
       lossLimitEnabled = true, lossLimit = 5,
       notifyEmail = true, notifyTelegram = false,
       telegramToken, telegramChatId, userEmail } = cfg;
-    const srTimeframe = strategy === 'swing' ? '4H' : '1H';
     const srTouch = 3;
 
     if (!apiKey || !apiSecret || !apiPassphrase) return;
@@ -357,10 +356,16 @@ async function runBot(env) {
     // ── Stop loss check ───────────────────────────────────────
     await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimit / 100, demoMode);
 
-    // ── S/R candles ───────────────────────────────────────────
-    const srCandles = await getCandles(tradingPair, srTimeframe, 100);
-    if (srCandles.length < 20) return;
-    const levels = detectSR(srCandles, parseInt(srTouch));
+    // ── S/R candles: 1H + 4H combined ────────────────────────
+    const [candles1H, candles4H] = await Promise.all([
+      getCandles(tradingPair, '1H', 100),
+      getCandles(tradingPair, '4H', 100)
+    ]);
+    if (candles1H.length < 20 && candles4H.length < 20) return;
+    const levels = mergeLevels(
+      candles1H.length >= 20 ? detectSR(candles1H, srTouch) : { supports: [], resistances: [] },
+      candles4H.length >= 20 ? detectSR(candles4H, srTouch) : { supports: [], resistances: [] }
+    );
     if (!levels.supports.length && !levels.resistances.length) return;
 
     // ── 5m entry candles ──────────────────────────────────────
@@ -476,6 +481,22 @@ function detectSR(candles, minTouches) {
                      .sort((a, b) => b.price - a.price).slice(0, 3),
     resistances: levels.filter(l => l.type === 'resistance' && l.price >= currentPrice * 0.995)
                         .sort((a, b) => a.price - b.price).slice(0, 3)
+  };
+}
+
+// ── MERGE 1H + 4H LEVELS (deduplicate within 0.5%) ────────────
+function mergeLevels(a, b) {
+  const tol = 0.005;
+  function dedup(arr) {
+    const out = [];
+    for (const lv of arr) {
+      if (!out.some(o => Math.abs(o.price - lv.price) / lv.price <= tol)) out.push(lv);
+    }
+    return out;
+  }
+  return {
+    supports: dedup([...a.supports, ...b.supports]).sort((x, y) => y.price - x.price).slice(0, 5),
+    resistances: dedup([...a.resistances, ...b.resistances]).sort((x, y) => x.price - y.price).slice(0, 5)
   };
 }
 
