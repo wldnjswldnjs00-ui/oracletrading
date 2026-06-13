@@ -523,12 +523,12 @@ async function runBot(env) {
     const entryNum = (state.entries || []).length + 1;
     if (entryNum > parseInt(numEntries)) return;
 
-    // Additional entries must stay within 2% of the first entry price
-    // Prevents chasing price down/up with leverage (liquidation risk)
+    // Additional entries: LONG stays tight (2%) — SHORT scale-in allows 5% zone
     if (entryNum > 1 && state.entries.length > 0) {
       const firstEntryPrice = state.entries[0].price;
       const drift = Math.abs(currentPrice - firstEntryPrice) / firstEntryPrice;
-      if (drift > 0.02) return; // price moved too far from original entry
+      const driftLimit = signal.type === 'short' ? 0.05 : 0.02;
+      if (drift > driftLimit) return;
     }
 
     // ── TP = next S/R level in trade direction ────────────────
@@ -544,12 +544,20 @@ async function runBot(env) {
 
     // ── Calculate size ────────────────────────────────────────
     const totalVal = equity * (posSize / 100);
+    const nEntries = parseInt(numEntries);
     let entryVal;
     if (entrySizing === 'martingale' && entryNum > 1) {
-      entryVal = (totalVal / parseInt(numEntries)) * Math.pow(2, entryNum - 1);
+      entryVal = (totalVal / nEntries) * Math.pow(2, entryNum - 1);
       entryVal = Math.min(entryVal, equity * 0.40); // cap at 40% equity (martingale safety)
+    } else if (signal.type === 'short' && nEntries >= 2) {
+      // SHORT scale-in: smaller first entry (50% retracement, early/unconfirmed)
+      //                 larger second entry (resistance zone, more confirmed)
+      // Weights: [1, 2, 2, ...] → entry1=1/(n+1), entry2+=2/(n+1) each
+      const weights = Array.from({ length: nEntries }, (_, i) => i === 0 ? 1 : 2);
+      const totalW  = weights.reduce((a, b) => a + b, 0);
+      entryVal = totalVal * (weights[entryNum - 1] / totalW);
     } else {
-      entryVal = totalVal / parseInt(numEntries);
+      entryVal = totalVal / nEntries;
     }
     const szContracts = Math.floor(entryVal / (currentPrice * ctVal));
     if (szContracts < 1) {
@@ -851,9 +859,9 @@ function detectSignal(c5, levels) {
 
   const curPrice = cur[4];
 
-  // Average volume from up to last 10 closed candles
-  const volSlice = c5.slice(1, Math.min(11, c5.length));
-  const avgVol   = volSlice.reduce((s, c) => s + parseFloat(c[5]), 0) / volSlice.length;
+  // 80th-percentile volume threshold — only top 20% of candles qualify as "spike"
+  const allClosedVols = c5.slice(1).map(c => parseFloat(c[5])).sort((a, b) => a - b);
+  const vol80th = allClosedVols[Math.floor(allClosedVols.length * 0.80)] ?? 0;
 
   // 3-candle swing structural SL levels
   const swingLow  = Math.min(prev1[3], prev2[3], prev3[3]);
@@ -884,7 +892,7 @@ function detectSignal(c5, levels) {
     const range = bH - bL;
     if (range <= 0) continue;
     if ((bO - bC) / range < 0.40) continue; // body < 40% of range
-    if (bV < avgVol * 1.4) continue;         // no volume spike
+    if (bV < vol80th) continue;               // must be top 20% volume
 
     const mid50 = bH - range * 0.50; // 50% 되돌림 레벨 (range 기준)
 
