@@ -388,6 +388,14 @@ async function runBot(env) {
     const entryNum = (state.entries || []).length + 1;
     if (entryNum > parseInt(numEntries)) return;
 
+    // Additional entries must stay within 2% of the first entry price
+    // Prevents chasing price down/up with leverage (liquidation risk)
+    if (entryNum > 1 && state.entries.length > 0) {
+      const firstEntryPrice = state.entries[0].price;
+      const drift = Math.abs(currentPrice - firstEntryPrice) / firstEntryPrice;
+      if (drift > 0.02) return; // price moved too far from original entry
+    }
+
     // ── TP = next S/R level in trade direction ────────────────
     const tp = signal.type === 'long'
       ? levels.resistances[0]?.price   // nearest resistance above
