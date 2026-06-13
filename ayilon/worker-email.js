@@ -513,8 +513,8 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
 // Older candles: 3 touches = valid
 // Candles beyond MAX_AGE are ignored (stale levels)
 function detectSR(candles) {
-  const RECENT_N = 20;   // within 20 candles → 2 touches ok
-  const MAX_AGE  = 100;  // beyond 100 candles → ignore
+  const RECENT_N = 20;
+  const MAX_AGE  = 100;
   const TOL      = 0.003;
 
   const activeCandles = candles.slice(0, MAX_AGE);
@@ -522,10 +522,12 @@ function detectSR(candles) {
   const levels        = [];
   const seen          = new Set();
 
+  // Fixed step size so each price gets a distinct bucket (was broken: p/(p*TOL) = 1/TOL always)
+  const priceStep = currentPrice * TOL;
   const prices = activeCandles.flatMap(c => [parseFloat(c[2]), parseFloat(c[3])]);
 
   for (const p of prices) {
-    const bucket = Math.round(p / (p * TOL));
+    const bucket = Math.round(p / priceStep);
     if (seen.has(bucket)) continue;
     seen.add(bucket);
 
@@ -538,10 +540,9 @@ function detectSR(candles) {
       if (touchedRes) { res++; if (idx < RECENT_N) recentTouches++; }
     });
 
-    const touches  = sup + res;
-    const required = recentTouches >= 1 ? 2 : 3; // recent level → 2 touches ok
-    if (touches >= required) {
-      levels.push({ price: p, touches, recentTouches, type: sup >= res ? 'support' : 'resistance' });
+    // Always 2 touches sufficient — grading (S/A/B) handles quality, not minimum count
+    if (sup + res >= 2) {
+      levels.push({ price: p, touches: sup + res, recentTouches, type: sup >= res ? 'support' : 'resistance' });
     }
   }
 
