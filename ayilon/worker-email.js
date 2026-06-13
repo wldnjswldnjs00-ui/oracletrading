@@ -355,28 +355,39 @@ async function runBot(env) {
     // ── Stop loss check ───────────────────────────────────────
     await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimit / 100, demoMode);
 
-    // ── S/R candles: 1H + 4H graded + volume zone confirmation ──
-    const [candles1H, candles4H] = await Promise.all([
+    // ── Fetch all candles in parallel ────────────────────────
+    const [candles1H, candles4H, candlesD, c5] = await Promise.all([
       getCandles(tradingPair, '1H', 100),
-      getCandles(tradingPair, '4H', 100)
+      getCandles(tradingPair, '4H', 100),
+      getCandles(tradingPair, '1D', 60),
+      getCandles(tradingPair, '5m', 20)
     ]);
     if (candles1H.length < 20 && candles4H.length < 20) return;
+    if (c5.length < 4) return;
     const currentPrice = parseFloat((await (await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${tradingPair}`)).json())?.data?.[0]?.last || '0');
+
+    // ── Daily trend filter (EMA20 / EMA50) ───────────────────
+    // Uptrend:   price > EMA20 > EMA50 → only LONG allowed
+    // Downtrend: price < EMA20 < EMA50 → only SHORT allowed
+    // Neutral:   both directions allowed
+    const trend = detectTrend(candlesD, currentPrice);
+
+    // ── S/R levels: 1H + 4H graded + volume zone confirmation ─
     const sr1H = candles1H.length >= 20 ? detectSR(candles1H) : { supports: [], resistances: [] };
     const sr4H = candles4H.length >= 20 ? detectSR(candles4H) : { supports: [], resistances: [] };
-    // Grade levels: S = confluent 1H+4H, A = strong 4H or recent, B = skip
-    const srLevels   = gradeLevels(sr1H, sr4H);
-    // Volume zones only count if they coincide with an S/R level (±1%)
-    const rawVol     = detectVolumeZones(candles4H.length >= 20 ? candles4H : candles1H, currentPrice);
-    const volLevels  = filterVolBySR(rawVol, srLevels);
-    const levels     = mergeLevels(srLevels, volLevels);
+    const srLevels  = gradeLevels(sr1H, sr4H);
+    const rawVol    = detectVolumeZones(candles4H.length >= 20 ? candles4H : candles1H, currentPrice);
+    const volLevels = filterVolBySR(rawVol, srLevels);
+    const levels    = mergeLevels(srLevels, volLevels);
     if (!levels.supports.length && !levels.resistances.length) return;
 
-    // ── 5m entry candles ──────────────────────────────────────
-    const c5 = await getCandles(tradingPair, '5m', 20);
-    if (c5.length < 4) return;
+    // ── 5m entry signal ───────────────────────────────────────
     const signal = detectSignal(c5, levels);
     if (!signal) return;
+
+    // ── Trend filter: block counter-trend entries ─────────────
+    if (trend === 'up'   && signal.type === 'short') return;
+    if (trend === 'down' && signal.type === 'long')  return;
 
     // ── Position state ────────────────────────────────────────
     const ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
@@ -436,7 +447,8 @@ async function runBot(env) {
       await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
       const tpStr    = useTP ? ` | TP:${tp.toFixed(2)}` : '';
       const gradeStr = signal.grade ? `[${signal.grade}급] ` : '';
-      await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${currentPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | SL:${state.stopLoss.toFixed(2)}${tpStr} | sz:${sz}`);
+      const trendStr = trend !== 'neutral' ? ` | trend:${trend}` : '';
+      await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${currentPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | SL:${state.stopLoss.toFixed(2)}${tpStr}${trendStr} | sz:${sz}`);
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
         `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${currentPrice} USDT${tpStr}`);
     }
@@ -506,6 +518,31 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
   await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
   const reason = state.halfClosed ? `SL(break-even) hit @ ${price}` : `SL hit @ ${price}`;
   await botLog(env, `${reason} — remaining position closed`);
+}
+
+// ── DAILY TREND FILTER (EMA20 / EMA50) ───────────────────────
+// up:      price > EMA20 > EMA50 → only longs
+// down:    price < EMA20 < EMA50 → only shorts
+// neutral: mixed → both directions allowed
+function detectTrend(candles, currentPrice) {
+  if (candles.length < 50) return 'neutral';
+  // OKX returns newest first — reverse for oldest-first EMA calc
+  const closes = candles.slice(0, 55).map(c => parseFloat(c[4])).reverse();
+  const ema20 = calcEMA(closes, 20);
+  const ema50 = calcEMA(closes, 50);
+  if (currentPrice > ema20 && ema20 > ema50) return 'up';
+  if (currentPrice < ema20 && ema20 < ema50) return 'down';
+  return 'neutral';
+}
+
+function calcEMA(closes, period) {
+  if (closes.length < period) return closes[closes.length - 1];
+  const k = 2 / (period + 1);
+  let ema = closes.slice(0, period).reduce((s, v) => s + v, 0) / period; // SMA seed
+  for (let i = period; i < closes.length; i++) {
+    ema = closes[i] * k + ema * (1 - k);
+  }
+  return ema;
 }
 
 // ── S/R DETECTION (recency-weighted touch count) ──────────────
