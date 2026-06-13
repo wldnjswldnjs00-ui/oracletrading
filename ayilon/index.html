@@ -45,6 +45,13 @@
     .btn-ghost:hover { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.05); }
     .btn-white { padding: 10px 20px; font-size: 14px; font-weight: 600; color: var(--black); background: var(--white); border: none; border-radius: 6px; cursor: pointer; text-decoration: none; transition: opacity 0.2s; }
     .btn-white:hover { opacity: 0.88; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: var(--white); border-radius: 2px; }
+    .mobile-menu { display: none; position: fixed; top: 61px; left: 0; right: 0; background: rgba(0,0,0,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.06); padding: 8px 30px 20px; z-index: 99; }
+    .mobile-menu.open { display: block; }
+    .mobile-menu a { display: block; padding: 14px 0; font-size: 15px; color: var(--gray-400); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.04); transition: color 0.2s; }
+    .mobile-menu a:last-child { border-bottom: none; color: var(--white); font-weight: 600; }
+    .mobile-menu a:hover { color: var(--white); }
 
     /* HERO */
     .hero {
@@ -254,6 +261,7 @@
     @media (max-width: 1024px) {
       nav { padding: 20px 30px; }
       .nav-links { display: none; }
+      .hamburger { display: flex; }
       section { padding: 80px 30px; }
       .stats { grid-template-columns: repeat(2, 1fr); padding: 60px 30px; gap: 40px; }
       .stat-item { border-right: none; padding: 0; }
@@ -287,7 +295,18 @@
       <a href="login.html" class="btn-ghost">Log In</a>
       <a href="signup.html" class="btn-white">Get Started</a>
     </div>
+    <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#features" onclick="closeMobileMenu()">Features</a>
+    <a href="#how" onclick="closeMobileMenu()">How It Works</a>
+    <a href="#pricing" onclick="closeMobileMenu()">Pricing</a>
+    <a href="bot-guide.html">Bot Guide</a>
+    <a href="login.html">Log In</a>
+    <a href="signup.html">Get Started →</a>
+  </div>
   <script>
     (function() {
       if (localStorage.getItem('ayilon_logged_in') === 'true') {
@@ -296,6 +315,19 @@
           '<a href="dashboard.html" class="btn-white">Dashboard →</a>';
       }
     })();
+    function toggleMobileMenu() {
+      document.getElementById('mobileMenu').classList.toggle('open');
+    }
+    function closeMobileMenu() {
+      document.getElementById('mobileMenu').classList.remove('open');
+    }
+    document.addEventListener('click', function(e) {
+      var menu = document.getElementById('mobileMenu');
+      var btn = document.getElementById('hamburger');
+      if (menu.classList.contains('open') && !menu.contains(e.target) && !btn.contains(e.target)) {
+        menu.classList.remove('open');
+      }
+    });
   </script>
 
   <!-- HERO -->
@@ -741,7 +773,7 @@
     </div>
   </footer>
   <div class="footer-bottom">
-    <p>© 2025 AYILON. All rights reserved.</p>
+    <p>© 2026 AYILON. All rights reserved.</p>
     <p>Trading involves risk. Past performance does not guarantee future results.</p>
   </div>
 
