@@ -373,13 +373,26 @@ async function runBot(env) {
 
     // ── 5m entry candles ──────────────────────────────────────
     const c5 = await getCandles(tradingPair, '5m', 20);
-    if (c5.length < 3) return;
+    if (c5.length < 4) return;
     const signal = detectSignal(c5, levels);
     if (!signal) return;
 
+    // ── Position state ────────────────────────────────────────
+    const ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
+    const state = ps[tradingPair] || { entries: [], stopLoss: null, direction: null, takeProfit: null };
+
+    // If existing position in OPPOSITE direction → skip (no flip)
+    if (state.direction && state.direction !== signal.type) return;
+
     // Max entries reached → skip
-    if (openPos.length >= parseInt(numEntries)) return;
-    const entryNum = openPos.length + 1;
+    const entryNum = (state.entries || []).length + 1;
+    if (entryNum > parseInt(numEntries)) return;
+
+    // ── TP = next S/R level in trade direction ────────────────
+    const tp = signal.type === 'long'
+      ? levels.resistances[0]?.price   // nearest resistance above
+      : levels.supports[0]?.price;     // nearest support below
+    const useTP = tp && (signal.type === 'long' ? tp > currentPrice * 1.005 : tp < currentPrice * 0.995);
 
     // ── Kelly criterion warning ───────────────────────────────
     const totalPct = (posSize / 100) * entryNum / parseInt(numEntries);
@@ -394,7 +407,6 @@ async function runBot(env) {
     } else {
       entryVal = totalVal / parseInt(numEntries);
     }
-    const currentPrice = parseFloat(c5[0][4]);
     const sz = (entryVal / currentPrice).toFixed(4);
 
     // ── Place order ───────────────────────────────────────────
@@ -406,15 +418,17 @@ async function runBot(env) {
     }, demoMode);
 
     if (orderRes?.data?.[0]?.ordId) {
-      const ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
-      ps[tradingPair] = ps[tradingPair] || { entries: [], stopLoss: null, direction: null };
-      ps[tradingPair].entries.push({ price: currentPrice, sz, time: Date.now(), entry: entryNum });
-      ps[tradingPair].direction = signal.type;
-      ps[tradingPair].stopLoss  = signal.stopLoss;
+      state.entries.push({ price: currentPrice, sz, time: Date.now(), entry: entryNum });
+      state.direction  = signal.type;
+      // Keep first entry SL; update TP to latest level
+      if (!state.stopLoss) state.stopLoss = signal.stopLoss;
+      if (useTP) state.takeProfit = tp;
+      ps[tradingPair] = state;
       await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-      await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${currentPrice} | SL: ${signal.stopLoss.toFixed(2)} | sz: ${sz}`);
+      const tpStr = useTP ? ` | TP: ${tp.toFixed(2)}` : '';
+      await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${currentPrice} | SL: ${state.stopLoss.toFixed(2)}${tpStr} | sz: ${sz}`);
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
-        `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${currentPrice} USDT`);
+        `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${currentPrice} USDT${tpStr}`);
     }
 
   } catch(e) {
@@ -434,16 +448,20 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
   const price = parseFloat(tk?.data?.[0]?.last || '0');
   if (!price) return;
 
-  const hit = state.direction === 'long' ? price <= state.stopLoss : price >= state.stopLoss;
-  if (!hit) return;
+  const slHit = state.direction === 'long' ? price <= state.stopLoss : price >= state.stopLoss;
+  const tpHit = state.takeProfit
+    ? (state.direction === 'long' ? price >= state.takeProfit : price <= state.takeProfit)
+    : false;
+
+  if (!slHit && !tpHit) return;
 
   await okxPost(apiKey, secret, pass, '/api/v5/trade/close-position', {
     instId: pair, mgnMode: 'cross',
     posSide: state.direction === 'long' ? 'long' : 'short'
   }, demo);
 
-  // Track daily loss (estimate from realized PnL)
-  if (lossLimitEnabled) {
+  // Track daily loss on SL hit only
+  if (slHit && lossLimitEnabled) {
     const today = new Date().toDateString();
     const dl = await env.USERS_KV.get('bot:daily_loss:' + today, { type: 'json' }) || { pct: 0 };
     const realizedLoss = openPos.reduce((s, p) => s + Math.abs(parseFloat(p.upl || '0')), 0);
@@ -453,7 +471,8 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
 
   delete ps[pair];
   await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-  await botLog(env, `SL hit @ ${price} — all positions closed`);
+  const reason = tpHit ? `TP hit @ ${price}` : `SL hit @ ${price}`;
+  await botLog(env, `${reason} — all positions closed`);
 }
 
 // ── S/R DETECTION ─────────────────────────────────────────────
