@@ -442,221 +442,45 @@
         <p style="font-size:16px;color:var(--gray-400);max-width:620px;margin:0 auto;line-height:1.7;">The same logic that works in a bull market works in a bear market. AYILON identifies <em style="font-style:normal;color:var(--white);">institutional S/R levels</em> and enters in the direction the market is already moving — long from support, short from resistance.</p>
       </div>
 
-      <!-- SCENARIO CARDS -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-
-        <!-- BEAR MARKET -->
-        <div style="border:1px solid rgba(239,68,68,0.22);border-radius:16px;overflow:hidden;background:rgba(239,68,68,0.03);">
-          <svg viewBox="0 0 300 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
-            <rect width="300" height="130" fill="#0a0a0a"/>
-            <!-- resistance line -->
-            <line x1="0" y1="42" x2="300" y2="42" stroke="#f97316" stroke-width="1.2" stroke-dasharray="5,3" opacity="0.65"/>
-            <text x="10" y="37" fill="#f97316" font-size="8" font-family="monospace" opacity="0.85">RESISTANCE</text>
-            <!-- price rises, spikes to resistance, falls away -->
-            <path d="M 18,115 C 45,108 65,94 88,78 C 105,66 118,54 130,39 C 134,32 138,39 143,48 C 158,72 178,88 205,97 C 232,106 262,112 290,116"
-                  fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
-            <!-- profit fill after SHORT entry -->
-            <path d="M 130,39 C 134,32 138,39 143,48 C 158,72 178,88 205,97 C 232,106 262,112 290,116 L 290,130 L 130,130 Z"
-                  fill="rgba(239,68,68,0.07)"/>
-            <!-- entry circle -->
-            <circle cx="130" cy="39" r="6" fill="rgba(239,68,68,0.18)" stroke="#ef4444" stroke-width="1.8"/>
-            <!-- down arrow -->
-            <line x1="130" y1="47" x2="130" y2="61" stroke="#ef4444" stroke-width="1.4" stroke-dasharray="2,2" opacity="0.7"/>
-            <polygon points="126,61 134,61 130,69" fill="#ef4444"/>
-            <rect x="106" y="71" width="48" height="14" fill="rgba(239,68,68,0.16)" rx="3" stroke="rgba(239,68,68,0.3)" stroke-width="0.8"/>
-            <text x="130" y="81" fill="#ef4444" font-size="8.5" font-family="monospace" text-anchor="middle" font-weight="700">SHORT ↓</text>
-          </svg>
-          <div style="padding:14px 18px 18px;">
-            <div style="font-size:11px;font-weight:700;color:#ef4444;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Bear Market</div>
-            <div style="font-size:13px;color:var(--gray-400);line-height:1.6;">Price fails at resistance. AYILON enters SHORT and captures the entire move down — the same precision, opposite direction.</div>
-          </div>
-        </div>
-
-        <!-- BULL MARKET -->
-        <div style="border:1px solid rgba(34,197,94,0.22);border-radius:16px;overflow:hidden;background:rgba(34,197,94,0.02);">
-          <svg viewBox="0 0 300 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
-            <rect width="300" height="130" fill="#0a0a0a"/>
-            <!-- support line -->
-            <line x1="0" y1="88" x2="300" y2="88" stroke="#3b82f6" stroke-width="1.2" stroke-dasharray="5,3" opacity="0.65"/>
-            <text x="10" y="101" fill="#3b82f6" font-size="8" font-family="monospace" opacity="0.85">SUPPORT</text>
-            <!-- price falls, touches support, rises -->
-            <path d="M 18,15 C 45,22 65,36 88,52 C 105,64 118,76 130,91 C 134,98 138,91 143,82 C 158,58 178,42 205,33 C 232,24 262,18 290,14"
-                  fill="none" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
-            <!-- profit fill after LONG entry -->
-            <path d="M 130,91 C 134,98 138,91 143,82 C 158,58 178,42 205,33 C 232,24 262,18 290,14 L 290,0 L 130,0 Z"
-                  fill="rgba(34,197,94,0.07)"/>
-            <!-- entry circle -->
-            <circle cx="130" cy="91" r="6" fill="rgba(34,197,94,0.16)" stroke="#22c55e" stroke-width="1.8"/>
-            <!-- up arrow -->
-            <line x1="130" y1="83" x2="130" y2="69" stroke="#22c55e" stroke-width="1.4" stroke-dasharray="2,2" opacity="0.7"/>
-            <polygon points="126,69 134,69 130,61" fill="#22c55e"/>
-            <rect x="106" y="45" width="48" height="14" fill="rgba(34,197,94,0.14)" rx="3" stroke="rgba(34,197,94,0.3)" stroke-width="0.8"/>
-            <text x="130" y="55" fill="#22c55e" font-size="8.5" font-family="monospace" text-anchor="middle" font-weight="700">LONG ↑</text>
-          </svg>
-          <div style="padding:14px 18px 18px;">
-            <div style="font-size:11px;font-weight:700;color:#22c55e;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Bull Market</div>
-            <div style="font-size:13px;color:var(--gray-400);line-height:1.6;">Price holds at support. AYILON enters LONG and rides the recovery — confirmed by wick precision and volume.</div>
-          </div>
-        </div>
-
-      </div>
-
       <!-- DETAIL CHART CARD -->
       <div style="border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden;margin-bottom:20px;background:#0d0d0d;">
         <div style="padding:18px 24px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06);">
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 6px #22c55e;"></span>
-            <span style="font-size:12px;font-weight:600;color:var(--white);letter-spacing:0.04em;">BTC/USDT · 1H</span>
-            <span style="font-size:11px;color:var(--gray-600);">S/R Multi-Timeframe · 3-touch confirmation</span>
+            <span style="font-size:12px;font-weight:600;color:var(--white);letter-spacing:0.04em;">BTC/USDT</span>
           </div>
           <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--gray-600);text-transform:uppercase;">ENTRY LOGIC</span>
         </div>
-        <svg viewBox="0 0 760 285" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
-          <defs>
-            <linearGradient id="supFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.11"/>
-              <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
-            </linearGradient>
-            <linearGradient id="resFill" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%" stop-color="#f97316" stop-opacity="0.09"/>
-              <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
-            </linearGradient>
-            <linearGradient id="shortProfit" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#ef4444" stop-opacity="0.07"/>
-              <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
-            </linearGradient>
-            <linearGradient id="longProfit" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%" stop-color="#22c55e" stop-opacity="0.07"/>
-              <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-          <rect width="760" height="285" fill="#0d0d0d"/>
-          <!-- grid -->
-          <line x1="45" y1="58" x2="748" y2="58" stroke="rgba(255,255,255,0.035)" stroke-width="1"/>
-          <line x1="45" y1="95" x2="748" y2="95" stroke="rgba(255,255,255,0.035)" stroke-width="1"/>
-          <line x1="45" y1="132" x2="748" y2="132" stroke="rgba(255,255,255,0.035)" stroke-width="1"/>
-          <line x1="45" y1="169" x2="748" y2="169" stroke="rgba(255,255,255,0.035)" stroke-width="1"/>
-          <!-- SHORT profit zone (falling after resistance rejection) -->
-          <rect x="47" y="58" width="215" height="110" fill="url(#shortProfit)"/>
-          <!-- LONG profit zone (rising after support bounce) -->
-          <rect x="443" y="68" width="300" height="140" fill="url(#longProfit)"/>
-          <!-- resistance zone -->
-          <rect x="45" y="48" width="703" height="18" fill="url(#resFill)"/>
-          <line x1="45" y1="56" x2="748" y2="56" stroke="#f97316" stroke-width="1.3" stroke-dasharray="5,4" opacity="0.7"/>
-          <text x="48" y="51" fill="#f97316" font-size="8.5" font-family="monospace" opacity="0.9" font-weight="600">RESISTANCE · 101,200</text>
-          <!-- support zone -->
-          <rect x="45" y="200" width="703" height="18" fill="url(#supFill)"/>
-          <line x1="45" y1="206" x2="748" y2="206" stroke="#3b82f6" stroke-width="1.3" stroke-dasharray="5,4" opacity="0.7"/>
-          <text x="48" y="218" fill="#3b82f6" font-size="8.5" font-family="monospace" opacity="0.9" font-weight="600">SUPPORT · 94,800</text>
-
-          <!-- ── 36 CANDLES (spacing=19px, body-width=10px) ── -->
-          <!-- Phase 1: Near resistance, two SHORT entries -->
-          <line x1="52" y1="62" x2="52" y2="83" stroke="#22c55e" stroke-width="1.2"/><rect x="47" y="66" width="10" height="13" fill="#22c55e" rx="1"/>
-          <!-- C2: wick above resistance → SHORT 1 -->
-          <line x1="71" y1="49" x2="71" y2="80" stroke="#ef4444" stroke-width="1.2"/><rect x="66" y="56" width="10" height="19" fill="#ef4444" rx="1"/>
-          <circle cx="71" cy="50" r="5" fill="rgba(239,68,68,0.12)" stroke="#ef4444" stroke-width="1.6"/>
-          <line x1="71" y1="28" x2="71" y2="48" stroke="#ef4444" stroke-width="0.9" stroke-dasharray="2,2" opacity="0.55"/>
-          <polygon points="67,22 75,22 71,30" fill="#ef4444"/>
-          <rect x="44" y="6" width="54" height="14" fill="rgba(239,68,68,0.14)" rx="3" stroke="rgba(239,68,68,0.32)" stroke-width="0.8"/>
-          <text x="71" y="16.5" fill="#ef4444" font-size="8.5" font-family="monospace" text-anchor="middle" font-weight="700">SHORT ↓</text>
-          <line x1="90" y1="72" x2="90" y2="98" stroke="#ef4444" stroke-width="1.2"/><rect x="85" y="76" width="10" height="18" fill="#ef4444" rx="1"/>
-          <line x1="109" y1="86" x2="109" y2="103" stroke="#22c55e" stroke-width="1.2"/><rect x="104" y="89" width="10" height="10" fill="#22c55e" rx="1"/>
-          <line x1="128" y1="96" x2="128" y2="119" stroke="#ef4444" stroke-width="1.2"/><rect x="123" y="100" width="10" height="15" fill="#ef4444" rx="1"/>
-          <line x1="147" y1="112" x2="147" y2="134" stroke="#ef4444" stroke-width="1.2"/><rect x="142" y="116" width="10" height="14" fill="#ef4444" rx="1"/>
-          <line x1="166" y1="120" x2="166" y2="140" stroke="#6b7280" stroke-width="1.2"/><rect x="161" y="125" width="10" height="8" fill="#6b7280" rx="1"/>
-          <line x1="185" y1="110" x2="185" y2="132" stroke="#ef4444" stroke-width="1.2"/><rect x="180" y="114" width="10" height="14" fill="#ef4444" rx="1"/>
-          <!-- C9: wick to resistance → SHORT 2 (lower high = downtrend confirmed) -->
-          <line x1="204" y1="51" x2="204" y2="86" stroke="#ef4444" stroke-width="1.2"/><rect x="199" y="58" width="10" height="22" fill="#ef4444" rx="1"/>
-          <circle cx="204" cy="52" r="5" fill="rgba(239,68,68,0.12)" stroke="#ef4444" stroke-width="1.6"/>
-          <line x1="204" y1="28" x2="204" y2="50" stroke="#ef4444" stroke-width="0.9" stroke-dasharray="2,2" opacity="0.55"/>
-          <polygon points="200,22 208,22 204,30" fill="#ef4444"/>
-          <rect x="177" y="6" width="54" height="14" fill="rgba(239,68,68,0.14)" rx="3" stroke="rgba(239,68,68,0.32)" stroke-width="0.8"/>
-          <text x="204" y="16.5" fill="#ef4444" font-size="8.5" font-family="monospace" text-anchor="middle" font-weight="700">SHORT ↓</text>
-          <!-- Phase 2: Downtrend continues -->
-          <line x1="223" y1="84" x2="223" y2="114" stroke="#ef4444" stroke-width="1.2"/><rect x="218" y="88" width="10" height="21" fill="#ef4444" rx="1"/>
-          <line x1="242" y1="106" x2="242" y2="132" stroke="#ef4444" stroke-width="1.2"/><rect x="237" y="110" width="10" height="18" fill="#ef4444" rx="1"/>
-          <line x1="261" y1="124" x2="261" y2="150" stroke="#ef4444" stroke-width="1.2"/><rect x="256" y="128" width="10" height="18" fill="#ef4444" rx="1"/>
-          <line x1="280" y1="140" x2="280" y2="157" stroke="#22c55e" stroke-width="1.2"/><rect x="275" y="143" width="10" height="10" fill="#22c55e" rx="1"/>
-          <line x1="299" y1="148" x2="299" y2="174" stroke="#ef4444" stroke-width="1.2"/><rect x="294" y="152" width="10" height="18" fill="#ef4444" rx="1"/>
-          <line x1="318" y1="166" x2="318" y2="190" stroke="#ef4444" stroke-width="1.2"/><rect x="313" y="170" width="10" height="16" fill="#ef4444" rx="1"/>
-          <line x1="337" y1="180" x2="337" y2="208" stroke="#ef4444" stroke-width="1.2"/><rect x="332" y="184" width="10" height="20" fill="#ef4444" rx="1"/>
-          <!-- Phase 3: Support consolidation -->
-          <line x1="356" y1="172" x2="356" y2="208" stroke="#22c55e" stroke-width="1.2"/><rect x="351" y="163" width="10" height="30" fill="#22c55e" rx="1"/>
-          <line x1="375" y1="157" x2="375" y2="176" stroke="#22c55e" stroke-width="1.2"/><rect x="370" y="160" width="10" height="13" fill="#22c55e" rx="1"/>
-          <line x1="394" y1="152" x2="394" y2="171" stroke="#6b7280" stroke-width="1.2"/><rect x="389" y="156" width="10" height="9" fill="#6b7280" rx="1"/>
-          <line x1="413" y1="158" x2="413" y2="180" stroke="#ef4444" stroke-width="1.2"/><rect x="408" y="162" width="10" height="14" fill="#ef4444" rx="1"/>
-          <line x1="432" y1="166" x2="432" y2="208" stroke="#ef4444" stroke-width="1.2"/><rect x="427" y="172" width="10" height="28" fill="#ef4444" rx="1"/>
-          <!-- C22: LONG 1 — green reversal at support -->
-          <line x1="451" y1="160" x2="451" y2="208" stroke="#22c55e" stroke-width="1.2"/><rect x="446" y="150" width="10" height="36" fill="#22c55e" rx="1"/>
-          <circle cx="451" cy="207" r="5" fill="rgba(34,197,94,0.12)" stroke="#22c55e" stroke-width="1.6"/>
-          <line x1="451" y1="210" x2="451" y2="222" stroke="#22c55e" stroke-width="0.9" stroke-dasharray="2,2" opacity="0.55"/>
-          <polygon points="447,232 455,232 451,222" fill="#22c55e"/>
-          <rect x="424" y="233" width="54" height="14" fill="rgba(34,197,94,0.12)" rx="3" stroke="rgba(34,197,94,0.3)" stroke-width="0.8"/>
-          <text x="451" y="243" fill="#22c55e" font-size="8.5" font-family="monospace" text-anchor="middle" font-weight="700">LONG ↑</text>
-          <!-- Phase 4: Partial recovery, back to support -->
-          <line x1="470" y1="141" x2="470" y2="162" stroke="#22c55e" stroke-width="1.2"/><rect x="465" y="145" width="10" height="14" fill="#22c55e" rx="1"/>
-          <line x1="489" y1="124" x2="489" y2="148" stroke="#22c55e" stroke-width="1.2"/><rect x="484" y="128" width="10" height="17" fill="#22c55e" rx="1"/>
-          <line x1="508" y1="128" x2="508" y2="152" stroke="#ef4444" stroke-width="1.2"/><rect x="503" y="132" width="10" height="16" fill="#ef4444" rx="1"/>
-          <line x1="527" y1="148" x2="527" y2="176" stroke="#ef4444" stroke-width="1.2"/><rect x="522" y="152" width="10" height="20" fill="#ef4444" rx="1"/>
-          <line x1="546" y1="167" x2="546" y2="208" stroke="#ef4444" stroke-width="1.2"/><rect x="541" y="172" width="10" height="30" fill="#ef4444" rx="1"/>
-          <!-- C28: LONG 2 — strong reversal at support (2nd touch) -->
-          <line x1="565" y1="146" x2="565" y2="208" stroke="#22c55e" stroke-width="1.2"/><rect x="560" y="136" width="10" height="46" fill="#22c55e" rx="1"/>
-          <circle cx="565" cy="207" r="5" fill="rgba(34,197,94,0.12)" stroke="#22c55e" stroke-width="1.6"/>
-          <line x1="565" y1="210" x2="565" y2="222" stroke="#22c55e" stroke-width="0.9" stroke-dasharray="2,2" opacity="0.55"/>
-          <polygon points="561,232 569,232 565,222" fill="#22c55e"/>
-          <rect x="538" y="233" width="54" height="14" fill="rgba(34,197,94,0.12)" rx="3" stroke="rgba(34,197,94,0.3)" stroke-width="0.8"/>
-          <text x="565" y="243" fill="#22c55e" font-size="8.5" font-family="monospace" text-anchor="middle" font-weight="700">LONG ↑</text>
-          <!-- Phase 5: Strong rally to resistance -->
-          <line x1="584" y1="118" x2="584" y2="146" stroke="#22c55e" stroke-width="1.2"/><rect x="579" y="122" width="10" height="20" fill="#22c55e" rx="1"/>
-          <line x1="603" y1="98" x2="603" y2="124" stroke="#22c55e" stroke-width="1.2"/><rect x="598" y="102" width="10" height="19" fill="#22c55e" rx="1"/>
-          <line x1="622" y1="80" x2="622" y2="105" stroke="#22c55e" stroke-width="1.2"/><rect x="617" y="84" width="10" height="17" fill="#22c55e" rx="1"/>
-          <line x1="641" y1="64" x2="641" y2="88" stroke="#22c55e" stroke-width="1.2"/><rect x="636" y="68" width="10" height="17" fill="#22c55e" rx="1"/>
-          <line x1="660" y1="54" x2="660" y2="78" stroke="#22c55e" stroke-width="1.2"/><rect x="655" y="58" width="10" height="16" fill="#22c55e" rx="1"/>
-          <!-- C34: rejection at resistance -->
-          <line x1="679" y1="48" x2="679" y2="82" stroke="#ef4444" stroke-width="1.2"/><rect x="674" y="56" width="10" height="20" fill="#ef4444" rx="1"/>
-          <circle cx="679" cy="50" r="4" fill="none" stroke="#f97316" stroke-width="1.4"/>
-          <line x1="698" y1="66" x2="698" y2="90" stroke="#ef4444" stroke-width="1.2"/><rect x="693" y="70" width="10" height="16" fill="#ef4444" rx="1"/>
-          <line x1="717" y1="74" x2="717" y2="96" stroke="#ef4444" stroke-width="1.2"/><rect x="712" y="78" width="10" height="14" fill="#ef4444" rx="1"/>
-
-          <!-- VOLUME BARS -->
-          <line x1="45" y1="276" x2="748" y2="276" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-          <text x="48" y="284" fill="rgba(255,255,255,0.17)" font-size="7.5" font-family="monospace">VOL</text>
-          <rect x="47" y="258" width="10" height="18" fill="rgba(34,197,94,0.38)" rx="1"/>
-          <rect x="66" y="251" width="10" height="25" fill="rgba(239,68,68,0.55)" rx="1"/>
-          <rect x="85" y="259" width="10" height="17" fill="rgba(239,68,68,0.4)" rx="1"/>
-          <rect x="104" y="268" width="10" height="8" fill="rgba(34,197,94,0.35)" rx="1"/>
-          <rect x="123" y="262" width="10" height="14" fill="rgba(239,68,68,0.4)" rx="1"/>
-          <rect x="142" y="263" width="10" height="13" fill="rgba(239,68,68,0.38)" rx="1"/>
-          <rect x="161" y="270" width="10" height="6" fill="rgba(107,114,128,0.32)" rx="1"/>
-          <rect x="180" y="265" width="10" height="11" fill="rgba(239,68,68,0.38)" rx="1"/>
-          <rect x="199" y="248" width="10" height="28" fill="rgba(239,68,68,0.58)" rx="1"/>
-          <rect x="218" y="253" width="10" height="23" fill="rgba(239,68,68,0.5)" rx="1"/>
-          <rect x="237" y="258" width="10" height="18" fill="rgba(239,68,68,0.42)" rx="1"/>
-          <rect x="256" y="259" width="10" height="17" fill="rgba(239,68,68,0.4)" rx="1"/>
-          <rect x="275" y="267" width="10" height="9" fill="rgba(34,197,94,0.35)" rx="1"/>
-          <rect x="294" y="260" width="10" height="16" fill="rgba(239,68,68,0.4)" rx="1"/>
-          <rect x="313" y="261" width="10" height="15" fill="rgba(239,68,68,0.4)" rx="1"/>
-          <rect x="332" y="256" width="10" height="20" fill="rgba(239,68,68,0.44)" rx="1"/>
-          <rect x="351" y="252" width="10" height="24" fill="rgba(34,197,94,0.5)" rx="1"/>
-          <rect x="370" y="264" width="10" height="12" fill="rgba(34,197,94,0.37)" rx="1"/>
-          <rect x="389" y="268" width="10" height="8" fill="rgba(107,114,128,0.32)" rx="1"/>
-          <rect x="408" y="264" width="10" height="12" fill="rgba(239,68,68,0.37)" rx="1"/>
-          <rect x="427" y="253" width="10" height="23" fill="rgba(239,68,68,0.5)" rx="1"/>
-          <rect x="446" y="246" width="10" height="30" fill="rgba(34,197,94,0.62)" rx="1"/>
-          <rect x="465" y="263" width="10" height="13" fill="rgba(34,197,94,0.38)" rx="1"/>
-          <rect x="484" y="260" width="10" height="16" fill="rgba(34,197,94,0.4)" rx="1"/>
-          <rect x="503" y="264" width="10" height="12" fill="rgba(239,68,68,0.37)" rx="1"/>
-          <rect x="522" y="261" width="10" height="15" fill="rgba(239,68,68,0.4)" rx="1"/>
-          <rect x="541" y="255" width="10" height="21" fill="rgba(239,68,68,0.45)" rx="1"/>
-          <rect x="560" y="244" width="10" height="32" fill="rgba(34,197,94,0.65)" rx="1"/>
-          <rect x="579" y="252" width="10" height="24" fill="rgba(34,197,94,0.52)" rx="1"/>
-          <rect x="598" y="249" width="10" height="27" fill="rgba(34,197,94,0.55)" rx="1"/>
-          <rect x="617" y="252" width="10" height="24" fill="rgba(34,197,94,0.5)" rx="1"/>
-          <rect x="636" y="255" width="10" height="21" fill="rgba(34,197,94,0.47)" rx="1"/>
-          <rect x="655" y="258" width="10" height="18" fill="rgba(34,197,94,0.44)" rx="1"/>
-          <rect x="674" y="255" width="10" height="21" fill="rgba(239,68,68,0.47)" rx="1"/>
-          <rect x="693" y="261" width="10" height="15" fill="rgba(239,68,68,0.38)" rx="1"/>
-          <rect x="712" y="263" width="10" height="13" fill="rgba(239,68,68,0.36)" rx="1"/>
+        <svg viewBox="0 0 760 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+          <rect width="760" height="210" fill="#0d0d0d"/>
+          <!-- mid grid -->
+          <line x1="10" y1="110" x2="748" y2="110" stroke="rgba(255,255,255,0.025)" stroke-width="1"/>
+          <!-- R_main (upper resistance) orange strong -->
+          <line x1="10" y1="48" x2="748" y2="48" stroke="#f97316" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
+          <text x="12" y="42" fill="#f97316" font-size="8" font-family="monospace" opacity="0.85" font-weight="600">RESISTANCE</text>
+          <!-- R_mid (lower resistance) orange faint -->
+          <line x1="10" y1="90" x2="748" y2="90" stroke="#f97316" stroke-width="1" stroke-dasharray="4,6" opacity="0.3"/>
+          <!-- S_mid (upper support) green faint -->
+          <line x1="10" y1="132" x2="748" y2="132" stroke="#22c55e" stroke-width="1" stroke-dasharray="4,6" opacity="0.3"/>
+          <!-- S_main (lower support) green strong -->
+          <line x1="10" y1="172" x2="748" y2="172" stroke="#22c55e" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
+          <text x="12" y="166" fill="#22c55e" font-size="8" font-family="monospace" opacity="0.85" font-weight="600">SUPPORT</text>
+          <!-- white price line -->
+          <polyline
+            points="10,108 30,92 50,104 75,48 95,72 115,58 138,82 162,110 185,135 205,172 228,150 250,162 272,135 295,108 318,80 342,58 352,48 372,68 390,56 415,90 438,110 458,125 462,132 480,118 495,130 512,172 530,150 548,162 562,172 582,148 605,110 628,78 648,48 665,72 680,58 695,95 705,145 718,172 732,118 744,42 748,28"
+            fill="none" stroke="rgba(255,255,255,0.88)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- RED circles: resistance touches (sell/short) -->
+          <circle cx="75" cy="48" r="6" fill="rgba(239,68,68,0.14)" stroke="#ef4444" stroke-width="1.8"/>
+          <circle cx="352" cy="48" r="6" fill="rgba(239,68,68,0.14)" stroke="#ef4444" stroke-width="1.8"/>
+          <circle cx="415" cy="90" r="6" fill="rgba(239,68,68,0.14)" stroke="#ef4444" stroke-width="1.8"/>
+          <circle cx="648" cy="48" r="6" fill="rgba(239,68,68,0.14)" stroke="#ef4444" stroke-width="1.8"/>
+          <circle cx="746" cy="28" r="6" fill="rgba(239,68,68,0.14)" stroke="#ef4444" stroke-width="1.8"/>
+          <!-- GREEN circles: support touches (buy/long) -->
+          <circle cx="205" cy="172" r="6" fill="rgba(34,197,94,0.14)" stroke="#22c55e" stroke-width="1.8"/>
+          <circle cx="462" cy="132" r="6" fill="rgba(34,197,94,0.14)" stroke="#22c55e" stroke-width="1.8"/>
+          <circle cx="512" cy="172" r="6" fill="rgba(34,197,94,0.14)" stroke="#22c55e" stroke-width="1.8"/>
+          <circle cx="562" cy="172" r="6" fill="rgba(34,197,94,0.14)" stroke="#22c55e" stroke-width="1.8"/>
+          <circle cx="718" cy="172" r="6" fill="rgba(34,197,94,0.14)" stroke="#22c55e" stroke-width="1.8"/>
         </svg>
       </div>
 
