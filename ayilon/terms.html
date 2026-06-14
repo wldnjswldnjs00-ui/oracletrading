@@ -33,12 +33,23 @@
     footer a { font-size: 13px; color: var(--gray-600); text-decoration: none; margin: 0 12px; }
     footer a:hover { color: var(--white); }
 
+    .lang-switcher { display: flex; gap: 4px; align-items: center; }
+    .lang-btn { background: none; border: 1px solid transparent; color: var(--gray-400); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .lang-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+    .lang-btn.active { color: var(--white); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
     @media (max-width: 480px) { nav { padding: 20px 24px; } .page-title { font-size: 28px; } }
   </style>
+  <script src="i18n.js"></script>
 </head>
 <body>
   <nav>
     <a href="index.html" class="nav-logo">AYILON</a>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+      <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
+      <button class="lang-btn" data-lang="ja" onclick="setLanguage('ja')">JA</button>
+      <button class="lang-btn" data-lang="zh" onclick="setLanguage('zh')">ZH</button>
+    </div>
     <a href="index.html" class="nav-back">&larr; Back to Home</a>
   </nav>
 

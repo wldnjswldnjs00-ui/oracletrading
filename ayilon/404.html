@@ -6,6 +6,7 @@
   <title>404 — Page Not Found · AYILON</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet" />
+  <script src="i18n.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; background: #000; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 24px; }
@@ -24,17 +25,29 @@
     .btn-outline { background: none; color: #fff; padding: 13px 28px; border-radius: 8px; font-size: 14px; font-weight: 500; text-decoration: none; border: 1px solid rgba(255,255,255,0.15); transition: border-color 0.2s; }
     .btn-outline:hover { border-color: rgba(255,255,255,0.4); }
     .logo { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.12em; color: #fff; text-decoration: none; }
+
+    /* LANG SWITCHER */
+    .lang-switcher { position: fixed; top: 20px; right: 24px; display: flex; gap: 4px; align-items: center; }
+    .lang-btn { background: none; border: 1px solid transparent; color: #525252; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .lang-btn:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
+    .lang-btn.active { color: #fff; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
   </style>
 </head>
 <body>
   <a href="index.html" class="logo">AYILON</a>
+  <div class="lang-switcher">
+    <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+    <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
+    <button class="lang-btn" data-lang="ja" onclick="setLanguage('ja')">JA</button>
+    <button class="lang-btn" data-lang="zh" onclick="setLanguage('zh')">ZH</button>
+  </div>
   <div class="glitch">404</div>
-  <div class="label">Page Not Found</div>
-  <h1>You've gone off the grid.</h1>
-  <p>The page you're looking for doesn't exist — or it may have moved. Let's get you back on track.</p>
+  <div class="label" data-i18n="404.label">Page Not Found</div>
+  <h1 data-i18n="404.title">You've gone off the grid.</h1>
+  <p data-i18n="404.desc">The page you're looking for doesn't exist — or it may have moved. Let's get you back on track.</p>
   <div class="btns">
-    <a href="index.html" class="btn-primary">Back to Home</a>
-    <a href="dashboard.html" class="btn-outline">Go to Dashboard</a>
+    <a href="index.html" class="btn-primary" data-i18n="404.home">Back to Home</a>
+    <a href="dashboard.html" class="btn-outline" data-i18n="404.dash">Go to Dashboard</a>
   </div>
 </body>
 </html>

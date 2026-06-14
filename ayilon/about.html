@@ -4,13 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>About — AYILON</title>
-  <meta name="description" content="AYILON은 누구나 자동화 매매를 쓸 수 있도록 만든 플랫폼입니다. 우리의 미션, 가치, 기술 스택을 확인하세요." />
+  <meta name="description" content="AYILON — algorithmic trading for everyone. Our mission, values, and technology stack." />
   <meta property="og:title" content="About AYILON" />
   <meta property="og:description" content="We build the bots. You keep the profits. AYILON's mission, values, and technology." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://oracletrading-01o.pages.dev/about.html" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="i18n.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -28,6 +29,12 @@
     .nav-links a:hover { color: var(--white); }
     .btn-white { background: var(--white); color: var(--black); padding: 10px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; transition: opacity 0.2s; }
     .btn-white:hover { opacity: 0.88; }
+
+    /* LANG SWITCHER */
+    .lang-switcher { display: flex; gap: 4px; align-items: center; }
+    .lang-btn { background: none; border: 1px solid transparent; color: var(--gray-400); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .lang-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+    .lang-btn.active { color: var(--white); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
 
     /* HERO */
     .hero { padding: 120px 60px 80px; text-align: center; position: relative; overflow: hidden; }
@@ -111,19 +118,25 @@
   <nav>
     <a href="index.html" class="nav-logo">AYILON</a>
     <div class="nav-links">
-      <a href="index.html#features">Features</a>
-      <a href="index.html#pricing">Pricing</a>
-      <a href="index.html#faq">FAQ</a>
-      <a href="bot-guide.html">Bot Guide</a>
+      <a href="index.html#features" data-i18n="nav.features">Features</a>
+      <a href="index.html#pricing" data-i18n="nav.pricing">Pricing</a>
+      <a href="index.html#faq" data-i18n="nav.faq">FAQ</a>
+      <a href="bot-guide.html" data-i18n="nav.botguide">Bot Guide</a>
     </div>
-    <a href="signup.html" class="btn-white">Get Started →</a>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+      <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
+      <button class="lang-btn" data-lang="ja" onclick="setLanguage('ja')">JA</button>
+      <button class="lang-btn" data-lang="zh" onclick="setLanguage('zh')">ZH</button>
+    </div>
+    <a href="signup.html" class="btn-white" data-i18n="nav.getstarted">Get Started →</a>
   </nav>
 
   <!-- HERO -->
   <div class="hero">
-    <div class="hero-tag">About AYILON</div>
-    <h1>We build the bots.<br /><em>You keep the profits.</em></h1>
-    <p>AYILON was built on one belief: algorithmic trading should not be reserved for hedge funds and institutions. Anyone with an exchange account should have access to the same tools.</p>
+    <div class="hero-tag" data-i18n="about.hero.tag">About AYILON</div>
+    <h1><span data-i18n="about.hero.title1">We build the bots.</span><br /><em data-i18n="about.hero.title2">You keep the profits.</em></h1>
+    <p data-i18n="about.hero.desc">AYILON was built on one belief: algorithmic trading should not be reserved for hedge funds and institutions. Anyone with an exchange account should have access to the same tools.</p>
   </div>
 
   <hr class="divider" />
@@ -131,24 +144,24 @@
   <!-- MISSION -->
   <div class="mission">
     <div>
-      <div class="mission-label">Our Mission</div>
-      <h2>Democratise automated trading</h2>
-      <p>For years, quantitative trading strategies — grid bots, DCA systems, momentum algorithms — were locked behind proprietary infrastructure that only large firms could afford to build and maintain.</p>
-      <p>We built AYILON to change that. By combining institutional-grade bot logic with a simple, clean interface and direct OKX integration, we make it possible for anyone to put their portfolio on autopilot.</p>
-      <p>No coding. No servers. No watching charts. Just set your strategy, connect your API key, and let the bot work.</p>
+      <div class="mission-label" data-i18n="about.mission.label">Our Mission</div>
+      <h2 data-i18n="about.mission.title">Democratise automated trading</h2>
+      <p data-i18n="about.mission.p1">For years, quantitative trading strategies were locked behind proprietary infrastructure that only large firms could afford to build and maintain.</p>
+      <p data-i18n="about.mission.p2">We built AYILON to change that. By combining institutional-grade bot logic with a simple, clean interface and direct OKX integration, we make it possible for anyone to put their portfolio on autopilot.</p>
+      <p data-i18n="about.mission.p3">No coding. No servers. No watching charts. Just set your strategy, connect your API key, and let the bot work.</p>
     </div>
     <div class="mission-stats">
       <div class="mission-stat">
         <div class="mission-stat-val">24 / 7</div>
-        <div class="mission-stat-label">Bots run continuously — even while you sleep</div>
+        <div class="mission-stat-label" data-i18n="about.stat1.label">Bots run continuously — even while you sleep</div>
       </div>
       <div class="mission-stat">
         <div class="mission-stat-val">S/R</div>
-        <div class="mission-stat-label">Support & Resistance detection across 1H + 4H timeframes</div>
+        <div class="mission-stat-label" data-i18n="about.stat2.label">Support &amp; Resistance detection across 1H + 4H timeframes</div>
       </div>
       <div class="mission-stat">
         <div class="mission-stat-val">$0</div>
-        <div class="mission-stat-label">AYILON never holds or touches your funds</div>
+        <div class="mission-stat-label" data-i18n="about.stat3.label">AYILON never holds or touches your funds</div>
       </div>
     </div>
   </div>
@@ -158,24 +171,24 @@
   <!-- VALUES -->
   <div class="values">
     <div class="values-header">
-      <div class="values-tag">What we stand for</div>
-      <h2>Built on three principles</h2>
+      <div class="values-tag" data-i18n="about.values.tag">What we stand for</div>
+      <h2 data-i18n="about.values.title">Built on three principles</h2>
     </div>
     <div class="values-grid">
       <div class="value-card">
         <div class="value-num">01</div>
-        <div class="value-title">Transparency</div>
-        <div class="value-desc">No black-box algorithms. Every strategy we offer is clearly documented — you know exactly what the bot is doing, why, and when. Your trades, your data, your decisions.</div>
+        <div class="value-title" data-i18n="about.v1.title">Transparency</div>
+        <div class="value-desc" data-i18n="about.v1.desc">No black-box algorithms. Every strategy we offer is clearly documented — you know exactly what the bot is doing, why, and when. Your trades, your data, your decisions.</div>
       </div>
       <div class="value-card">
         <div class="value-num">02</div>
-        <div class="value-title">Security First</div>
-        <div class="value-desc">We never hold your funds. API keys are encrypted at rest. We recommend — and enforce — trade-only API permissions so that no withdrawal is ever possible through our platform.</div>
+        <div class="value-title" data-i18n="about.v2.title">Security First</div>
+        <div class="value-desc" data-i18n="about.v2.desc">We never hold your funds. API keys are encrypted at rest. We recommend — and enforce — trade-only API permissions so that no withdrawal is ever possible through our platform.</div>
       </div>
       <div class="value-card">
         <div class="value-num">03</div>
-        <div class="value-title">Simplicity</div>
-        <div class="value-desc">Powerful tools don't have to be complicated. We obsess over the interface so you can focus on results, not settings. If it takes more than three clicks to start a bot, we've failed.</div>
+        <div class="value-title" data-i18n="about.v3.title">Simplicity</div>
+        <div class="value-desc" data-i18n="about.v3.desc">Powerful tools don't have to be complicated. We obsess over the interface so you can focus on results, not settings. If it takes more than three clicks to start a bot, we've failed.</div>
       </div>
     </div>
   </div>
@@ -183,8 +196,8 @@
   <!-- TECH -->
   <div class="tech">
     <div class="tech-header">
-      <div class="tech-tag">Technology</div>
-      <h2>Infrastructure built for reliability</h2>
+      <div class="tech-tag" data-i18n="about.tech.tag">Technology</div>
+      <h2 data-i18n="about.tech.title">Infrastructure built for reliability</h2>
     </div>
     <div class="tech-grid">
       <div class="tech-item">
@@ -192,8 +205,8 @@
           <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         </div>
         <div>
-          <div class="tech-name">Cloudflare Workers</div>
-          <div class="tech-desc">Bot logic runs on Cloudflare's global edge network — sub-millisecond execution, zero cold starts, 99.9%+ uptime. No single point of failure.</div>
+          <div class="tech-name" data-i18n="about.tech1.name">Cloudflare Workers</div>
+          <div class="tech-desc" data-i18n="about.tech1.desc">Bot logic runs on Cloudflare's global edge network — sub-millisecond execution, zero cold starts, 99.9%+ uptime. No single point of failure.</div>
         </div>
       </div>
       <div class="tech-item">
@@ -201,8 +214,8 @@
           <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         </div>
         <div>
-          <div class="tech-name">OKX API v5</div>
-          <div class="tech-desc">Direct integration with OKX's latest REST and WebSocket API. Real-time orderbook data, instant order placement, and live position monitoring.</div>
+          <div class="tech-name" data-i18n="about.tech2.name">OKX API v5</div>
+          <div class="tech-desc" data-i18n="about.tech2.desc">Direct integration with OKX's latest REST and WebSocket API. Real-time orderbook data, instant order placement, and live position monitoring.</div>
         </div>
       </div>
       <div class="tech-item">
@@ -210,8 +223,8 @@
           <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         </div>
         <div>
-          <div class="tech-name">Cloudflare KV</div>
-          <div class="tech-desc">User data, bot configurations, and trade history are stored in Cloudflare KV — a globally distributed key-value store with low-latency reads worldwide.</div>
+          <div class="tech-name" data-i18n="about.tech3.name">Cloudflare KV</div>
+          <div class="tech-desc" data-i18n="about.tech3.desc">User data, bot configurations, and trade history are stored in Cloudflare KV — a globally distributed key-value store with low-latency reads worldwide.</div>
         </div>
       </div>
       <div class="tech-item">
@@ -219,8 +232,8 @@
           <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         </div>
         <div>
-          <div class="tech-name">Resend</div>
-          <div class="tech-desc">Transactional emails — verification codes, subscription confirmations, trade alerts — delivered reliably via Resend's developer-first email API.</div>
+          <div class="tech-name" data-i18n="about.tech4.name">Resend</div>
+          <div class="tech-desc" data-i18n="about.tech4.desc">Transactional emails — verification codes, subscription confirmations, trade alerts — delivered reliably via Resend's developer-first email API.</div>
         </div>
       </div>
     </div>
@@ -228,22 +241,22 @@
 
   <!-- CTA -->
   <div class="cta">
-    <h2>Ready to start?</h2>
-    <p>Join traders who let AYILON run their strategy around the clock.</p>
+    <h2 data-i18n="about.cta.title">Ready to start?</h2>
+    <p data-i18n="about.cta.subtitle">Join traders who let AYILON run their strategy around the clock.</p>
     <div class="cta-btns">
-      <a href="signup.html" class="btn-primary">Create Account →</a>
-      <a href="index.html#pricing" class="btn-outline">View Plans</a>
-      <a href="bot-guide.html" class="btn-outline">Read Bot Guide</a>
+      <a href="signup.html" class="btn-primary" data-i18n="about.cta.btn1">Create Account →</a>
+      <a href="index.html#pricing" class="btn-outline" data-i18n="about.cta.btn2">View Plans</a>
+      <a href="bot-guide.html" class="btn-outline" data-i18n="about.cta.btn3">Read Bot Guide</a>
     </div>
   </div>
 
   <footer>
-    <p>© 2025 AYILON. All rights reserved.</p>
+    <p data-i18n="footer.copy">© 2026 AYILON. All rights reserved.</p>
     <div class="footer-links">
-      <a href="index.html">Home</a>
-      <a href="bot-guide.html">Bot Guide</a>
-      <a href="terms.html">Terms</a>
-      <a href="privacy.html">Privacy</a>
+      <a href="index.html" data-i18n="footer.home">Home</a>
+      <a href="bot-guide.html" data-i18n="footer.botguide">Bot Guide</a>
+      <a href="terms.html" data-i18n="footer.terms">Terms</a>
+      <a href="privacy.html" data-i18n="footer.privacy">Privacy</a>
     </div>
   </footer>
 

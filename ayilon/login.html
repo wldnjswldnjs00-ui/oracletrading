@@ -7,6 +7,7 @@
   <meta name="robots" content="noindex" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script src="i18n.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root { --black: #000; --white: #fff; --gray-400: #a3a3a3; --gray-600: #525252; --gray-900: #111111; --error: #ef4444; }
@@ -16,6 +17,12 @@
     .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
     .nav-signup { font-size: 14px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
     .nav-signup:hover { color: var(--white); }
+
+    /* LANG SWITCHER */
+    .lang-switcher { display: flex; gap: 4px; align-items: center; }
+    .lang-btn { background: none; border: 1px solid transparent; color: var(--gray-400); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .lang-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+    .lang-btn.active { color: var(--white); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
 
     .page-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 24px; }
     .login-box { width: 100%; max-width: 420px; }
@@ -66,7 +73,13 @@
 <body>
   <nav>
     <a href="index.html" class="nav-logo">AYILON</a>
-    <a href="signup.html" class="nav-signup">Don't have an account? Sign Up &rarr;</a>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+      <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
+      <button class="lang-btn" data-lang="ja" onclick="setLanguage('ja')">JA</button>
+      <button class="lang-btn" data-lang="zh" onclick="setLanguage('zh')">ZH</button>
+    </div>
+    <a href="signup.html" class="nav-signup" data-i18n="nav.nosignup">Don't have an account? Sign Up →</a>
   </nav>
 
   <div class="page-wrap">
@@ -74,32 +87,32 @@
 
       <div class="step active" id="step1">
         <div class="login-header">
-          <h1>Log In</h1>
-          <p>Don't have an account? <a href="signup.html">Sign up</a></p>
+          <h1 data-i18n="login.title">Log In</h1>
+          <p><span data-i18n="login.noaccount">Don't have an account?</span> <a href="signup.html" data-i18n="login.signup">Sign up</a></p>
         </div>
-        <div class="error-msg" id="errorMsg">Incorrect email or password.</div>
+        <div class="error-msg" id="errorMsg" data-i18n="login.error">Incorrect email or password.</div>
         <form onsubmit="handleLogin(event)">
           <div class="form-group">
-            <label class="form-label">Email</label>
-            <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com" autocomplete="email" />
+            <label class="form-label" data-i18n="login.email">Email</label>
+            <input type="email" class="form-input" id="loginEmail" data-i18n-ph="login.email.ph" placeholder="you@example.com" autocomplete="email" />
           </div>
           <div class="form-group">
-            <label class="form-label">Password</label>
+            <label class="form-label" data-i18n="login.password">Password</label>
             <div class="password-wrap">
-              <input type="password" class="form-input" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" />
-              <button type="button" class="password-toggle" onclick="togglePassword()">Show</button>
+              <input type="password" class="form-input" id="loginPassword" data-i18n-ph="login.password.ph" placeholder="Enter your password" autocomplete="current-password" />
+              <button type="button" class="password-toggle" onclick="togglePassword()" data-i18n="login.show">Show</button>
             </div>
-            <div class="forgot"><a href="#" onclick="startForgot(); return false;">Forgot your password?</a></div>
+            <div class="forgot"><a href="#" onclick="startForgot(); return false;" data-i18n="login.forgot">Forgot your password?</a></div>
           </div>
-          <button type="submit" class="btn-submit">Log In</button>
+          <button type="submit" class="btn-submit" data-i18n="login.submit">Log In</button>
         </form>
       </div>
 
       <div class="step" id="step2">
         <button class="back-btn" onclick="goBack(1)">&larr; Back</button>
         <div class="login-header">
-          <h1>Two-Factor Auth</h1>
-          <p>Select your verification method.</p>
+          <h1 data-i18n="login.2fa.title">Two-Factor Auth</h1>
+          <p data-i18n="login.2fa.sub">Select your verification method.</p>
         </div>
         <div class="twofa-options" id="twofaOptions"></div>
       </div>
@@ -107,7 +120,7 @@
       <div class="step" id="step3">
         <button class="back-btn" onclick="goBack(2)">&larr; Back</button>
         <div class="login-header">
-          <h1 id="otpTitle">Enter Code</h1>
+          <h1 id="otpTitle" data-i18n="login.otp.title">Enter Code</h1>
           <p id="otpDesc"></p>
         </div>
         <div class="otp-inputs">
@@ -118,9 +131,9 @@
           <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 4)" />
           <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 5)" />
         </div>
-        <button class="btn-submit" onclick="verifyOTP()">Verify &amp; Sign In</button>
+        <button class="btn-submit" onclick="verifyOTP()" data-i18n="login.otp.verify">Verify &amp; Sign In</button>
         <p style="text-align:center; margin-top:16px; font-size:13px; color:var(--gray-600)">
-          Didn't receive a code? <a href="#" style="color:var(--white)" onclick="resendCode()">Resend</a>
+          <span data-i18n="login.otp.resend">Didn't receive a code?</span> <a href="#" style="color:var(--white)" onclick="resendCode()" data-i18n="login.otp.resendlink">Resend</a>
         </p>
       </div>
 
@@ -128,15 +141,15 @@
       <div class="step" id="step4">
         <button class="back-btn" onclick="goBack(1)">&larr; Back</button>
         <div class="login-header">
-          <h1>Reset Password</h1>
-          <p>Enter your registered email address.</p>
+          <h1 data-i18n="login.forgot.title">Reset Password</h1>
+          <p data-i18n="login.forgot.sub">Enter your registered email address.</p>
         </div>
-        <div class="error-msg" id="forgotError">Email address not found.</div>
+        <div class="error-msg" id="forgotError" data-i18n="login.forgot.notfound">Email address not found.</div>
         <div class="form-group">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-input" id="forgotEmail" placeholder="you@example.com" autocomplete="email" />
+          <label class="form-label" data-i18n="login.email">Email</label>
+          <input type="email" class="form-input" id="forgotEmail" data-i18n-ph="login.email.ph" placeholder="you@example.com" autocomplete="email" />
         </div>
-        <button class="btn-submit" onclick="handleForgot()">Send Verification &rarr;</button>
+        <button class="btn-submit" onclick="handleForgot()" data-i18n="login.forgot.send">Send Verification →</button>
       </div>
 
       <!-- FORGOT: Step 5 - Verify identity -->
@@ -154,31 +167,31 @@
           <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 4)" />
           <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 5)" />
         </div>
-        <button class="btn-submit" onclick="verifyForgotOTP()">Verify &rarr;</button>
+        <button class="btn-submit" onclick="verifyForgotOTP()">Verify →</button>
       </div>
 
       <!-- FORGOT: Step 6 - New password -->
       <div class="step" id="step6">
         <div class="login-header">
-          <h1>New Password</h1>
-          <p>Enter your new password below.</p>
+          <h1 data-i18n="login.newpw.title">New Password</h1>
+          <p data-i18n="login.newpw.sub">Enter your new password below.</p>
         </div>
         <div class="form-group">
-          <label class="form-label">New Password</label>
+          <label class="form-label" data-i18n="login.newpw.new">New Password</label>
           <div class="password-wrap">
-            <input type="password" class="form-input" id="newPassword" placeholder="8+ characters" />
-            <button type="button" class="password-toggle" onclick="togglePw('newPassword')">Show</button>
+            <input type="password" class="form-input" id="newPassword" data-i18n-ph="login.newpw.new.ph" placeholder="8+ characters" />
+            <button type="button" class="password-toggle" onclick="togglePw('newPassword')" data-i18n="login.show">Show</button>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Confirm Password</label>
+          <label class="form-label" data-i18n="login.newpw.confirm">Confirm Password</label>
           <div class="password-wrap">
-            <input type="password" class="form-input" id="confirmPassword" placeholder="Re-enter new password" />
-            <button type="button" class="password-toggle" onclick="togglePw('confirmPassword')">Show</button>
+            <input type="password" class="form-input" id="confirmPassword" data-i18n-ph="login.newpw.confirm.ph" placeholder="Re-enter new password" />
+            <button type="button" class="password-toggle" onclick="togglePw('confirmPassword')" data-i18n="login.show">Show</button>
           </div>
         </div>
         <div class="error-msg" id="pwResetError"></div>
-        <button class="btn-submit" onclick="resetPassword()">Reset Password</button>
+        <button class="btn-submit" onclick="resetPassword()" data-i18n="login.newpw.submit">Reset Password</button>
       </div>
 
     </div>

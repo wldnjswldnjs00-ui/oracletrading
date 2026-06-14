@@ -307,12 +307,17 @@
     font-family: 'Inter', sans-serif;
   }
   .print-btn:hover { background: #e5e5e5; }
+  .lang-switcher { display: flex; gap: 4px; align-items: center; }
+  .lang-btn { background: none; border: 1px solid transparent; color: #a3a3a3; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+  .lang-btn:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
+  .lang-btn.active { color: #fff; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
   @media print { .print-bar { display: none; } body { padding-top: 0; } }
   @media screen { body { padding-top: 96px; } }
 
   ul, ol { padding-left: 20px; margin-bottom: 10px; }
   li { margin-bottom: 4px; color: var(--gray-800); }
 </style>
+<script src="i18n.js"></script>
 </head>
 <body>
 
@@ -322,7 +327,15 @@
     Back to Home
   </a>
   <span>AYILON Bot — Trading Logic Document</span>
-  <button class="print-btn" onclick="window.print()">⬇ Save as PDF</button>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+      <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
+      <button class="lang-btn" data-lang="ja" onclick="setLanguage('ja')">JA</button>
+      <button class="lang-btn" data-lang="zh" onclick="setLanguage('zh')">ZH</button>
+    </div>
+    <button class="print-btn" onclick="window.print()">⬇ Save as PDF</button>
+  </div>
 </div>
 
 <!-- ══════════════════════ COVER ══════════════════════ -->
