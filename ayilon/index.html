@@ -16,6 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="i18n.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -52,6 +53,12 @@
     .mobile-menu a { display: block; padding: 14px 0; font-size: 15px; color: var(--gray-400); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.04); transition: color 0.2s; }
     .mobile-menu a:last-child { border-bottom: none; color: var(--white); font-weight: 600; }
     .mobile-menu a:hover { color: var(--white); }
+
+    /* LANG SWITCHER */
+    .lang-switcher { display: flex; gap: 4px; align-items: center; }
+    .lang-btn { background: none; border: 1px solid transparent; color: var(--gray-400); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .lang-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+    .lang-btn.active { color: var(--white); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
 
     /* HERO */
     .hero {
@@ -261,7 +268,9 @@
     @media (max-width: 1024px) {
       nav { padding: 20px 30px; }
       .nav-links { display: none; }
+      .nav-actions { display: none; }
       .hamburger { display: flex; }
+      .lang-switcher { margin-right: 8px; }
       section { padding: 80px 30px; }
       .stats { grid-template-columns: repeat(2, 1fr); padding: 60px 30px; gap: 40px; }
       .stat-item { border-right: none; padding: 0; }
@@ -287,30 +296,35 @@
   <nav>
     <a href="index.html" class="nav-logo">AYILON</a>
     <ul class="nav-links">
-      <li><a href="#features">Features</a></li>
-      <li><a href="#how">How It Works</a></li>
-      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#features" data-i18n="nav.features">Features</a></li>
+      <li><a href="#how" data-i18n="nav.how">How It Works</a></li>
+      <li><a href="#pricing" data-i18n="nav.pricing">Pricing</a></li>
     </ul>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+      <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
+      <button class="lang-btn" data-lang="ja" onclick="setLanguage('ja')">JA</button>
+      <button class="lang-btn" data-lang="zh" onclick="setLanguage('zh')">ZH</button>
+    </div>
     <div class="nav-actions" id="navActions">
-      <a href="login.html" class="btn-ghost">Log In</a>
-      <a href="signup.html" class="btn-white">Get Started</a>
+      <a href="login.html" class="btn-ghost" data-i18n="nav.login">Log In</a>
+      <a href="signup.html" class="btn-white" data-i18n="nav.getstarted">Get Started</a>
     </div>
     <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
   </nav>
   <div class="mobile-menu" id="mobileMenu">
-    <a href="#features" onclick="closeMobileMenu()">Features</a>
-    <a href="#how" onclick="closeMobileMenu()">How It Works</a>
-    <a href="#pricing" onclick="closeMobileMenu()">Pricing</a>
-    <a href="bot-guide.html">Bot Guide</a>
-    <a href="login.html">Log In</a>
-    <a href="signup.html">Get Started →</a>
+    <a href="#features" onclick="closeMobileMenu()" data-i18n="mobile.features">Features</a>
+    <a href="#how" onclick="closeMobileMenu()" data-i18n="mobile.how">How It Works</a>
+    <a href="#pricing" onclick="closeMobileMenu()" data-i18n="mobile.pricing">Pricing</a>
+    <a href="bot-guide.html" data-i18n="mobile.botguide">Bot Guide</a>
+    <a href="login.html" data-i18n="mobile.login">Log In</a>
+    <a href="signup.html" data-i18n="mobile.getstarted">Get Started →</a>
   </div>
   <script>
     (function() {
       if (localStorage.getItem('ayilon_logged_in') === 'true') {
-        var username = localStorage.getItem('ayilon_username') || localStorage.getItem('ayilon_email') || 'Account';
         document.getElementById('navActions').innerHTML =
           '<a href="dashboard.html" class="btn-white">Dashboard →</a>';
       }
@@ -334,13 +348,13 @@
   <section class="hero">
     <div class="hero-badge">
       <span></span>
-      Automated Crypto Trading — 24/7
+      <span data-i18n="hero.badge">Automated Crypto Trading — 24/7</span>
     </div>
-    <h1>Create Profit<br /><em>from Nothing</em></h1>
-    <p>Connect your OKX API key and let AYILON's algorithmic bots trade for you around the clock. No downloads. No setup. Just results.</p>
+    <h1><span data-i18n="hero.title1">Create Profit</span><br /><em data-i18n="hero.title2">from Nothing</em></h1>
+    <p data-i18n="hero.desc">Connect your OKX API key and let AYILON's algorithmic bots trade for you around the clock. No downloads. No setup. Just results.</p>
     <div class="hero-cta">
-      <a href="signup.html" class="btn-primary">Start Trading →</a>
-      <a href="#how" class="btn-secondary">See How It Works</a>
+      <a href="signup.html" class="btn-primary" data-i18n="hero.cta1">Start Trading →</a>
+      <a href="#how" class="btn-secondary" data-i18n="hero.cta2">See How It Works</a>
     </div>
   </section>
 
@@ -348,19 +362,19 @@
   <div class="stats">
     <div class="stat-item">
       <div class="stat-number">$2.4B+</div>
-      <div class="stat-label">Total Volume Traded</div>
+      <div class="stat-label" data-i18n="stats.vol.label">Total Volume Traded</div>
     </div>
     <div class="stat-item">
       <div class="stat-number">38,000+</div>
-      <div class="stat-label">Active Bots</div>
+      <div class="stat-label" data-i18n="stats.bots.label">Active Bots</div>
     </div>
     <div class="stat-item">
       <div class="stat-number">12,000+</div>
-      <div class="stat-label">Traders Worldwide</div>
+      <div class="stat-label" data-i18n="stats.traders.label">Traders Worldwide</div>
     </div>
     <div class="stat-item">
       <div class="stat-number">99.9%</div>
-      <div class="stat-label">Server Uptime</div>
+      <div class="stat-label" data-i18n="stats.uptime.label">Server Uptime</div>
     </div>
   </div>
 
@@ -368,10 +382,10 @@
   <section id="features">
     <div class="features-header">
       <div>
-        <div class="section-tag">Core Features</div>
-        <h2 class="section-title">Everything you need to automate trading</h2>
+        <div class="section-tag" data-i18n="feat.tag">Core Features</div>
+        <h2 class="section-title" data-i18n="feat.title">Everything you need to automate trading</h2>
       </div>
-      <p class="section-desc">From strategy selection to execution and profit tracking — AYILON handles it all while you sleep.</p>
+      <p class="section-desc" data-i18n="feat.desc">From strategy selection to execution and profit tracking — AYILON handles it all while you sleep.</p>
     </div>
     <div class="features-grid">
       <div class="feature-card">
@@ -379,48 +393,48 @@
         <div class="feature-icon">
           <svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         </div>
-        <h3>Automated Trading</h3>
-        <p>Algorithmic bots that never stop. 24/7/365 market monitoring with instant execution at the optimal moment.</p>
+        <h3 data-i18n="feat.1.title">Automated Trading</h3>
+        <p data-i18n="feat.1.desc">Algorithmic bots that never stop. 24/7/365 market monitoring with instant execution at the optimal moment.</p>
       </div>
       <div class="feature-card">
         <div class="feature-num">02</div>
         <div class="feature-icon">
           <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         </div>
-        <h3>OKX Integration</h3>
-        <p>Connect to OKX in seconds via API key. Your funds stay on the exchange — AYILON only trades, never withdraws.</p>
+        <h3 data-i18n="feat.2.title">OKX Integration</h3>
+        <p data-i18n="feat.2.desc">Connect to OKX in seconds via API key. Your funds stay on the exchange — AYILON only trades, never withdraws.</p>
       </div>
       <div class="feature-card">
         <div class="feature-num">03</div>
         <div class="feature-icon">
           <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         </div>
-        <h3>Multiple Strategies</h3>
-        <p>Support/resistance entries, fractional DCA, Kelly-sized positions — proven strategies configurable in one click.</p>
+        <h3 data-i18n="feat.3.title">Multiple Strategies</h3>
+        <p data-i18n="feat.3.desc">Support/resistance entries, fractional DCA, Kelly-sized positions — proven strategies configurable in one click.</p>
       </div>
       <div class="feature-card">
         <div class="feature-num">04</div>
         <div class="feature-icon">
           <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         </div>
-        <h3>Backtesting</h3>
-        <p>Simulate strategy performance on historical data before committing real capital. Verify before you deploy.</p>
+        <h3 data-i18n="feat.4.title">Backtesting</h3>
+        <p data-i18n="feat.4.desc">Simulate strategy performance on historical data before committing real capital. Verify before you deploy.</p>
       </div>
       <div class="feature-card">
         <div class="feature-num">05</div>
         <div class="feature-icon">
           <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         </div>
-        <h3>Real-Time Alerts</h3>
-        <p>Instant notifications for fills, stop-losses, and profit targets via email and Telegram.</p>
+        <h3 data-i18n="feat.5.title">Real-Time Alerts</h3>
+        <p data-i18n="feat.5.desc">Instant notifications for fills, stop-losses, and profit targets via email and Telegram.</p>
       </div>
       <div class="feature-card">
         <div class="feature-num">06</div>
         <div class="feature-icon">
           <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
-        <h3>Asset Protection</h3>
-        <p>API keys stored with trading-only permissions. Withdrawal access is never requested — your funds stay yours.</p>
+        <h3 data-i18n="feat.6.title">Asset Protection</h3>
+        <p data-i18n="feat.6.desc">API keys stored with trading-only permissions. Withdrawal access is never requested — your funds stay yours.</p>
       </div>
     </div>
   </section>
@@ -429,28 +443,28 @@
   <div id="how">
     <div class="how">
       <div class="how-inner">
-        <div class="section-tag">How It Works</div>
-        <h2 class="section-title">Up and running in 4 steps</h2>
+        <div class="section-tag" data-i18n="how.tag">How It Works</div>
+        <h2 class="section-title" data-i18n="how.title">Up and running in 4 steps</h2>
         <div class="steps">
           <div class="step">
             <div class="step-num">01</div>
-            <h3>Create Account</h3>
-            <p>Sign up with your email in under 30 seconds.</p>
+            <h3 data-i18n="how.step1.title">Create Account</h3>
+            <p data-i18n="how.step1.desc">Sign up with your email in under 30 seconds.</p>
           </div>
           <div class="step">
             <div class="step-num">02</div>
-            <h3>Connect OKX</h3>
-            <p>Paste your OKX API key and secret. Read + trade permissions only.</p>
+            <h3 data-i18n="how.step2.title">Connect OKX</h3>
+            <p data-i18n="how.step2.desc">Paste your OKX API key and secret. Read + trade permissions only.</p>
           </div>
           <div class="step">
             <div class="step-num">03</div>
-            <h3>Choose Strategy</h3>
-            <p>Pick a strategy, select your pairs, and set your capital allocation.</p>
+            <h3 data-i18n="how.step3.title">Choose Strategy</h3>
+            <p data-i18n="how.step3.desc">Pick a strategy, select your pairs, and set your capital allocation.</p>
           </div>
           <div class="step">
             <div class="step-num">04</div>
-            <h3>Let It Run</h3>
-            <p>Hit start. Your bot trades 24/7 on AYILON's servers — nothing to install or maintain.</p>
+            <h3 data-i18n="how.step4.title">Let It Run</h3>
+            <p data-i18n="how.step4.desc">Hit start. Your bot trades 24/7 on AYILON's servers — nothing to install or maintain.</p>
           </div>
         </div>
       </div>
@@ -459,7 +473,7 @@
 
   <!-- EXCHANGES -->
   <div class="exchanges">
-    <h2>Supported Exchange</h2>
+    <h2 data-i18n="exch.header">Supported Exchange</h2>
     <div class="exchange-list">
       <span class="exchange-name">OKX</span>
     </div>
@@ -469,9 +483,9 @@
   <div id="strategies">
     <section style="padding:100px 60px;">
       <div style="text-align:center;margin-bottom:64px;">
-        <div class="section-tag">Our Approach</div>
-        <h2 class="section-title" style="max-width:100%;text-align:center;">What makes AYILON different?</h2>
-        <p style="font-size:16px;color:var(--gray-400);max-width:620px;margin:0 auto;line-height:1.7;">The same logic that works in a bull market works in a bear market. AYILON identifies <em style="font-style:normal;color:var(--white);">institutional S/R levels</em> and enters in the direction the market is already moving — long from support, short from resistance.</p>
+        <div class="section-tag" data-i18n="strat.tag">Our Approach</div>
+        <h2 class="section-title" style="max-width:100%;text-align:center;" data-i18n="strat.title">What makes AYILON different?</h2>
+        <p style="font-size:16px;color:var(--gray-400);max-width:620px;margin:0 auto;line-height:1.7;" data-i18n="strat.desc">The same logic that works in a bull market works in a bear market. AYILON identifies institutional S/R levels and enters in the direction the market is already moving — long from support, short from resistance.</p>
       </div>
 
       <!-- DETAIL CHART CARD -->
@@ -519,20 +533,20 @@
       <!-- UNIQUE TECH FEATURES -->
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:48px;">
         <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3b82f6;margin-bottom:8px;">Multi-Touch S/R Detection</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;">Levels are only validated after 3+ confirmed price reactions. The algorithm measures wick precision and body rejection — not just proximity. No guesswork, no lagging indicators.</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3b82f6;margin-bottom:8px;" data-i18n="strat.f1.tag">Multi-Touch S/R Detection</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;" data-i18n="strat.f1.desc">Levels are only validated after 3+ confirmed price reactions. The algorithm measures wick precision and body rejection — not just proximity. No guesswork, no lagging indicators.</div>
         </div>
         <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#22c55e;margin-bottom:8px;">Wick-Only Entry Filter</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;">Entry triggers only on 5m wick contact with the level — never on a body breakout. The same technique used by institutional desks to get filled at exact levels without chasing.</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#22c55e;margin-bottom:8px;" data-i18n="strat.f2.tag">Wick-Only Entry Filter</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;" data-i18n="strat.f2.desc">Entry triggers only on 5m wick contact with the level — never on a body breakout. The same technique used by institutional desks to get filled at exact levels without chasing.</div>
         </div>
         <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f97316;margin-bottom:8px;">Volume Pattern Confirmation</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;">Volume spikes at the level confirm institutional participation. Low-volume touches are skipped — they signal retail noise, not real support. Only high-conviction setups are taken.</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f97316;margin-bottom:8px;" data-i18n="strat.f3.tag">Volume Pattern Confirmation</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;" data-i18n="strat.f3.desc">Volume spikes at the level confirm institutional participation. Low-volume touches are skipped — they signal retail noise, not real support. Only high-conviction setups are taken.</div>
         </div>
         <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#a855f7;margin-bottom:8px;">Ranging Market Filter</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;">Detects choppy, low-structure phases and pauses trading automatically. Prevents the repeated stop-losses that destroy most bots during consolidation. Trades only when structure is clear.</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#a855f7;margin-bottom:8px;" data-i18n="strat.f4.tag">Ranging Market Filter</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;" data-i18n="strat.f4.desc">Detects choppy, low-structure phases and pauses trading automatically. Prevents the repeated stop-losses that destroy most bots during consolidation. Trades only when structure is clear.</div>
         </div>
       </div>
 
@@ -542,8 +556,8 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;margin-bottom:8px;">Obsessive risk management — capital protection first.</div>
-          <div style="font-size:14px;color:var(--gray-400);line-height:1.75;max-width:640px;">Every position is monitored in real time. Volatility-based position sizing, dynamic stop-loss adjustment, and circuit breakers that automatically pause trading during extreme market conditions — because protecting your capital always comes before making profit.</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;margin-bottom:8px;" data-i18n="strat.risk.title">Obsessive risk management — capital protection first.</div>
+          <div style="font-size:14px;color:var(--gray-400);line-height:1.75;max-width:640px;" data-i18n="strat.risk.desc">Every position is monitored in real time. Volatility-based position sizing, dynamic stop-loss adjustment, and circuit breakers that automatically pause trading during extreme market conditions — because protecting your capital always comes before making profit.</div>
         </div>
       </div>
     </section>
@@ -552,12 +566,12 @@
   <!-- PRICING -->
   <section class="pricing" id="pricing">
     <div class="pricing-header">
-      <div class="section-tag">Pricing</div>
-      <h2 class="section-title">Simple, transparent pricing</h2>
-      <p class="section-desc">One subscription unlocks everything. No hidden fees. No trading commissions taken by AYILON.</p>
+      <div class="section-tag" data-i18n="price.tag">Pricing</div>
+      <h2 class="section-title" data-i18n="price.title">Simple, transparent pricing</h2>
+      <p class="section-desc" data-i18n="price.desc">One subscription unlocks everything. No hidden fees. No trading commissions taken by AYILON.</p>
       <div class="billing-toggle">
-        <button class="toggle-btn active" id="btn-monthly" onclick="setPeriod('monthly')">Monthly</button>
-        <button class="toggle-btn" id="btn-annual" onclick="setPeriod('annual')">Annual <span class="save-tag">Save up to 15%</span></button>
+        <button class="toggle-btn active" id="btn-monthly" onclick="setPeriod('monthly')" data-i18n="price.toggle.mo">Monthly</button>
+        <button class="toggle-btn" id="btn-annual" onclick="setPeriod('annual')"><span data-i18n="price.toggle.yr">Annual</span> <span class="save-tag" data-i18n="price.toggle.save">Save up to 15%</span></button>
       </div>
     </div>
 
@@ -576,7 +590,7 @@
           <li>Email notifications</li>
           <li>Standard support</li>
         </ul>
-        <a href="payment.html?plan=starter" class="btn-outline">Get Started</a>
+        <a href="payment.html?plan=starter" class="btn-outline" data-i18n="price.cta">Get Started</a>
       </div>
 
       <!-- PRO (featured) -->
@@ -594,7 +608,7 @@
           <li>API webhooks</li>
           <li>Priority support</li>
         </ul>
-        <a href="payment.html?plan=pro" class="btn-primary">Get Started</a>
+        <a href="payment.html?plan=pro" class="btn-primary" data-i18n="price.cta">Get Started</a>
       </div>
 
       <!-- ELITE -->
@@ -612,36 +626,36 @@
           <li>Dedicated account manager</li>
           <li>24/7 premium support</li>
         </ul>
-        <a href="payment.html?plan=elite" class="btn-outline">Get Started</a>
+        <a href="payment.html?plan=elite" class="btn-outline" data-i18n="price.cta">Get Started</a>
       </div>
     </div>
 
     <!-- OKX REFERRAL LIFETIME BANNER -->
     <div class="referral-banner">
       <div class="referral-left">
-        <div class="referral-tag">Special Offer</div>
-        <div class="referral-title">Get Elite Plan —<br />Free Forever</div>
-        <div class="referral-desc">Sign up for OKX through our referral link, complete your registration, and unlock permanent lifetime Elite access at absolutely no cost.</div>
+        <div class="referral-tag" data-i18n="ref.tag">Special Offer</div>
+        <div class="referral-title" data-i18n="ref.title">Get Elite Plan —<br />Free Forever</div>
+        <div class="referral-desc" data-i18n="ref.desc">Sign up for OKX through our referral link, complete your registration, and unlock permanent lifetime Elite access at absolutely no cost.</div>
         <div class="referral-steps">
           <div class="referral-step">
             <div class="referral-step-num">1</div>
-            <p>Open an OKX account<br />via our referral link</p>
+            <p data-i18n="ref.s1">Open an OKX account via our referral link</p>
           </div>
           <div class="referral-step">
             <div class="referral-step-num">2</div>
-            <p>Complete identity<br />verification on OKX</p>
+            <p data-i18n="ref.s2">Complete identity verification on OKX</p>
           </div>
           <div class="referral-step">
             <div class="referral-step-num">3</div>
-            <p>Contact AYILON support<br />with your OKX UID</p>
+            <p data-i18n="ref.s3">Contact AYILON support with your OKX UID</p>
           </div>
         </div>
       </div>
       <div class="referral-right">
-        <a href="https://okx.com/join/AYILON" target="_blank" class="btn-referral">
+        <a href="https://okx.com/join/AYILON" target="_blank" class="btn-referral" data-i18n="ref.cta">
           Open OKX Account →
         </a>
-        <div class="referral-note">Referral code: AYILON</div>
+        <div class="referral-note" data-i18n="ref.code">Referral code: AYILON</div>
       </div>
     </div>
   </section>
@@ -649,81 +663,81 @@
   <!-- FAQ -->
   <div id="faq">
     <div class="faq-section">
-      <div class="section-tag">FAQ</div>
-      <h2 class="section-title">Everything you need to know</h2>
+      <div class="section-tag" data-i18n="faq.tag">FAQ</div>
+      <h2 class="section-title" data-i18n="faq.title">Everything you need to know</h2>
 
       <div class="faq-list">
 
         <div class="faq-item">
           <button class="faq-question" onclick="toggleFaq(this)">
-            What is AYILON?
+            <span data-i18n="faq.q1">What is AYILON?</span>
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p>AYILON is a fully automated crypto trading platform that runs bots on your OKX account 24/7. You connect your API key, and the bot handles everything — entries, exits, and position management — while you sleep.</p></div>
+          <div class="faq-answer"><p data-i18n="faq.a1">AYILON is a fully automated crypto trading platform that runs bots on your OKX account 24/7. You connect your API key, and the bot handles everything — entries, exits, and position management — while you sleep.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" onclick="toggleFaq(this)">
-            Is my money safe? Does AYILON hold my funds?
+            <span data-i18n="faq.q2">Is my money safe? Does AYILON hold my funds?</span>
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p>No — AYILON never holds or touches your funds. All trades happen directly on your OKX account via an API key that you create and control. We strongly recommend enabling <strong>Trade-only</strong> permissions (no Withdraw access) on your API key so that funds can never leave your exchange account.</p></div>
+          <div class="faq-answer"><p data-i18n="faq.a2">No — AYILON never holds or touches your funds. All trades happen directly on your OKX account via an API key that you create and control. We strongly recommend enabling Trade-only permissions (no Withdraw access) on your API key so that funds can never leave your exchange account.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" onclick="toggleFaq(this)">
-            What exchanges are supported?
+            <span data-i18n="faq.q3">What exchanges are supported?</span>
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p>Currently AYILON supports <strong>OKX</strong>. Support for Binance, Bybit, and other major exchanges is on our roadmap. If you register through our <a href="#pricing">OKX referral link</a>, you also receive a lifetime fee discount on every trade.</p></div>
+          <div class="faq-answer"><p data-i18n="faq.a3">Currently AYILON supports OKX. Support for Binance, Bybit, and other major exchanges is on our roadmap.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" onclick="toggleFaq(this)">
-            What trading strategies are available?
+            <span data-i18n="faq.q4">What trading strategies are available?</span>
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p>AYILON uses a single S/R multi-timeframe strategy on BTC and ETH. It detects support and resistance levels on the 1H and 4H charts with 3-touch confirmation, then enters on the 5-minute timeframe when a wick forms at the level. Positions are built fractionally with a stop loss at the previous swing high/low.</p></div>
+          <div class="faq-answer"><p data-i18n="faq.a4">AYILON uses a single S/R multi-timeframe strategy on BTC and ETH. It detects support and resistance levels on the 1H and 4H charts with 3-touch confirmation, then enters on the 5-minute timeframe when a wick forms at the level.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" onclick="toggleFaq(this)">
-            Do I need any trading experience?
+            <span data-i18n="faq.q5">Do I need any trading experience?</span>
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p>No. AYILON is built for everyone — from complete beginners to experienced traders. Each bot comes with default parameters tuned for safety. Advanced users can customise grid spacing, leverage, position size, and stop-loss levels.</p></div>
+          <div class="faq-answer"><p data-i18n="faq.a5">No. AYILON is built for everyone — from complete beginners to experienced traders. Each bot comes with default parameters tuned for safety. Advanced users can customise leverage, position size, and stop-loss levels.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" onclick="toggleFaq(this)">
-            Can I get a refund?
+            <span data-i18n="faq.q6">Can I get a refund?</span>
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p>Yes — if you have <strong>not yet connected an API key</strong> and your request is within <strong>7 days</strong> of purchase, you are eligible for a full refund. Simply go to My Account → Subscription and click "Request Refund." After 7 days or after connecting an API key, only cancellation (end of billing period) is available. See our <a href="terms.html">Terms of Service</a> for full details.</p></div>
+          <div class="faq-answer"><p data-i18n="faq.a6">Yes — if you have not yet connected an API key and your request is within 7 days of purchase, you are eligible for a full refund. After 7 days or after connecting an API key, only cancellation is available.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" onclick="toggleFaq(this)">
-            How do I cancel my subscription?
+            <span data-i18n="faq.q7">How do I cancel my subscription?</span>
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p>Go to Dashboard → My Account → Subscription and click "Cancel Subscription." Your access continues until the end of the current billing period — nothing is charged from the next cycle. No hidden fees, no lock-ins.</p></div>
+          <div class="faq-answer"><p data-i18n="faq.a7">Go to Dashboard → My Account → Subscription and click "Cancel Subscription." Your access continues until the end of the current billing period.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" onclick="toggleFaq(this)">
-            What is the minimum amount to start?
+            <span data-i18n="faq.q8">What is the minimum amount to start?</span>
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p>There is no minimum set by AYILON — however, OKX has minimum order sizes per pair (typically $5–$10 per order). For Grid bots to work effectively we recommend starting with at least <strong>$500–$1,000</strong> in your OKX account per active bot.</p></div>
+          <div class="faq-answer"><p data-i18n="faq.a8">There is no minimum set by AYILON. OKX has minimum order sizes per pair (typically $5–$10). For bots to work effectively we recommend starting with at least $500–$1,000 per active bot.</p></div>
         </div>
 
         <div class="faq-item">
           <button class="faq-question" onclick="toggleFaq(this)">
-            Is there a demo or trial mode?
+            <span data-i18n="faq.q9">Is there a demo or trial mode?</span>
             <span class="faq-icon">+</span>
           </button>
-          <div class="faq-answer"><p>Yes — you can connect OKX's <strong>Demo Trading</strong> account (free virtual $100,000 USDT) to test any strategy risk-free before going live. Demo mode is available on all plans.</p></div>
+          <div class="faq-answer"><p data-i18n="faq.a9">Yes — you can connect OKX's Demo Trading account (free virtual $100,000 USDT) to test any strategy risk-free before going live. Demo mode is available on all plans.</p></div>
         </div>
 
       </div>
@@ -732,49 +746,49 @@
 
   <!-- CTA -->
   <div class="cta-section">
-    <h2>Start trading<br />on autopilot</h2>
-    <p>Your OKX account, AYILON's intelligence — working together 24/7.</p>
-    <a href="signup.html" class="btn-primary">Create Your Account →</a>
+    <h2 data-i18n="cta.title">Start trading on autopilot</h2>
+    <p data-i18n="cta.subtitle">Your OKX account, AYILON's intelligence — working together 24/7.</p>
+    <a href="signup.html" class="btn-primary" data-i18n="cta.btn">Create Your Account →</a>
   </div>
 
   <!-- FOOTER -->
   <footer>
     <div class="footer-brand">
       <a href="index.html" class="nav-logo">AYILON</a>
-      <p>Creating profit from nothing.<br />Automated crypto trading platform powered by algorithmic intelligence.</p>
+      <p data-i18n="footer.tagline">Creating profit from nothing.<br />Automated crypto trading platform powered by algorithmic intelligence.</p>
     </div>
     <div class="footer-links">
       <div class="footer-col">
-        <h4>Product</h4>
+        <h4 data-i18n="footer.product">Product</h4>
         <ul>
-          <li><a href="#features">Features</a></li>
-          <li><a href="#pricing">Pricing</a></li>
-          <li><a href="#how">How It Works</a></li>
-          <li><a href="bot-guide.html">Bot Guide</a></li>
+          <li><a href="#features" data-i18n="footer.features">Features</a></li>
+          <li><a href="#pricing" data-i18n="footer.pricing">Pricing</a></li>
+          <li><a href="#how" data-i18n="footer.how">How It Works</a></li>
+          <li><a href="bot-guide.html" data-i18n="footer.botguide">Bot Guide</a></li>
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Support</h4>
+        <h4 data-i18n="footer.support">Support</h4>
         <ul>
-          <li><a href="bot-guide.html">Trading Logic</a></li>
-          <li><a href="dashboard.html">Dashboard</a></li>
-          <li><a href="about.html">About Us</a></li>
-          <li><a href="signup.html">Get Started</a></li>
+          <li><a href="bot-guide.html" data-i18n="footer.logic">Trading Logic</a></li>
+          <li><a href="dashboard.html" data-i18n="footer.dashboard">Dashboard</a></li>
+          <li><a href="about.html" data-i18n="footer.about">About Us</a></li>
+          <li><a href="signup.html" data-i18n="footer.getstarted">Get Started</a></li>
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Company</h4>
+        <h4 data-i18n="footer.company">Company</h4>
         <ul>
-          <li><a href="about.html">About</a></li>
-          <li><a href="privacy.html">Privacy Policy</a></li>
-          <li><a href="terms.html">Terms of Service</a></li>
+          <li><a href="about.html" data-i18n="footer.aboutco">About</a></li>
+          <li><a href="privacy.html" data-i18n="footer.privacy">Privacy Policy</a></li>
+          <li><a href="terms.html" data-i18n="footer.terms">Terms of Service</a></li>
         </ul>
       </div>
     </div>
   </footer>
   <div class="footer-bottom">
-    <p>© 2026 AYILON. All rights reserved.</p>
-    <p>Trading involves risk. Past performance does not guarantee future results.</p>
+    <p data-i18n="footer.copy">© 2026 AYILON. All rights reserved.</p>
+    <p data-i18n="footer.risk">Trading involves risk. Past performance does not guarantee future results.</p>
   </div>
 
   <script>

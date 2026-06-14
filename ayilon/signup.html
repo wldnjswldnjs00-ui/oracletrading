@@ -8,6 +8,7 @@
   <meta name="robots" content="noindex" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script src="i18n.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -21,6 +22,12 @@
     .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
     .nav-login { font-size: 14px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
     .nav-login:hover { color: var(--white); }
+
+    /* LANG SWITCHER */
+    .lang-switcher { display: flex; gap: 4px; align-items: center; }
+    .lang-btn { background: none; border: 1px solid transparent; color: var(--gray-400); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .lang-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+    .lang-btn.active { color: var(--white); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
 
     .page-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 24px; }
     .signup-box { width: 100%; max-width: 480px; }
@@ -82,50 +89,56 @@
 <body>
   <nav>
     <a href="index.html" class="nav-logo">AYILON</a>
-    <a href="login.html" class="nav-login">Already have an account? Log In →</a>
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+      <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
+      <button class="lang-btn" data-lang="ja" onclick="setLanguage('ja')">JA</button>
+      <button class="lang-btn" data-lang="zh" onclick="setLanguage('zh')">ZH</button>
+    </div>
+    <a href="login.html" class="nav-login" data-i18n="nav.haveaccount">Already have an account? Log In →</a>
   </nav>
 
   <div class="page-wrap">
     <div class="signup-box">
       <div class="signup-header">
-        <h1>Create your account</h1>
-        <p>Already have an account? <a href="login.html">Log in</a></p>
+        <h1 data-i18n="signup.title">Create your account</h1>
+        <p><span data-i18n="signup.haveacct">Already have an account?</span> <a href="login.html" data-i18n="signup.loginlink">Log in</a></p>
       </div>
 
       <form id="signupForm" onsubmit="handleSignup(event)">
 
         <div class="form-group">
-          <label class="form-label">Full Name</label>
-          <input type="text" class="form-input" id="name" placeholder="John Doe" autocomplete="name" />
+          <label class="form-label" data-i18n="signup.name">Full Name</label>
+          <input type="text" class="form-input" id="name" data-i18n-ph="signup.name.ph" placeholder="John Doe" autocomplete="name" />
         </div>
 
         <div class="form-group">
-          <label class="form-label">Username</label>
-          <input type="text" class="form-input" id="nickname" placeholder="e.g. ayilon_trader" autocomplete="off" oninput="checkNickname(this)" />
-          <div class="form-hint" id="nicknameHint">Letters, numbers and _ only (2–20 characters)</div>
+          <label class="form-label" data-i18n="signup.username">Username</label>
+          <input type="text" class="form-input" id="nickname" data-i18n-ph="signup.username.ph" placeholder="e.g. ayilon_trader" autocomplete="off" oninput="checkNickname(this)" />
+          <div class="form-hint" id="nicknameHint" data-i18n="signup.username.hint">Letters, numbers and _ only (2–20 characters)</div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Email (used as login ID)</label>
+          <label class="form-label" data-i18n="signup.email">Email (used as login ID)</label>
           <div class="email-row">
-            <input type="email" class="form-input" id="email" placeholder="you@example.com" autocomplete="email" />
-            <button type="button" class="btn-verify" id="sendCodeBtn" onclick="sendVerificationCode()">Send Code</button>
+            <input type="email" class="form-input" id="email" data-i18n-ph="signup.email.ph" placeholder="you@example.com" autocomplete="email" />
+            <button type="button" class="btn-verify" id="sendCodeBtn" onclick="sendVerificationCode()" data-i18n="signup.sendcode">Send Code</button>
           </div>
           <div class="verify-code-wrap" id="codeWrap">
             <div class="verify-row">
-              <input type="text" class="form-input" id="verifyCode" placeholder="Enter 6-digit code" maxlength="6" />
+              <input type="text" class="form-input" id="verifyCode" data-i18n-ph="signup.codeph" placeholder="Enter 6-digit code" maxlength="6" />
               <span class="verify-timer" id="timer">05:00</span>
-              <button type="button" class="btn-verify" onclick="confirmCode()">Verify</button>
+              <button type="button" class="btn-verify" onclick="confirmCode()" data-i18n="signup.verify">Verify</button>
             </div>
-            <div class="form-hint" id="codeHint">Enter the 6-digit code sent to your email</div>
+            <div class="form-hint" id="codeHint" data-i18n="signup.codehint">Enter the 6-digit code sent to your email</div>
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Password</label>
+          <label class="form-label" data-i18n="signup.pw">Password</label>
           <div class="password-wrap">
-            <input type="password" class="form-input" id="password" placeholder="8+ characters, letters + numbers + symbols" oninput="checkPasswordStrength(this)" />
-            <button type="button" class="password-toggle" onclick="togglePassword('password')">Show</button>
+            <input type="password" class="form-input" id="password" data-i18n-ph="signup.pw.ph" placeholder="8+ characters, letters + numbers + symbols" oninput="checkPasswordStrength(this)" />
+            <button type="button" class="password-toggle" onclick="togglePassword('password')" data-i18n="signup.show">Show</button>
           </div>
           <div class="strength-bar">
             <div class="strength-seg" id="seg1"></div>
@@ -133,14 +146,14 @@
             <div class="strength-seg" id="seg3"></div>
             <div class="strength-seg" id="seg4"></div>
           </div>
-          <div class="form-hint" id="passwordHint">Use letters, numbers, and special characters (8+ chars)</div>
+          <div class="form-hint" id="passwordHint" data-i18n="signup.pw.hint">Use letters, numbers, and special characters (8+ chars)</div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Confirm Password</label>
+          <label class="form-label" data-i18n="signup.pw2">Confirm Password</label>
           <div class="password-wrap">
-            <input type="password" class="form-input" id="passwordConfirm" placeholder="Re-enter your password" oninput="checkPasswordMatch()" />
-            <button type="button" class="password-toggle" onclick="togglePassword('passwordConfirm')">Show</button>
+            <input type="password" class="form-input" id="passwordConfirm" data-i18n-ph="signup.pw2.ph" placeholder="Re-enter your password" oninput="checkPasswordMatch()" />
+            <button type="button" class="password-toggle" onclick="togglePassword('passwordConfirm')" data-i18n="signup.show">Show</button>
           </div>
           <div class="form-hint" id="matchHint"></div>
         </div>
@@ -150,25 +163,25 @@
         <div class="form-group">
           <div class="terms-check">
             <input type="checkbox" id="termsAll" onchange="toggleAll(this)" />
-            <label for="termsAll"><strong style="color:#fff">Agree to all</strong></label>
+            <label for="termsAll"><strong style="color:#fff" data-i18n="signup.terms.all">Agree to all</strong></label>
           </div>
           <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
             <div class="terms-check">
               <input type="checkbox" id="terms1" />
-              <label for="terms1"><a href="terms.html" target="_blank">Terms of Service</a> (required)</label>
+              <label for="terms1"><a href="terms.html" target="_blank" data-i18n="signup.terms.tos">Terms of Service</a> <span data-i18n="signup.terms.req">(required)</span></label>
             </div>
             <div class="terms-check">
               <input type="checkbox" id="terms2" />
-              <label for="terms2"><a href="privacy.html" target="_blank">Privacy Policy</a> (required)</label>
+              <label for="terms2"><a href="privacy.html" target="_blank" data-i18n="signup.terms.priv">Privacy Policy</a> <span data-i18n="signup.terms.req">(required)</span></label>
             </div>
             <div class="terms-check">
               <input type="checkbox" id="terms3" />
-              <label for="terms3">Receive marketing communications (optional)</label>
+              <label for="terms3" data-i18n="signup.terms.mkt">Receive marketing communications (optional)</label>
             </div>
           </div>
         </div>
 
-        <button type="submit" class="btn-submit" id="submitBtn">Create Account</button>
+        <button type="submit" class="btn-submit" id="submitBtn" data-i18n="signup.submit">Create Account</button>
       </form>
     </div>
   </div>
