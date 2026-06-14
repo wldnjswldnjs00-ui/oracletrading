@@ -3752,6 +3752,26 @@
     var isOpen = dd.classList.contains('open');
     /* close all first */
     document.querySelectorAll('.lang-dd.open').forEach(function (d) { d.classList.remove('open'); });
+    if (!isOpen) dd.classList.add('open');
+  };
+
+  /* Close on outside click */
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.lang-dd')) {
+      document.querySelectorAll('.lang-dd.open').forEach(function (d) { d.classList.remove('open'); });
+    }
+  });
+
+  /* Public API */
+  window.__t = function (key) {
+    var lang = localStorage.getItem(LANG_KEY) || 'en';
+    var dict = T[lang] || T['en'];
+    return dict[key] !== undefined ? dict[key] : (T['en'][key] || key);
+  };
+
+  window.setLanguage = function (lang) {
+    apply(lang);
+    document.querySelectorAll('.lang-dd.open').forEach(function (d) { d.classList.remove('open'); });
   };
 
   /* Auto-apply on DOM ready */
