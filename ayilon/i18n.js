@@ -1,6 +1,29 @@
 /* AYILON — Internationalization (EN / KO / JA / ZH) */
 (function () {
   var LANG_KEY = 'ayilon_lang';
+  var LANGS = ['en', 'ko', 'ja', 'zh'];
+
+  /* ── Inject dropdown CSS ── */
+  (function () {
+    if (document.getElementById('ayilon-i18n-css')) return;
+    var s = document.createElement('style');
+    s.id = 'ayilon-i18n-css';
+    s.textContent = [
+      '.lang-switcher{position:relative!important;display:inline-flex!important;align-items:center!important;gap:0!important;}',
+      '.lang-btn{display:none!important;}',
+      '.lang-dd{position:relative;display:inline-flex;}',
+      '.lang-dd-btn{display:flex;align-items:center;gap:5px;background:none;border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:600;letter-spacing:.06em;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:Inter,sans-serif;transition:border-color .2s,background .2s;white-space:nowrap;}',
+      '.lang-dd-btn:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.04);}',
+      '.lang-dd-chev{flex-shrink:0;transition:transform .22s;display:inline-block;margin-left:1px;}',
+      '.lang-dd.open .lang-dd-chev{transform:rotate(180deg);}',
+      '.lang-dd-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:#111;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:4px;z-index:9999;min-width:68px;box-shadow:0 8px 32px rgba(0,0,0,.7);}',
+      '.lang-dd.open .lang-dd-menu{display:block;}',
+      '.lang-dd-item{display:block;width:100%;padding:8px 14px;background:none;border:none;color:#a3a3a3;font-size:11px;font-weight:600;letter-spacing:.06em;text-align:left;cursor:pointer;font-family:Inter,sans-serif;border-radius:5px;transition:background .15s,color .15s;}',
+      '.lang-dd-item:hover{background:rgba(255,255,255,.07);color:#fff;}',
+      '.lang-dd-item.active{color:#fff;background:rgba(255,255,255,.06);}'
+    ].join('');
+    (document.head || document.documentElement).appendChild(s);
+  })();
 
   var T = {
     en: {
@@ -1374,9 +1397,26 @@
   };
 
   /* ────────────────────────────────────────
+     Build accordion dropdown HTML
+  ──────────────────────────────────────── */
+  function buildDropdown(currentLang) {
+    var chev = '<svg class="lang-dd-chev" width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,3 4.5,6.5 7.5,3"/></svg>';
+    var items = LANGS.map(function (l) {
+      return '<button class="lang-dd-item' + (l === currentLang ? ' active' : '') + '" onclick="setLanguage(\'' + l + '\')">' + l.toUpperCase() + '</button>';
+    }).join('');
+    return '<div class="lang-dd">' +
+      '<button class="lang-dd-btn" onclick="window.__toggleLangDd(this,event)">' +
+        '<span class="lang-dd-label">' + currentLang.toUpperCase() + '</span>' + chev +
+      '</button>' +
+      '<div class="lang-dd-menu">' + items + '</div>' +
+    '</div>';
+  }
+
+  /* ────────────────────────────────────────
      Apply translations to the current page
   ──────────────────────────────────────── */
   function apply(lang) {
+    lang = LANGS.indexOf(lang) >= 0 ? lang : 'en';
     var dict = T[lang] || T['en'];
 
     /* text content */
@@ -1397,9 +1437,13 @@
       if (dict[key] !== undefined) el.placeholder = dict[key];
     });
 
-    /* active state on lang buttons */
-    document.querySelectorAll('.lang-btn').forEach(function (btn) {
-      btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+    /* update dropdown: label + active item */
+    document.querySelectorAll('.lang-dd').forEach(function (dd) {
+      var label = dd.querySelector('.lang-dd-label');
+      if (label) label.textContent = lang.toUpperCase();
+      dd.querySelectorAll('.lang-dd-item').forEach(function (item) {
+        item.classList.toggle('active', item.textContent.trim().toLowerCase() === lang);
+      });
     });
 
     /* html lang attribute */
@@ -1408,13 +1452,40 @@
     localStorage.setItem(LANG_KEY, lang);
   }
 
+  /* ── Toggle handler (attached to window so inline onclick works) ── */
+  window.__toggleLangDd = function (btn, e) {
+    if (e) e.stopPropagation();
+    var dd = btn.closest('.lang-dd');
+    if (!dd) return;
+    var isOpen = dd.classList.contains('open');
+    /* close all first */
+    document.querySelectorAll('.lang-dd.open').forEach(function (d) { d.classList.remove('open'); });
+    if (!isOpen) dd.classList.add('open');
+  };
+
+  /* Close on outside click */
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.lang-dd')) {
+      document.querySelectorAll('.lang-dd.open').forEach(function (d) { d.classList.remove('open'); });
+    }
+  });
+
   /* Public API */
-  window.setLanguage = function (lang) { apply(lang); };
+  window.setLanguage = function (lang) {
+    apply(lang);
+    document.querySelectorAll('.lang-dd.open').forEach(function (d) { d.classList.remove('open'); });
+  };
 
   /* Auto-apply on DOM ready */
   function init() {
-    apply(localStorage.getItem(LANG_KEY) || 'en');
+    var lang = localStorage.getItem(LANG_KEY) || 'en';
+    /* Replace .lang-switcher contents with accordion dropdown */
+    document.querySelectorAll('.lang-switcher').forEach(function (sw) {
+      sw.innerHTML = buildDropdown(lang);
+    });
+    apply(lang);
   }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
