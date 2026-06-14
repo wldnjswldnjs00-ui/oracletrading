@@ -119,6 +119,32 @@
       'price.toggle.yr':   'Annual',
       'price.toggle.save': 'Save up to 15%',
       'price.cta':         'Get Started',
+      'price.plan.starter': 'Starter',
+      'price.plan.pro':     'Pro',
+      'price.plan.elite':   'Elite',
+      'price.period':       '/ month',
+      'price.billed.yr':    'Billed {amount}/yr',
+      'price.save.badge':   'Save {pct}%',
+      'price.starter.f1':   '1 active trading bot',
+      'price.starter.f2':   'OKX exchange integration',
+      'price.starter.f3':   'Grid & DCA strategies',
+      'price.starter.f4':   'Real-time dashboard',
+      'price.starter.f5':   'Email notifications',
+      'price.starter.f6':   'Standard support',
+      'price.pro.f1':       '5 active trading bots',
+      'price.pro.f2':       'OKX exchange integration',
+      'price.pro.f3':       'All strategies included',
+      'price.pro.f4':       'Backtesting engine',
+      'price.pro.f5':       'Email & Telegram alerts',
+      'price.pro.f6':       'API webhooks',
+      'price.pro.f7':       'Priority support',
+      'price.elite.f1':     'Unlimited trading bots',
+      'price.elite.f2':     'OKX exchange integration',
+      'price.elite.f3':     'All strategies + custom builds',
+      'price.elite.f4':     'Full analytics suite',
+      'price.elite.f5':     'Email, Telegram & SMS alerts',
+      'price.elite.f6':     'Dedicated account manager',
+      'price.elite.f7':     '24/7 premium support',
 
       /* ── INDEX: REFERRAL ── */
       'ref.tag':   'Special Offer',
@@ -468,6 +494,32 @@
       'price.toggle.yr':   '연간',
       'price.toggle.save': '최대 15% 절약',
       'price.cta':         '시작하기',
+      'price.plan.starter': '스타터',
+      'price.plan.pro':     '프로',
+      'price.plan.elite':   '엘리트',
+      'price.period':       '/ 월',
+      'price.billed.yr':    '연 {amount} 청구',
+      'price.save.badge':   '{pct}% 절약',
+      'price.starter.f1':   '활성 봇 1개',
+      'price.starter.f2':   'OKX 거래소 연동',
+      'price.starter.f3':   '그리드 & DCA 전략',
+      'price.starter.f4':   '실시간 대시보드',
+      'price.starter.f5':   '이메일 알림',
+      'price.starter.f6':   '기본 지원',
+      'price.pro.f1':       '활성 봇 5개',
+      'price.pro.f2':       'OKX 거래소 연동',
+      'price.pro.f3':       '모든 전략 포함',
+      'price.pro.f4':       '백테스팅 엔진',
+      'price.pro.f5':       '이메일 & 텔레그램 알림',
+      'price.pro.f6':       'API 웹훅',
+      'price.pro.f7':       '우선 지원',
+      'price.elite.f1':     '무제한 트레이딩 봇',
+      'price.elite.f2':     'OKX 거래소 연동',
+      'price.elite.f3':     '모든 전략 + 맞춤 구축',
+      'price.elite.f4':     '전체 애널리틱스 스위트',
+      'price.elite.f5':     '이메일, 텔레그램 & SMS 알림',
+      'price.elite.f6':     '전담 계정 매니저',
+      'price.elite.f7':     '24/7 프리미엄 지원',
 
       'ref.tag':   '특별 혜택',
       'ref.title': 'Elite 플랜 — 평생 무료로 받기',
@@ -806,6 +858,32 @@
       'price.toggle.yr':   '年払い',
       'price.toggle.save': '最大15%お得',
       'price.cta':         '始める',
+      'price.plan.starter': 'スターター',
+      'price.plan.pro':     'プロ',
+      'price.plan.elite':   'エリート',
+      'price.period':       '/ 月',
+      'price.billed.yr':    '年間{amount}請求',
+      'price.save.badge':   '{pct}%お得',
+      'price.starter.f1':   'アクティブボット1台',
+      'price.starter.f2':   'OKX取引所連携',
+      'price.starter.f3':   'グリッド & DCA戦略',
+      'price.starter.f4':   'リアルタイムダッシュボード',
+      'price.starter.f5':   'メール通知',
+      'price.starter.f6':   'スタンダードサポート',
+      'price.pro.f1':       'アクティブボット5台',
+      'price.pro.f2':       'OKX取引所連携',
+      'price.pro.f3':       '全戦略含む',
+      'price.pro.f4':       'バックテストエンジン',
+      'price.pro.f5':       'メール & Telegramアラート',
+      'price.pro.f6':       'APIウェブフック',
+      'price.pro.f7':       '優先サポート',
+      'price.elite.f1':     '無制限トレーディングボット',
+      'price.elite.f2':     'OKX取引所連携',
+      'price.elite.f3':     '全戦略 + カスタムビルド',
+      'price.elite.f4':     '完全アナリティクス',
+      'price.elite.f5':     'メール、Telegram & SMSアラート',
+      'price.elite.f6':     '専任アカウントマネージャー',
+      'price.elite.f7':     '24/7プレミアムサポート',
 
       'ref.tag':   '特別オファー',
       'ref.title': 'Eliteプラン — 永久無料で入手',
@@ -1144,6 +1222,32 @@
       'price.toggle.yr':   '年付',
       'price.toggle.save': '最多节省15%',
       'price.cta':         '立即开始',
+      'price.plan.starter': '入门版',
+      'price.plan.pro':     '专业版',
+      'price.plan.elite':   '精英版',
+      'price.period':       '/ 月',
+      'price.billed.yr':    '每年{amount}',
+      'price.save.badge':   '节省{pct}%',
+      'price.starter.f1':   '1个活跃交易机器人',
+      'price.starter.f2':   'OKX交易所集成',
+      'price.starter.f3':   '网格 & DCA策略',
+      'price.starter.f4':   '实时仪表盘',
+      'price.starter.f5':   '电子邮件通知',
+      'price.starter.f6':   '标准支持',
+      'price.pro.f1':       '5个活跃交易机器人',
+      'price.pro.f2':       'OKX交易所集成',
+      'price.pro.f3':       '包含所有策略',
+      'price.pro.f4':       '回测引擎',
+      'price.pro.f5':       '邮件 & Telegram提醒',
+      'price.pro.f6':       'API Webhook',
+      'price.pro.f7':       '优先支持',
+      'price.elite.f1':     '无限交易机器人',
+      'price.elite.f2':     'OKX交易所集成',
+      'price.elite.f3':     '所有策略 + 定制开发',
+      'price.elite.f4':     '完整数据分析套件',
+      'price.elite.f5':     '邮件、Telegram & SMS提醒',
+      'price.elite.f6':     '专属客户经理',
+      'price.elite.f7':     '24/7尊享支持',
 
       'ref.tag':   '特别优惠',
       'ref.title': '获取Elite计划 — 永久免费',
@@ -1450,6 +1554,11 @@
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
 
     localStorage.setItem(LANG_KEY, lang);
+
+    /* re-render dynamically-generated pricing period note if on annual view */
+    if (typeof window.setPeriod === 'function' && window.__currentPeriod) {
+      window.setPeriod(window.__currentPeriod);
+    }
   }
 
   /* ── Toggle handler (attached to window so inline onclick works) ── */
@@ -1471,6 +1580,12 @@
   });
 
   /* Public API */
+  window.__t = function (key) {
+    var lang = localStorage.getItem(LANG_KEY) || 'en';
+    var dict = T[lang] || T['en'];
+    return dict[key] !== undefined ? dict[key] : (T['en'][key] || key);
+  };
+
   window.setLanguage = function (lang) {
     apply(lang);
     document.querySelectorAll('.lang-dd.open').forEach(function (d) { d.classList.remove('open'); });
