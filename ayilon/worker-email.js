@@ -598,12 +598,12 @@ async function runBot(env) {
 async function runBotForUser(env, email, cfg) {
   try {
     const { apiKey, apiSecret, apiPassphrase, tradingPair = 'BTC-USDT-SWAP',
-      strategy = 'daytrading', demoMode = false,
+      strategy = 'sr_bounce', demoMode = false,
       numEntries = 3, entrySizing = 'equal',
-      posSize = 40, leverage = 20,
-      lossLimitEnabled = true, lossLimit = 5,
+      posSize = 40, riskPerTrade = 2, leverage = 20,
+      lossLimitEnabled = true, lossLimit = 2,
       notifyEmail = true, notifyTelegram = false,
-      telegramToken, telegramChatId, userEmail } = cfg;
+      telegramToken, telegramChatId, userEmail, plan = 'starter' } = cfg;
     const srTimeframe = strategy === 'swing' ? '4H' : '1H';
     const srTouch = 3;
 
@@ -765,24 +765,51 @@ async function runBotForUser(env, email, cfg) {
       if ((h1High - h1Low) / (h1Low || 1) < 0.015) return;
     }
 
-    // ── Fix: Funding rate gate — fail-safe: abort on fetch error ────────
-    // > 0.10% per 8h = 3%/day at 20x leverage. Hard abort if check fails.
+    // ── Funding rate gate + capture ──────────────────────────
+    let capturedFR = null;
     try {
       const frRes  = await fetch(`${OKX_BASE}/api/v5/public/funding-rate?instId=${tradingPair}`);
       const frData = await frRes.json();
       if (!frData?.data?.[0]) throw new Error('empty funding rate response');
-      const fr = parseFloat(frData.data[0].fundingRate);
-      if (Math.abs(fr) > 0.001) {
-        await botLog(env, email, `Skip: funding rate ${(fr * 100).toFixed(4)}%/8h > 0.1% — no new entries`);
+      capturedFR = parseFloat(frData.data[0].fundingRate);
+      // For all strategies except funding_rate: skip if rate is extreme
+      if (strategy !== 'funding_rate' && Math.abs(capturedFR) > 0.001) {
+        await botLog(env, email, `Skip: funding rate ${(capturedFR * 100).toFixed(4)}%/8h > 0.1% — no new entries`);
         return;
       }
     } catch(frErr) {
-      await botLog(env, email, `Skip: could not verify funding rate (${frErr.message}) — no new entries`);
+      if (strategy !== 'funding_rate') {
+        await botLog(env, email, `Skip: could not verify funding rate (${frErr.message}) — no new entries`);
+        return;
+      }
+    }
+
+    // ── Plan-based strategy gate ──────────────────────────────
+    const midStrategies     = ['ma_crossover', 'bb_reversion', 'breakout', 'ma_ribbon'];
+    const premiumStrategies = ['macd_div', 'funding_rate', 'atr_trend'];
+    if (midStrategies.includes(strategy) && plan === 'starter') {
+      await botLog(env, email, `Skip: strategy '${strategy}' requires Pro plan or higher`);
+      return;
+    }
+    if (premiumStrategies.includes(strategy) && plan !== 'elite') {
+      await botLog(env, email, `Skip: strategy '${strategy}' requires Elite plan`);
       return;
     }
 
-    // ── 5m entry signal ───────────────────────────────────────
-    const signal = detectSignal(c5, levels);
+    // ── Entry signal (strategy routing) ──────────────────────
+    let signal = null;
+    switch (strategy) {
+      case 'rsi_dca':      signal = detectSignalRSIDCA(candles1H, levels);                         break;
+      case 'ma_support':   signal = detectSignalMASupport(candles1H, currentPrice);                 break;
+      case 'ma_crossover': signal = detectSignalMACrossover(c5, candles1H, currentPrice);           break;
+      case 'bb_reversion': signal = detectSignalBBReversion(c5, currentPrice, trend);               break;
+      case 'breakout':     signal = detectSignalBreakout(candles1H, c5, currentPrice);              break;
+      case 'ma_ribbon':    signal = detectSignalMARibbon(candles1H, currentPrice);                  break;
+      case 'macd_div':     signal = detectSignalMACDDiv(candles1H, c5, currentPrice);               break;
+      case 'funding_rate': signal = detectSignalFundingRate(capturedFR, currentPrice, levels);      break;
+      case 'atr_trend':    signal = detectSignalATRTrend(candles1H, c5, currentPrice);              break;
+      default:             signal = detectSignal(c5, levels); // 'sr_bounce' or legacy 'daytrading'
+    }
     if (!signal) return;
 
     // ── Trend strength + direction filter ────────────────────
@@ -804,9 +831,19 @@ async function runBotForUser(env, email, cfg) {
     if (entryNum > parseInt(numEntries)) return;
 
     if (entryNum > 1 && state.entries.length > 0) {
-      const drift = Math.abs(currentPrice - state.entries[0].price) / state.entries[0].price;
-      const driftLimit = signal.type === 'short' ? 0.05 : 0.02;
-      if (drift > driftLimit) return;
+      const firstEntry = state.entries[0].price;
+      const storedSL   = state.stopLoss || signal.stopLoss;
+      const totalZone  = Math.abs(firstEntry - storedSL);
+      if (totalZone > 0) {
+        const gap = totalZone / parseInt(numEntries);
+        const expectedPx = signal.type === 'long'
+          ? firstEntry - gap * (entryNum - 1)
+          : firstEntry + gap * (entryNum - 1);
+        if (Math.abs(currentPrice - expectedPx) > gap * 0.6) {
+          await botLog(env, email, `DCA #${entryNum} skip: price ${currentPrice.toFixed(2)} not near expected ${expectedPx.toFixed(2)} (±${(gap * 0.6).toFixed(2)})`);
+          return;
+        }
+      }
     }
 
     // ── TP = next S/R level in trade direction ────────────────
@@ -823,10 +860,10 @@ async function runBotForUser(env, email, cfg) {
       return;
     }
 
-    // ── Kelly warning ─────────────────────────────────────────
-    const totalPct = (posSize / 100) * entryNum / parseInt(numEntries);
-    if (totalPct > 0.4 || safeLeverage > 20) {
-      await botLog(env, email, `⚠️ Kelly warning: pos=${(totalPct*100).toFixed(0)}% lev=${safeLeverage}x`);
+    // ── Risk warning ──────────────────────────────────────────
+    const riskPct = parseFloat(riskPerTrade) / 100;
+    if (riskPct > 0.05 || safeLeverage > 20) {
+      await botLog(env, email, `⚠️ Risk warning: riskPerTrade=${(riskPct*100).toFixed(1)}% lev=${safeLeverage}x`);
     }
 
     // ── Calculate size ────────────────────────────────────────
@@ -902,6 +939,7 @@ async function runBotForUser(env, email, cfg) {
       state.entries.push({ price: fillPrice, sz: actualSz, time: Date.now(), entry: entryNum });
       state.direction = signal.type;
       if (useTP) state.takeProfit = tp;
+      if (entryNum === 1) state.stopLoss = signal.stopLoss;
 
       if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
       const accumSz = String(state.entries.reduce((s, e) => s + parseInt(e.sz), 0));
@@ -1024,6 +1062,258 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
   delete ps[pair];
   await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
   await botLog(env, email, `Loss limit ${(totalLossPct*100).toFixed(2)}% reached (float: ${(floatLossPct*100).toFixed(2)}%) — position closed`);
+}
+
+// ════════════════════════════════════════════════════════════
+// INDICATORS
+// ════════════════════════════════════════════════════════════
+
+function _ema(closes, period) {
+  if (closes.length < period) return null;
+  const k = 2 / (period + 1);
+  let e = closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
+  for (let i = period; i < closes.length; i++) e = closes[i] * k + e * (1 - k);
+  return e;
+}
+
+function _sma(closes, period) {
+  if (closes.length < period) return null;
+  return closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
+}
+
+function calcRSI(candles, period = 14) {
+  const closes = candles.map(c => parseFloat(c[4])).reverse(); // oldest first
+  if (closes.length < period + 1) return null;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = closes[i] - closes[i - 1];
+    if (d > 0) gains += d; else losses -= d;
+  }
+  let avgG = gains / period, avgL = losses / period;
+  for (let i = period + 1; i < closes.length; i++) {
+    const d = closes[i] - closes[i - 1];
+    avgG = (avgG * (period - 1) + Math.max(0, d)) / period;
+    avgL = (avgL * (period - 1) + Math.max(0, -d)) / period;
+  }
+  if (avgL === 0) return 100;
+  return 100 - 100 / (1 + avgG / avgL);
+}
+
+function calcBB(candles, period = 20, mult = 2) {
+  const closes = candles.map(c => parseFloat(c[4]));
+  if (closes.length < period) return null;
+  const slice = closes.slice(0, period);
+  const mid = slice.reduce((s, v) => s + v, 0) / period;
+  const std = Math.sqrt(slice.reduce((s, v) => s + (v - mid) ** 2, 0) / period);
+  return { upper: mid + mult * std, mid, lower: mid - mult * std };
+}
+
+function calcMACD(candles, fast = 12, slow = 26, sig = 9) {
+  const closes = candles.map(c => parseFloat(c[4])).reverse(); // oldest first
+  if (closes.length < slow + sig + 2) return null;
+  const macdArr = [];
+  for (let i = slow - 1; i < closes.length; i++) {
+    const f = _ema(closes.slice(0, i + 1), fast);
+    const s = _ema(closes.slice(0, i + 1), slow);
+    if (f && s) macdArr.push(f - s);
+  }
+  if (macdArr.length < sig + 2) return null;
+  const sigLine = _ema(macdArr, sig);
+  const prevSigLine = _ema(macdArr.slice(0, macdArr.length - 1), sig);
+  if (!sigLine || !prevSigLine) return null;
+  return {
+    histogram:     macdArr[macdArr.length - 1] - sigLine,
+    prevHistogram: macdArr[macdArr.length - 2] - prevSigLine
+  };
+}
+
+function calcATR(candles, period = 14) {
+  if (candles.length < period + 1) return null;
+  let tr = 0;
+  for (let i = 0; i < period; i++) {
+    const hi = parseFloat(candles[i][2]), lo = parseFloat(candles[i][3]);
+    const pc = parseFloat(candles[i + 1][4]);
+    tr += Math.max(hi - lo, Math.abs(hi - pc), Math.abs(lo - pc));
+  }
+  return tr / period;
+}
+
+function calcADX(candles, period = 14) {
+  if (candles.length < period * 2) return null;
+  const atr = calcATR(candles, period);
+  if (!atr || atr === 0) return null;
+  let plusDM = 0, minusDM = 0;
+  for (let i = 0; i < period; i++) {
+    const hi = parseFloat(candles[i][2]), prevHi = parseFloat(candles[i + 1][2]);
+    const lo = parseFloat(candles[i][3]), prevLo = parseFloat(candles[i + 1][3]);
+    const up = hi - prevHi, dn = prevLo - lo;
+    if (up > dn && up > 0) plusDM += up;
+    if (dn > up && dn > 0) minusDM += dn;
+  }
+  const plusDI = plusDM / (atr * period) * 100;
+  const minusDI = minusDM / (atr * period) * 100;
+  const dx = (plusDI + minusDI) > 0 ? Math.abs(plusDI - minusDI) / (plusDI + minusDI) * 100 : 0;
+  return { adx: dx, plusDI, minusDI };
+}
+
+// ════════════════════════════════════════════════════════════
+// STRATEGY SIGNAL FUNCTIONS
+// ════════════════════════════════════════════════════════════
+
+function detectSignalRSIDCA(candles1H, levels) {
+  const rsi = calcRSI(candles1H, 14);
+  if (!rsi || rsi > 30) return null;
+  const currentPrice = parseFloat(candles1H[0][4]);
+  const swingLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
+  const slDist = (currentPrice - swingLow) / currentPrice;
+  if (slDist < 0.01 || slDist > 0.10) return null;
+  const support = levels.supports[0];
+  return { type: 'long', level: support?.price || currentPrice, grade: 'A', stopLoss: swingLow, strategy: 'rsi_dca' };
+}
+
+function detectSignalMASupport(candles1H, currentPrice) {
+  const closes = candles1H.map(c => parseFloat(c[4]));
+  const periods = [10, 20, 34, 50, 100, 200];
+  const mas = periods.map(p => ({ p, v: _sma(closes, p) })).filter(m => m.v && m.v < currentPrice);
+  if (mas.length < 3) return null;
+  const nearMA = mas.find(m => Math.abs(currentPrice - m.v) / currentPrice <= 0.005);
+  if (!nearMA) return null;
+  const swingLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
+  const slDist = (currentPrice - swingLow) / currentPrice;
+  if (slDist < 0.005 || slDist > 0.12) return null;
+  return { type: 'long', level: nearMA.v, grade: 'A', stopLoss: swingLow, strategy: 'ma_support' };
+}
+
+function detectSignalMACrossover(candles5m, candles1H, currentPrice) {
+  const closes = candles1H.map(c => parseFloat(c[4]));
+  if (closes.length < 36) return null;
+  const ema10c = _ema(closes, 10), ema34c = _ema(closes, 34);
+  const ema10p = _ema(closes.slice(1), 10), ema34p = _ema(closes.slice(1), 34);
+  if (!ema10c || !ema34c || !ema10p || !ema34p) return null;
+  const rsi = calcRSI(candles1H, 14);
+  if (!rsi) return null;
+  const lows5m  = candles5m.slice(0, 4).map(c => parseFloat(c[3]));
+  const highs5m = candles5m.slice(0, 4).map(c => parseFloat(c[2]));
+  if (ema10c > ema34c && ema10p <= ema34p && rsi >= 65) {
+    const sl = Math.min(...lows5m);
+    const d = (currentPrice - sl) / currentPrice;
+    if (d < 0.005 || d > 0.10) return null;
+    return { type: 'long', level: ema10c, grade: 'A', stopLoss: sl, strategy: 'ma_crossover' };
+  }
+  if (ema10c < ema34c && ema10p >= ema34p && rsi <= 35) {
+    const sl = Math.max(...highs5m);
+    const d = (sl - currentPrice) / currentPrice;
+    if (d < 0.005 || d > 0.10) return null;
+    return { type: 'short', level: ema10c, grade: 'A', stopLoss: sl, strategy: 'ma_crossover' };
+  }
+  return null;
+}
+
+function detectSignalBBReversion(candles5m, currentPrice, trend) {
+  const bb = calcBB(candles5m, 20, 2);
+  if (!bb) return null;
+  if (candles5m.length < 3) return null;
+  const prev = candles5m[1].map(parseFloat), cur = candles5m[0].map(parseFloat);
+  if (prev[4] < bb.lower && cur[4] > bb.lower && trend.dir !== 'down') {
+    const sl = Math.min(...candles5m.slice(0, 4).map(c => parseFloat(c[3])));
+    const d = (currentPrice - sl) / currentPrice;
+    if (d < 0.005 || d > 0.12) return null;
+    return { type: 'long', level: bb.lower, grade: 'A', stopLoss: sl, strategy: 'bb_reversion' };
+  }
+  if (prev[4] > bb.upper && cur[4] < bb.upper && trend.dir !== 'up') {
+    const sl = Math.max(...candles5m.slice(0, 4).map(c => parseFloat(c[2])));
+    const d = (sl - currentPrice) / currentPrice;
+    if (d < 0.005 || d > 0.12) return null;
+    return { type: 'short', level: bb.upper, grade: 'A', stopLoss: sl, strategy: 'bb_reversion' };
+  }
+  return null;
+}
+
+function detectSignalBreakout(candles1H, candles5m, currentPrice) {
+  if (candles1H.length < 22 || candles5m.length < 22) return null;
+  const res20 = Math.max(...candles1H.slice(1, 21).map(c => parseFloat(c[2])));
+  const prev5m = candles5m[1]?.map(parseFloat);
+  const cur5m  = candles5m[0]?.map(parseFloat);
+  if (!prev5m || !cur5m) return null;
+  if (prev5m[4] <= res20 && currentPrice > res20 * 1.001) {
+    const avgVol = candles5m.slice(1, 21).map(c => parseFloat(c[5])).reduce((s, v) => s + v, 0) / 20;
+    if (parseFloat(cur5m[5]) < avgVol * 2) return null;
+    const sl = prev5m[3];
+    const d = (currentPrice - sl) / currentPrice;
+    if (d < 0.003 || d > 0.08) return null;
+    return { type: 'long', level: res20, grade: 'S', stopLoss: sl, strategy: 'breakout' };
+  }
+  return null;
+}
+
+function detectSignalMARibbon(candles1H, currentPrice) {
+  const closes = candles1H.map(c => parseFloat(c[4]));
+  const mas = [10, 20, 34, 50, 100, 200].map(p => ({ p, v: _sma(closes, p) })).filter(m => m.v);
+  if (mas.length < 5) return null;
+  const sorted = [...mas].sort((a, b) => a.p - b.p);
+  const bullish = sorted.every((m, i) => i === 0 ? m.v < currentPrice : m.v < sorted[i - 1].v);
+  if (!bullish) return null;
+  if (Math.abs(currentPrice - sorted[0].v) / currentPrice > 0.005) return null;
+  const sl = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
+  const d = (currentPrice - sl) / currentPrice;
+  if (d < 0.005 || d > 0.12) return null;
+  return { type: 'long', level: sorted[0].v, grade: 'A', stopLoss: sl, strategy: 'ma_ribbon' };
+}
+
+function detectSignalMACDDiv(candles1H, candles5m, currentPrice) {
+  const macdData = calcMACD(candles1H);
+  const rsi = calcRSI(candles1H, 14);
+  if (!macdData || !rsi) return null;
+  const lows  = candles1H.slice(0, 10).map(c => parseFloat(c[3]));
+  const highs = candles1H.slice(0, 10).map(c => parseFloat(c[2]));
+  const nearLow  = Math.abs(currentPrice - Math.min(...lows))  / currentPrice <= 0.02;
+  const nearHigh = Math.abs(currentPrice - Math.max(...highs)) / currentPrice <= 0.02;
+  if (nearLow && macdData.histogram > macdData.prevHistogram && rsi > 40) {
+    const sl = Math.min(...candles5m.slice(0, 4).map(c => parseFloat(c[3])));
+    const d = (currentPrice - sl) / currentPrice;
+    if (d < 0.005 || d > 0.12) return null;
+    return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'macd_div' };
+  }
+  if (nearHigh && macdData.histogram < macdData.prevHistogram && rsi < 60) {
+    const sl = Math.max(...candles5m.slice(0, 4).map(c => parseFloat(c[2])));
+    const d = (sl - currentPrice) / currentPrice;
+    if (d < 0.005 || d > 0.12) return null;
+    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'macd_div' };
+  }
+  return null;
+}
+
+function detectSignalFundingRate(fr, currentPrice, levels) {
+  if (fr === null || fr === undefined) return null;
+  if (fr >= 0.001) {
+    const sl = currentPrice * 1.025;
+    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'funding_rate' };
+  }
+  if (fr <= -0.0005) {
+    const sl = currentPrice * 0.975;
+    return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'funding_rate' };
+  }
+  return null;
+}
+
+function detectSignalATRTrend(candles1H, candles5m, currentPrice) {
+  if (candles1H.length < 60) return null;
+  const adxData = calcADX(candles1H, 14);
+  if (!adxData || adxData.adx < 25) return null;
+  const closes = candles1H.map(c => parseFloat(c[4]));
+  const sma50 = _sma(closes, 50);
+  const atr = calcATR(candles1H, 14);
+  if (!sma50 || !atr) return null;
+  if (currentPrice > sma50 && adxData.plusDI > adxData.minusDI) {
+    const recentHigh = Math.max(...candles1H.slice(0, 5).map(c => parseFloat(c[2])));
+    const pullback = recentHigh - currentPrice;
+    if (pullback < atr * 0.5 || pullback > atr * 2.0) return null;
+    const sl = currentPrice - atr * 1.5;
+    const d = (currentPrice - sl) / currentPrice;
+    if (d < 0.005 || d > 0.12) return null;
+    return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'atr_trend' };
+  }
+  return null;
 }
 
 // ── DAILY TREND FILTER (EMA20 / EMA50) ───────────────────────
