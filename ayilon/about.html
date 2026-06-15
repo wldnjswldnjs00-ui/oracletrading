@@ -94,6 +94,8 @@
     /* FOOTER */
     footer { border-top: 1px solid rgba(255,255,255,0.06); padding: 32px 60px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
     footer p { font-size: 13px; color: var(--gray-600); }
+    .legal-disclaimer { padding: 8px 60px 16px; }
+    .legal-disclaimer p { font-size: 11px; color: var(--gray-600); line-height: 1.6; max-width: 860px; margin: 0 auto; text-align: center; }
     .footer-links { display: flex; gap: 24px; }
     .footer-links a { font-size: 13px; color: var(--gray-600); text-decoration: none; transition: color 0.2s; }
     .footer-links a:hover { color: var(--white); }
@@ -110,6 +112,7 @@
       .tech-grid { grid-template-columns: 1fr; }
       .cta { margin: 0 30px 80px; padding: 60px 30px; }
       footer { padding: 32px 30px; flex-direction: column; align-items: flex-start; }
+      .legal-disclaimer { padding: 8px 30px 16px; }
     }
   </style>
 </head>
@@ -259,6 +262,9 @@
       <a href="privacy.html" data-i18n="footer.privacy">Privacy</a>
     </div>
   </footer>
+  <div class="legal-disclaimer">
+    <p data-i18n="legal_disclaimer">AYILON is a software tool, not a registered investment advisor or asset manager. Cryptocurrency trading involves substantial risk of loss. Past performance is not indicative of future results. AYILON does not hold your funds. All trading decisions are executed by algorithms you configure — not by AYILON. By using this service you acknowledge that all investment decisions and their consequences are your sole responsibility.</p>
+  </div>
 
 </body>
 </html>

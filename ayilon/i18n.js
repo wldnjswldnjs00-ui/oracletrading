@@ -405,6 +405,7 @@
       '404.desc':  "The page you're looking for doesn't exist — or it may have moved. Let's get you back on track.",
       '404.home':  'Back to Home',
       '404.dash':  'Go to Dashboard',
+      'legal_disclaimer': 'AYILON is a software tool, not a registered investment advisor or asset manager. Cryptocurrency trading involves substantial risk of loss. Past performance is not indicative of future results. AYILON does not hold your funds. All trading decisions are executed by algorithms you configure — not by AYILON. By using this service you acknowledge that all investment decisions and their consequences are your sole responsibility.',
     },
 
     /* ════════════════════════════════════════
@@ -769,6 +770,7 @@
       '404.desc':  '찾으시는 페이지가 존재하지 않거나 이동했을 수 있습니다. 다시 안내해 드리겠습니다.',
       '404.home':  '홈으로',
       '404.dash':  '대시보드로',
+      'legal_disclaimer': 'AYILON은 소프트웨어 도구이며, 자본시장법상 투자자문업·투자일임업 등록 사업자가 아닙니다. 암호화폐 거래는 원금 손실의 위험이 수반되며, 과거 성과는 미래 결과를 보장하지 않습니다. AYILON은 사용자의 자금을 보관하거나 투자 판단을 대신하지 않습니다. 투자에 관한 최종 결정 및 손익에 대한 책임은 이용자 본인에게 있습니다.',
     },
 
     /* ════════════════════════════════════════
@@ -1133,6 +1135,7 @@
       '404.desc':  'お探しのページは存在しないか、移動した可能性があります。正しい場所へご案内します。',
       '404.home':  'ホームへ',
       '404.dash':  'ダッシュボードへ',
+      'legal_disclaimer': 'AYILONはソフトウェアツールであり、金融商品取引法に基づく投資助言業者・投資運用業者ではありません。暗号資産の取引には価格変動リスクがあり、元本を割り込む可能性があります。過去の運用実績は将来の利益を保証するものではありません。AYILONはお客様の資産を管理せず、投資判断の責任を負いません。すべての投資判断はお客様ご自身の責任において行ってください。',
     },
 
     /* ════════════════════════════════════════
@@ -1497,6 +1500,7 @@
       '404.desc':  '您正在寻找的页面不存在 — 或者它可能已移动。让我们帮您回到正轨。',
       '404.home':  '返回首页',
       '404.dash':  '前往仪表板',
+      'legal_disclaimer': 'AYILON是一款软件工具，不构成任何司法管辖区的投资顾问或资产管理机构。加密货币交易涉及重大价格风险，可能导致本金损失。过去的业绩不代表未来的收益。AYILON不持有您的资金，不对您的投资结果承担责任。所有投资决策均由您自行配置的算法执行，最终责任由您自行承担。',
     },
     /* ════════════════════════════════════════
        VIETNAMESE (Tiếng Việt)
@@ -1860,6 +1864,7 @@
       '404.desc':  'Trang bạn đang tìm không tồn tại — hoặc có thể đã bị di chuyển. Hãy để chúng tôi đưa bạn trở lại.',
       '404.home':  'Về trang chủ',
       '404.dash':  'Đến bảng điều khiển',
+      'legal_disclaimer': 'AYILON là công cụ phần mềm, không phải tổ chức tư vấn đầu tư hay quản lý tài sản đã đăng ký. Tại Việt Nam, tài sản mã hóa chưa được công nhận là phương tiện thanh toán hợp pháp. Giao dịch tiền mã hóa có rủi ro cao và có thể dẫn đến mất vốn. Kết quả đầu tư trong quá khứ không đảm bảo cho tương lai. AYILON không giữ tài sản của bạn. Mọi quyết định đầu tư và hậu quả của chúng thuộc trách nhiệm của người dùng.',
     },
 
     /* ════════════════════════════════════════
@@ -2224,6 +2229,7 @@
       '404.desc':  'Страница, которую вы ищете, не существует — или она могла переместиться. Давайте вернём вас обратно.',
       '404.home':  'На главную',
       '404.dash':  'В панель управления',
+      'legal_disclaimer': 'AYILON является программным обеспечением и не имеет статуса профессионального участника рынка ценных бумаг. Согласно Федеральному закону № 259-ФЗ «О цифровых финансовых активах», цифровая валюта не является законным средством платежа в Российской Федерации. Торговля криптоактивами сопряжена с высоким риском потери вложенных средств. Прошлые результаты не гарантируют будущих доходов. AYILON не хранит ваши средства. Все инвестиционные решения и их последствия — исключительно ваша ответственность.',
     },
     /* ════════════════════════════════════════
        TURKISH (Türkçe)
@@ -2587,6 +2593,7 @@
       '404.desc':  'Aradığınız sayfa mevcut değil — veya taşınmış olabilir. Sizi yeniden doğru yola getirelim.',
       '404.home':  'Ana Sayfaya Dön',
       '404.dash':  'Kontrol Paneline Git',
+      'legal_disclaimer': 'AYILON bir yazılım aracıdır ve Sermaye Piyasası Kurulu\'na (SPK) kayıtlı bir yatırım danışmanı veya portföy yönetim şirketi değildir. 7256 sayılı Kanun çerçevesinde kripto varlıklar Türkiye\'de ödeme aracı olarak kullanılamaz. Kripto varlık işlemleri yüksek risk içerir ve ana para kaybına yol açabilir. Geçmiş performans gelecekteki sonuçların güvencesi değildir. AYILON fonlarınızı tutmaz. Tüm yatırım kararları ve sonuçları münhasıran kullanıcıya aittir.',
     },
 
     /* ════════════════════════════════════════
@@ -2951,6 +2958,7 @@
       '404.desc':  'La página que buscas no existe — o puede que se haya movido. Volvamos a encaminarte.',
       '404.home':  'Volver al inicio',
       '404.dash':  'Ir al panel de control',
+      'legal_disclaimer': 'AYILON es una herramienta de software y no constituye un asesor de inversiones ni una entidad gestora de activos registrada. El trading de criptomonedas conlleva un riesgo significativo de pérdida de capital. El rendimiento pasado no garantiza resultados futuros. AYILON no custodia sus fondos. Todas las decisiones de inversión son ejecutadas por los algoritmos que usted configura. La responsabilidad de las decisiones de inversión y sus consecuencias recae exclusivamente en el usuario.',
     },
 
     /* ════════════════════════════════════════
@@ -3315,6 +3323,7 @@
       '404.desc':  'A página que você está procurando não existe — ou pode ter sido movida. Vamos te colocar de volta nos trilhos.',
       '404.home':  'Voltar ao início',
       '404.dash':  'Ir ao painel de controle',
+      'legal_disclaimer': 'AYILON é uma ferramenta de software e não constitui um consultor de investimentos ou gestor de ativos registrado. No Brasil, os criptoativos são regulados pela Comissão de Valores Mobiliários (CVM) e pelo Banco Central do Brasil. O trading de criptomoedas envolve riscos significativos e pode resultar em perda total do capital. Resultados passados não garantem resultados futuros. AYILON não custodia seus fundos. As decisões de investimento e suas consequências são de responsabilidade exclusiva do usuário.',
     },
 
     /* ════════════════════════════════════════
@@ -3679,6 +3688,7 @@
       '404.desc':  'Halaman yang Anda cari tidak ada — atau mungkin telah dipindahkan. Mari kami kembalikan Anda ke jalur yang benar.',
       '404.home':  'Kembali ke Beranda',
       '404.dash':  'Pergi ke Dasbor',
+      'legal_disclaimer': 'AYILON adalah perangkat lunak dan bukan merupakan penasihat investasi atau manajer aset terdaftar. Di Indonesia, perdagangan aset kripto diatur oleh Badan Pengawas Perdagangan Berjangka Komoditi (Bappebti). Perdagangan kripto memiliki risiko tinggi dan dapat mengakibatkan kerugian modal. Kinerja masa lalu tidak menjamin hasil di masa mendatang. AYILON tidak menyimpan dana Anda. Semua keputusan investasi dan konsekuensinya sepenuhnya merupakan tanggung jawab pengguna.',
     },
 
   };
