@@ -507,6 +507,7 @@ async function handleSaveBotSettings(request, env) {
   if (body.mddLimit     !== undefined) body.mddLimit     = Math.min(Math.max(parseFloat(body.mddLimit)     || 30,   5), 100);
   if (body.strategy    && !VALID_STRATS.includes(body.strategy))   body.strategy    = 'sr_bounce';
   if (body.tradingPair && !VALID_PAIRS.includes(body.tradingPair)) body.tradingPair = 'BTC-USDT-SWAP';
+  if (body.entrySizing && !['equal','weighted','martingale'].includes(body.entrySizing)) body.entrySizing = 'equal';
 
   const { sessionToken: _, ...configBody } = body;
   await env.USERS_KV.put('bot:config:' + session.email, JSON.stringify({ ...configBody, clientToken, updatedAt: Date.now() }));
@@ -643,9 +644,13 @@ async function runBotForUser(env, email, cfg) {
       posSize = 40, riskPerTrade = 2, leverage = 20,
       lossLimitEnabled = true, lossLimit = 2,
       notifyEmail = true, notifyTelegram = false,
-      telegramToken, telegramChatId, userEmail, plan = 'starter' } = cfg;
+      telegramToken, telegramChatId, userEmail } = cfg;
     if (!apiKey || !apiSecret || !apiPassphrase) return;
     if (!['BTC-USDT-SWAP', 'ETH-USDT-SWAP'].includes(tradingPair)) return;
+
+    // Always derive plan from actual subscription — never trust client-provided value
+    const userRecord = await env.USERS_KV.get('user:' + email, { type: 'json' }) || {};
+    const plan = userRecord.subscription?.plan || 'starter';
 
     const lossLimitNorm = parseFloat(lossLimit) > 1 ? parseFloat(lossLimit) / 100 : parseFloat(lossLimit) || 0.05;
     const today = new Date().toDateString();
