@@ -467,10 +467,10 @@ async function handleSaveBotSettings(request, env) {
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
 
   // Preserve existing clientToken or generate a new one on first save
-  const existing = await env.USERS_KV.get('bot:config', { type: 'json' });
+  const existing = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
   const clientToken = existing?.clientToken || crypto.randomUUID();
 
-  await env.USERS_KV.put('bot:config', JSON.stringify({ ...body, clientToken, updatedAt: Date.now() }));
+  await env.USERS_KV.put('bot:config:' + session.email, JSON.stringify({ ...body, clientToken, updatedAt: Date.now() }));
   return json({ ok: true, clientToken });
 }
 
@@ -480,13 +480,14 @@ async function handleBotStatus(request, env) {
   const session = await requireSession(body, env);
   if (!session) return json({ running: false, logs: [], error: 'unauthorized' }, 401);
 
+  const u = session.email;
   const [config, logs, alert, pos, lastScan, marketData] = await Promise.all([
-    env.USERS_KV.get('bot:config',               { type: 'json' }),
-    env.USERS_KV.get('bot:logs',                 { type: 'json' }),
-    env.USERS_KV.get('bot:daily_loss_triggered', { type: 'json' }),
-    env.USERS_KV.get('bot:position_state',       { type: 'json' }),
-    env.USERS_KV.get('bot:last_scan'),
-    env.USERS_KV.get('bot:market_data',          { type: 'json' })
+    env.USERS_KV.get('bot:config:'               + u, { type: 'json' }),
+    env.USERS_KV.get('bot:logs:'                 + u, { type: 'json' }),
+    env.USERS_KV.get('bot:daily_loss_triggered:' + u, { type: 'json' }),
+    env.USERS_KV.get('bot:position_state:'       + u, { type: 'json' }),
+    env.USERS_KV.get('bot:last_scan:'            + u),
+    env.USERS_KV.get('bot:market_data:'          + u, { type: 'json' })
   ]);
   const _config = config || {}, _logs = logs || [], _pos = pos || {};
 
@@ -508,28 +509,28 @@ async function handleBotStatus(request, env) {
 }
 
 async function handleBotControl(request, env) {
-  const { action, clientToken } = await request.json();
+  const body = await request.json();
+  const { action } = body;
   if (!env.USERS_KV) return json({ ok: false });
-  const config = await env.USERS_KV.get('bot:config', { type: 'json' }) || {};
+  const session = await requireSession(body, env);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
 
-  // Fix: require clientToken auth if one is set in config
-  if (config.clientToken && clientToken !== config.clientToken) {
-    return json({ ok: false, error: 'unauthorized' }, 401);
-  }
+  const configKey = 'bot:config:' + session.email;
+  const config = await env.USERS_KV.get(configKey, { type: 'json' }) || {};
 
   if (action === 'start') config.running = true;
   if (action === 'stop')  config.running = false;
   if (action === 'dismiss') {
-    await env.USERS_KV.delete('bot:daily_loss_triggered');
+    await env.USERS_KV.delete('bot:daily_loss_triggered:' + session.email);
     return json({ ok: true });
   }
   if (action === 'resume') {
     config.running = true;
-    await env.USERS_KV.delete('bot:daily_loss_triggered');
+    await env.USERS_KV.delete('bot:daily_loss_triggered:' + session.email);
     const today = new Date().toDateString();
-    await env.USERS_KV.delete('bot:daily_loss:' + today);
+    await env.USERS_KV.delete('bot:daily_loss:' + session.email + ':' + today);
   }
-  await env.USERS_KV.put('bot:config', JSON.stringify(config));
+  await env.USERS_KV.put(configKey, JSON.stringify(config));
   return json({ ok: true, running: config.running });
 }
 
@@ -540,7 +541,7 @@ async function handleGetPositions(request, env) {
   if (!session) return json({ positions: [], error: 'unauthorized' }, 401);
 
   // Use stored API keys from bot:config — never accept from client
-  const config = await env.USERS_KV.get('bot:config', { type: 'json' });
+  const config = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
   const { apiKey, apiSecret, apiPassphrase, tradingPair } = config || {};
   if (!apiKey || !apiSecret || !apiPassphrase) return json({ positions: [] });
 
@@ -584,9 +585,18 @@ async function getTicker(instId) {
 async function runBot(env) {
   if (!env.USERS_KV) return;
   try {
-    const cfg = await env.USERS_KV.get('bot:config', { type: 'json' });
-    if (!cfg || cfg.running !== true) return;
+    const { keys } = await env.USERS_KV.list({ prefix: 'bot:config:' });
+    for (const key of keys) {
+      const email = key.name.slice('bot:config:'.length);
+      const cfg = await env.USERS_KV.get(key.name, { type: 'json' });
+      if (!cfg || cfg.running !== true) continue;
+      await runBotForUser(env, email, cfg);
+    }
+  } catch(e) {}
+}
 
+async function runBotForUser(env, email, cfg) {
+  try {
     const { apiKey, apiSecret, apiPassphrase, tradingPair = 'BTC-USDT-SWAP',
       strategy = 'daytrading', demoMode = false,
       numEntries = 3, entrySizing = 'equal',
@@ -604,16 +614,16 @@ async function runBot(env) {
     // Fix: cap leverage at 50x regardless of user input
     const safeLeverage = Math.min(parseInt(leverage) || 20, 50);
 
-    await env.USERS_KV.put('bot:last_scan', new Date().toISOString());
+    await env.USERS_KV.put('bot:last_scan:' + email, new Date().toISOString());
 
     // ── Daily loss check ──────────────────────────────────────
     if (lossLimitEnabled) {
       const today = new Date().toDateString();
-      const dl = await env.USERS_KV.get('bot:daily_loss:' + today, { type: 'json' }) || { pct: 0 };
+      const dl = await env.USERS_KV.get('bot:daily_loss:' + email + ':' + today, { type: 'json' }) || { pct: 0 };
       if (dl.pct >= lossLimitNorm) {
         cfg.running = false;
-        await env.USERS_KV.put('bot:config', JSON.stringify(cfg));
-        await env.USERS_KV.put('bot:daily_loss_triggered', JSON.stringify({
+        await env.USERS_KV.put('bot:config:' + email, JSON.stringify(cfg));
+        await env.USERS_KV.put('bot:daily_loss_triggered:' + email, JSON.stringify({
           date: today, loss: (dl.pct * 100).toFixed(2) + '%', triggeredAt: Date.now()
         }));
         await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
@@ -631,15 +641,15 @@ async function runBot(env) {
     // ── Fix: Max drawdown stop ────────────────────────────────
     // Track peak equity and halt bot if overall drawdown exceeds mddLimit (default 30%)
     const mddLimit = parseFloat(cfg.mddLimit || 0.30);
-    const peakData = await env.USERS_KV.get('bot:peak_equity', { type: 'json' });
+    const peakData = await env.USERS_KV.get('bot:peak_equity:' + email, { type: 'json' });
     if (!peakData || equity > peakData.peak) {
-      await env.USERS_KV.put('bot:peak_equity', JSON.stringify({ peak: equity, date: new Date().toISOString() }));
+      await env.USERS_KV.put('bot:peak_equity:' + email, JSON.stringify({ peak: equity, date: new Date().toISOString() }));
     } else if (peakData.peak > 0 && (peakData.peak - equity) / peakData.peak >= mddLimit) {
       cfg.running = false;
-      await env.USERS_KV.put('bot:config', JSON.stringify(cfg));
+      await env.USERS_KV.put('bot:config:' + email, JSON.stringify(cfg));
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
         `⚠️ Max drawdown ${(mddLimit*100).toFixed(0)}% reached ($${peakData.peak.toFixed(0)} → $${equity.toFixed(0)}). Bot stopped.`);
-      await botLog(env, `MDD limit ${(mddLimit*100).toFixed(0)}% triggered: $${peakData.peak.toFixed(0)} → $${equity.toFixed(0)} — bot stopped`);
+      await botLog(env, email, `MDD limit ${(mddLimit*100).toFixed(0)}% triggered: $${peakData.peak.toFixed(0)} → $${equity.toFixed(0)} — bot stopped`);
       return;
     }
 
@@ -648,10 +658,10 @@ async function runBot(env) {
     const openPos = (posRes?.data || []).filter(p => parseFloat(p.pos) !== 0);
 
     // ── Position state (loaded before checkSL to prevent race condition) ────
-    let ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
+    let ps = await env.USERS_KV.get('bot:position_state:' + email, { type: 'json' }) || {};
 
     // ── Stop loss / TP check ─────────────────────────────────
-    await checkSL(env, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, demoMode, ps);
+    await checkSL(env, email, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, demoMode, ps);
 
     // ── Fetch all candles in parallel ─────────────────────────
     const [candles1H, candles4H, candlesD, c5] = await Promise.all([
@@ -667,7 +677,7 @@ async function runBot(env) {
       getCtVal(tradingPair)
     ]);
     if (!currentPrice || currentPrice <= 0) {
-      await botLog(env, `Skip: failed to fetch current price for ${tradingPair} (3 retries)`);
+      await botLog(env, email, `Skip: failed to fetch current price for ${tradingPair} (3 retries)`);
       return;
     }
 
@@ -681,7 +691,7 @@ async function runBot(env) {
     if (!levels.supports.length && !levels.resistances.length) return;
 
     try {
-      await env.USERS_KV.put('bot:market_data', JSON.stringify({
+      await env.USERS_KV.put('bot:market_data:' + email, JSON.stringify({
         price: currentPrice, trend: trend.dir, trendStrong: trend.strong, levels, updatedAt: Date.now()
       }), { expirationTtl: 300 });
     } catch {}
@@ -696,9 +706,9 @@ async function runBot(env) {
       if (!matchingPos) {
         if (ps[tradingPair].algoId)   await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].algoId, demoMode);
         if (ps[tradingPair].tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].tpAlgoId, demoMode);
-        await botLog(env, `Sync: cleared ${tradingPair} state — position closed externally`);
+        await botLog(env, email, `Sync: cleared ${tradingPair} state — position closed externally`);
         delete ps[tradingPair];
-        await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+        await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
       }
     }
     const state = ps[tradingPair] || { entries: [], stopLoss: null, direction: null, takeProfit: null };
@@ -740,15 +750,15 @@ async function runBot(env) {
           }
           if (newRemaining <= 0) {
             delete ps[tradingPair];
-            await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-            await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} — position fully closed`);
+            await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
+            await botLog(env, email, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} — position fully closed`);
           } else {
             ps[tradingPair] = state;
-            await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
-            await botLog(env, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL→${state.stopLoss.toFixed(2)} | Rem:${newRemaining}cts`);
+            await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
+            await botLog(env, email, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL→${state.stopLoss.toFixed(2)} | Rem:${newRemaining}cts`);
           }
         } else {
-          await botLog(env, `Trail order FAILED @ ${nextLv.price.toFixed(2)}: ${trailRes?.msg || 'unknown'}`);
+          await botLog(env, email, `Trail order FAILED @ ${nextLv.price.toFixed(2)}: ${trailRes?.msg || 'unknown'}`);
         }
         return;
       }
@@ -770,11 +780,11 @@ async function runBot(env) {
       if (!frData?.data?.[0]) throw new Error('empty funding rate response');
       const fr = parseFloat(frData.data[0].fundingRate);
       if (Math.abs(fr) > 0.001) {
-        await botLog(env, `Skip: funding rate ${(fr * 100).toFixed(4)}%/8h > 0.1% — no new entries`);
+        await botLog(env, email, `Skip: funding rate ${(fr * 100).toFixed(4)}%/8h > 0.1% — no new entries`);
         return;
       }
     } catch(frErr) {
-      await botLog(env, `Skip: could not verify funding rate (${frErr.message}) — no new entries`);
+      await botLog(env, email, `Skip: could not verify funding rate (${frErr.message}) — no new entries`);
       return;
     }
 
@@ -816,14 +826,14 @@ async function runBot(env) {
     const slDistRR = Math.abs(currentPrice - signal.stopLoss) / currentPrice;
     const tpDistRR = useTP ? Math.abs(tp - currentPrice) / currentPrice : 0;
     if (!useTP || tpDistRR / slDistRR < 1.5) {
-      await botLog(env, `Skip: R:R ${useTP ? (tpDistRR / slDistRR).toFixed(2) : 'n/a'}:1 < 1.5 | TP:${tp?.toFixed(0) ?? 'none'} SL:${signal.stopLoss.toFixed(0)}`);
+      await botLog(env, email, `Skip: R:R ${useTP ? (tpDistRR / slDistRR).toFixed(2) : 'n/a'}:1 < 1.5 | TP:${tp?.toFixed(0) ?? 'none'} SL:${signal.stopLoss.toFixed(0)}`);
       return;
     }
 
     // ── Kelly warning ─────────────────────────────────────────
     const totalPct = (posSize / 100) * entryNum / parseInt(numEntries);
     if (totalPct > 0.4 || safeLeverage > 20) {
-      await botLog(env, `⚠️ Kelly warning: pos=${(totalPct*100).toFixed(0)}% lev=${safeLeverage}x`);
+      await botLog(env, email, `⚠️ Kelly warning: pos=${(totalPct*100).toFixed(0)}% lev=${safeLeverage}x`);
     }
 
     // ── Calculate size ────────────────────────────────────────
@@ -834,7 +844,7 @@ async function runBot(env) {
       entryVal = (totalVal / nEntries) * Math.pow(2, entryNum - 1);
       entryVal = Math.min(entryVal, equity * 0.40);
       // Fix: warn user when martingale multiplier is large
-      await botLog(env, `⚠️ MARTINGALE #${entryNum}: ${Math.pow(2, entryNum-1)}× size (${entryVal.toFixed(0)} USDT) — high risk`);
+      await botLog(env, email, `⚠️ MARTINGALE #${entryNum}: ${Math.pow(2, entryNum-1)}× size (${entryVal.toFixed(0)} USDT) — high risk`);
     } else if (signal.type === 'short' && nEntries >= 2) {
       const weights = Array.from({ length: nEntries }, (_, i) => i === 0 ? 1 : 2);
       const totalW  = weights.reduce((a, b) => a + b, 0);
@@ -844,7 +854,7 @@ async function runBot(env) {
     }
     const szContracts = Math.floor(entryVal / (currentPrice * ctVal));
     if (szContracts < 1) {
-      await botLog(env, `Skip: position too small (${entryVal.toFixed(2)} USDT < 1 contract min)`);
+      await botLog(env, email, `Skip: position too small (${entryVal.toFixed(2)} USDT < 1 contract min)`);
       return;
     }
     const sz = String(szContracts);
@@ -855,16 +865,16 @@ async function runBot(env) {
         instId: tradingPair, lever: String(safeLeverage), mgnMode: 'cross'
       }, demoMode);
       if (levRes?.code !== '0') {
-        await botLog(env, `⚠️ Leverage set FAILED [${levRes?.code}]: ${levRes?.msg} — aborting entry`);
+        await botLog(env, email, `⚠️ Leverage set FAILED [${levRes?.code}]: ${levRes?.msg} — aborting entry`);
         return;
       }
     }
 
     // ── Entry lock: prevent duplicate orders from concurrent cron instances ──
-    const lockKey = 'bot:entry_lock:' + tradingPair;
+    const lockKey = 'bot:entry_lock:' + email + ':' + tradingPair;
     const existingLock = await env.USERS_KV.get(lockKey);
     if (existingLock) {
-      await botLog(env, `Skip: entry lock active — concurrent execution prevented`);
+      await botLog(env, email, `Skip: entry lock active — concurrent execution prevented`);
       return;
     }
     await env.USERS_KV.put(lockKey, '1', { expirationTtl: 30 });
@@ -884,7 +894,7 @@ async function runBot(env) {
       const { price: fillPrice, filledSz } = await queryFillPrice(apiKey, apiSecret, apiPassphrase, tradingPair, orderRes.data[0].ordId, currentPrice, szContracts, demoMode);
       // Partial fill guard: if less than 90% filled, don't track — state mismatch risk
       if (filledSz < szContracts * 0.90) {
-        await botLog(env, `Partial fill: ${filledSz}/${szContracts} contracts — skipping state update`);
+        await botLog(env, email, `Partial fill: ${filledSz}/${szContracts} contracts — skipping state update`);
         return;
       }
       const actualSz = String(Math.floor(filledSz));
@@ -925,7 +935,7 @@ async function runBot(env) {
 
       ps[tradingPair] = state;
       try {
-        await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+        await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
       } catch(kvErr) {
         // Fix: if KV write fails, cancel all algos AND close the position
         // to prevent an orphaned position with no SL protection
@@ -935,7 +945,7 @@ async function runBot(env) {
           instId: tradingPair, mgnMode: 'cross',
           posSide: signal.type === 'long' ? 'long' : 'short'
         }, demoMode);
-        await botLog(env, `KV write failed — position closed to prevent orphan: ${kvErr.message}`);
+        await botLog(env, email, `KV write failed — position closed to prevent orphan: ${kvErr.message}`);
         return;
       }
 
@@ -943,24 +953,24 @@ async function runBot(env) {
       const gradeStr = signal.grade ? `[${signal.grade}급] ` : '';
       const trendStr = trend.dir !== 'neutral' ? ` | trend:${trend.dir}${trend.strong ? '' : '(w)'}` : '';
       const slStr    = state.algoId ? `nSL:${state.stopLoss.toFixed(2)}` : `SL(sw):${state.stopLoss.toFixed(2)}`;
-      await botLog(env, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${fillPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | ${slStr}${tpStr}${trendStr} | sz:${sz}`);
+      await botLog(env, email, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${fillPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | ${slStr}${tpStr}${trendStr} | sz:${sz}`);
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
         `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${fillPrice} USDT${tpStr}`);
     } else {
       const errCode = orderRes?.code || '?';
       const errMsg  = orderRes?.msg || orderRes?.data?.[0]?.sMsg || 'unknown';
-      await botLog(env, `Order FAILED [${errCode}]: ${signal.type.toUpperCase()} @ ${currentPrice} — ${errMsg}`);
+      await botLog(env, email, `Order FAILED [${errCode}]: ${signal.type.toUpperCase()} @ ${currentPrice} — ${errMsg}`);
     }
 
   } catch(e) {
-    await botLog(env, 'Bot error: ' + e.message);
+    await botLog(env, email, 'Bot error: ' + e.message);
   }
 }
 
 // ── STOP LOSS / TP CHECK ──────────────────────────────────────
-async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitPct, demo = false, ps = null) {
+async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitPct, demo = false, ps = null) {
   if (!openPos.length) return;
-  if (ps === null) ps = await env.USERS_KV.get('bot:position_state', { type: 'json' }) || {};
+  if (ps === null) ps = await env.USERS_KV.get('bot:position_state:' + email, { type: 'json' }) || {};
   const state = ps[pair];
   if (!state?.stopLoss) return;
 
@@ -1006,9 +1016,9 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
     state.algoId             = newAlgo?.data?.[0]?.algoId ? String(newAlgo.data[0].algoId) : null;
     state.tpAlgoId           = null;
     ps[pair] = state;
-    await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+    await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
     const nSlLabel = state.algoId ? `nSL→BE` : `SL(sw)→BE`;
-    await botLog(env, `TP hit @ ${price} — 50% closed | ${nSlLabel} ${avgEntry.toFixed(2)} | trailing 10% active`);
+    await botLog(env, email, `TP hit @ ${price} — 50% closed | ${nSlLabel} ${avgEntry.toFixed(2)} | trailing 10% active`);
     return;
   }
 
@@ -1020,23 +1030,23 @@ async function checkSL(env, apiKey, secret, pass, pair, openPos, equity, lossLim
     posSide: state.direction === 'long' ? 'long' : 'short'
   }, demo);
   if (closeRes?.code !== '0') {
-    await botLog(env, `close-position FAILED [${closeRes?.code}]: ${closeRes?.msg} — retrying next tick`);
+    await botLog(env, email, `close-position FAILED [${closeRes?.code}]: ${closeRes?.msg} — retrying next tick`);
     return;
   }
 
   // Fix: use realized P&L from position data for daily loss tracking
   if (slHit && lossLimitEnabled) {
     const today = new Date().toDateString();
-    const dl = await env.USERS_KV.get('bot:daily_loss:' + today, { type: 'json' }) || { pct: 0 };
+    const dl = await env.USERS_KV.get('bot:daily_loss:' + email + ':' + today, { type: 'json' }) || { pct: 0 };
     const realizedLoss = openPos.reduce((s, p) => s + Math.max(0, -parseFloat(p.upl || '0')), 0);
     dl.pct = (dl.pct || 0) + realizedLoss / equity;
-    await env.USERS_KV.put('bot:daily_loss:' + today, JSON.stringify(dl), { expirationTtl: 86400 });
+    await env.USERS_KV.put('bot:daily_loss:' + email + ':' + today, JSON.stringify(dl), { expirationTtl: 86400 });
   }
 
   delete ps[pair];
-  await env.USERS_KV.put('bot:position_state', JSON.stringify(ps));
+  await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
   const reason = state.halfClosed ? `SL(break-even) hit @ ${price}` : `SL hit @ ${price}`;
-  await botLog(env, `${reason} — remaining position closed`);
+  await botLog(env, email, `${reason} — remaining position closed`);
 }
 
 // ── DAILY TREND FILTER (EMA20 / EMA50) ───────────────────────
@@ -1360,12 +1370,12 @@ async function hmac(secret, message) {
 }
 
 // ── BOT LOG & NOTIFY ──────────────────────────────────────────
-async function botLog(env, msg) {
+async function botLog(env, email, msg) {
   if (!env.USERS_KV) return;
-  const logs = await env.USERS_KV.get('bot:logs', { type: 'json' }) || [];
+  const logs = await env.USERS_KV.get('bot:logs:' + email, { type: 'json' }) || [];
   logs.unshift({ time: new Date().toISOString(), msg });
   if (logs.length > 100) logs.splice(100);
-  await env.USERS_KV.put('bot:logs', JSON.stringify(logs));
+  await env.USERS_KV.put('bot:logs:' + email, JSON.stringify(logs));
 }
 
 async function botNotify(env, cfg, msg) {

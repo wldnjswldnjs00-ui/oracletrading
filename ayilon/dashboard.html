@@ -2117,9 +2117,9 @@
       document.getElementById('inputApiSecret').value = '';
       document.getElementById('inputApiPass').value = '';
       // Stop bot and clear API from KV
-      fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
+      fetch(WORKER_URL + '/bot-control', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'stop', clientToken: localStorage.getItem('ayilon_client_token') || '' })
+        body: JSON.stringify({ action: 'stop', sessionToken: getSessionToken(), clientToken: localStorage.getItem('ayilon_client_token') || '' })
       }).catch(function(){});
       loadApiPage();
       updateBotStatus();
@@ -2396,9 +2396,9 @@
       localStorage.setItem('ayilon_bot_running', newState ? 'true' : 'false');
       await saveBotSettings();
       try {
-        await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
+        await fetch(WORKER_URL + '/bot-control', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: newState ? 'start' : 'stop', clientToken: localStorage.getItem('ayilon_client_token') || '' })
+          body: JSON.stringify({ action: newState ? 'start' : 'stop', sessionToken: getSessionToken(), clientToken: localStorage.getItem('ayilon_client_token') || '' })
         });
       } catch(e) {}
       updateBotStatus();
@@ -2408,9 +2408,9 @@
       localStorage.setItem('ayilon_bot_running', 'false');
       document.getElementById('dailyLossAlert').style.display = 'none';
       try {
-        await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
+        await fetch(WORKER_URL + '/bot-control', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'dismiss', clientToken: localStorage.getItem('ayilon_client_token') || '' })
+          body: JSON.stringify({ action: 'dismiss', sessionToken: getSessionToken(), clientToken: localStorage.getItem('ayilon_client_token') || '' })
         });
       } catch(e) {}
       updateBotStatus();
@@ -2420,9 +2420,9 @@
       localStorage.setItem('ayilon_bot_running', 'true');
       document.getElementById('dailyLossAlert').style.display = 'none';
       try {
-        await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/bot-control', {
+        await fetch(WORKER_URL + '/bot-control', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'resume', clientToken: localStorage.getItem('ayilon_client_token') || '' })
+          body: JSON.stringify({ action: 'resume', sessionToken: getSessionToken(), clientToken: localStorage.getItem('ayilon_client_token') || '' })
         });
       } catch(e) {}
       updateBotStatus();
