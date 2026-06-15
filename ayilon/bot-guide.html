@@ -349,8 +349,8 @@
     <div class="toc-row"><span><span class="toc-num">02</span><span class="toc-title" data-guide-i18n="toc.02">Market Analysis — S/R Level Detection</span></span><span class="toc-page">2</span></div>
     <div class="toc-row"><span><span class="toc-num">03</span><span class="toc-title" data-guide-i18n="toc.03">Level Grading — S / A / B Tiers</span></span><span class="toc-page">3</span></div>
     <div class="toc-row"><span><span class="toc-num">04</span><span class="toc-title" data-guide-i18n="toc.04">Volume Zone Analysis</span></span><span class="toc-page">4</span></div>
-    <div class="toc-row"><span><span class="toc-num">05</span><span class="toc-title" data-guide-i18n="toc.05">Entry Signal Detection</span></span><span class="toc-page">4</span></div>
-    <div class="toc-row"><span><span class="toc-num">06</span><span class="toc-title" data-guide-i18n="toc.06">Position Sizing &amp; Kelly Criterion</span></span><span class="toc-page">5</span></div>
+    <div class="toc-row"><span><span class="toc-num">05</span><span class="toc-title" data-guide-i18n="toc.05">Trading Strategies</span></span><span class="toc-page">4</span></div>
+    <div class="toc-row"><span><span class="toc-num">06</span><span class="toc-title" data-guide-i18n="toc.06">Position Sizing — Fixed Fractional</span></span><span class="toc-page">6</span></div>
     <div class="toc-row"><span><span class="toc-num">07</span><span class="toc-title" data-guide-i18n="toc.07">Entry Safety Rules</span></span><span class="toc-page">6</span></div>
     <div class="toc-row"><span><span class="toc-num">08</span><span class="toc-title" data-guide-i18n="toc.08">Take Profit — Partial Close Strategy</span></span><span class="toc-page">6</span></div>
     <div class="toc-row"><span><span class="toc-num">09</span><span class="toc-title" data-guide-i18n="toc.09">Stop Loss — Equity-Based Protection</span></span><span class="toc-page">7</span></div>
@@ -575,82 +575,103 @@
 <!-- ══════════════════════ 05 ENTRY SIGNAL ══════════════════════ -->
 <div id="s05" class="section page-break">
   <div class="section-num">05</div>
-  <div class="section-title" data-guide-i18n="s05.title">Entry Signal Detection</div>
+  <div class="section-title" data-guide-i18n="s05.title">Trading Strategies</div>
 
-  <p>Entry timing is done on the <strong>5-minute chart</strong> (last 20 candles). Three conditions must all pass simultaneously for a signal to trigger.</p>
+  <p>AYILON supports 10 trading strategies. Your subscription plan determines which are available. All strategies share the same DCA entry logic, position sizing, and risk management framework described in sections 06–13.</p>
 
-  <h3>Condition 1 — Price Touching an S/R Level</h3>
-  <p>The current 5m candle's close price must be within <strong>±0.4%</strong> of a support or resistance level.</p>
-  <div class="formula">|current_price − level_price| / level_price ≤ 0.004</div>
-
-  <h3>Condition 2 — 3-Candle Momentum Confirmation</h3>
-  <p>Before entering, the bot checks the direction of the last 3 closed 5m candles to confirm momentum:</p>
-
-  <div class="grid2">
-    <div class="callout green">
-      <div class="callout-label">LONG Signal</div>
-      Price is touching a <strong>support</strong> level AND the previous 3 candles are <strong>falling</strong> (each close lower than the previous). This confirms the market is reaching down to the support — a bounce setup.
-    </div>
-    <div class="callout red">
-      <div class="callout-label">SHORT Signal</div>
-      Price is touching a <strong>resistance</strong> level AND the previous 3 candles are <strong>rising</strong> (each close higher than the previous). This confirms the market is pushing up into resistance — a rejection setup.
-    </div>
-  </div>
-
-  <h3>Condition 3 — Stop Loss Distance Filter (3–6%, spot basis)</h3>
-  <p>All percentages below are <strong>spot price distances</strong>, not leveraged returns. The natural SL is the previous 5m candle's wick:</p>
-  <ul>
-    <li>For LONG: SL = previous candle's low. Distance = <code>(current_price − prev_low) / current_price</code></li>
-    <li>For SHORT: SL = previous candle's high. Distance = <code>(prev_high − current_price) / current_price</code></li>
-  </ul>
   <table>
-    <thead><tr><th>SL Distance (spot)</th><th>At 5× leverage</th><th>Action</th><th>Reason</th></tr></thead>
+    <thead><tr><th>#</th><th>Strategy</th><th>Direction</th><th>Key Signal</th><th>Risk</th><th>Plan</th></tr></thead>
     <tbody>
-      <tr><td class="td-label">Less than 3%</td><td>−15% on position</td><td><span class="badge badge-red">Skip</span></td><td>Too tight — noise will stop you out</td></tr>
-      <tr><td class="td-label">3% – 6%</td><td>−15% to −30% on position</td><td><span class="badge badge-green">Enter</span></td><td>Optimal — clear structure, manageable loss</td></tr>
-      <tr><td class="td-label">More than 6%</td><td>−30%+ on position</td><td><span class="badge badge-red">Skip</span></td><td>Too wide — poor risk/reward</td></tr>
+      <tr><td class="td-label">1</td><td>RSI Oversold DCA Long</td><td>Long Only</td><td>RSI ≤ 30</td><td>Low</td><td>Basic+</td></tr>
+      <tr><td class="td-label">2</td><td>MA Support DCA</td><td>Long Only</td><td>MA alignment + price touches MA</td><td>Low</td><td>Basic+</td></tr>
+      <tr><td class="td-label">3</td><td>S/R Bounce</td><td>Long / Short</td><td>5m price touches S/R level + momentum</td><td>Medium</td><td>Basic+</td></tr>
+      <tr><td class="td-label">4</td><td>MA Crossover + RSI</td><td>Long / Short</td><td>10/34 MA cross + RSI 65↑ / 35↓</td><td>Medium</td><td>Mid+</td></tr>
+      <tr><td class="td-label">5</td><td>Bollinger Band Mean Reversion</td><td>Long / Short</td><td>Price touches lower/upper BB band</td><td>Medium</td><td>Mid+</td></tr>
+      <tr><td class="td-label">6</td><td>Breakout + Volume</td><td>Long Bias</td><td>Price breaks resistance + volume ≥ 2× avg</td><td>Medium</td><td>Mid+</td></tr>
+      <tr><td class="td-label">7</td><td>MA Ribbon Long</td><td>Long Only</td><td>6 MAs aligned bullish + recent N-bar low holds</td><td>Low</td><td>Mid+</td></tr>
+      <tr><td class="td-label">8</td><td>MACD Divergence</td><td>Long / Short</td><td>Price vs MACD divergence confirmed</td><td>High</td><td>Premium</td></tr>
+      <tr><td class="td-label">9</td><td>Funding Rate Contrarian</td><td>Long / Short</td><td>Funding rate ≥ +0.10% → short; ≤ −0.05% → long</td><td>High</td><td>Premium</td></tr>
+      <tr><td class="td-label">10</td><td>ATR Trend Following</td><td>Long Bias</td><td>ADX > 25 + price pulls back 1 ATR in uptrend</td><td>Medium</td><td>Premium</td></tr>
     </tbody>
   </table>
-  <p style="font-size:12px;color:var(--gray-600);">Account-level impact: with 12% position size and 5× leverage, a 3% SL = 12% × 15% = <strong>1.8% account loss</strong> per entry.</p>
 
+  <h3>Strategy 1 — RSI Oversold DCA Long</h3>
+  <p>Enters a long position when the 14-period RSI on the user-selected timeframe drops to or below 30 (oversold). DCA entries are placed at N-equal intervals between the first entry price and the swing low (SL). Take profit targets the nearest resistance level above entry. <strong>Short side (RSI ≥ 70) is disabled</strong> — momentum can sustain above 70 for extended periods in bull markets.</p>
+
+  <h3>Strategy 2 — MA Support DCA</h3>
+  <p>Requires at least 3 of 6 moving averages (10, 20, 50, 100, 200 SMA + 34 EMA) to be in bullish alignment (price above all selected MAs). Enters long when the 5m candle wicks down to the nearest MA and closes above it — a pullback-to-MA bounce. Long only; no short entries.</p>
+
+  <h3>Strategy 3 — S/R Bounce (Default)</h3>
+  <p>The built-in default strategy. Detects support and resistance levels from 1H/4H candles using swing highs/lows and volume profile. Enters long when the 5m price touches a support level with a bullish bounce candle. Enters short when a bearish impulse candle with above-average volume is followed by a 50% retracement to resistance. SL = swing low (long) / swing high (short) of the 3 preceding 5m candles.</p>
   <div class="callout">
-    <div class="callout-label">All 3 conditions required</div>
-    A signal is only generated when <strong>all three conditions</strong> pass: level touch + momentum direction + SL in 3–6% range. If any one fails, the bot waits for the next cron cycle.
+    <div class="callout-label">Entry Conditions — All 3 Required</div>
+    <strong>①</strong> Price within ±0.4% of an S/R level &nbsp;|&nbsp; <strong>②</strong> Momentum direction confirms (bounce for long, rejection for short) &nbsp;|&nbsp; <strong>③</strong> SL distance 1–7% from entry (filters noise and overly wide stops)
   </div>
+
+  <h3>Strategy 4 — MA Crossover + RSI Confirmation</h3>
+  <p>Long: 10 EMA crosses above 34 EMA (golden cross) AND RSI ≥ 65 on the signal candle. Short: 10 EMA crosses below 34 EMA (death cross) AND RSI ≤ 35. DCA entries are spaced between the signal candle price and the swing low/high of the preceding 3 candles on the 5m chart. <strong>Note:</strong> RSI condition is checked at the candle that closes the crossover — if RSI has not yet reached the threshold, the bot waits for confirmation on the next candle.</p>
+
+  <h3>Strategy 5 — Bollinger Band Mean Reversion</h3>
+  <p>Uses a 20-period BB with 2 standard deviations. Enters long when the 5m candle closes below the lower band and the next candle closes back inside the band (re-entry confirmation). Enters short on the mirror condition at the upper band. Trend filter: long entries are skipped when the daily trend is strongly bearish (price below 200 SMA).</p>
+
+  <h3>Strategy 6 — Breakout + Volume Confirmation</h3>
+  <p>Identifies the 20-period resistance level on the 1H chart. Enters long when a 5m candle closes above this level with volume ≥ 2× the 20-period average volume. The broken resistance becomes the first DCA reference price. SL = candle low of the breakout bar. Long-biased; short breakdowns available on Premium with an additional RSI filter.</p>
+
+  <h3>Strategy 7 — MA Ribbon Long</h3>
+  <p>Requires 6 MAs (10, 20, 34, 50, 100, 200) to be in full bullish alignment (each MA above the next longer one). Enters long when price touches the shortest MA (10) in the ribbon and the last 3 candles on 5m show a pullback. This strategy only fires in confirmed strong uptrends. Long only.</p>
+
+  <h3>Strategy 8 — MACD Divergence</h3>
+  <p>Detects bullish divergence (price makes lower low, MACD histogram makes higher low) for long entries, and bearish divergence for shorts. Divergence is confirmed over the last 10 candles on the user-selected timeframe. Requires an RSI filter (RSI > 40 for longs, RSI &lt; 60 for shorts) to avoid divergence trades in strongly trending markets.</p>
+  <div class="callout yellow">
+    <div class="callout-label">High Risk</div>
+    Divergence can persist for many candles before resolving. Use conservative DCA counts (2–3 entries) and smaller position sizes with this strategy.
+  </div>
+
+  <h3>Strategy 9 — Funding Rate Contrarian</h3>
+  <p>Perpetual swap funding rates reveal market sentiment. When the funding rate exceeds <strong>+0.10%</strong> per 8h (the market is heavily long), the bot fades the crowd with a short entry. When it drops below <strong>−0.05%</strong> (heavily short), it enters long. This strategy is checked once per funding interval and does not use 5m signal detection.</p>
+  <div class="callout yellow">
+    <div class="callout-label">High Risk</div>
+    Funding rates alone do not determine direction. Extreme funding can continue for days in trending markets. Combine with a trend filter or use small position sizes.
+  </div>
+
+  <h3>Strategy 10 — ATR Trend Following</h3>
+  <p>Requires ADX > 25 (strong trend confirmed) on the 1H chart and price to be in an uptrend (above 50 SMA). Enters long when price pulls back by exactly 1 ATR from the recent high and starts recovering. SL = entry minus 1.5 ATR. Long-biased; short entries require ADX > 30 and price below 50 SMA.</p>
 </div>
 
 <!-- ══════════════════════ 06 SIZING ══════════════════════ -->
 <div id="s06" class="section page-break">
   <div class="section-num">06</div>
-  <div class="section-title" data-guide-i18n="s06.title">Position Sizing &amp; Kelly Criterion</div>
+  <div class="section-title" data-guide-i18n="s06.title">Position Sizing — Fixed Fractional</div>
 
-  <h3>Why 12% Total, 5x Leverage, 3 Entries?</h3>
-  <p>These defaults are derived from the <strong>Half-Kelly Criterion</strong> — a mathematical framework that maximizes long-term compounding while limiting ruin risk.</p>
+  <p>AYILON uses a <strong>Fixed Fractional</strong> position sizing model. You define what percentage of your equity to risk per trade, and the bot calculates contract size accordingly. This keeps risk consistent regardless of account balance changes.</p>
 
   <div class="grid3">
     <div class="card">
-      <div class="card-label">Total Position Size</div>
-      <div class="card-value">12%</div>
-      <div class="card-desc">Of total equity per trade setup. 4% per entry × 3 entries.</div>
+      <div class="card-label">Risk Per Trade</div>
+      <div class="card-value">2%</div>
+      <div class="card-desc">Default. Amount of equity you are willing to lose if the SL hits on entry #1.</div>
     </div>
     <div class="card">
-      <div class="card-label">Max Leverage</div>
-      <div class="card-value">5×</div>
-      <div class="card-desc">3× liquidation buffer at 3–6% SL. Sustainable for compounding.</div>
+      <div class="card-label">Daily Loss Limit</div>
+      <div class="card-value">2%</div>
+      <div class="card-desc">Bot pauses for the day once cumulative realized + floating loss reaches this level.</div>
     </div>
     <div class="card">
-      <div class="card-label">Number of Entries</div>
+      <div class="card-label">DCA Entries</div>
       <div class="card-value">3</div>
-      <div class="card-desc">Optimal EV split. Caps loss exposure if level fails early.</div>
+      <div class="card-desc">User-configured. Each entry is equally spaced between first entry price and SL.</div>
     </div>
   </div>
 
-  <h3>Kelly Criterion Basis</h3>
-  <p>Full Kelly suggests risking ~25% of equity per trade given typical win rates. <strong>Half-Kelly = 12.5%</strong>, rounded to 12% for safety. This balances growth rate with drawdown protection.</p>
+  <h3>DCA Entry Spacing — N-Equal-Parts</h3>
+  <p>Instead of a fixed price interval between DCA entries, AYILON divides the zone between the first entry price and the stop loss into N equal parts. This guarantees all entries stay within the valid trade zone regardless of how far or close the SL is.</p>
 
   <div class="formula">
-    Entry size = (Total Equity × posSize%) ÷ numEntries
+    entry_gap = (first_entry_price − SL_price) ÷ numEntries<br>
+    entry[i] = first_entry_price − (entry_gap × i)
   </div>
+
+  <p><strong>Example (Long, 3 entries):</strong> First entry at 100,000, SL (swing low) at 97,000. Gap = 1,000. Entries: 100,000 → 99,000 → 98,000. SL: 97,000.</p>
 
   <h3>Entry Sizing Modes</h3>
   <table>
@@ -658,20 +679,25 @@
     <tbody>
       <tr>
         <td class="td-label">Equal</td>
-        <td>Each entry gets the same dollar value: <code>totalVal / numEntries</code></td>
-        <td>Safe, recommended for most users</td>
+        <td>Each entry gets identical capital: <code>riskBudget / numEntries</code></td>
+        <td>Default — safe and predictable</td>
       </tr>
       <tr>
         <td class="td-label">Martingale</td>
-        <td>Each subsequent entry doubles: <code>baseVal × 2^(entryNum−1)</code></td>
-        <td>Aggressive averaging — higher risk, higher average improvement</td>
+        <td>Each subsequent entry multiplies by the configured factor: <code>base × factor^(n−1)</code></td>
+        <td>Aggressive average improvement — significantly higher risk</td>
       </tr>
     </tbody>
   </table>
 
   <div class="callout yellow">
-    <div class="callout-label">Kelly Warning</div>
-    If total position size exceeds <strong>40%</strong> of equity OR leverage exceeds <strong>20×</strong>, the bot logs a warning: <code>⚠️ Kelly warning: pos=X% lev=Xx</code>. Trading is not blocked, but the risk is flagged.
+    <div class="callout-label">Martingale Warning</div>
+    At 2× multiplier and 3 entries, total capital used is <strong>7× the first entry size</strong>. At 4 entries it is 15×. Ensure your account has sufficient balance to cover all planned entries, or the final DCA order may fail to fill.
+  </div>
+
+  <div class="callout">
+    <div class="callout-label">Risk Cap</div>
+    Regardless of settings, no single entry will exceed <strong>40% of equity</strong>. If the calculated size exceeds this cap, the bot reduces it and logs a warning.
   </div>
 </div>
 
@@ -686,16 +712,16 @@
   <h3>Rule 2 — Maximum Entry Count</h3>
   <p>The bot tracks how many entries have been placed in the current setup. Once the user-configured <code>numEntries</code> limit is reached (default: 3), no further entries are allowed for this setup.</p>
 
-  <h3>Rule 3 — ±2% Fractional Entry Range</h3>
-  <p>For entries #2 and #3, the current price must be <strong>within ±2% of the first entry price</strong>.</p>
+  <h3>Rule 3 — DCA Zone Containment</h3>
+  <p>All DCA entries are pre-calculated at signal time and must fall <strong>between the first entry price and the stop loss level</strong>. The bot will not place an entry at or beyond the SL price. If the current market price is already below a scheduled entry level when that cron tick fires, that entry is skipped.</p>
 
   <div class="formula">
-    |current_price − first_entry_price| / first_entry_price ≤ 0.02
+    entry[i] = first_entry − ((first_entry − SL) ÷ numEntries) × i
   </div>
 
   <div class="callout red">
     <div class="callout-label">Why This Matters</div>
-    Without this rule, the bot could keep averaging down as price falls, multiplying leveraged losses with each entry. At 5× leverage, a 10% move against you is a 50% account hit. The ±2% cap keeps all entries in a tight cluster so the average entry doesn't drift far from the original level.
+    Spacing entries across the zone between the first entry and SL keeps all DCA purchases within the structured trade idea. If the SL triggers, the max loss is bounded regardless of how many entries were filled. Entries never chase price below the invalidation level.
   </div>
 </div>
 
@@ -983,13 +1009,13 @@
       'cover.title': '트레이딩 봇<br>로직 가이드',
       'cover.sub': 'AYILON 봇이 시장을 분석하고, 포지션에 진입하며, 리스크를 관리하고, 거래를 종료하는 방법에 대한 완전한 문서입니다.',
       'meta.exchange': '거래소', 'meta.infra': '인프라', 'meta.freq': '실행 주기', 'meta.freq.val': '매 분 (cron)', 'meta.version': '버전',
-      'toc.01': '시스템 개요', 'toc.02': '시장 분석 — 지지/저항 레벨 감지', 'toc.03': '레벨 등급 — S / A / B 등급', 'toc.04': '거래량 존 (매물대) 분석', 'toc.05': '진입 신호 감지', 'toc.06': '포지션 크기 & 켈리 기준', 'toc.07': '진입 안전 규칙', 'toc.08': '익절 — 반 포지션 청산 전략', 'toc.09': '손절 — 자본 기반 보호', 'toc.10': '일일 손실 한도', 'toc.11': '거래 전체 사이클 (예시)', 'toc.12': '기본 파라미터 참조', 'toc.13': '데모 모드',
+      'toc.01': '시스템 개요', 'toc.02': '시장 분석 — 지지/저항 레벨 감지', 'toc.03': '레벨 등급 — S / A / B 등급', 'toc.04': '거래량 존 (매물대) 분석', 'toc.05': '매매 전략', 'toc.06': '포지션 크기 — 고정 비율', 'toc.07': '진입 안전 규칙', 'toc.08': '익절 — 반 포지션 청산 전략', 'toc.09': '손절 — 자본 기반 보호', 'toc.10': '일일 손실 한도', 'toc.11': '거래 전체 사이클 (예시)', 'toc.12': '기본 파라미터 참조', 'toc.13': '데모 모드',
       's01.title': '시스템 개요', 's01.intro': 'AYILON은 Cloudflare Workers에서 실행되는 완전 자동화된 무기한 스왑 거래 봇입니다. 매 분 스케줄된 cron 작업이 봇을 실행하고, 실시간 시장 데이터를 가져와 분석 파이프라인을 실행하며, 조건이 충족되면 OKX API를 통해 주문을 실행합니다.', 's01.f1.name': 'Cron 트리거 (매 분)', 's01.f2.name': '일일 손실 게이트', 's01.f3.name': '지지/저항 레벨 감지', 's01.f4.name': '레벨 등급 + 거래량 확인', 's01.f5.name': '진입 신호 확인 (5분 봉)', 's01.f6.name': '주문 실행', 's01.f7.name': '손절/익절 모니터링 (매 cron)',
       's02.title': '시장 분석 — 지지/저항 레벨 감지',
       's03.title': '레벨 등급 — S / A / B 등급',
       's04.title': '거래량 존 (매물대) 분석',
-      's05.title': '진입 신호 감지',
-      's06.title': '포지션 크기 & 켈리 기준',
+      's05.title': '매매 전략',
+      's06.title': '포지션 크기 — 고정 비율',
       's07.title': '진입 안전 규칙',
       's08.title': '익절 — 반 포지션 청산 전략',
       's09.title': '손절 — 자본 기반 보호', 's09.intro': '봇은 전통적인 가격 기반 손절 주문 대신 자산 기반 손실 메커니즘을 사용합니다. 진입 시 고정된 손절 가격을 설정하는 대신, 오늘의 실현 손실과 현재 평가 손실의 합산이 설정된 손실 한도에 도달했는지를 지속적으로 모니터링합니다.', 's09.check.label': '작동 방식', 's09.check': '매 cron 틱마다, <strong>N번 진입이 모두 완료된 후</strong>, 봇이 계산합니다:', 's09.check2': '<code>total_loss_pct ≥ loss_limit</code>인 경우 → 즉시 모든 포지션을 청산하고 대기 중인 TP 알고 주문을 취소합니다.', 's09.h1': '왜 자산 기반인가 (가격 기반이 아닌)', 's09.why': '다중 진입 DCA를 사용하면 각 추가 진입마다 평균 진입가가 변합니다. 1번 진입의 5분 봉 저점에 설정된 가격 기반 손절은 3번 진입이 훨씬 낮은 가격에 이루어졌을 때 의미가 없어집니다. 자산 기반 손실 한도는 더 명확합니다: 모든 진입과 오늘 이미 실현된 손실을 함께 고려합니다.', 's09.h2': '손절 트리거 시 처리 과정', 's09.f1.name': '모든 포지션 청산', 's09.f1.desc': '봇이 전체 오픈 포지션에 대해 OKX <code>close-position</code> API를 호출합니다. 시장가 주문이 현재 가격에 실행됩니다.', 's09.f2.name': 'TP 알고 취소', 's09.f2.desc': '대기 중인 OKX 알고 TP 주문이 알고 주문 취소 API를 통해 취소됩니다.', 's09.f3.name': '일일 손실 트래커 업데이트', 's09.f3.desc': '이 포지션의 실현 손실이 KV 저장소의 오늘 일일 손실 카운터에 추가됩니다. 포지션 상태가 초기화됩니다.', 's09.f4.name': '다음 신호에서 재진입 허용', 's09.f4.desc': '쿨다운 없음. 다음 유효한 S/R 신호가 나타나면 봇은 즉시 새로운 거래에 진입할 수 있습니다 — 단, 일일 손실 게이트(섹션 10)가 트리거되지 않은 경우에 한합니다.', 's09.h3': '핵심 타이밍 규칙', 's09.timing': '손절 확인은 <strong>N번 진입이 모두 완료된 후에만 활성화됩니다</strong>. 전체 포지션이 구성되기 전에 손실 한도를 확인하는 것은 시기상조입니다 — 진입 중 부분적인 평가 손실은 정상적인 과정입니다.', 's09.note.label': '재진입 쿨다운 없음', 's09.note': '손절 트리거 후 봇은 즉시 새로운 신호를 찾기 시작합니다. 자산 기반 손절은 포지션 보호 도구이지 거래 중단이 아닙니다. 거래를 완전히 중단시키는 것은 섹션 10의 일일 손실 게이트뿐입니다.',
@@ -1004,9 +1030,9 @@
       'cover.title': 'トレーディングボット<br>ロジックガイド',
       'cover.sub': 'AYILONボットが市場を分析し、ポジションを建て、リスクを管理し、トレードを終了する方法についての完全なドキュメント。',
       'meta.exchange': '取引所', 'meta.infra': 'インフラ', 'meta.freq': '実行頻度', 'meta.freq.val': '毎分（cron）', 'meta.version': 'バージョン',
-      'toc.01': 'システム概要', 'toc.02': '市場分析 — S/Rレベル検出', 'toc.03': 'レベルグレーディング — S / A / B 層', 'toc.04': '出来高ゾーン分析', 'toc.05': 'エントリーシグナル検出', 'toc.06': 'ポジションサイジング & ケリー基準', 'toc.07': 'エントリー安全ルール', 'toc.08': '利確 — ハーフポジションクローズ戦略', 'toc.09': '損切り — 資産ベース保護', 'toc.10': '日次損失上限', 'toc.11': '取引ライフサイクル全体（例）', 'toc.12': 'デフォルトパラメータ参照', 'toc.13': 'デモモード',
+      'toc.01': 'システム概要', 'toc.02': '市場分析 — S/Rレベル検出', 'toc.03': 'レベルグレーディング — S / A / B 層', 'toc.04': '出来高ゾーン分析', 'toc.05': '取引戦略', 'toc.06': 'ポジションサイジング — 固定比率', 'toc.07': 'エントリー安全ルール', 'toc.08': '利確 — ハーフポジションクローズ戦略', 'toc.09': '損切り — 資産ベース保護', 'toc.10': '日次損失上限', 'toc.11': '取引ライフサイクル全体（例）', 'toc.12': 'デフォルトパラメータ参照', 'toc.13': 'デモモード',
       's01.title': 'システム概要', 's01.intro': 'AYILONはCloudflare Workersで稼働する完全自動化されたパーペチュアルスワップ取引ボットです。毎分スケジュールされたcronジョブがボットを起動し、リアルタイム市場データを取得してパイプラインを実行し、条件が満たされればOKX APIで注文します。', 's01.f1.name': 'Cronトリガー（毎分）', 's01.f2.name': '日次損失ゲート', 's01.f3.name': 'S/Rレベル検出', 's01.f4.name': 'レベル評価 + 出来高確認', 's01.f5.name': 'エントリーシグナル確認（5分足）', 's01.f6.name': '注文実行', 's01.f7.name': 'SL/TPモニタリング（毎cron）',
-      's02.title': '市場分析 — S/Rレベル検出', 's03.title': 'レベルグレーディング — S / A / B 層', 's04.title': '出来高ゾーン（玉壁）分析', 's05.title': 'エントリーシグナル検出', 's06.title': 'ポジションサイジング & ケリー基準', 's07.title': 'エントリー安全ルール', 's08.title': '利確 — ハーフポジションクローズ戦略',
+      's02.title': '市場分析 — S/Rレベル検出', 's03.title': 'レベルグレーディング — S / A / B 層', 's04.title': '出来高ゾーン（玉壁）分析', 's05.title': '取引戦略', 's06.title': 'ポジションサイジング — 固定比率', 's07.title': 'エントリー安全ルール', 's08.title': '利確 — ハーフポジションクローズ戦略',
       's09.title': '損切り — 資産ベース保護', 's09.intro': 'ボットは従来の価格ベース損切り注文の代わりに、資産ベースの損失メカニズムを使用します。エントリー時に固定の損切り価格を設定するのではなく、当日の実現損失と現在の含み損の合計が設定した損失上限に達したかを継続的に監視します。', 's09.check.label': '仕組み', 's09.check': '毎cronティック、<strong>全N回のエントリーが完了した後</strong>、ボットが計算します：', 's09.check2': '<code>total_loss_pct ≥ loss_limit</code> の場合 → 全オープンポジションを即時クローズし、保留中のTPアルゴ注文をキャンセルします。', 's09.h1': 'なぜ資産ベースなのか（価格ベースでなく）', 's09.why': 'マルチエントリーDCAでは、各エントリーごとに平均取得単価が変化します。エントリー#1の5分足安値に設定された価格ベース損切りは、エントリー#3がはるかに低い価格で行われると意味を失います。資産ベース損失上限はより明確です：全エントリーと当日すでに実現した損失を合わせて考慮します。', 's09.h2': '損切りトリガー時の処理', 's09.f1.name': '全ポジションクローズ', 's09.f1.desc': 'ボットがオープンポジション全体に対してOKX <code>close-position</code> APIを呼び出します。成行注文が現在の価格で実行されます。', 's09.f2.name': 'TPアルゴキャンセル', 's09.f2.desc': '保留中のOKXアルゴTP注文がアルゴ注文キャンセルAPIでキャンセルされます。', 's09.f3.name': '日次損失トラッカー更新', 's09.f3.desc': 'このポジションの実現損失がKVストアの当日損失カウンターに追加されます。ポジション状態がクリアされます。', 's09.f4.name': '次のシグナルで再エントリー可能', 's09.f4.desc': 'クールダウンなし。次の有効なS/Rシグナルが現れたとき、ボットは即座に新しいトレードに入ることができます（日次損失ゲートがトリガーされていない場合）。', 's09.h3': '重要なタイミングルール', 's09.timing': '損切りチェックは<strong>全N回のエントリーが完了した後にのみ有効</strong>になります。ポジション全体が構築される前に損失上限をチェックするのは時期尚早です。', 's09.note.label': '再エントリークールダウンなし', 's09.note': '損切りトリガー後、ボットは即座に新しいシグナルを探し始めます。資産ベース損切りはポジション保護ツールであり、取引停止ではありません。',
       's10.title': '日次損失上限', 's11.title': '取引ライフサイクル全体（例）', 's12.title': 'デフォルトパラメータ参照', 's13.title': 'デモモード'
     },
@@ -1016,9 +1042,9 @@
       'cover.title': '交易机器人<br>逻辑指南',
       'cover.sub': '关于AYILON机器人如何分析市场、建立仓位、管理风险和退出交易的完整文档。',
       'meta.exchange': '交易所', 'meta.infra': '基础设施', 'meta.freq': '执行频率', 'meta.freq.val': '每分钟（cron）', 'meta.version': '版本',
-      'toc.01': '系统概述', 'toc.02': '市场分析 — 支撑/阻力位检测', 'toc.03': '级别评分 — S / A / B 等级', 'toc.04': '成交量区域（筹码峰）分析', 'toc.05': '入场信号检测', 'toc.06': '仓位管理 & 凯利公式', 'toc.07': '入场安全规则', 'toc.08': '止盈 — 半仓平仓策略', 'toc.09': '止损 — 权益保护机制', 'toc.10': '每日亏损限额', 'toc.11': '完整交易生命周期（示例）', 'toc.12': '默认参数参考', 'toc.13': '模拟交易模式',
+      'toc.01': '系统概述', 'toc.02': '市场分析 — 支撑/阻力位检测', 'toc.03': '级别评分 — S / A / B 等级', 'toc.04': '成交量区域（筹码峰）分析', 'toc.05': '交易策略', 'toc.06': '仓位管理 — 固定比例', 'toc.07': '入场安全规则', 'toc.08': '止盈 — 半仓平仓策略', 'toc.09': '止损 — 权益保护机制', 'toc.10': '每日亏损限额', 'toc.11': '完整交易生命周期（示例）', 'toc.12': '默认参数参考', 'toc.13': '模拟交易模式',
       's01.title': '系统概述', 's01.intro': 'AYILON是运行在Cloudflare Workers上的全自动永续合约交易机器人。每分钟，计划的cron任务唤醒机器人，获取实时市场数据，运行分析流程，并在条件满足时通过OKX API下单。', 's01.f1.name': 'Cron触发器（每分钟）', 's01.f2.name': '日亏损门控', 's01.f3.name': '支撑/阻力位检测', 's01.f4.name': '级别评分 + 成交量确认', 's01.f5.name': '入场信号检测（5分钟K线）', 's01.f6.name': '下单执行', 's01.f7.name': '止损/止盈监控（每次cron）',
-      's02.title': '市场分析 — 支撑/阻力位检测', 's03.title': '级别评分 — S / A / B 等级', 's04.title': '成交量区域（筹码峰）分析', 's05.title': '入场信号检测', 's06.title': '仓位管理 & 凯利公式', 's07.title': '入场安全规则', 's08.title': '止盈 — 半仓平仓策略',
+      's02.title': '市场分析 — 支撑/阻力位检测', 's03.title': '级别评分 — S / A / B 等级', 's04.title': '成交量区域（筹码峰）分析', 's05.title': '交易策略', 's06.title': '仓位管理 — 固定比例', 's07.title': '入场安全规则', 's08.title': '止盈 — 半仓平仓策略',
       's09.title': '止损 — 权益保护机制', 's09.intro': '机器人使用基于权益的亏损机制，而非传统的价格止损单。不是在入场时设置固定止损价格，而是持续监控今日已实现亏损与当前浮亏的总和是否达到配置的亏损限额。', 's09.check.label': '工作原理', 's09.check': '每次cron心跳，在<strong>全部N次入场完成后</strong>，机器人计算：', 's09.check2': '若 <code>total_loss_pct ≥ loss_limit</code> → 立即平仓所有持仓，取消待执行的止盈算法单。', 's09.h1': '为何采用权益基准（而非价格基准）', 's09.why': '多次入场DCA时，每次加仓都会改变平均持仓成本。第三次在更低价格入场后，以第一次入场5分钟K线低点设置的价格止损已失去意义。权益基准止损更简洁：将所有入场和今日已实现亏损一并考量。', 's09.h2': '止损触发后的处理流程', 's09.f1.name': '平仓所有持仓', 's09.f1.desc': '机器人调用OKX <code>close-position</code> API对整个持仓执行平仓，市价单以当前价格成交。', 's09.f2.name': '取消止盈算法单', 's09.f2.desc': '通过算法单取消API取消待执行的OKX算法止盈单。', 's09.f3.name': '更新日内亏损跟踪', 's09.f3.desc': '本次持仓的已实现亏损计入KV存储中的当日亏损计数器，持仓状态清零。', 's09.f4.name': '下一个信号即可重新入场', 's09.f4.desc': '无冷却期。下一个有效S/R信号出现时，机器人可立即建立新仓（前提是日亏损门控未触发）。', 's09.h3': '关键时序规则', 's09.timing': '止损检查<strong>仅在全部N次入场完成后才激活</strong>。在仓位未完全建立前检查亏损限额为时尚早——入场过程中出现部分浮亏是正常现象。', 's09.note.label': '无重新入场冷却期', 's09.note': '止损触发后，机器人立即开始寻找新信号。权益基准止损是持仓保护工具，而非交易暂停。唯一能完全暂停交易的是第10节的日亏损门控。',
       's10.title': '每日亏损限额', 's11.title': '完整交易生命周期（示例）', 's12.title': '默认参数参考', 's13.title': '模拟交易模式'
     },
@@ -1028,9 +1054,9 @@
       'cover.title': 'Hướng Dẫn Logic<br>Bot Giao Dịch',
       'cover.sub': 'Tài liệu đầy đủ về cách bot AYILON phân tích thị trường, vào lệnh, quản lý rủi ro và thoát giao dịch.',
       'meta.exchange': 'Sàn Giao Dịch', 'meta.infra': 'Cơ Sở Hạ Tầng', 'meta.freq': 'Tần Suất Thực Thi', 'meta.freq.val': 'Mỗi phút (cron)', 'meta.version': 'Phiên Bản',
-      'toc.01': 'Tổng Quan Hệ Thống', 'toc.02': 'Phân Tích Thị Trường — Phát Hiện Mức H/K', 'toc.03': 'Phân Loại Mức — Hạng S / A / B', 'toc.04': 'Phân Tích Vùng Khối Lượng', 'toc.05': 'Phát Hiện Tín Hiệu Vào Lệnh', 'toc.06': 'Quản Lý Kích Cỡ Vị Thế & Tiêu Chí Kelly', 'toc.07': 'Quy Tắc An Toàn Vào Lệnh', 'toc.08': 'Chốt Lời — Chiến Lược Đóng Nửa Vị Thế', 'toc.09': 'Cắt Lỗ — Bảo Vệ Dựa Trên Vốn', 'toc.10': 'Giới Hạn Lỗ Ngày', 'toc.11': 'Vòng Đời Giao Dịch Đầy Đủ (Ví Dụ)', 'toc.12': 'Tham Số Mặc Định', 'toc.13': 'Chế Độ Demo',
+      'toc.01': 'Tổng Quan Hệ Thống', 'toc.02': 'Phân Tích Thị Trường — Phát Hiện Mức H/K', 'toc.03': 'Phân Loại Mức — Hạng S / A / B', 'toc.04': 'Phân Tích Vùng Khối Lượng', 'toc.05': 'Chiến Lược Giao Dịch', 'toc.06': 'Quản Lý Kích Cỡ Vị Thế — Tỷ Lệ Cố Định', 'toc.07': 'Quy Tắc An Toàn Vào Lệnh', 'toc.08': 'Chốt Lời — Chiến Lược Đóng Nửa Vị Thế', 'toc.09': 'Cắt Lỗ — Bảo Vệ Dựa Trên Vốn', 'toc.10': 'Giới Hạn Lỗ Ngày', 'toc.11': 'Vòng Đời Giao Dịch Đầy Đủ (Ví Dụ)', 'toc.12': 'Tham Số Mặc Định', 'toc.13': 'Chế Độ Demo',
       's01.title': 'Tổng Quan Hệ Thống', 's01.intro': 'AYILON là bot giao dịch hợp đồng vĩnh cửu hoàn toàn tự động chạy trên Cloudflare Workers. Mỗi phút, một cron job theo lịch khởi động bot, lấy dữ liệu thị trường thời gian thực, chạy pipeline phân tích và đặt lệnh qua OKX API nếu điều kiện được đáp ứng.', 's01.f1.name': 'Kích Hoạt Cron (mỗi phút)', 's01.f2.name': 'Cổng Lỗ Ngày', 's01.f3.name': 'Phát Hiện Mức H/K', 's01.f4.name': 'Phân Loại Mức + Xác Nhận Khối Lượng', 's01.f5.name': 'Kiểm Tra Tín Hiệu Vào Lệnh (nến 5 phút)', 's01.f6.name': 'Đặt Lệnh', 's01.f7.name': 'Theo Dõi SL/TP (mỗi cron)',
-      's02.title': 'Phân Tích Thị Trường — Phát Hiện Mức H/K', 's03.title': 'Phân Loại Mức — Hạng S / A / B', 's04.title': 'Phân Tích Vùng Khối Lượng', 's05.title': 'Phát Hiện Tín Hiệu Vào Lệnh', 's06.title': 'Quản Lý Kích Cỡ Vị Thế & Tiêu Chí Kelly', 's07.title': 'Quy Tắc An Toàn Vào Lệnh', 's08.title': 'Chốt Lời — Chiến Lược Đóng Nửa Vị Thế',
+      's02.title': 'Phân Tích Thị Trường — Phát Hiện Mức H/K', 's03.title': 'Phân Loại Mức — Hạng S / A / B', 's04.title': 'Phân Tích Vùng Khối Lượng', 's05.title': 'Chiến Lược Giao Dịch', 's06.title': 'Quản Lý Kích Cỡ Vị Thế — Tỷ Lệ Cố Định', 's07.title': 'Quy Tắc An Toàn Vào Lệnh', 's08.title': 'Chốt Lời — Chiến Lược Đóng Nửa Vị Thế',
       's09.title': 'Cắt Lỗ — Bảo Vệ Dựa Trên Vốn', 's09.intro': 'Bot sử dụng cơ chế lỗ dựa trên vốn thay vì lệnh cắt lỗ theo giá truyền thống. Thay vì đặt giá cắt lỗ cố định khi vào lệnh, bot liên tục theo dõi tổng lỗ đã thực hiện trong ngày và lỗ nổi hiện tại so với giới hạn lỗ đã cấu hình.', 's09.check.label': 'Cách Hoạt Động', 's09.check': 'Mỗi tick cron, sau khi <strong>tất cả N lệnh vào đã được khớp</strong>, bot tính toán:', 's09.check2': 'Nếu <code>total_loss_pct ≥ loss_limit</code> → đóng tất cả vị thế mở ngay lập tức và huỷ các lệnh algo TP đang chờ.', 's09.h1': 'Tại Sao Dùng Cơ Sở Vốn (Không Phải Giá)', 's09.why': 'Với DCA nhiều lần vào lệnh, giá vào trung bình thay đổi sau mỗi lần vào. Cắt lỗ theo giá đặt từ đáy nến 5 phút của lần vào #1 trở nên vô nghĩa khi lần vào #3 ở giá thấp hơn đáng kể. Giới hạn lỗ dựa trên vốn rõ ràng hơn: tính cả tất cả các lần vào và lỗ đã thực hiện trong ngày.', 's09.h2': 'Xử Lý Khi Cắt Lỗ Kích Hoạt', 's09.f1.name': 'Đóng Tất Cả Vị Thế', 's09.f1.desc': 'Bot gọi OKX <code>close-position</code> API cho toàn bộ vị thế mở. Lệnh thị trường thực thi theo giá hiện tại.', 's09.f2.name': 'Huỷ Algo TP', 's09.f2.desc': 'Huỷ lệnh algo TP đang chờ trên OKX qua API huỷ lệnh algo.', 's09.f3.name': 'Cập Nhật Bộ Đếm Lỗ Ngày', 's09.f3.desc': 'Lỗ đã thực hiện của vị thế này được cộng vào bộ đếm lỗ ngày trong KV store. Trạng thái vị thế được xoá.', 's09.f4.name': 'Cho Phép Vào Lệnh Lại ở Tín Hiệu Tiếp Theo', 's09.f4.desc': 'Không có thời gian chờ. Khi tín hiệu S/K hợp lệ tiếp theo xuất hiện, bot có thể vào giao dịch mới ngay lập tức (miễn là cổng lỗ ngày chưa kích hoạt).', 's09.h3': 'Quy Tắc Thời Gian Quan Trọng', 's09.timing': 'Kiểm tra cắt lỗ <strong>chỉ hoạt động sau khi tất cả N lần vào đã hoàn thành</strong>. Kiểm tra giới hạn lỗ trước khi vị thế được xây dựng đầy đủ là quá sớm.', 's09.note.label': 'Không Có Thời Gian Chờ Vào Lại', 's09.note': 'Sau khi cắt lỗ, bot ngay lập tức tìm kiếm tín hiệu mới. Cắt lỗ dựa trên vốn là công cụ bảo vệ vị thế, không phải tạm dừng giao dịch.',
       's10.title': 'Giới Hạn Lỗ Ngày', 's11.title': 'Vòng Đời Giao Dịch Đầy Đủ (Ví Dụ)', 's12.title': 'Tham Số Mặc Định', 's13.title': 'Chế Độ Demo'
     },
@@ -1040,9 +1066,9 @@
       'cover.title': 'Руководство по логике<br>торгового бота',
       'cover.sub': 'Полная документация о том, как бот AYILON анализирует рынки, открывает позиции, управляет рисками и закрывает сделки.',
       'meta.exchange': 'Биржа', 'meta.infra': 'Инфраструктура', 'meta.freq': 'Частота исполнения', 'meta.freq.val': 'Каждую минуту (cron)', 'meta.version': 'Версия',
-      'toc.01': 'Обзор системы', 'toc.02': 'Анализ рынка — определение уровней S/R', 'toc.03': 'Оценка уровней — классы S / A / B', 'toc.04': 'Анализ зон объёма', 'toc.05': 'Определение сигнала входа', 'toc.06': 'Размер позиции & критерий Келли', 'toc.07': 'Правила безопасности входа', 'toc.08': 'Фиксация прибыли — стратегия частичного закрытия', 'toc.09': 'Стоп-лосс — защита на основе капитала', 'toc.10': 'Дневной лимит убытков', 'toc.11': 'Полный цикл сделки (пример)', 'toc.12': 'Параметры по умолчанию', 'toc.13': 'Демо-режим',
+      'toc.01': 'Обзор системы', 'toc.02': 'Анализ рынка — определение уровней S/R', 'toc.03': 'Оценка уровней — классы S / A / B', 'toc.04': 'Анализ зон объёма', 'toc.05': 'Торговые Стратегии', 'toc.06': 'Размер Позиции — Фиксированная Доля', 'toc.07': 'Правила безопасности входа', 'toc.08': 'Фиксация прибыли — стратегия частичного закрытия', 'toc.09': 'Стоп-лосс — защита на основе капитала', 'toc.10': 'Дневной лимит убытков', 'toc.11': 'Полный цикл сделки (пример)', 'toc.12': 'Параметры по умолчанию', 'toc.13': 'Демо-режим',
       's01.title': 'Обзор системы', 's01.intro': 'AYILON — полностью автоматизированный бот для торговли бессрочными свопами, работающий на Cloudflare Workers. Каждую минуту запланированный cron-задача активирует бота, получает рыночные данные в реальном времени, запускает аналитический конвейер и при выполнении условий размещает ордера через OKX API.', 's01.f1.name': 'Cron-триггер (каждую минуту)', 's01.f2.name': 'Ворота дневного убытка', 's01.f3.name': 'Определение уровней S/R', 's01.f4.name': 'Оценка уровней + подтверждение объёма', 's01.f5.name': 'Проверка сигнала входа (5-мин свечи)', 's01.f6.name': 'Размещение ордера', 's01.f7.name': 'Мониторинг SL/TP (каждый cron)',
-      's02.title': 'Анализ рынка — определение уровней S/R', 's03.title': 'Оценка уровней — классы S / A / B', 's04.title': 'Анализ зон объёма', 's05.title': 'Определение сигнала входа', 's06.title': 'Размер позиции & критерий Келли', 's07.title': 'Правила безопасности входа', 's08.title': 'Фиксация прибыли — стратегия частичного закрытия',
+      's02.title': 'Анализ рынка — определение уровней S/R', 's03.title': 'Оценка уровней — классы S / A / B', 's04.title': 'Анализ зон объёма', 's05.title': 'Торговые Стратегии', 's06.title': 'Размер Позиции — Фиксированная Доля', 's07.title': 'Правила безопасности входа', 's08.title': 'Фиксация прибыли — стратегия частичного закрытия',
       's09.title': 'Стоп-лосс — защита на основе капитала', 's09.intro': 'Бот использует механизм убытков на основе капитала вместо традиционного стоп-лосса по цене. Вместо фиксации стоп-цены при входе бот постоянно контролирует совокупный эффект реализованных убытков за сегодня и текущих плавающих убытков по отношению к настроенному лимиту.', 's09.check.label': 'Как это работает', 's09.check': 'При каждом cron-тике, после того как <strong>все N входов заполнены</strong>, бот вычисляет:', 's09.check2': 'Если <code>total_loss_pct ≥ loss_limit</code> → немедленно закрыть все открытые позиции и отменить ожидающие TP-алго ордера.', 's09.h1': 'Почему на основе капитала (не по цене)', 's09.why': 'При многократном входе DCA средняя цена входа меняется с каждым новым входом. Стоп по цене минимума 5-минутной свечи первого входа теряет смысл, когда третий вход открывается значительно ниже. Лимит убытков на основе капитала более точен: он учитывает все входы и уже реализованные сегодня убытки.', 's09.h2': 'Действия при срабатывании стопа', 's09.f1.name': 'Закрытие всех позиций', 's09.f1.desc': 'Бот вызывает OKX <code>close-position</code> API для всей открытой позиции. Рыночный ордер исполняется по текущей цене.', 's09.f2.name': 'Отмена TP-алго', 's09.f2.desc': 'Ожидающий OKX алго-ордер TP отменяется через API отмены алго-ордеров.', 's09.f3.name': 'Обновление трекера дневного убытка', 's09.f3.desc': 'Реализованный убыток по этой позиции добавляется в счётчик дневного убытка в KV-хранилище. Состояние позиции очищается.', 's09.f4.name': 'Повторный вход при следующем сигнале', 's09.f4.desc': 'Без периода ожидания. При появлении следующего валидного сигнала S/R бот может немедленно открыть новую сделку (при условии, что ворота дневного убытка не сработали).', 's09.h3': 'Ключевое правило таймирования', 's09.timing': 'Проверка стопа <strong>активна только после заполнения всех N входов</strong>. Проверять лимит убытков до полного формирования позиции преждевременно.', 's09.note.label': 'Без паузы перед повторным входом', 's09.note': 'После срабатывания стопа бот немедленно возобновляет поиск новых сигналов. Стоп на основе капитала — инструмент защиты позиции, а не остановки торговли.',
       's10.title': 'Дневной лимит убытков', 's11.title': 'Полный цикл сделки (пример)', 's12.title': 'Параметры по умолчанию', 's13.title': 'Демо-режим'
     },
@@ -1052,9 +1078,9 @@
       'cover.title': 'Ticaret Botu<br>Mantık Kılavuzu',
       'cover.sub': 'AYILON botunun piyasaları nasıl analiz ettiğini, pozisyonlara nasıl girdiğini, riski nasıl yönettiğini ve işlemleri nasıl kapattığını açıklayan tam belge.',
       'meta.exchange': 'Borsa', 'meta.infra': 'Altyapı', 'meta.freq': 'Yürütme Sıklığı', 'meta.freq.val': 'Her dakika (cron)', 'meta.version': 'Sürüm',
-      'toc.01': 'Sistem Genel Bakış', 'toc.02': 'Piyasa Analizi — S/R Seviye Tespiti', 'toc.03': 'Seviye Derecelendirme — S / A / B Kademeleri', 'toc.04': 'Hacim Bölgesi Analizi', 'toc.05': 'Giriş Sinyali Tespiti', 'toc.06': 'Pozisyon Büyüklüğü & Kelly Kriteri', 'toc.07': 'Giriş Güvenlik Kuralları', 'toc.08': 'Kâr Al — Yarım Pozisyon Kapama Stratejisi', 'toc.09': 'Zararı Durdur — Özkaynak Bazlı Koruma', 'toc.10': 'Günlük Zarar Limiti', 'toc.11': 'Tam İşlem Yaşam Döngüsü (Örnek)', 'toc.12': 'Varsayılan Parametreler', 'toc.13': 'Demo Modu',
+      'toc.01': 'Sistem Genel Bakış', 'toc.02': 'Piyasa Analizi — S/R Seviye Tespiti', 'toc.03': 'Seviye Derecelendirme — S / A / B Kademeleri', 'toc.04': 'Hacim Bölgesi Analizi', 'toc.05': 'İşlem Stratejileri', 'toc.06': 'Pozisyon Büyüklüğü — Sabit Oran', 'toc.07': 'Giriş Güvenlik Kuralları', 'toc.08': 'Kâr Al — Yarım Pozisyon Kapama Stratejisi', 'toc.09': 'Zararı Durdur — Özkaynak Bazlı Koruma', 'toc.10': 'Günlük Zarar Limiti', 'toc.11': 'Tam İşlem Yaşam Döngüsü (Örnek)', 'toc.12': 'Varsayılan Parametreler', 'toc.13': 'Demo Modu',
       's01.title': 'Sistem Genel Bakış', 's01.intro': 'AYILON, Cloudflare Workers üzerinde çalışan tamamen otomatik bir süresiz swap işlem botudur. Her dakika planlı bir cron görevi botu uyandırır, gerçek zamanlı piyasa verileri alır, analiz hattını çalıştırır ve koşullar sağlanırsa OKX API aracılığıyla emir verir.', 's01.f1.name': 'Cron Tetikleyici (her dakika)', 's01.f2.name': 'Günlük Kayıp Kapısı', 's01.f3.name': 'S/R Seviye Tespiti', 's01.f4.name': 'Seviye Derecelendirme + Hacim Onayı', 's01.f5.name': 'Giriş Sinyali Kontrolü (5 dk mumlar)', 's01.f6.name': 'Emir Yerleştirme', 's01.f7.name': 'SL/TP İzleme (her cron)',
-      's02.title': 'Piyasa Analizi — S/R Seviye Tespiti', 's03.title': 'Seviye Derecelendirme — S / A / B Kademeleri', 's04.title': 'Hacim Bölgesi Analizi', 's05.title': 'Giriş Sinyali Tespiti', 's06.title': 'Pozisyon Büyüklüğü & Kelly Kriteri', 's07.title': 'Giriş Güvenlik Kuralları', 's08.title': 'Kâr Al — Yarım Pozisyon Kapama Stratejisi',
+      's02.title': 'Piyasa Analizi — S/R Seviye Tespiti', 's03.title': 'Seviye Derecelendirme — S / A / B Kademeleri', 's04.title': 'Hacim Bölgesi Analizi', 's05.title': 'İşlem Stratejileri', 's06.title': 'Pozisyon Büyüklüğü — Sabit Oran', 's07.title': 'Giriş Güvenlik Kuralları', 's08.title': 'Kâr Al — Yarım Pozisyon Kapama Stratejisi',
       's09.title': 'Zararı Durdur — Özkaynak Bazlı Koruma', 's09.intro': 'Bot, geleneksel fiyat bazlı zarar durdur emri yerine özkaynak bazlı kayıp mekanizması kullanır. Girişte sabit bir zarar durdur fiyatı belirlemek yerine, günün gerçekleşen zararları ile mevcut değerleme zararının toplamının ayarlanan zarar limitine ulaşıp ulaşmadığını sürekli izler.', 's09.check.label': 'Nasıl Çalışır', 's09.check': 'Her cron tik\'inde, <strong>tüm N girişler dolduktan sonra</strong>, bot hesaplar:', 's09.check2': '<code>total_loss_pct ≥ loss_limit</code> ise → tüm açık pozisyonları anında kapat ve bekleyen TP algo emirlerini iptal et.', 's09.h1': 'Neden Özkaynak Bazlı (Fiyat Bazlı Değil)', 's09.why': 'Çok girişli DCA\'da her yeni girişle ortalama giriş fiyatı değişir. Giriş #3, çok daha düşük bir fiyattan yapıldığında, giriş #1\'in 5 dk mum tabanından belirlenen fiyat bazlı zarar durdur anlamsız hale gelir. Özkaynak bazlı kayıp limiti daha nettir: tüm girişleri ve bugün gerçekleşen zararları birlikte değerlendirir.', 's09.h2': 'Zarar Durdur Tetiklendiğinde Yapılanlar', 's09.f1.name': 'Tüm Pozisyonları Kapat', 's09.f1.desc': 'Bot, tüm açık pozisyon için OKX <code>close-position</code> API\'sini çağırır. Piyasa emri mevcut fiyattan gerçekleşir.', 's09.f2.name': 'TP Algo\'yu İptal Et', 's09.f2.desc': 'Bekleyen OKX algo TP emri, algo emir iptal API\'si aracılığıyla iptal edilir.', 's09.f3.name': 'Günlük Zarar Takibini Güncelle', 's09.f3.desc': 'Bu pozisyonun gerçekleşen zararı, KV deposundaki günlük zarar sayacına eklenir. Pozisyon durumu sıfırlanır.', 's09.f4.name': 'Sonraki Sinyalde Yeniden Girişe İzin Ver', 's09.f4.desc': 'Bekleme süresi yok. Bir sonraki geçerli S/R sinyali göründüğünde, bot hemen yeni bir işlem açabilir (günlük kayıp kapısı tetiklenmemişse).', 's09.h3': 'Temel Zamanlama Kuralı', 's09.timing': 'Zarar durdur kontrolü <strong>yalnızca tüm N girişler dolduğunda etkinleşir</strong>. Pozisyon tam oluşmadan kayıp limitini kontrol etmek erkendir.', 's09.note.label': 'Yeniden Giriş Bekleme Süresi Yok', 's09.note': 'Zarar durdur tetiklendikten sonra bot anında yeni sinyal aramaya başlar. Özkaynak bazlı zarar durdur bir pozisyon koruma aracıdır, işlem duraklatma değildir.',
       's10.title': 'Günlük Zarar Limiti', 's11.title': 'Tam İşlem Yaşam Döngüsü (Örnek)', 's12.title': 'Varsayılan Parametreler', 's13.title': 'Demo Modu'
     },
@@ -1064,9 +1090,9 @@
       'cover.title': 'Guía de Lógica del<br>Bot de Trading',
       'cover.sub': 'Documentación completa sobre cómo el bot AYILON analiza mercados, entra en posiciones, gestiona el riesgo y cierra operaciones.',
       'meta.exchange': 'Exchange', 'meta.infra': 'Infraestructura', 'meta.freq': 'Frecuencia de Ejecución', 'meta.freq.val': 'Cada minuto (cron)', 'meta.version': 'Versión',
-      'toc.01': 'Descripción del Sistema', 'toc.02': 'Análisis de Mercado — Detección de Niveles S/R', 'toc.03': 'Clasificación de Niveles — Niveles S / A / B', 'toc.04': 'Análisis de Zonas de Volumen', 'toc.05': 'Detección de Señal de Entrada', 'toc.06': 'Dimensionamiento de Posición & Criterio Kelly', 'toc.07': 'Reglas de Seguridad de Entrada', 'toc.08': 'Toma de Ganancias — Estrategia de Cierre Parcial', 'toc.09': 'Stop Loss — Protección Basada en Capital', 'toc.10': 'Límite de Pérdida Diaria', 'toc.11': 'Ciclo Completo de Operación (Ejemplo)', 'toc.12': 'Parámetros por Defecto', 'toc.13': 'Modo Demo',
+      'toc.01': 'Descripción del Sistema', 'toc.02': 'Análisis de Mercado — Detección de Niveles S/R', 'toc.03': 'Clasificación de Niveles — Niveles S / A / B', 'toc.04': 'Análisis de Zonas de Volumen', 'toc.05': 'Estrategias de Trading', 'toc.06': 'Dimensionamiento de Posición — Fracción Fija', 'toc.07': 'Reglas de Seguridad de Entrada', 'toc.08': 'Toma de Ganancias — Estrategia de Cierre Parcial', 'toc.09': 'Stop Loss — Protección Basada en Capital', 'toc.10': 'Límite de Pérdida Diaria', 'toc.11': 'Ciclo Completo de Operación (Ejemplo)', 'toc.12': 'Parámetros por Defecto', 'toc.13': 'Modo Demo',
       's01.title': 'Descripción del Sistema', 's01.intro': 'AYILON es un bot de trading de swaps perpetuos completamente automatizado que corre en Cloudflare Workers. Cada minuto, un trabajo cron programado despierta el bot, obtiene datos de mercado en tiempo real, ejecuta el pipeline de análisis y coloca órdenes a través de la API de OKX si se cumplen las condiciones.', 's01.f1.name': 'Disparador Cron (cada minuto)', 's01.f2.name': 'Puerta de Pérdida Diaria', 's01.f3.name': 'Detección de Niveles S/R', 's01.f4.name': 'Clasificación de Niveles + Confirmación de Volumen', 's01.f5.name': 'Verificación de Señal de Entrada (velas de 5 min)', 's01.f6.name': 'Colocación de Órdenes', 's01.f7.name': 'Monitoreo SL/TP (cada cron)',
-      's02.title': 'Análisis de Mercado — Detección de Niveles S/R', 's03.title': 'Clasificación de Niveles — Niveles S / A / B', 's04.title': 'Análisis de Zonas de Volumen', 's05.title': 'Detección de Señal de Entrada', 's06.title': 'Dimensionamiento de Posición & Criterio Kelly', 's07.title': 'Reglas de Seguridad de Entrada', 's08.title': 'Toma de Ganancias — Estrategia de Cierre Parcial',
+      's02.title': 'Análisis de Mercado — Detección de Niveles S/R', 's03.title': 'Clasificación de Niveles — Niveles S / A / B', 's04.title': 'Análisis de Zonas de Volumen', 's05.title': 'Estrategias de Trading', 's06.title': 'Dimensionamiento de Posición — Fracción Fija', 's07.title': 'Reglas de Seguridad de Entrada', 's08.title': 'Toma de Ganancias — Estrategia de Cierre Parcial',
       's09.title': 'Stop Loss — Protección Basada en Capital', 's09.intro': 'El bot utiliza un mecanismo de pérdida basado en capital en lugar de una orden de stop loss tradicional por precio. En vez de establecer un precio de stop fijo al entrar, el bot monitorea continuamente si la suma de las pérdidas realizadas del día y las pérdidas flotantes actuales alcanza el límite de pérdida configurado.', 's09.check.label': 'Cómo Funciona', 's09.check': 'En cada tick de cron, después de que <strong>todas las N entradas estén completadas</strong>, el bot calcula:', 's09.check2': 'Si <code>total_loss_pct ≥ loss_limit</code> → cerrar todas las posiciones abiertas inmediatamente y cancelar órdenes algo TP pendientes.', 's09.h1': 'Por Qué Basado en Capital (No en Precio)', 's09.why': 'Con DCA de múltiples entradas, el precio promedio de entrada cambia con cada nueva entrada. Un stop loss por precio establecido desde el mínimo de la vela de 5 min de la entrada #1 pierde relevancia cuando la entrada #3 se hace a un precio significativamente menor. El límite de pérdida basado en capital es más limpio: considera todas las entradas y las pérdidas ya realizadas hoy.', 's09.h2': 'Qué Sucede Cuando se Activa el Stop', 's09.f1.name': 'Cerrar Todas las Posiciones', 's09.f1.desc': 'El bot llama a la API <code>close-position</code> de OKX para toda la posición abierta. La orden de mercado se ejecuta al precio actual.', 's09.f2.name': 'Cancelar Algo TP', 's09.f2.desc': 'La orden algo TP pendiente en OKX se cancela a través de la API de cancelación de órdenes algo.', 's09.f3.name': 'Actualizar Rastreador de Pérdida Diaria', 's09.f3.desc': 'La pérdida realizada de esta posición se agrega al contador de pérdida diaria en KV store. El estado de la posición se limpia.', 's09.f4.name': 'Reentrada Permitida en la Próxima Señal', 's09.f4.desc': 'Sin período de espera. Cuando aparece la siguiente señal S/R válida, el bot puede entrar en una nueva operación inmediatamente (siempre que la puerta de pérdida diaria no se haya activado).', 's09.h3': 'Regla de Tiempo Clave', 's09.timing': 'La verificación del stop <strong>solo está activa después de que todas las N entradas estén completadas</strong>. Verificar el límite de pérdida antes de que la posición esté completamente construida sería prematuro.', 's09.note.label': 'Sin Período de Espera para Reentrada', 's09.note': 'Después de un stop, el bot reanuda inmediatamente la búsqueda de nuevas señales. El stop basado en capital es una herramienta de protección de posición, no una pausa de trading.',
       's10.title': 'Límite de Pérdida Diaria', 's11.title': 'Ciclo Completo de Operación (Ejemplo)', 's12.title': 'Parámetros por Defecto', 's13.title': 'Modo Demo'
     },
@@ -1076,9 +1102,9 @@
       'cover.title': 'Guia de Lógica do<br>Bot de Trading',
       'cover.sub': 'Documentação completa sobre como o bot AYILON analisa mercados, entra em posições, gerencia riscos e fecha operações.',
       'meta.exchange': 'Exchange', 'meta.infra': 'Infraestrutura', 'meta.freq': 'Frequência de Execução', 'meta.freq.val': 'A cada minuto (cron)', 'meta.version': 'Versão',
-      'toc.01': 'Visão Geral do Sistema', 'toc.02': 'Análise de Mercado — Detecção de Níveis S/R', 'toc.03': 'Classificação de Níveis — Níveis S / A / B', 'toc.04': 'Análise de Zonas de Volume', 'toc.05': 'Detecção de Sinal de Entrada', 'toc.06': 'Dimensionamento de Posição & Critério Kelly', 'toc.07': 'Regras de Segurança de Entrada', 'toc.08': 'Take Profit — Estratégia de Fechamento Parcial', 'toc.09': 'Stop Loss — Proteção Baseada em Capital', 'toc.10': 'Limite de Perda Diária', 'toc.11': 'Ciclo Completo de Operação (Exemplo)', 'toc.12': 'Parâmetros Padrão', 'toc.13': 'Modo Demo',
+      'toc.01': 'Visão Geral do Sistema', 'toc.02': 'Análise de Mercado — Detecção de Níveis S/R', 'toc.03': 'Classificação de Níveis — Níveis S / A / B', 'toc.04': 'Análise de Zonas de Volume', 'toc.05': 'Estratégias de Trading', 'toc.06': 'Dimensionamento de Posição — Fração Fixa', 'toc.07': 'Regras de Segurança de Entrada', 'toc.08': 'Take Profit — Estratégia de Fechamento Parcial', 'toc.09': 'Stop Loss — Proteção Baseada em Capital', 'toc.10': 'Limite de Perda Diária', 'toc.11': 'Ciclo Completo de Operação (Exemplo)', 'toc.12': 'Parâmetros Padrão', 'toc.13': 'Modo Demo',
       's01.title': 'Visão Geral do Sistema', 's01.intro': 'AYILON é um bot de trading de swaps perpétuos completamente automatizado, rodando no Cloudflare Workers. A cada minuto, um trabalho cron agendado acorda o bot, busca dados de mercado em tempo real, executa o pipeline de análise e coloca ordens via API da OKX se as condições forem atendidas.', 's01.f1.name': 'Gatilho Cron (a cada minuto)', 's01.f2.name': 'Portão de Perda Diária', 's01.f3.name': 'Detecção de Níveis S/R', 's01.f4.name': 'Classificação de Níveis + Confirmação de Volume', 's01.f5.name': 'Verificação de Sinal de Entrada (velas de 5 min)', 's01.f6.name': 'Colocação de Ordens', 's01.f7.name': 'Monitoramento SL/TP (cada cron)',
-      's02.title': 'Análise de Mercado — Detecção de Níveis S/R', 's03.title': 'Classificação de Níveis — Níveis S / A / B', 's04.title': 'Análise de Zonas de Volume', 's05.title': 'Detecção de Sinal de Entrada', 's06.title': 'Dimensionamento de Posição & Critério Kelly', 's07.title': 'Regras de Segurança de Entrada', 's08.title': 'Take Profit — Estratégia de Fechamento Parcial',
+      's02.title': 'Análise de Mercado — Detecção de Níveis S/R', 's03.title': 'Classificação de Níveis — Níveis S / A / B', 's04.title': 'Análise de Zonas de Volume', 's05.title': 'Estratégias de Trading', 's06.title': 'Dimensionamento de Posição — Fração Fixa', 's07.title': 'Regras de Segurança de Entrada', 's08.title': 'Take Profit — Estratégia de Fechamento Parcial',
       's09.title': 'Stop Loss — Proteção Baseada em Capital', 's09.intro': 'O bot usa um mecanismo de perda baseado em capital, em vez de uma ordem de stop loss tradicional por preço. Em vez de definir um preço de stop fixo na entrada, o bot monitora continuamente se a soma das perdas realizadas do dia e das perdas flutuantes atuais atinge o limite de perda configurado.', 's09.check.label': 'Como Funciona', 's09.check': 'Em cada tick de cron, após <strong>todas as N entradas serem preenchidas</strong>, o bot calcula:', 's09.check2': 'Se <code>total_loss_pct ≥ loss_limit</code> → fechar todas as posições abertas imediatamente e cancelar ordens algo TP pendentes.', 's09.h1': 'Por Que Baseado em Capital (Não em Preço)', 's09.why': 'Com DCA de múltiplas entradas, o preço médio de entrada muda com cada nova entrada. Um stop loss por preço definido a partir da mínima da vela de 5 min da entrada #1 perde relevância quando a entrada #3 é feita a um preço significativamente menor. O limite de perda baseado em capital é mais limpo: considera todas as entradas e as perdas já realizadas hoje.', 's09.h2': 'O Que Acontece Quando o Stop é Ativado', 's09.f1.name': 'Fechar Todas as Posições', 's09.f1.desc': 'O bot chama a API <code>close-position</code> da OKX para toda a posição aberta. A ordem de mercado é executada pelo preço atual.', 's09.f2.name': 'Cancelar Algo TP', 's09.f2.desc': 'A ordem algo TP pendente na OKX é cancelada pela API de cancelamento de ordens algo.', 's09.f3.name': 'Atualizar Rastreador de Perda Diária', 's09.f3.desc': 'A perda realizada desta posição é somada ao contador de perda diária no KV store. O estado da posição é limpo.', 's09.f4.name': 'Reentrada Permitida no Próximo Sinal', 's09.f4.desc': 'Sem período de espera. Quando o próximo sinal S/R válido aparecer, o bot pode entrar em uma nova operação imediatamente (desde que o portão de perda diária não tenha sido ativado).', 's09.h3': 'Regra de Temporização Principal', 's09.timing': 'A verificação de stop <strong>só está ativa após todas as N entradas serem preenchidas</strong>. Verificar o limite de perda antes de a posição ser totalmente construída seria prematuro.', 's09.note.label': 'Sem Período de Espera para Reentrada', 's09.note': 'Após um stop, o bot retoma imediatamente a busca por novos sinais. O stop baseado em capital é uma ferramenta de proteção de posição, não uma pausa no trading.',
       's10.title': 'Limite de Perda Diária', 's11.title': 'Ciclo Completo de Operação (Exemplo)', 's12.title': 'Parâmetros Padrão', 's13.title': 'Modo Demo'
     },
@@ -1088,9 +1114,9 @@
       'cover.title': 'Panduan Logika<br>Bot Trading',
       'cover.sub': 'Dokumentasi lengkap tentang cara bot AYILON menganalisis pasar, masuk posisi, mengelola risiko, dan menutup perdagangan.',
       'meta.exchange': 'Bursa', 'meta.infra': 'Infrastruktur', 'meta.freq': 'Frekuensi Eksekusi', 'meta.freq.val': 'Setiap menit (cron)', 'meta.version': 'Versi',
-      'toc.01': 'Ikhtisar Sistem', 'toc.02': 'Analisis Pasar — Deteksi Level S/R', 'toc.03': 'Penilaian Level — Tingkat S / A / B', 'toc.04': 'Analisis Zona Volume', 'toc.05': 'Deteksi Sinyal Masuk', 'toc.06': 'Ukuran Posisi & Kriteria Kelly', 'toc.07': 'Aturan Keamanan Masuk', 'toc.08': 'Take Profit — Strategi Penutupan Setengah Posisi', 'toc.09': 'Stop Loss — Perlindungan Berbasis Ekuitas', 'toc.10': 'Batas Kerugian Harian', 'toc.11': 'Siklus Perdagangan Lengkap (Contoh)', 'toc.12': 'Parameter Default', 'toc.13': 'Mode Demo',
+      'toc.01': 'Ikhtisar Sistem', 'toc.02': 'Analisis Pasar — Deteksi Level S/R', 'toc.03': 'Penilaian Level — Tingkat S / A / B', 'toc.04': 'Analisis Zona Volume', 'toc.05': 'Strategi Trading', 'toc.06': 'Ukuran Posisi — Fraksi Tetap', 'toc.07': 'Aturan Keamanan Masuk', 'toc.08': 'Take Profit — Strategi Penutupan Setengah Posisi', 'toc.09': 'Stop Loss — Perlindungan Berbasis Ekuitas', 'toc.10': 'Batas Kerugian Harian', 'toc.11': 'Siklus Perdagangan Lengkap (Contoh)', 'toc.12': 'Parameter Default', 'toc.13': 'Mode Demo',
       's01.title': 'Ikhtisar Sistem', 's01.intro': 'AYILON adalah bot trading swap perpetual yang sepenuhnya otomatis, berjalan di Cloudflare Workers. Setiap menit, pekerjaan cron terjadwal membangunkan bot, mengambil data pasar waktu nyata, menjalankan pipeline analisis, dan menempatkan order melalui API OKX jika kondisi terpenuhi.', 's01.f1.name': 'Pemicu Cron (setiap menit)', 's01.f2.name': 'Gerbang Kerugian Harian', 's01.f3.name': 'Deteksi Level S/R', 's01.f4.name': 'Penilaian Level + Konfirmasi Volume', 's01.f5.name': 'Pemeriksaan Sinyal Masuk (lilin 5 menit)', 's01.f6.name': 'Penempatan Order', 's01.f7.name': 'Pemantauan SL/TP (setiap cron)',
-      's02.title': 'Analisis Pasar — Deteksi Level S/R', 's03.title': 'Penilaian Level — Tingkat S / A / B', 's04.title': 'Analisis Zona Volume', 's05.title': 'Deteksi Sinyal Masuk', 's06.title': 'Ukuran Posisi & Kriteria Kelly', 's07.title': 'Aturan Keamanan Masuk', 's08.title': 'Take Profit — Strategi Penutupan Setengah Posisi',
+      's02.title': 'Analisis Pasar — Deteksi Level S/R', 's03.title': 'Penilaian Level — Tingkat S / A / B', 's04.title': 'Analisis Zona Volume', 's05.title': 'Strategi Trading', 's06.title': 'Ukuran Posisi — Fraksi Tetap', 's07.title': 'Aturan Keamanan Masuk', 's08.title': 'Take Profit — Strategi Penutupan Setengah Posisi',
       's09.title': 'Stop Loss — Perlindungan Berbasis Ekuitas', 's09.intro': 'Bot menggunakan mekanisme kerugian berbasis ekuitas daripada order stop loss berbasis harga tradisional. Alih-alih menetapkan harga stop tetap saat masuk, bot terus memantau apakah jumlah kerugian terealisasi hari ini dan kerugian mengambang saat ini mencapai batas kerugian yang dikonfigurasi.', 's09.check.label': 'Cara Kerjanya', 's09.check': 'Setiap tick cron, setelah <strong>semua N entri terisi</strong>, bot menghitung:', 's09.check2': 'Jika <code>total_loss_pct ≥ loss_limit</code> → tutup semua posisi terbuka segera dan batalkan order algo TP yang tertunda.', 's09.h1': 'Mengapa Berbasis Ekuitas (Bukan Harga)', 's09.why': 'Dengan DCA multi-entri, harga entri rata-rata berubah dengan setiap entri baru. Stop loss berbasis harga yang ditetapkan dari low lilin 5 menit entri #1 kehilangan relevansi ketika entri #3 dilakukan pada harga yang jauh lebih rendah. Batas kerugian berbasis ekuitas lebih bersih: mempertimbangkan semua entri dan kerugian yang sudah terealisasi hari ini.', 's09.h2': 'Yang Terjadi Saat Stop Terpicu', 's09.f1.name': 'Tutup Semua Posisi', 's09.f1.desc': 'Bot memanggil API <code>close-position</code> OKX untuk seluruh posisi terbuka. Order pasar dieksekusi pada harga saat ini.', 's09.f2.name': 'Batalkan Algo TP', 's09.f2.desc': 'Order algo TP OKX yang tertunda dibatalkan melalui API pembatalan order algo.', 's09.f3.name': 'Perbarui Pelacak Kerugian Harian', 's09.f3.desc': 'Kerugian terealisasi dari posisi ini ditambahkan ke penghitung kerugian harian di KV store. Status posisi dihapus.', 's09.f4.name': 'Entri Ulang Diizinkan pada Sinyal Berikutnya', 's09.f4.desc': 'Tanpa periode tunggu. Saat sinyal S/R valid berikutnya muncul, bot dapat memasuki perdagangan baru segera (selama gerbang kerugian harian belum terpicu).', 's09.h3': 'Aturan Waktu Utama', 's09.timing': 'Pemeriksaan stop <strong>hanya aktif setelah semua N entri terisi</strong>. Memeriksa batas kerugian sebelum posisi sepenuhnya dibangun terlalu dini.', 's09.note.label': 'Tidak Ada Periode Tunggu Entri Ulang', 's09.note': 'Setelah stop terpicu, bot segera melanjutkan pencarian sinyal baru. Stop berbasis ekuitas adalah alat perlindungan posisi, bukan jeda trading.',
       's10.title': 'Batas Kerugian Harian', 's11.title': 'Siklus Perdagangan Lengkap (Contoh)', 's12.title': 'Parameter Default', 's13.title': 'Mode Demo'
     }
