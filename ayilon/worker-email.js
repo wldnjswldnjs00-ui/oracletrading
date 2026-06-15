@@ -799,7 +799,7 @@ async function runBotForUser(env, email, cfg) {
     // ── Entry signal (strategy routing) ──────────────────────
     let signal = null;
     switch (strategy) {
-      case 'rsi_dca':      signal = detectSignalRSIDCA(candles1H, levels);                         break;
+      case 'rsi_dca':      signal = detectSignalRSIDCA(candles1H, levels, currentPrice);             break;
       case 'ma_support':   signal = detectSignalMASupport(candles1H, currentPrice);                 break;
       case 'ma_crossover': signal = detectSignalMACrossover(c5, candles1H, currentPrice);           break;
       case 'bb_reversion': signal = detectSignalBBReversion(c5, currentPrice, trend);               break;
@@ -879,8 +879,10 @@ async function runBotForUser(env, email, cfg) {
       const weights = Array.from({ length: nEntries }, (_, i) => i === 0 ? 1 : 2);
       const totalW  = weights.reduce((a, b) => a + b, 0);
       entryVal = totalVal * (weights[entryNum - 1] / totalW);
+      entryVal = Math.min(entryVal, equity * 0.25);
     } else {
       entryVal = totalVal / nEntries;
+      entryVal = Math.min(entryVal, equity * 0.25);
     }
     const szContracts = Math.floor(entryVal / (currentPrice * ctVal));
     if (szContracts < 1) {
@@ -917,12 +919,10 @@ async function runBotForUser(env, email, cfg) {
       ordType: 'market', sz, lever: String(safeLeverage)
     }, demoMode);
 
-    // Release lock regardless of order outcome
-    await env.USERS_KV.delete(lockKey).catch(() => {});
-
     if (orderRes?.data?.[0]?.ordId) {
       const { price: fillPrice, filledSz, confirmed: fillConfirmed } = await queryFillPrice(apiKey, apiSecret, apiPassphrase, tradingPair, orderRes.data[0].ordId, currentPrice, szContracts, demoMode);
       if (!fillConfirmed) {
+        await env.USERS_KV.delete(lockKey).catch(() => {});
         await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
           instId: tradingPair, mgnMode: 'cross',
           posSide: signal.type === 'long' ? 'long' : 'short'
@@ -932,6 +932,7 @@ async function runBotForUser(env, email, cfg) {
       }
       // Partial fill guard: if less than 90% filled, don't track — state mismatch risk
       if (filledSz < szContracts * 0.90) {
+        await env.USERS_KV.delete(lockKey).catch(() => {});
         await botLog(env, email, `Partial fill: ${filledSz}/${szContracts} contracts — skipping state update`);
         return;
       }
@@ -964,6 +965,7 @@ async function runBotForUser(env, email, cfg) {
       ps[tradingPair] = state;
       try {
         await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
+        await env.USERS_KV.delete(lockKey).catch(() => {}); // release lock only after state saved
       } catch(kvErr) {
         // Fix: if KV write fails, cancel TP algo AND close the position
         // to prevent an orphaned position with no protection
@@ -998,6 +1000,7 @@ async function runBotForUser(env, email, cfg) {
 async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demo, ps) {
   const state = ps[pair];
   if (!state?.direction) return;
+  if (!state.entries?.length) return;
 
   // ── TP check (software backup to native TP algo) ──────────
   if (state.takeProfit && openPos.length > 0 && !state.halfClosed) {
@@ -1160,15 +1163,15 @@ function calcADX(candles, period = 14) {
 // STRATEGY SIGNAL FUNCTIONS
 // ════════════════════════════════════════════════════════════
 
-function detectSignalRSIDCA(candles1H, levels) {
+function detectSignalRSIDCA(candles1H, levels, currentPrice) {
   const rsi = calcRSI(candles1H, 14);
   if (!rsi || rsi > 30) return null;
-  const currentPrice = parseFloat(candles1H[0][4]);
+  const px = currentPrice || parseFloat(candles1H[0][4]);
   const swingLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
-  const slDist = (currentPrice - swingLow) / currentPrice;
+  const slDist = (px - swingLow) / px;
   if (slDist < 0.01 || slDist > 0.10) return null;
   const support = levels.supports[0];
-  return { type: 'long', level: support?.price || currentPrice, grade: 'A', stopLoss: swingLow, strategy: 'rsi_dca' };
+  return { type: 'long', level: support?.price || px, grade: 'A', stopLoss: swingLow, strategy: 'rsi_dca' };
 }
 
 function detectSignalMASupport(candles1H, currentPrice) {
@@ -1185,10 +1188,10 @@ function detectSignalMASupport(candles1H, currentPrice) {
 }
 
 function detectSignalMACrossover(candles5m, candles1H, currentPrice) {
-  const closes = candles1H.map(c => parseFloat(c[4]));
+  const closes = candles1H.map(c => parseFloat(c[4])).reverse(); // oldest-first for EMA
   if (closes.length < 36) return null;
   const ema10c = _ema(closes, 10), ema34c = _ema(closes, 34);
-  const ema10p = _ema(closes.slice(1), 10), ema34p = _ema(closes.slice(1), 34);
+  const ema10p = _ema(closes.slice(0, closes.length - 1), 10), ema34p = _ema(closes.slice(0, closes.length - 1), 34);
   if (!ema10c || !ema34c || !ema10p || !ema34p) return null;
   const rsi = calcRSI(candles1H, 14);
   if (!rsi) return null;
