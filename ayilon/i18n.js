@@ -110,6 +110,9 @@
       'strat.f4.desc': 'Detects choppy, low-structure phases and pauses trading automatically. Prevents the repeated stop-losses that destroy most bots during consolidation. Trades only when structure is clear.',
       'strat.risk.title': 'Obsessive risk management — capital protection first.',
       'strat.risk.desc':  'Every position is monitored in real time. Fixed fractional position sizing, dynamic stop-loss adjustment, and circuit breakers that automatically pause trading during extreme market conditions — because protecting your capital always comes before making profit.',
+      'strat.chart.entrylogic': 'ENTRY LOGIC',
+      'strat.chart.resistance': 'RESISTANCE',
+      'strat.chart.support':    'SUPPORT',
 
       /* ── INDEX: PRICING ── */
       'price.tag':         'Pricing',
@@ -509,6 +512,9 @@
       'strat.f4.desc': '불규칙하고 구조가 없는 국면을 감지하여 자동으로 거래를 일시 중지합니다. 구조가 명확할 때만 거래합니다.',
       'strat.risk.title': '철저한 리스크 관리 — 자본 보호가 최우선.',
       'strat.risk.desc':  '모든 포지션을 실시간 모니터링합니다. 고정비율 포지션 사이징, 동적 스탑로스 조정, 극단적 시장 상황에서 자동 일시 중지 — 수익보다 자본 보호가 먼저입니다.',
+      'strat.chart.entrylogic': '진입 로직',
+      'strat.chart.resistance': '저항',
+      'strat.chart.support':    '지지',
 
       'price.tag':         '요금제',
       'price.title':       '단순하고 투명한 요금',
@@ -895,6 +901,9 @@
       'strat.f4.desc': '不規則で構造のないフェーズを検出し、自動的に取引を一時停止します。構造が明確な時のみ取引します。',
       'strat.risk.title': '徹底したリスク管理 — 資本保護が最優先。',
       'strat.risk.desc':  'すべてのポジションをリアルタイムで監視。固定比率ポジションサイジング、動的ストップロス調整、極端な市場状況での自動一時停止。',
+      'strat.chart.entrylogic': 'エントリーロジック',
+      'strat.chart.resistance': 'レジスタンス',
+      'strat.chart.support':    'サポート',
 
       'price.tag':         '料金',
       'price.title':       'シンプルで透明な料金',
@@ -1281,6 +1290,9 @@
       'strat.f4.desc': '检测混乱、低结构阶段并自动暂停交易。只在结构清晰时交易。',
       'strat.risk.title': '严格的风险管理 — 资本保护优先。',
       'strat.risk.desc':  '实时监控每个仓位。固定比例仓位管理、动态止损调整、极端市场条件下自动暂停 — 保护资本始终优先于盈利。',
+      'strat.chart.entrylogic': '进场逻辑',
+      'strat.chart.resistance': '阻力位',
+      'strat.chart.support':    '支撑位',
 
       'price.tag':         '定价',
       'price.title':       '简单透明的定价',
@@ -1666,6 +1678,9 @@
       'strat.f4.desc': 'Phát hiện các giai đoạn không có cấu trúc, biến động thấp và tự động tạm dừng giao dịch. Ngăn các stop-loss liên tiếp phá hủy hầu hết bot trong tích lũy. Chỉ giao dịch khi cấu trúc rõ ràng.',
       'strat.risk.title': 'Quản lý rủi ro tuyệt đối — bảo vệ vốn là ưu tiên hàng đầu.',
       'strat.risk.desc':  'Mỗi vị thế được theo dõi theo thời gian thực. Định cỡ vị thế cố định theo phần trăm, điều chỉnh stop-loss động và các cầu dao tự động tạm dừng giao dịch trong điều kiện thị trường cực đoan — vì bảo vệ vốn luôn đến trước lợi nhuận.',
+      'strat.chart.entrylogic': 'LOGIC VÀO LỆNH',
+      'strat.chart.resistance': 'KHÁNG CỰ',
+      'strat.chart.support':    'HỖ TRỢ',
 
       'price.tag':         'Bảng giá',
       'price.title':       'Giá cả đơn giản, minh bạch',
@@ -2052,6 +2067,9 @@
       'strat.f4.desc': 'Определяет хаотичные фазы без структуры и автоматически приостанавливает торговлю. Предотвращает повторные стоп-лоссы, которые уничтожают большинство ботов при консолидации. Торгует только при чёткой структуре.',
       'strat.risk.title': 'Фанатичное управление рисками — защита капитала прежде всего.',
       'strat.risk.desc':  'Каждая позиция отслеживается в реальном времени. Фиксированное дробное определение размера позиции, динамическая корректировка стоп-лосса и автоматические выключатели, приостанавливающие торговлю в экстремальных рыночных условиях — потому что защита вашего капитала всегда важнее прибыли.',
+      'strat.chart.entrylogic': 'ЛОГИКА ВХОДА',
+      'strat.chart.resistance': 'СОПРОТИВЛЕНИЕ',
+      'strat.chart.support':    'ПОДДЕРЖКА',
 
       'price.tag':         'Тарифы',
       'price.title':       'Простые и прозрачные цены',
@@ -2437,6 +2455,9 @@
       'strat.f4.desc': 'Karmaşık, düşük yapılı aşamaları tespit eder ve işlemi otomatik olarak duraklatır. Konsolidasyon sırasında çoğu botu mahveden tekrarlayan stop-loss\'ları önler. Yalnızca yapı net olduğunda işlem yapar.',
       'strat.risk.title': 'Takıntılı risk yönetimi — sermaye koruması her şeyden önce.',
       'strat.risk.desc':  'Her pozisyon gerçek zamanlı olarak izlenir. Sabit fraksiyonel pozisyon boyutlandırma, dinamik stop-loss ayarlaması ve aşırı piyasa koşullarında işlemi otomatik olarak durduran devre kesiciler — çünkü sermayeni korumak her zaman kâr etmekten önce gelir.',
+      'strat.chart.entrylogic': 'GİRİŞ LOJİĞİ',
+      'strat.chart.resistance': 'DİRENÇ',
+      'strat.chart.support':    'DESTEK',
 
       'price.tag':         'Fiyatlandırma',
       'price.title':       'Basit ve şeffaf fiyatlandırma',
@@ -2823,6 +2844,9 @@
       'strat.f4.desc': 'Detecta fases caóticas de baja estructura y pausa el trading automáticamente. Evita los stop-losses repetidos que destruyen la mayoría de bots durante la consolidación. Solo opera cuando la estructura es clara.',
       'strat.risk.title': 'Gestión de riesgo obsesiva — protección del capital primero.',
       'strat.risk.desc':  'Cada posición se monitorea en tiempo real. Dimensionamiento de posición fraccionario fijo, ajuste dinámico del stop-loss y disyuntores que pausan automáticamente el trading en condiciones de mercado extremas — porque proteger tu capital siempre va antes que obtener ganancias.',
+      'strat.chart.entrylogic': 'LÓGICA DE ENTRADA',
+      'strat.chart.resistance': 'RESISTENCIA',
+      'strat.chart.support':    'SOPORTE',
 
       'price.tag':         'Precios',
       'price.title':       'Precios simples y transparentes',
@@ -3209,6 +3233,9 @@
       'strat.f4.desc': 'Detecta fases caóticas de baixa estrutura e pausa o trading automaticamente. Previne os stop-losses repetidos que destroem a maioria dos bots durante a consolidação. Opera apenas quando a estrutura é clara.',
       'strat.risk.title': 'Gestão de risco obsessiva — proteção do capital em primeiro lugar.',
       'strat.risk.desc':  'Cada posição é monitorada em tempo real. Dimensionamento de posição fracionário fixo, ajuste dinâmico do stop-loss e disjuntores que pausam automaticamente o trading em condições de mercado extremas — porque proteger seu capital sempre vem antes de obter lucro.',
+      'strat.chart.entrylogic': 'LÓGICA DE ENTRADA',
+      'strat.chart.resistance': 'RESISTÊNCIA',
+      'strat.chart.support':    'SUPORTE',
 
       'price.tag':         'Preços',
       'price.title':       'Preços simples e transparentes',
@@ -3595,6 +3622,9 @@
       'strat.f4.desc': 'Mendeteksi fase choppy berstruktur rendah dan menjeda trading secara otomatis. Mencegah stop-loss berulang yang menghancurkan sebagian besar bot selama konsolidasi. Hanya berdagang ketika struktur jelas.',
       'strat.risk.title': 'Manajemen risiko yang obsesif — perlindungan modal terlebih dahulu.',
       'strat.risk.desc':  'Setiap posisi dipantau secara real-time. Ukuran posisi fraksional tetap, penyesuaian stop-loss dinamis, dan pemutus sirkuit yang secara otomatis menjeda trading selama kondisi pasar ekstrem — karena melindungi modal Anda selalu lebih penting dari menghasilkan keuntungan.',
+      'strat.chart.entrylogic': 'LOGIKA MASUK',
+      'strat.chart.resistance': 'RESISTENSI',
+      'strat.chart.support':    'SUPPORT',
 
       'price.tag':         'Harga',
       'price.title':       'Harga yang sederhana dan transparan',
