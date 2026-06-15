@@ -309,8 +309,12 @@ async function handleVerification(request, env) {
 
 // ── SEND CONFIRMATION EMAIL ──────────────────────────────────
 async function handleConfirmation(request, env) {
-  const { email, plan, billing, amount } = await request.json();
-  if (!email || !plan) return json({ error: 'Missing fields' }, 400);
+  const body = await request.json();
+  const session = await requireSession(body, env);
+  if (!session) return json({ error: 'unauthorized' }, 401);
+  const { plan, billing, amount } = body;
+  const email = session.email;
+  if (!plan) return json({ error: 'Missing fields' }, 400);
   const billingLabel = billing === 'annual' ? 'Annual' : 'Monthly';
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -336,7 +340,7 @@ function corsResponse(body, status) {
     status,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': ALLOWED_ORIGINS[0],
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type'
     }
@@ -884,7 +888,7 @@ async function runBotForUser(env, email, cfg) {
       const storedSL   = state.stopLoss || signal.stopLoss;
       const totalZone  = Math.abs(firstEntry - storedSL);
       if (totalZone > 0) {
-        const gap = totalZone / parseInt(numEntries);
+        const gap = totalZone / Math.max(parseInt(numEntries) - 1, 1);
         const expectedPx = signal.type === 'long'
           ? firstEntry - gap * (entryNum - 1)
           : firstEntry + gap * (entryNum - 1);
@@ -1005,8 +1009,8 @@ async function runBotForUser(env, email, cfg) {
       state.slAlgoId = null;
       if (useTP) {
         const safetyTpPx = signal.type === 'long'
-          ? (tp * 1.03).toFixed(2)
-          : (tp * 0.97).toFixed(2);
+          ? (tp * 1.003).toFixed(2)
+          : (tp * 0.997).toFixed(2);
         const tpAlgoRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order-algo', {
           instId: tradingPair, tdMode: 'cross',
           side:    signal.type === 'long' ? 'sell' : 'buy',
@@ -1075,12 +1079,16 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
         const halfContracts = Math.max(1, Math.floor(totalSz / 2));
         const avgEntry      = state.entries.reduce((sum, e) => sum + e.price * parseInt(e.sz), 0) / totalSz;
 
-        await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
+        const tpCloseRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
           instId: pair, tdMode: 'cross',
           side:    state.direction === 'long' ? 'sell' : 'buy',
           posSide: state.direction === 'long' ? 'long' : 'short',
           ordType: 'market', sz: String(halfContracts)
         }, demo);
+        if (!tpCloseRes?.data?.[0]?.ordId) {
+          await botLog(env, email, `TP close FAILED [${tpCloseRes?.code}]: ${tpCloseRes?.msg} — algos preserved`);
+          return;
+        }
 
         if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
         if (state.slAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.slAlgoId, demo);
@@ -1178,19 +1186,29 @@ function calcBB(candles, period = 20, mult = 2) {
 function calcMACD(candles, fast = 12, slow = 26, sig = 9) {
   const closes = candles.map(c => parseFloat(c[4])).reverse(); // oldest first
   if (closes.length < slow + sig + 2) return null;
+
+  // Build MACD line in O(N) with running EMAs
+  const kF = 2 / (fast + 1), kS = 2 / (slow + 1);
+  let eF = 0, eS = 0;
   const macdArr = [];
-  for (let i = slow - 1; i < closes.length; i++) {
-    const f = _ema(closes.slice(0, i + 1), fast);
-    const s = _ema(closes.slice(0, i + 1), slow);
-    if (f && s) macdArr.push(f - s);
+  for (let i = 0; i < closes.length; i++) {
+    eF = i < fast ? (eF * i + closes[i]) / (i + 1) : closes[i] * kF + eF * (1 - kF);
+    eS = i < slow ? (eS * i + closes[i]) / (i + 1) : closes[i] * kS + eS * (1 - kS);
+    if (i >= slow - 1) macdArr.push(eF - eS);
   }
   if (macdArr.length < sig + 2) return null;
-  const sigLine = _ema(macdArr, sig);
-  const prevSigLine = _ema(macdArr.slice(0, macdArr.length - 1), sig);
-  if (!sigLine || !prevSigLine) return null;
+
+  // Signal line: single forward pass — prevSigEMA is the exact prior bar value
+  const kSig = 2 / (sig + 1);
+  let sigEMA = macdArr.slice(0, sig).reduce((s, v) => s + v, 0) / sig;
+  let prevSigEMA = sigEMA;
+  for (let i = sig; i < macdArr.length; i++) {
+    prevSigEMA = sigEMA;
+    sigEMA = macdArr[i] * kSig + sigEMA * (1 - kSig);
+  }
   return {
-    histogram:     macdArr[macdArr.length - 1] - sigLine,
-    prevHistogram: macdArr[macdArr.length - 2] - prevSigLine
+    histogram:     macdArr[macdArr.length - 1] - sigEMA,
+    prevHistogram: macdArr[macdArr.length - 2] - prevSigEMA
   };
 }
 
@@ -1206,21 +1224,35 @@ function calcATR(candles, period = 14) {
 }
 
 function calcADX(candles, period = 14) {
-  if (candles.length < period * 2) return null;
-  const atr = calcATR(candles, period);
-  if (!atr || atr === 0) return null;
-  let plusDM = 0, minusDM = 0;
-  for (let i = 0; i < period; i++) {
-    const hi = parseFloat(candles[i][2]), prevHi = parseFloat(candles[i + 1][2]);
-    const lo = parseFloat(candles[i][3]), prevLo = parseFloat(candles[i + 1][3]);
-    const up = hi - prevHi, dn = prevLo - lo;
-    if (up > dn && up > 0) plusDM += up;
-    if (dn > up && dn > 0) minusDM += dn;
+  if (candles.length < period * 2 + 1) return null;
+  const c = candles.slice().reverse(); // oldest-first
+  const wk = 1 / period; // Wilder smoothing
+
+  let smTR = 0, smPDM = 0, smNDM = 0;
+  for (let i = 1; i <= period; i++) {
+    const hi = parseFloat(c[i][2]), lo = parseFloat(c[i][3]), pc = parseFloat(c[i-1][4]);
+    smTR  += Math.max(hi - lo, Math.abs(hi - pc), Math.abs(lo - pc));
+    const up = hi - parseFloat(c[i-1][2]), dn = parseFloat(c[i-1][3]) - lo;
+    smPDM += (up > dn && up > 0) ? up : 0;
+    smNDM += (dn > up && dn > 0) ? dn : 0;
   }
-  const plusDI = plusDM / (atr * period) * 100;
-  const minusDI = minusDM / (atr * period) * 100;
-  const dx = (plusDI + minusDI) > 0 ? Math.abs(plusDI - minusDI) / (plusDI + minusDI) * 100 : 0;
-  return { adx: dx, plusDI, minusDI };
+  let pDI = smTR > 0 ? 100 * smPDM / smTR : 0;
+  let nDI = smTR > 0 ? 100 * smNDM / smTR : 0;
+  let adx  = (pDI + nDI) > 0 ? Math.abs(pDI - nDI) / (pDI + nDI) * 100 : 0;
+
+  for (let i = period + 1; i < c.length; i++) {
+    const hi = parseFloat(c[i][2]), lo = parseFloat(c[i][3]), pc = parseFloat(c[i-1][4]);
+    const tr = Math.max(hi - lo, Math.abs(hi - pc), Math.abs(lo - pc));
+    const up = hi - parseFloat(c[i-1][2]), dn = parseFloat(c[i-1][3]) - lo;
+    smTR  = smTR  * (1 - wk) + tr;
+    smPDM = smPDM * (1 - wk) + ((up > dn && up > 0) ? up : 0);
+    smNDM = smNDM * (1 - wk) + ((dn > up && dn > 0) ? dn : 0);
+    pDI = smTR > 0 ? 100 * smPDM / smTR : 0;
+    nDI = smTR > 0 ? 100 * smNDM / smTR : 0;
+    const dx = (pDI + nDI) > 0 ? Math.abs(pDI - nDI) / (pDI + nDI) * 100 : 0;
+    adx = adx * (1 - wk) + dx * wk;
+  }
+  return { adx, plusDI: pDI, minusDI: nDI };
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1261,13 +1293,13 @@ function detectSignalMACrossover(candles5m, candles1H, currentPrice) {
   if (!rsi) return null;
   const lows5m  = candles5m.slice(0, 4).map(c => parseFloat(c[3]));
   const highs5m = candles5m.slice(0, 4).map(c => parseFloat(c[2]));
-  if (ema10c > ema34c && ema10p <= ema34p && rsi >= 65) {
+  if (ema10c > ema34c && ema10p <= ema34p && rsi >= 50 && rsi < 70) {
     const sl = Math.min(...lows5m);
     const d = (currentPrice - sl) / currentPrice;
     if (d < 0.005 || d > 0.10) return null;
     return { type: 'long', level: ema10c, grade: 'A', stopLoss: sl, strategy: 'ma_crossover' };
   }
-  if (ema10c < ema34c && ema10p >= ema34p && rsi <= 35) {
+  if (ema10c < ema34c && ema10p >= ema34p && rsi <= 50 && rsi > 30) {
     const sl = Math.max(...highs5m);
     const d = (sl - currentPrice) / currentPrice;
     if (d < 0.005 || d > 0.10) return null;
@@ -1408,6 +1440,7 @@ function detectTrend(candles, currentPrice) {
   const closes5  = candles.slice(5, 60).map(c => parseFloat(c[4])).reverse();
   const ema20    = calcEMA(closes, 20);
   const ema50    = calcEMA(closes, 50);
+  if (!ema20 || !ema50) return { dir: 'neutral', strong: false };
   const ema20_5  = closes5.length >= 20 ? calcEMA(closes5, 20) : ema20;
 
   const slope  = Math.abs(ema20 - ema20_5) / (ema20_5 || 1);
@@ -1423,7 +1456,7 @@ function detectTrend(candles, currentPrice) {
 }
 
 function calcEMA(closes, period) {
-  if (closes.length < period) return closes[closes.length - 1];
+  if (!closes.length || closes.length < period) return null;
   const k = 2 / (period + 1);
   let ema = closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
   for (let i = period; i < closes.length; i++) {
