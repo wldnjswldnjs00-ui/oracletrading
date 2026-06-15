@@ -74,10 +74,10 @@ async function handleCheckUsername(request, env) {
 // ── REGISTER USER ────────────────────────────────────────────
 async function handleRegisterUser(request, env) {
   const { email, username, name, password, code } = await request.json();
-  if (!email || !username) return json({ success: false, error: 'missing_fields' }, 400);
+  if (!email || !username || !code) return json({ success: false, error: 'missing_fields' }, 400);
 
-  // Verify email code server-side (fix: code was previously returned in HTTP response)
-  if (env.USERS_KV && code) {
+  // Verify email code server-side — always required
+  if (env.USERS_KV) {
     const storedCode = await env.USERS_KV.get('verify:' + email.toLowerCase());
     if (!storedCode || storedCode !== String(code)) {
       return json({ success: false, error: 'invalid_code' });
@@ -135,15 +135,22 @@ async function handleCreatePayment(request, env) {
   const { email, plan, billing, baseAmount } = await request.json();
   if (!email || !plan || !baseAmount) return json({ error: 'Missing fields' }, 400);
 
-  let n = 1;
+  let uniqueAmount, key;
   if (env.USERS_KV) {
-    const stored = await env.USERS_KV.get('payment:counter');
-    n = stored ? (parseInt(stored) % 9999) + 1 : 1;
-    await env.USERS_KV.put('payment:counter', String(n));
+    let conflict = true, attempts = 0;
+    while (conflict && attempts < 20) {
+      const n = Math.floor(Math.random() * 9999) + 1;
+      uniqueAmount = (parseFloat(baseAmount) + n / 10000).toFixed(4);
+      key = 'pending:' + uniqueAmount;
+      conflict = await env.USERS_KV.get(key);
+      attempts++;
+    }
+    if (conflict) return json({ error: 'Payment service busy, please try again' }, 503);
+  } else {
+    const n = Math.floor(Math.random() * 9999) + 1;
+    uniqueAmount = (parseFloat(baseAmount) + n / 10000).toFixed(4);
+    key = 'pending:' + uniqueAmount;
   }
-
-  const uniqueAmount = (parseFloat(baseAmount) + n / 10000).toFixed(4);
-  const key = 'pending:' + uniqueAmount;
 
   if (env.USERS_KV) {
     await env.USERS_KV.put(key, JSON.stringify({
@@ -184,7 +191,7 @@ async function handleVerifyPayment(request, env) {
     const tx = txs.find(t => t.transaction_id === txid);
     if (!tx) return json({ verified: false, error: 'Transaction not found. It may not be confirmed yet — please wait 1-3 minutes and try again.' });
 
-    const received = parseInt(tx.value) / 1_000_000;
+    const received = Number(tx.value) / 1_000_000;
     const expected = parseFloat(uniqueAmount);
 
     if (Math.abs(received - expected) > 0.00005) {
@@ -212,7 +219,7 @@ async function cronCheckPayments(env) {
 
     for (const tx of (data.data || [])) {
       if (tx.to !== WALLET) continue;
-      const amount = (parseInt(tx.value) / 1_000_000).toFixed(4);
+      const amount = (Number(tx.value) / 1_000_000).toFixed(4);
       const pending = await env.USERS_KV.get('pending:' + amount, { type: 'json' });
       if (pending && !pending.confirmed) {
         await activateSubscription(env, amount, tx.transaction_id);
@@ -258,7 +265,7 @@ async function activateSubscription(env, uniqueAmount, txHash) {
 // ── SEND VERIFICATION EMAIL ──────────────────────────────────
 async function handleVerification(request, env) {
   const { email } = await request.json();
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return json({ error: 'Invalid email' }, 400);
   }
 
@@ -488,6 +495,18 @@ async function handleSaveBotSettings(request, env) {
   // Preserve existing clientToken or generate a new one on first save
   const existing = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
   const clientToken = existing?.clientToken || crypto.randomUUID();
+
+  // Sanitize numeric config fields — prevent invalid/extreme values reaching runBotForUser
+  const VALID_STRATS = ['sr_bounce','rsi_dca','ma_support','ma_crossover','bb_reversion','breakout','ma_ribbon','macd_div','funding_rate','atr_trend'];
+  const VALID_PAIRS  = ['BTC-USDT-SWAP','ETH-USDT-SWAP'];
+  if (body.leverage     !== undefined) body.leverage     = Math.min(Math.max(parseInt(body.leverage)       || 20,   1), 125);
+  if (body.posSize      !== undefined) body.posSize      = Math.min(Math.max(parseFloat(body.posSize)      || 40,   1), 100);
+  if (body.riskPerTrade !== undefined) body.riskPerTrade = Math.min(Math.max(parseFloat(body.riskPerTrade) ||  2, 0.1),  10);
+  if (body.numEntries   !== undefined) body.numEntries   = Math.min(Math.max(parseInt(body.numEntries)     ||  3,   1),  10);
+  if (body.lossLimit    !== undefined) body.lossLimit    = Math.min(Math.max(parseFloat(body.lossLimit)    ||  5, 0.1),  50);
+  if (body.mddLimit     !== undefined) body.mddLimit     = Math.min(Math.max(parseFloat(body.mddLimit)     || 30,   5), 100);
+  if (body.strategy    && !VALID_STRATS.includes(body.strategy))   body.strategy    = 'sr_bounce';
+  if (body.tradingPair && !VALID_PAIRS.includes(body.tradingPair)) body.tradingPair = 'BTC-USDT-SWAP';
 
   const { sessionToken: _, ...configBody } = body;
   await env.USERS_KV.put('bot:config:' + session.email, JSON.stringify({ ...configBody, clientToken, updatedAt: Date.now() }));
@@ -722,7 +741,7 @@ async function runBotForUser(env, email, cfg) {
       const dir = ps[tradingPair].direction;
       const matchingPos = openPos.find(p =>
         dir === 'long'  ? (p.posSide === 'long'  && parseFloat(p.pos) > 0) :
-        dir === 'short' ? (p.posSide === 'short' && parseFloat(p.pos) < 0) : false
+        dir === 'short' ? (p.posSide === 'short' && parseFloat(p.pos) !== 0) : false
       );
       if (!matchingPos) {
         if (ps[tradingPair].tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].tpAlgoId, demoMode);
