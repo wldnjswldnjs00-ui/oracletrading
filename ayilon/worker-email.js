@@ -470,7 +470,8 @@ async function handleSaveBotSettings(request, env) {
   const existing = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
   const clientToken = existing?.clientToken || crypto.randomUUID();
 
-  await env.USERS_KV.put('bot:config:' + session.email, JSON.stringify({ ...body, clientToken, updatedAt: Date.now() }));
+  const { sessionToken: _, ...configBody } = body;
+  await env.USERS_KV.put('bot:config:' + session.email, JSON.stringify({ ...configBody, clientToken, updatedAt: Date.now() }));
   return json({ ok: true, clientToken });
 }
 
@@ -604,9 +605,6 @@ async function runBotForUser(env, email, cfg) {
       lossLimitEnabled = true, lossLimit = 2,
       notifyEmail = true, notifyTelegram = false,
       telegramToken, telegramChatId, userEmail, plan = 'starter' } = cfg;
-    const srTimeframe = strategy === 'swing' ? '4H' : '1H';
-    const srTouch = 3;
-
     if (!apiKey || !apiSecret || !apiPassphrase) return;
     if (!['BTC-USDT-SWAP', 'ETH-USDT-SWAP'].includes(tradingPair)) return;
 
@@ -661,14 +659,17 @@ async function runBotForUser(env, email, cfg) {
     let ps = await env.USERS_KV.get('bot:position_state:' + email, { type: 'json' }) || {};
 
     // ── Stop loss / TP check ─────────────────────────────────
+    const hadPosition = !!ps[tradingPair]?.direction;
     await checkSL(env, email, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demoMode, ps);
+    // If loss-limit fired this tick and closed the position, skip new entries until next cron
+    if (hadPosition && !ps[tradingPair]?.direction) return;
 
     // ── Fetch all candles in parallel ─────────────────────────
     const [candles1H, candles4H, candlesD, c5] = await Promise.all([
       getCandles(tradingPair, '1H', 100),
       getCandles(tradingPair, '4H', 100),
       getCandles(tradingPair, '1D', 60),
-      getCandles(tradingPair, '5m', 20)
+      getCandles(tradingPair, '5m', 25)
     ]);
     if (candles1H.length < 20 && candles4H.length < 20) return;
     if (c5.length < 4) return;
