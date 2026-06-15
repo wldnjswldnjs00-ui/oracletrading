@@ -861,33 +861,33 @@ async function runBotForUser(env, email, cfg) {
       return;
     }
 
-    // ── Risk warning ──────────────────────────────────────────
-    const riskPct = parseFloat(riskPerTrade) / 100;
+    // ── Fixed Fractional position sizing ─────────────────────
+    const riskPct  = parseFloat(riskPerTrade) / 100;
     if (riskPct > 0.05 || safeLeverage > 20) {
       await botLog(env, email, `⚠️ Risk warning: riskPerTrade=${(riskPct*100).toFixed(1)}% lev=${safeLeverage}x`);
     }
+    const nEntries  = parseInt(numEntries);
+    const slDist    = Math.abs(currentPrice - signal.stopLoss);        // price distance to SL
+    const riskPerCt = slDist * ctVal;                                  // USD risk per contract if SL hit
+    let totalCts    = riskPerCt > 0 ? Math.floor((equity * riskPct) / riskPerCt) : 0;
+    const capCts    = Math.floor(equity * (posSize / 100) / (currentPrice * ctVal));
+    totalCts        = Math.max(nEntries, Math.min(totalCts, capCts));  // at least 1 per entry, capped by posSize
 
-    // ── Calculate size ────────────────────────────────────────
-    const totalVal = equity * (posSize / 100);
-    const nEntries = parseInt(numEntries);
-    let entryVal;
+    let szContracts;
     if (entrySizing === 'martingale' && entryNum > 1) {
-      entryVal = (totalVal / nEntries) * Math.pow(2, entryNum - 1);
-      entryVal = Math.min(entryVal, equity * 0.40);
-      // Fix: warn user when martingale multiplier is large
-      await botLog(env, email, `⚠️ MARTINGALE #${entryNum}: ${Math.pow(2, entryNum-1)}× size (${entryVal.toFixed(0)} USDT) — high risk`);
-    } else if (signal.type === 'short' && nEntries >= 2) {
+      const base = Math.max(1, Math.floor(totalCts / nEntries));
+      szContracts = base * Math.pow(2, entryNum - 1);
+      szContracts = Math.min(szContracts, Math.floor(equity * 0.40 / (currentPrice * ctVal)));
+      await botLog(env, email, `⚠️ MARTINGALE #${entryNum}: ${Math.pow(2, entryNum-1)}× size (${szContracts} cts) — high risk`);
+    } else if (entrySizing === 'weighted' && nEntries >= 2) {
       const weights = Array.from({ length: nEntries }, (_, i) => i === 0 ? 1 : 2);
       const totalW  = weights.reduce((a, b) => a + b, 0);
-      entryVal = totalVal * (weights[entryNum - 1] / totalW);
-      entryVal = Math.min(entryVal, equity * 0.25);
+      szContracts   = Math.max(1, Math.floor(totalCts * weights[entryNum - 1] / totalW));
     } else {
-      entryVal = totalVal / nEntries;
-      entryVal = Math.min(entryVal, equity * 0.25);
+      szContracts = Math.max(1, Math.floor(totalCts / nEntries));
     }
-    const szContracts = Math.floor(entryVal / (currentPrice * ctVal));
     if (szContracts < 1) {
-      await botLog(env, email, `Skip: position too small (${entryVal.toFixed(2)} USDT < 1 contract min)`);
+      await botLog(env, email, `Skip: position too small (< 1 contract): risk=${(riskPct*100).toFixed(1)}% SL-dist=${slDist.toFixed(2)}`);
       return;
     }
     const sz = String(szContracts);
@@ -1235,17 +1235,25 @@ function detectSignalBBReversion(candles5m, currentPrice, trend) {
 
 function detectSignalBreakout(candles1H, candles5m, currentPrice) {
   if (candles1H.length < 22 || candles5m.length < 22) return null;
-  const res20 = Math.max(...candles1H.slice(1, 21).map(c => parseFloat(c[2])));
+  const res20  = Math.max(...candles1H.slice(1, 21).map(c => parseFloat(c[2])));
+  const sup20  = Math.min(...candles1H.slice(1, 21).map(c => parseFloat(c[3])));
   const prev5m = candles5m[1]?.map(parseFloat);
   const cur5m  = candles5m[0]?.map(parseFloat);
   if (!prev5m || !cur5m) return null;
+  const avgVol = candles5m.slice(1, 21).map(c => parseFloat(c[5])).reduce((s, v) => s + v, 0) / 20;
+  if (parseFloat(cur5m[5]) < avgVol * 2) return null;
+
   if (prev5m[4] <= res20 && currentPrice > res20 * 1.001) {
-    const avgVol = candles5m.slice(1, 21).map(c => parseFloat(c[5])).reduce((s, v) => s + v, 0) / 20;
-    if (parseFloat(cur5m[5]) < avgVol * 2) return null;
     const sl = prev5m[3];
     const d = (currentPrice - sl) / currentPrice;
     if (d < 0.003 || d > 0.08) return null;
     return { type: 'long', level: res20, grade: 'S', stopLoss: sl, strategy: 'breakout' };
+  }
+  if (prev5m[4] >= sup20 && currentPrice < sup20 * 0.999) {
+    const sl = prev5m[2];  // prev candle high is SL for short breakdown
+    const d = (sl - currentPrice) / currentPrice;
+    if (d < 0.003 || d > 0.08) return null;
+    return { type: 'short', level: sup20, grade: 'S', stopLoss: sl, strategy: 'breakout' };
   }
   return null;
 }
@@ -1305,9 +1313,10 @@ function detectSignalATRTrend(candles1H, candles5m, currentPrice) {
   const adxData = calcADX(candles1H, 14);
   if (!adxData || adxData.adx < 25) return null;
   const closes = candles1H.map(c => parseFloat(c[4]));
-  const sma50 = _sma(closes, 50);
-  const atr = calcATR(candles1H, 14);
+  const sma50  = _sma(closes, 50);
+  const atr    = calcATR(candles1H, 14);
   if (!sma50 || !atr) return null;
+
   if (currentPrice > sma50 && adxData.plusDI > adxData.minusDI) {
     const recentHigh = Math.max(...candles1H.slice(0, 5).map(c => parseFloat(c[2])));
     const pullback = recentHigh - currentPrice;
@@ -1316,6 +1325,15 @@ function detectSignalATRTrend(candles1H, candles5m, currentPrice) {
     const d = (currentPrice - sl) / currentPrice;
     if (d < 0.005 || d > 0.12) return null;
     return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'atr_trend' };
+  }
+  if (currentPrice < sma50 && adxData.minusDI > adxData.plusDI) {
+    const recentLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
+    const bounce = currentPrice - recentLow;
+    if (bounce < atr * 0.5 || bounce > atr * 2.0) return null;
+    const sl = currentPrice + atr * 1.5;
+    const d = (sl - currentPrice) / currentPrice;
+    if (d < 0.005 || d > 0.12) return null;
+    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'atr_trend' };
   }
   return null;
 }
@@ -1596,10 +1614,15 @@ async function queryFillPrice(apiKey, secret, pass, pair, ordId, fallbackPx, req
 
 // ── OKX API ───────────────────────────────────────────────────
 async function getCandles(instId, bar, limit) {
-  try {
-    const res = await fetch(`${OKX_BASE}/api/v5/market/candles?instId=${instId}&bar=${bar}&limit=${limit}`);
-    return (await res.json()).data || [];
-  } catch { return []; }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(`${OKX_BASE}/api/v5/market/candles?instId=${instId}&bar=${bar}&limit=${limit}`);
+      const data = (await res.json()).data || [];
+      if (data.length > 0) return data;
+    } catch {}
+    if (attempt < 2) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+  }
+  return [];
 }
 
 async function okxGet(apiKey, secret, pass, path, demo = false) {
