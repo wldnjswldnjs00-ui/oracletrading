@@ -516,7 +516,7 @@
             <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 6px #22c55e;"></span>
             <span style="font-size:12px;font-weight:600;color:var(--white);letter-spacing:0.04em;">BTC/USDT</span>
           </div>
-          <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--gray-600);text-transform:uppercase;">ENTRY LOGIC</span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--gray-600);text-transform:uppercase;" data-i18n="strat.chart.entrylogic">ENTRY LOGIC</span>
         </div>
         <svg viewBox="0 0 760 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
           <rect width="760" height="210" fill="#0d0d0d"/>
@@ -524,14 +524,14 @@
           <line x1="10" y1="110" x2="748" y2="110" stroke="rgba(255,255,255,0.025)" stroke-width="1"/>
           <!-- R_main (upper resistance) orange strong -->
           <line x1="10" y1="48" x2="748" y2="48" stroke="#f97316" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
-          <text x="12" y="42" fill="#f97316" font-size="8" font-family="monospace" opacity="0.85" font-weight="600">RESISTANCE</text>
+          <text x="12" y="42" fill="#f97316" font-size="8" font-family="monospace" opacity="0.85" font-weight="600" data-i18n="strat.chart.resistance">RESISTANCE</text>
           <!-- R_mid (lower resistance) orange faint -->
           <line x1="10" y1="90" x2="748" y2="90" stroke="#f97316" stroke-width="1" stroke-dasharray="4,6" opacity="0.3"/>
           <!-- S_mid (upper support) green faint -->
           <line x1="10" y1="132" x2="748" y2="132" stroke="#22c55e" stroke-width="1" stroke-dasharray="4,6" opacity="0.3"/>
           <!-- S_main (lower support) green strong -->
           <line x1="10" y1="172" x2="748" y2="172" stroke="#22c55e" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
-          <text x="12" y="166" fill="#22c55e" font-size="8" font-family="monospace" opacity="0.85" font-weight="600">SUPPORT</text>
+          <text x="12" y="166" fill="#22c55e" font-size="8" font-family="monospace" opacity="0.85" font-weight="600" data-i18n="strat.chart.support">SUPPORT</text>
           <!-- white price line -->
           <polyline
             points="10,108 30,92 50,104 75,48 95,72 115,58 138,82 162,110 185,135 205,172 228,150 250,162 272,135 295,108 318,80 342,58 352,48 372,68 390,56 415,90 438,110 458,125 462,132 480,118 495,130 512,172 530,150 548,162 562,172 582,148 605,110 628,78 648,48 665,72 680,58 695,95 705,145 718,172 732,118 744,42 748,28"
@@ -611,7 +611,7 @@
           <li data-i18n="price.starter.f5">Real-time dashboard</li>
           <li data-i18n="price.starter.f6">Email notifications</li>
         </ul>
-        <a href="payment.html?plan=starter" class="btn-outline" data-i18n="price.cta">Get Started</a>
+        <a href="payment.html?plan=starter" class="btn-outline" data-i18n="price.cta" onclick="return planCta(event,'starter')">Get Started</a>
       </div>
 
       <!-- PRO (featured) -->
@@ -629,7 +629,7 @@
           <li data-i18n="price.pro.f6">Custom entry sizing: equal / weighted / martingale</li>
           <li data-i18n="price.pro.f7">Priority support</li>
         </ul>
-        <a href="payment.html?plan=pro" class="btn-primary" data-i18n="price.cta">Get Started</a>
+        <a href="payment.html?plan=pro" class="btn-primary" data-i18n="price.cta" onclick="return planCta(event,'pro')">Get Started</a>
       </div>
 
       <!-- ELITE -->
@@ -647,7 +647,7 @@
           <li data-i18n="price.elite.f6">Dedicated account manager</li>
           <li data-i18n="price.elite.f7">24/7 premium support</li>
         </ul>
-        <a href="payment.html?plan=elite" class="btn-outline" data-i18n="price.cta">Get Started</a>
+        <a href="payment.html?plan=elite" class="btn-outline" data-i18n="price.cta" onclick="return planCta(event,'elite')">Get Started</a>
       </div>
     </div>
 
@@ -936,6 +936,14 @@
       pro:     { monthly: 500, annual: 450, save: 10 },
       elite:   { monthly: 1000, annual: 850, save: 15 }
     };
+
+    function planCta(e, plan) {
+      if (localStorage.getItem('ayilon_logged_in') !== 'true') {
+        e.preventDefault();
+        location.href = 'signup.html';
+        return false;
+      }
+    }
 
     function setPeriod(period) {
       window.__currentPeriod = period;
