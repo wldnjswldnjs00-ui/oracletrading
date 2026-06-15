@@ -611,6 +611,7 @@ async function runBotForUser(env, email, cfg) {
     if (!['BTC-USDT-SWAP', 'ETH-USDT-SWAP'].includes(tradingPair)) return;
 
     const lossLimitNorm = parseFloat(lossLimit) > 1 ? parseFloat(lossLimit) / 100 : parseFloat(lossLimit) || 0.05;
+    const today = new Date().toDateString();
     // Fix: cap leverage at 50x regardless of user input
     const safeLeverage = Math.min(parseInt(leverage) || 20, 50);
 
@@ -618,7 +619,6 @@ async function runBotForUser(env, email, cfg) {
 
     // ── Daily loss check ──────────────────────────────────────
     if (lossLimitEnabled) {
-      const today = new Date().toDateString();
       const dl = await env.USERS_KV.get('bot:daily_loss:' + email + ':' + today, { type: 'json' }) || { pct: 0 };
       if (dl.pct >= lossLimitNorm) {
         cfg.running = false;
@@ -661,7 +661,7 @@ async function runBotForUser(env, email, cfg) {
     let ps = await env.USERS_KV.get('bot:position_state:' + email, { type: 'json' }) || {};
 
     // ── Stop loss / TP check ─────────────────────────────────
-    await checkSL(env, email, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, demoMode, ps);
+    await checkSL(env, email, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demoMode, ps);
 
     // ── Fetch all candles in parallel ─────────────────────────
     const [candles1H, candles4H, candlesD, c5] = await Promise.all([
@@ -704,14 +704,13 @@ async function runBotForUser(env, email, cfg) {
         dir === 'short' ? (p.posSide === 'short' && parseFloat(p.pos) < 0) : false
       );
       if (!matchingPos) {
-        if (ps[tradingPair].algoId)   await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].algoId, demoMode);
         if (ps[tradingPair].tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].tpAlgoId, demoMode);
         await botLog(env, email, `Sync: cleared ${tradingPair} state — position closed externally`);
         delete ps[tradingPair];
         await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
       }
     }
-    const state = ps[tradingPair] || { entries: [], stopLoss: null, direction: null, takeProfit: null };
+    const state = ps[tradingPair] || { entries: [], direction: null, takeProfit: null };
 
     // ── Trailing TP: 10% close at each subsequent S/R level ───
     if (state.halfClosed && state.lastTPLevel && openPos.length > 0) {
@@ -736,18 +735,12 @@ async function runBotForUser(env, email, cfg) {
           const newRemaining  = Math.max(0, prevRemaining - trailContracts);
           const newRemFrac    = newRemaining / totalSz;
 
-          if (state.algoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
           if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
-          state.stopLoss           = state.lastTPLevel;
           state.lastTPLevel        = nextLv.price;
           state.remainingContracts = newRemaining;
           state.remainingFrac      = newRemFrac;
           state.tpAlgoId           = null;
 
-          if (newRemaining > 0) {
-            const nAlgo = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.direction, state.stopLoss, String(newRemaining), demoMode);
-            state.algoId = nAlgo?.data?.[0]?.algoId ? String(nAlgo.data[0].algoId) : null;
-          }
           if (newRemaining <= 0) {
             delete ps[tradingPair];
             await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
@@ -755,7 +748,7 @@ async function runBotForUser(env, email, cfg) {
           } else {
             ps[tradingPair] = state;
             await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
-            await botLog(env, email, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL→${state.stopLoss.toFixed(2)} | Rem:${newRemaining}cts`);
+            await botLog(env, email, `TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | Rem:${newRemaining}cts`);
           }
         } else {
           await botLog(env, email, `Trail order FAILED @ ${nextLv.price.toFixed(2)}: ${trailRes?.msg || 'unknown'}`);
@@ -891,7 +884,15 @@ async function runBotForUser(env, email, cfg) {
     await env.USERS_KV.delete(lockKey).catch(() => {});
 
     if (orderRes?.data?.[0]?.ordId) {
-      const { price: fillPrice, filledSz } = await queryFillPrice(apiKey, apiSecret, apiPassphrase, tradingPair, orderRes.data[0].ordId, currentPrice, szContracts, demoMode);
+      const { price: fillPrice, filledSz, confirmed: fillConfirmed } = await queryFillPrice(apiKey, apiSecret, apiPassphrase, tradingPair, orderRes.data[0].ordId, currentPrice, szContracts, demoMode);
+      if (!fillConfirmed) {
+        await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
+          instId: tradingPair, mgnMode: 'cross',
+          posSide: signal.type === 'long' ? 'long' : 'short'
+        }, demoMode);
+        await botLog(env, email, `Fill unconfirmed — position closed for safety`);
+        return;
+      }
       // Partial fill guard: if less than 90% filled, don't track — state mismatch risk
       if (filledSz < szContracts * 0.90) {
         await botLog(env, email, `Partial fill: ${filledSz}/${szContracts} contracts — skipping state update`);
@@ -900,21 +901,10 @@ async function runBotForUser(env, email, cfg) {
       const actualSz = String(Math.floor(filledSz));
       state.entries.push({ price: fillPrice, sz: actualSz, time: Date.now(), entry: entryNum });
       state.direction = signal.type;
-      if (!state.stopLoss) state.stopLoss = signal.stopLoss;
       if (useTP) state.takeProfit = tp;
 
-      // Native SL algo: cancel old (if scale-in), place for full accumulated size
-      if (state.algoId)   await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
       if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
       const accumSz = String(state.entries.reduce((s, e) => s + parseInt(e.sz), 0));
-      const algoRes = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, signal.type, state.stopLoss, accumSz, demoMode);
-      state.algoId = algoRes?.data?.[0]?.algoId ? String(algoRes.data[0].algoId) : null;
-
-      // Fix: notify user if native SL placement failed (falls back to software SL)
-      if (!state.algoId) {
-        await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
-          `⚠️ Native SL placement FAILED for ${signal.type.toUpperCase()} @ ${fillPrice}. Software SL fallback active — monitor manually!`);
-      }
 
       // Fix: native TP safety algo at TP ± 3% — closes full position if price blows through TP
       // without the software poller catching it (e.g. rapid touch-and-reverse within 1 minute)
@@ -937,9 +927,8 @@ async function runBotForUser(env, email, cfg) {
       try {
         await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
       } catch(kvErr) {
-        // Fix: if KV write fails, cancel all algos AND close the position
-        // to prevent an orphaned position with no SL protection
-        if (state.algoId)   await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.algoId, demoMode);
+        // Fix: if KV write fails, cancel TP algo AND close the position
+        // to prevent an orphaned position with no protection
         if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
         await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
           instId: tradingPair, mgnMode: 'cross',
@@ -952,8 +941,8 @@ async function runBotForUser(env, email, cfg) {
       const tpStr    = useTP ? ` | TP:${tp.toFixed(2)}` : '';
       const gradeStr = signal.grade ? `[${signal.grade}급] ` : '';
       const trendStr = trend.dir !== 'neutral' ? ` | trend:${trend.dir}${trend.strong ? '' : '(w)'}` : '';
-      const slStr    = state.algoId ? `nSL:${state.stopLoss.toFixed(2)}` : `SL(sw):${state.stopLoss.toFixed(2)}`;
-      await botLog(env, email, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${fillPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | ${slStr}${tpStr}${trendStr} | sz:${sz}`);
+      const riskStr  = `risk:${(lossLimitNorm*100).toFixed(0)}%@${numEntries}x`;
+      await botLog(env, email, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${fillPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | ${riskStr}${tpStr}${trendStr} | sz:${sz}`);
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
         `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${fillPrice} USDT${tpStr}`);
     } else {
@@ -968,63 +957,57 @@ async function runBotForUser(env, email, cfg) {
 }
 
 // ── STOP LOSS / TP CHECK ──────────────────────────────────────
-async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitPct, demo = false, ps = null) {
-  if (!openPos.length) return;
-  if (ps === null) ps = await env.USERS_KV.get('bot:position_state:' + email, { type: 'json' }) || {};
+async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demo, ps) {
   const state = ps[pair];
-  if (!state?.stopLoss) return;
+  if (!state?.direction) return;
 
-  const tkRes = await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${pair}`);
-  const tk = await tkRes.json();
-  const price = parseFloat(tk?.data?.[0]?.last || '0');
-  if (!price) return;
+  // ── TP check (software backup to native TP algo) ──────────
+  if (state.takeProfit && openPos.length > 0 && !state.halfClosed) {
+    const tkRes = await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${pair}`);
+    const tk = await tkRes.json();
+    const price = parseFloat(tk?.data?.[0]?.last || '0');
+    if (price > 0) {
+      const tpHit = state.direction === 'long' ? price >= state.takeProfit : price <= state.takeProfit;
+      if (tpHit) {
+        const totalSz       = state.entries.reduce((sum, e) => sum + parseInt(e.sz), 0);
+        const halfContracts = Math.max(1, Math.floor(totalSz / 2));
+        const avgEntry      = state.entries.reduce((sum, e) => sum + e.price * parseInt(e.sz), 0) / totalSz;
 
-  const slHit = state.direction === 'long' ? price <= state.stopLoss : price >= state.stopLoss;
-  const tpHit = state.takeProfit
-    ? (state.direction === 'long' ? price >= state.takeProfit : price <= state.takeProfit)
-    : false;
+        await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
+          instId: pair, tdMode: 'cross',
+          side:    state.direction === 'long' ? 'sell' : 'buy',
+          posSide: state.direction === 'long' ? 'long' : 'short',
+          ordType: 'market', sz: String(halfContracts)
+        }, demo);
 
-  if (!slHit && !tpHit) return;
+        if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
+        const remContracts = Math.max(0, totalSz - halfContracts);
 
-  // ── TP hit: close 50%, move SL to break-even, enable trailing ──
-  if (tpHit && !state.halfClosed) {
-    const totalSz       = state.entries.reduce((sum, e) => sum + parseInt(e.sz), 0);
-    const halfContracts = Math.max(1, Math.floor(totalSz / 2));
-    const avgEntry      = state.entries.reduce((sum, e) => sum + e.price * parseInt(e.sz), 0) / totalSz;
-
-    await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
-      instId: pair, tdMode: 'cross',
-      side:    state.direction === 'long' ? 'sell' : 'buy',
-      posSide: state.direction === 'long' ? 'long' : 'short',
-      ordType: 'market', sz: String(halfContracts)
-    }, demo);
-
-    // Cancel both SL algo and TP safety algo, place new SL at break-even
-    if (state.algoId)   await cancelSLAlgo(apiKey, secret, pass, pair, state.algoId, demo);
-    if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
-    const remContracts = Math.max(0, totalSz - halfContracts);
-    const newAlgo = remContracts > 0
-      ? await placeSLAlgo(apiKey, secret, pass, pair, state.direction, avgEntry, String(remContracts), demo)
-      : null;
-
-    state.halfClosed         = true;
-    state.stopLoss           = avgEntry;
-    state.takeProfit         = null;
-    state.lastTPLevel        = price;
-    state.remainingContracts = remContracts;
-    state.remainingFrac      = remContracts > 0 ? remContracts / totalSz : 0;
-    state.algoId             = newAlgo?.data?.[0]?.algoId ? String(newAlgo.data[0].algoId) : null;
-    state.tpAlgoId           = null;
-    ps[pair] = state;
-    await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
-    const nSlLabel = state.algoId ? `nSL→BE` : `SL(sw)→BE`;
-    await botLog(env, email, `TP hit @ ${price} — 50% closed | ${nSlLabel} ${avgEntry.toFixed(2)} | trailing 10% active`);
-    return;
+        state.halfClosed         = true;
+        state.takeProfit         = null;
+        state.lastTPLevel        = price;
+        state.remainingContracts = remContracts;
+        state.remainingFrac      = remContracts > 0 ? remContracts / totalSz : 0;
+        state.tpAlgoId           = null;
+        ps[pair] = state;
+        await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
+        await botLog(env, email, `TP hit @ ${price} — 50% closed | trailing 10% active`);
+        return;
+      }
+    }
   }
 
-  // ── SL hit: cancel all algos, close full position ─────────
-  if (state.algoId)   await cancelSLAlgo(apiKey, secret, pass, pair, state.algoId, demo);
-  if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
+  // ── Loss-limit SL: activates only after all entries placed ─
+  if (!lossLimitEnabled || !openPos.length) return;
+  if ((state.entries?.length || 0) < parseInt(numEntries)) return;
+
+  const floatPnl     = openPos.reduce((s, p) => s + parseFloat(p.upl || '0'), 0);
+  const floatLossPct = floatPnl < 0 ? Math.abs(floatPnl) / equity : 0;
+  const dl           = await env.USERS_KV.get('bot:daily_loss:' + email + ':' + today, { type: 'json' }) || { pct: 0 };
+  const totalLossPct = (dl.pct || 0) + floatLossPct;
+
+  if (totalLossPct < lossLimitNorm) return;
+
   const closeRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/close-position', {
     instId: pair, mgnMode: 'cross',
     posSide: state.direction === 'long' ? 'long' : 'short'
@@ -1034,19 +1017,13 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
     return;
   }
 
-  // Fix: use realized P&L from position data for daily loss tracking
-  if (slHit && lossLimitEnabled) {
-    const today = new Date().toDateString();
-    const dl = await env.USERS_KV.get('bot:daily_loss:' + email + ':' + today, { type: 'json' }) || { pct: 0 };
-    const realizedLoss = openPos.reduce((s, p) => s + Math.max(0, -parseFloat(p.upl || '0')), 0);
-    dl.pct = (dl.pct || 0) + realizedLoss / equity;
-    await env.USERS_KV.put('bot:daily_loss:' + email + ':' + today, JSON.stringify(dl), { expirationTtl: 86400 });
-  }
+  if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
 
+  dl.pct = totalLossPct;
+  await env.USERS_KV.put('bot:daily_loss:' + email + ':' + today, JSON.stringify(dl), { expirationTtl: 86400 });
   delete ps[pair];
   await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
-  const reason = state.halfClosed ? `SL(break-even) hit @ ${price}` : `SL hit @ ${price}`;
-  await botLog(env, email, `${reason} — remaining position closed`);
+  await botLog(env, email, `Loss limit ${(totalLossPct*100).toFixed(2)}% reached (float: ${(floatLossPct*100).toFixed(2)}%) — position closed`);
 }
 
 // ── DAILY TREND FILTER (EMA20 / EMA50) ───────────────────────
@@ -1317,10 +1294,10 @@ async function queryFillPrice(apiKey, secret, pass, pair, ordId, fallbackPx, req
       const d      = res?.data?.[0];
       const px     = parseFloat(d?.avgPx    || '0');
       const filled = parseFloat(d?.accFillSz || '0');
-      if (px > 0 && filled > 0) return { price: px, filledSz: filled };
+      if (px > 0 && filled > 0) return { price: px, filledSz: filled, confirmed: true };
     } catch {}
   }
-  return { price: fallbackPx, filledSz: requestedSz }; // assume full fill as last resort
+  return { price: fallbackPx, filledSz: requestedSz, confirmed: false };
 }
 
 // ── OKX API ───────────────────────────────────────────────────
