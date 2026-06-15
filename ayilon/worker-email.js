@@ -56,6 +56,7 @@ export default {
 // ── CHECK EMAIL ──────────────────────────────────────────────
 async function handleCheckEmail(request, env) {
   const { email } = await request.json();
+  if (!email) return json({ available: false });
   if (!env.USERS_KV) return json({ available: true });
   const existing = await env.USERS_KV.get('user:' + email.toLowerCase());
   return json({ available: !existing });
@@ -64,6 +65,7 @@ async function handleCheckEmail(request, env) {
 // ── CHECK USERNAME ───────────────────────────────────────────
 async function handleCheckUsername(request, env) {
   const { username } = await request.json();
+  if (!username) return json({ available: false });
   if (!env.USERS_KV) return json({ available: true });
   const existing = await env.USERS_KV.get('username:' + username.toLowerCase());
   return json({ available: !existing });
@@ -356,11 +358,22 @@ async function handleLogin(request, env) {
   if (!email || !password) return json({ ok: false, error: 'missing_fields' }, 400);
   if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
 
+  const loginRateKey = 'rate:login:' + email.toLowerCase();
+  const loginRate = await env.USERS_KV.get(loginRateKey, { type: 'json' });
+  if ((loginRate?.count || 0) >= 5) return json({ ok: false, error: 'too_many_attempts' }, 429);
+
   const user = await env.USERS_KV.get('user:' + email.toLowerCase(), { type: 'json' });
-  if (!user) return json({ ok: false, error: 'invalid_credentials' }, 401);
+  if (!user) {
+    await env.USERS_KV.put(loginRateKey, JSON.stringify({ count: (loginRate?.count || 0) + 1 }), { expirationTtl: 900 });
+    return json({ ok: false, error: 'invalid_credentials' }, 401);
+  }
 
   const hashedPw = await hashPassword(password);
-  if (!user.password || user.password !== hashedPw) return json({ ok: false, error: 'invalid_credentials' }, 401);
+  if (!user.password || user.password !== hashedPw) {
+    await env.USERS_KV.put(loginRateKey, JSON.stringify({ count: (loginRate?.count || 0) + 1 }), { expirationTtl: 900 });
+    return json({ ok: false, error: 'invalid_credentials' }, 401);
+  }
+  await env.USERS_KV.delete(loginRateKey);
 
   const sessionToken = crypto.randomUUID();
   await env.USERS_KV.put('session:' + sessionToken, JSON.stringify({
@@ -452,6 +465,12 @@ async function handleUpdateProfile(request, env) {
   }
   if (name !== undefined) user.name = name;
   await env.USERS_KV.put(emailKey, JSON.stringify(user));
+  const token = body?.sessionToken;
+  if (token) {
+    await env.USERS_KV.put('session:' + token, JSON.stringify({
+      email: session.email, username: user.username, name: user.name
+    }), { expirationTtl: 604800 });
+  }
   return json({ ok: true });
 }
 
@@ -530,6 +549,7 @@ async function handleBotControl(request, env) {
     await env.USERS_KV.delete('bot:daily_loss_triggered:' + session.email);
     const today = new Date().toDateString();
     await env.USERS_KV.delete('bot:daily_loss:' + session.email + ':' + today);
+    await env.USERS_KV.delete('bot:peak_equity:' + session.email);
   }
   await env.USERS_KV.put(configKey, JSON.stringify(config));
   return json({ ok: true, running: config.running });
@@ -706,6 +726,7 @@ async function runBotForUser(env, email, cfg) {
       );
       if (!matchingPos) {
         if (ps[tradingPair].tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].tpAlgoId, demoMode);
+        if (ps[tradingPair].slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[tradingPair].slAlgoId, demoMode);
         await botLog(env, email, `Sync: cleared ${tradingPair} state — position closed externally`);
         delete ps[tradingPair];
         await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
@@ -814,9 +835,12 @@ async function runBotForUser(env, email, cfg) {
     if (!signal) return;
 
     // ── Trend strength + direction filter ────────────────────
-    if (trend.dir === 'up'   && signal.type === 'short') return;
-    if (trend.dir === 'down' && signal.type === 'long')  return;
-    if (!trend.strong && signal.grade !== 'S') return;
+    // funding_rate is a contrarian strategy — it trades AGAINST the trend, so skip trend filter
+    if (strategy !== 'funding_rate') {
+      if (trend.dir === 'up'   && signal.type === 'short') return;
+      if (trend.dir === 'down' && signal.type === 'long')  return;
+      if (!trend.strong && signal.grade !== 'S') return;
+    }
 
     // ── 1H confirmation for SHORT ─────────────────────────────
     if (signal.type === 'short') {
@@ -871,6 +895,10 @@ async function runBotForUser(env, email, cfg) {
     const riskPerCt = slDist * ctVal;                                  // USD risk per contract if SL hit
     let totalCts    = riskPerCt > 0 ? Math.floor((equity * riskPct) / riskPerCt) : 0;
     const capCts    = Math.floor(equity * (posSize / 100) / (currentPrice * ctVal));
+    if (capCts < 1) {
+      await botLog(env, email, `Skip: insufficient equity for 1 contract (posSize=${posSize}% = ${(equity * posSize / 100).toFixed(0)} USDT, need ≥${(currentPrice * ctVal).toFixed(0)} USDT/ct)`);
+      return;
+    }
     totalCts        = Math.max(nEntries, Math.min(totalCts, capCts));  // at least 1 per entry, capped by posSize
 
     let szContracts;
@@ -944,11 +972,13 @@ async function runBotForUser(env, email, cfg) {
       if (entryNum === 1) state.stopLoss = signal.stopLoss;
 
       if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
+      if (state.slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.slAlgoId, demoMode);
+      state.slAlgoId = null;
       const accumSz = String(state.entries.reduce((s, e) => s + parseInt(e.sz), 0));
 
-      // Fix: native TP safety algo at TP ± 3% — closes full position if price blows through TP
-      // without the software poller catching it (e.g. rapid touch-and-reverse within 1 minute)
+      // Native TP + SL algos: exchange-level protection if cron stops running
       state.tpAlgoId = null;
+      state.slAlgoId = null;
       if (useTP) {
         const safetyTpPx = signal.type === 'long'
           ? (tp * 1.03).toFixed(2)
@@ -962,15 +992,18 @@ async function runBotForUser(env, email, cfg) {
         }, demoMode);
         state.tpAlgoId = tpAlgoRes?.data?.[0]?.algoId ? String(tpAlgoRes.data[0].algoId) : null;
       }
+      const slAlgoRes = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, signal.type, state.stopLoss || signal.stopLoss, accumSz, demoMode);
+      state.slAlgoId = slAlgoRes?.data?.[0]?.algoId ? String(slAlgoRes.data[0].algoId) : null;
+      if (!state.slAlgoId) await botLog(env, email, '⚠️ Native SL algo failed — SL is software-only this tick');
 
       ps[tradingPair] = state;
       try {
         await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
         await env.USERS_KV.delete(lockKey).catch(() => {}); // release lock only after state saved
       } catch(kvErr) {
-        // Fix: if KV write fails, cancel TP algo AND close the position
-        // to prevent an orphaned position with no protection
+        // If KV write fails, cancel TP/SL algos AND close the position to prevent an orphan
         if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
+        if (state.slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.slAlgoId, demoMode);
         await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
           instId: tradingPair, mgnMode: 'cross',
           posSide: signal.type === 'long' ? 'long' : 'short'
@@ -1005,9 +1038,12 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
 
   // ── TP check (software backup to native TP algo) ──────────
   if (state.takeProfit && openPos.length > 0 && !state.halfClosed) {
-    const tkRes = await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${pair}`);
-    const tk = await tkRes.json();
-    const price = parseFloat(tk?.data?.[0]?.last || '0');
+    let price = 0;
+    try {
+      const tkRes = await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${pair}`);
+      const tk = await tkRes.json();
+      price = parseFloat(tk?.data?.[0]?.last || '0');
+    } catch {}
     if (price > 0) {
       const tpHit = state.direction === 'long' ? price >= state.takeProfit : price <= state.takeProfit;
       if (tpHit) {
@@ -1023,6 +1059,7 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
         }, demo);
 
         if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
+        if (state.slAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.slAlgoId, demo);
         const remContracts = Math.max(0, totalSz - halfContracts);
 
         state.halfClosed         = true;
@@ -1031,6 +1068,7 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
         state.remainingContracts = remContracts;
         state.remainingFrac      = remContracts > 0 ? remContracts / totalSz : 0;
         state.tpAlgoId           = null;
+        state.slAlgoId           = null;
         ps[pair] = state;
         await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
         await botLog(env, email, `TP hit @ ${price} — 50% closed | trailing 10% active`);
@@ -1060,6 +1098,7 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
   }
 
   if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
+  if (state.slAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.slAlgoId, demo);
 
   dl.pct = totalLossPct;
   await env.USERS_KV.put('bot:daily_loss:' + email + ':' + today, JSON.stringify(dl), { expirationTtl: 86400 });
