@@ -1076,7 +1076,8 @@
     try {
       await fetch(WORKER_URL + '/logout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token })
       });
     } catch(e){}
     localStorage.removeItem('ayilon_session_token');
@@ -1286,8 +1287,8 @@
     try {
       var res = await fetch(WORKER_URL + '/bot-control', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ action: 'start', strategy: selectedStrategy, leverage, posSize, risk, entries, mode })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token, action: 'start', strategy: selectedStrategy, leverage: leverage, posSize: posSize, risk: risk, entries: entries, mode: mode })
       });
       var data = await res.json();
       if (data.ok) {
@@ -1300,7 +1301,7 @@
       }
     } catch(e) {
       msgEl.style.color = 'var(--red)';
-      msgEl.textContent = '네트워크 오류가 발생했습니다';
+      msgEl.textContent = '오류: ' + (e.message || '네트워크 오류');
     }
   }
 
@@ -1310,7 +1311,9 @@
     if (!listEl) return;
     try {
       var res  = await fetch(WORKER_URL + '/bot-status', {
-        headers: { 'Authorization': 'Bearer ' + token }
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token })
       });
       var data = await res.json();
       var bots = data.bots || [];
@@ -1340,8 +1343,8 @@
     try {
       await fetch(WORKER_URL + '/bot-control', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ action: 'stop', botId: botId })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token, action: 'stop', botId: botId })
       });
       loadMyBots();
     } catch(e) {}
@@ -1448,8 +1451,8 @@
     try {
       var res  = await fetch(WORKER_URL + '/save-bot-settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ apiKey: key, apiSecret: secret, apiPass: pass })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token, apiKey: key, apiSecret: secret, apiPass: pass })
       });
       var data = await res.json();
       if (data.ok || res.ok) {
@@ -1471,8 +1474,8 @@
     try {
       await fetch(WORKER_URL + '/bot-control', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ action: 'stop' })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token, action: 'stop' })
       });
     } catch(e) {}
     localStorage.removeItem('ayilon_api');
@@ -1500,8 +1503,8 @@
     try {
       var res = await fetch(WORKER_URL + '/send-email-verify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getSessionToken() },
-        body: JSON.stringify({ newEmail: newEmail })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: getSessionToken(), newEmail: newEmail })
       });
       var data = await res.json();
       if (data.ok) {
@@ -1530,8 +1533,8 @@
     try {
       var res = await fetch(WORKER_URL + '/verify-email-change', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getSessionToken() },
-        body: JSON.stringify({ code: code, newEmail: _emailVerifyPending })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: getSessionToken(), code: code, newEmail: _emailVerifyPending })
       });
       var data = await res.json();
       if (data.ok) {
@@ -1558,8 +1561,8 @@
     try {
       var res  = await fetch(WORKER_URL + '/update-profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ name: name, username: username })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token, name: name, username: username })
       });
       var data = await res.json();
       if (data.ok || res.ok) {
@@ -1597,8 +1600,8 @@
         var token = getSessionToken();
         var res   = await fetch(WORKER_URL + '/check-username', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-          body: JSON.stringify({ username: val })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken: token, username: val })
         });
         var data = await res.json();
         if (data.available) {
@@ -1625,8 +1628,8 @@
     try {
       await fetch(WORKER_URL + '/save-bot-settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionToken },
-        body: JSON.stringify({ telegramToken: token, telegramChatId: chatId })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: sessionToken, telegramToken: token, telegramChatId: chatId })
       });
     } catch(e) {}
     if (msgEl) { msgEl.style.color = 'var(--green)'; msgEl.textContent = '✓ 텔레그램 설정이 저장되었습니다'; }
@@ -1700,8 +1703,8 @@
     try {
       await fetch(WORKER_URL + '/delete-account', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ confirm: true })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token, confirm: true })
       });
     } catch(e) {}
     localStorage.clear();
