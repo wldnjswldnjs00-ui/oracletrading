@@ -532,9 +532,15 @@ async function handleSaveBotSettings(request, env) {
   const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
 
-  // Preserve existing clientToken or generate a new one on first save
-  const existing = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
+  // Preserve existing config — merge so saving strategy doesn't wipe API key and vice versa
+  const existing = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' }) || {};
   const clientToken = existing?.clientToken || crypto.randomUUID();
+
+  // Normalize apiPass → apiPassphrase (dashboard historically sent 'apiPass')
+  if (body.apiPass !== undefined && body.apiPassphrase === undefined) {
+    body.apiPassphrase = body.apiPass;
+    delete body.apiPass;
+  }
 
   // Sanitize numeric config fields — prevent invalid/extreme values reaching runBotForUser
   const VALID_STRATS = ['sr_bounce','rsi_dca','ma_support','ma_crossover','bb_reversion','breakout','ma_ribbon','macd_div','funding_rate','atr_trend'];
@@ -550,7 +556,8 @@ async function handleSaveBotSettings(request, env) {
   if (body.entrySizing && !['equal','weighted','martingale'].includes(body.entrySizing)) body.entrySizing = 'equal';
 
   const { sessionToken: _, ...configBody } = body;
-  await env.USERS_KV.put('bot:config:' + session.email, JSON.stringify({ ...configBody, clientToken, updatedAt: Date.now() }));
+  // Merge: existing config as base so no field is accidentally wiped
+  await env.USERS_KV.put('bot:config:' + session.email, JSON.stringify({ ...existing, ...configBody, clientToken, updatedAt: Date.now() }));
   return json({ ok: true, clientToken });
 }
 
@@ -585,7 +592,17 @@ async function handleBotStatus(request, env) {
     };
   } catch {}
 
-  return json({ running: _config.running === true, logs: _logs, alert, positions: _pos, lastScan, fundingRate, marketData });
+  return json({
+    running: _config.running === true,
+    config: {
+      strategy:    _config.strategy    || null,
+      mode:        _config.mode        || 'live',
+      leverage:    _config.leverage    || 20,
+      posSize:     _config.posSize     || 40,
+      tradingPair: _config.tradingPair || 'BTC-USDT-SWAP'
+    },
+    logs: _logs, alert, positions: _pos, lastScan, fundingRate, marketData
+  });
 }
 
 async function handleBotControl(request, env) {
