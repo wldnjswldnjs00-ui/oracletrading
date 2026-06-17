@@ -56,6 +56,9 @@ export default {
       if (path === '/send-email-verify')    return handleSendEmailVerify(request, env);
       if (path === '/verify-email-change')  return handleVerifyEmailChange(request, env);
       if (path === '/get-positions')     return handleGetPositions(request, env);
+      if (path === '/get-orders')        return handleGetOrders(request, env);
+      if (path === '/get-history')       return handleGetHistory(request, env);
+      if (path === '/get-account')       return handleGetAccount(request, env);
       if (path === '/admin-users')       return handleAdminUsers(request, env);
       if (path === '/admin-user-detail') return handleAdminUserDetail(request, env);
     }
@@ -618,19 +621,75 @@ async function handleGetPositions(request, env) {
   const session = await requireSession(body, env, request);
   if (!session) return json({ positions: [], error: 'unauthorized' }, 401);
 
-  // Use stored API keys from bot:config — never accept from client
   const config = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
-  const { apiKey, apiSecret, apiPassphrase, tradingPair } = config || {};
+  const { apiKey, apiSecret, apiPassphrase, tradingPair, mode } = config || {};
   if (!apiKey || !apiSecret || !apiPassphrase) return json({ positions: [] });
+  const demo = (mode === 'demo');
 
-  const instId = body.instId || tradingPair || 'BTC-USDT-SWAP';
-  if (!['BTC-USDT-SWAP', 'ETH-USDT-SWAP'].includes(instId)) {
-    return json({ positions: [], error: 'Invalid instId' }, 400);
-  }
   try {
-    const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instId=${instId}`);
+    const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instType=SWAP`, demo);
     return json({ positions: data?.data || [] });
   } catch(e) { return json({ positions: [], error: e.message }); }
+}
+
+async function handleGetOrders(request, env) {
+  if (!env.USERS_KV) return json({ orders: [] });
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ orders: [], error: 'unauthorized' }, 401);
+
+  const config = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
+  const { apiKey, apiSecret, apiPassphrase, mode } = config || {};
+  if (!apiKey || !apiSecret || !apiPassphrase) return json({ orders: [] });
+  const demo = (mode === 'demo');
+
+  try {
+    const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/trade/orders-pending?instType=SWAP`, demo);
+    return json({ orders: data?.data || [] });
+  } catch(e) { return json({ orders: [], error: e.message }); }
+}
+
+async function handleGetHistory(request, env) {
+  if (!env.USERS_KV) return json({ history: [] });
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ history: [], error: 'unauthorized' }, 401);
+
+  const config = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
+  const { apiKey, apiSecret, apiPassphrase, mode } = config || {};
+  if (!apiKey || !apiSecret || !apiPassphrase) return json({ history: [] });
+  const demo = (mode === 'demo');
+
+  try {
+    const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/trade/fills?instType=SWAP&limit=50`, demo);
+    return json({ history: data?.data || [] });
+  } catch(e) { return json({ history: [], error: e.message }); }
+}
+
+async function handleGetAccount(request, env) {
+  if (!env.USERS_KV) return json({ balance: null });
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ balance: null, error: 'unauthorized' }, 401);
+
+  const config = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
+  const { apiKey, apiSecret, apiPassphrase, mode } = config || {};
+  if (!apiKey || !apiSecret || !apiPassphrase) return json({ balance: null });
+  const demo = (mode === 'demo');
+
+  try {
+    const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/balance?ccy=USDT`, demo);
+    const details = data?.data?.[0]?.details || [];
+    const usdt = details.find(d => d.ccy === 'USDT') || {};
+    return json({
+      balance: {
+        equity:    parseFloat(usdt.eq    || 0),
+        available: parseFloat(usdt.availEq || 0),
+        unrealPnl: parseFloat(usdt.upl   || 0),
+        mgnRatio:  parseFloat(data?.data?.[0]?.mgnRatio || 0)
+      }
+    });
+  } catch(e) { return json({ balance: null, error: e.message }); }
 }
 
 // ════════════════════════════════════════════════════════════

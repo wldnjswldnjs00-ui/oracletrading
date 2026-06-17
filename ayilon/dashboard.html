@@ -233,6 +233,21 @@
     .modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
     .btn-cancel { padding: 10px 20px; background: transparent; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; }
 
+    /* TERMINAL TABS */
+    .term-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .term-table th { color: var(--gray-400); font-weight: 500; text-align: left; padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); white-space: nowrap; }
+    .term-table td { padding: 10px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .term-table tr:last-child td { border-bottom: none; }
+    .term-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .pos-side-long  { color: #22c55e; font-weight: 700; font-size: 11px; }
+    .pos-side-short { color: #ef4444; font-weight: 700; font-size: 11px; }
+    .pos-pnl-pos { color: #22c55e; }
+    .pos-pnl-neg { color: #ef4444; }
+    .acct-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .acct-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px 16px; }
+    .acct-card-label { font-size: 11px; color: var(--gray-400); margin-bottom: 4px; }
+    .acct-card-value { font-size: 18px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+
     /* SETTINGS SECTIONS */
     .settings-section { margin-bottom: 28px; }
     .settings-section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -520,18 +535,18 @@
             <button class="tab-btn" onclick="switchTerminalTab('history',this)">거래내역</button>
             <button class="tab-btn" onclick="switchTerminalTab('account',this)">계좌</button>
           </div>
-          <div style="padding:20px;">
+          <div style="padding:16px 20px;">
             <div class="tab-panel active" id="term-tab-positions">
-              <div class="empty-state" style="padding:32px 0;">API 키를 등록하면 포지션이 표시됩니다</div>
+              <div id="term-positions-content"><div class="empty-state" style="padding:24px 0;">불러오는 중...</div></div>
             </div>
             <div class="tab-panel" id="term-tab-orders">
-              <div class="empty-state" style="padding:32px 0;">대기 중인 주문이 없습니다</div>
+              <div id="term-orders-content"><div class="empty-state" style="padding:24px 0;">불러오는 중...</div></div>
             </div>
             <div class="tab-panel" id="term-tab-history">
-              <div class="empty-state" style="padding:32px 0;">거래 내역이 없습니다</div>
+              <div id="term-history-content"><div class="empty-state" style="padding:24px 0;">불러오는 중...</div></div>
             </div>
             <div class="tab-panel" id="term-tab-account">
-              <div class="empty-state" style="padding:32px 0;">API 키를 등록하면 계좌 정보가 표시됩니다</div>
+              <div id="term-account-content"><div class="empty-state" style="padding:24px 0;">불러오는 중...</div></div>
             </div>
           </div>
         </div>
@@ -1190,6 +1205,9 @@
         '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--gray-600);font-size:14px;">TradingView 위젯을 불러올 수 없습니다</div>';
     };
     document.head.appendChild(script);
+    // Load tab data
+    loadTerminalPositions();
+    loadTerminalAccount();
   }
 
   function switchTerminalTab(tab, btn) {
@@ -1198,6 +1216,98 @@
     if (btn) btn.classList.add('active');
     var panel = document.getElementById('term-tab-' + tab);
     if (panel) panel.classList.add('active');
+    if (tab === 'positions') loadTerminalPositions();
+    if (tab === 'orders')    loadTerminalOrders();
+    if (tab === 'history')   loadTerminalHistory();
+    if (tab === 'account')   loadTerminalAccount();
+  }
+
+  function fmtNum(n, dec) { return parseFloat(n || 0).toFixed(dec !== undefined ? dec : 2); }
+  function fmtPnl(n) {
+    var v = parseFloat(n || 0);
+    var cls = v >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg';
+    var sign = v >= 0 ? '+' : '';
+    return '<span class="' + cls + '">' + sign + fmtNum(v, 4) + ' USDT</span>';
+  }
+
+  async function loadTerminalPositions() {
+    var el = document.getElementById('term-positions-content');
+    if (!el) return;
+    var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
+    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">API 키를 연결하면 포지션이 표시됩니다</div>'; return; }
+    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">불러오는 중...</div>';
+    try {
+      var res  = await fetch(WORKER_URL + '/get-positions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) });
+      var data = await res.json();
+      var rows = (data.positions || []).filter(function(p){ return parseFloat(p.pos || 0) !== 0; });
+      if (!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">열린 포지션이 없습니다</div>'; return; }
+      el.innerHTML = '<table class="term-table"><thead><tr><th>심볼</th><th>방향</th><th>수량</th><th>진입가</th><th>현재가</th><th>미실현 손익</th><th>ROE</th></tr></thead><tbody>' +
+        rows.map(function(p) {
+          var side = p.posSide === 'long' ? '<span class="pos-side-long">LONG</span>' : '<span class="pos-side-short">SHORT</span>';
+          var roe  = parseFloat(p.upl || 0) / (parseFloat(p.margin || 1)) * 100;
+          return '<tr><td>' + (p.instId || '—') + '</td><td>' + side + '</td><td>' + fmtNum(p.pos, 4) + '</td><td>$' + fmtNum(p.avgPx, 2) + '</td><td>$' + fmtNum(p.markPx, 2) + '</td><td>' + fmtPnl(p.upl) + '</td><td><span class="' + (roe >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg') + '">' + (roe >= 0 ? '+' : '') + fmtNum(roe, 2) + '%</span></td></tr>';
+        }).join('') + '</tbody></table>';
+    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">불러오기 실패: ' + e.message + '</div>'; }
+  }
+
+  async function loadTerminalOrders() {
+    var el = document.getElementById('term-orders-content');
+    if (!el) return;
+    var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
+    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">API 키를 연결하면 주문이 표시됩니다</div>'; return; }
+    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">불러오는 중...</div>';
+    try {
+      var res  = await fetch(WORKER_URL + '/get-orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) });
+      var data = await res.json();
+      var rows = data.orders || [];
+      if (!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">대기 중인 주문이 없습니다</div>'; return; }
+      el.innerHTML = '<table class="term-table"><thead><tr><th>심볼</th><th>방향</th><th>유형</th><th>수량</th><th>가격</th><th>상태</th></tr></thead><tbody>' +
+        rows.map(function(o) {
+          var side = o.side === 'buy' ? '<span class="pos-side-long">BUY</span>' : '<span class="pos-side-short">SELL</span>';
+          return '<tr><td>' + (o.instId||'—') + '</td><td>' + side + '</td><td>' + (o.ordType||'—') + '</td><td>' + fmtNum(o.sz,4) + '</td><td>$' + fmtNum(o.px,2) + '</td><td>' + (o.state||'—') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">불러오기 실패</div>'; }
+  }
+
+  async function loadTerminalHistory() {
+    var el = document.getElementById('term-history-content');
+    if (!el) return;
+    var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
+    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">API 키를 연결하면 거래내역이 표시됩니다</div>'; return; }
+    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">불러오는 중...</div>';
+    try {
+      var res  = await fetch(WORKER_URL + '/get-history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) });
+      var data = await res.json();
+      var rows = data.history || [];
+      if (!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">거래 내역이 없습니다</div>'; return; }
+      el.innerHTML = '<table class="term-table"><thead><tr><th>시간</th><th>심볼</th><th>방향</th><th>수량</th><th>체결가</th><th>수수료</th></tr></thead><tbody>' +
+        rows.map(function(h) {
+          var side = h.side === 'buy' ? '<span class="pos-side-long">BUY</span>' : '<span class="pos-side-short">SELL</span>';
+          var ts   = h.ts ? new Date(parseInt(h.ts)).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+          return '<tr><td style="color:var(--gray-400);font-size:11px;">' + ts + '</td><td>' + (h.instId||'—') + '</td><td>' + side + '</td><td>' + fmtNum(h.fillSz,4) + '</td><td>$' + fmtNum(h.fillPx,2) + '</td><td>' + fmtNum(h.fee,6) + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">불러오기 실패</div>'; }
+  }
+
+  async function loadTerminalAccount() {
+    var el = document.getElementById('term-account-content');
+    if (!el) return;
+    var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
+    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">API 키를 연결하면 계좌 정보가 표시됩니다</div>'; return; }
+    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">불러오는 중...</div>';
+    try {
+      var res  = await fetch(WORKER_URL + '/get-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) });
+      var data = await res.json();
+      var b    = data.balance;
+      if (!b) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">계좌 정보를 불러올 수 없습니다</div>'; return; }
+      var pnlCls = b.unrealPnl >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg';
+      el.innerHTML = '<div class="acct-grid">' +
+        '<div class="acct-card"><div class="acct-card-label">총 자산 (USDT)</div><div class="acct-card-value">$' + fmtNum(b.equity, 2) + '</div></div>' +
+        '<div class="acct-card"><div class="acct-card-label">가용 자산</div><div class="acct-card-value">$' + fmtNum(b.available, 2) + '</div></div>' +
+        '<div class="acct-card"><div class="acct-card-label">미실현 손익</div><div class="acct-card-value ' + pnlCls + '">' + (b.unrealPnl >= 0 ? '+' : '') + '$' + fmtNum(b.unrealPnl, 4) + '</div></div>' +
+        '<div class="acct-card"><div class="acct-card-label">마진 비율</div><div class="acct-card-value">' + fmtNum(b.mgnRatio * 100, 2) + '%</div></div>' +
+        '</div>';
+    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">불러오기 실패</div>'; }
   }
 
   /* ════════════════════════════════════════
