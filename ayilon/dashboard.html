@@ -62,6 +62,10 @@
     }
     .topbar-title { font-size: 14px; font-weight: 600; color: #fff; }
     .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .topbar-lang { display: flex; gap: 2px; align-items: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 2px; }
+    .topbar-lang-btn { padding: 3px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; background: transparent; border: none; color: var(--gray-400); cursor: pointer; border-radius: 4px; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .topbar-lang-btn:hover { color: #fff; }
+    .topbar-lang-btn.active { background: rgba(255,255,255,0.1); color: #fff; }
     .plan-badge {
       padding: 3px 10px; border-radius: 100px; font-size: 11px;
       font-weight: 700; letter-spacing: 0.06em;
@@ -327,7 +331,7 @@
         <rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/>
       </svg>
     </span>
-    Dashboard | 대시보드
+    <span data-i18n="db.nav.dashboard">Dashboard</span>
   </a>
   <a class="sidebar-item" onclick="showPage('terminal', this)">
     <span class="sidebar-icon">
@@ -337,7 +341,7 @@
         <line x1="8" y1="11" x2="12" y2="11"/>
       </svg>
     </span>
-    Terminal | 수동 터미널
+    <span data-i18n="db.nav.terminal">Terminal</span>
   </a>
   <a class="sidebar-item" onclick="showPage('bots', this)">
     <span class="sidebar-icon">
@@ -346,7 +350,7 @@
         <path d="M2 6h2M2 10h2M12 6h2M12 10h2M6 2v2M10 2v2M6 12v2M10 12v2"/>
       </svg>
     </span>
-    Signal Bots | 시그널 봇
+    <span data-i18n="db.nav.bots">Signal Bots</span>
   </a>
   <a class="sidebar-item" onclick="showPage('subscription', this)">
     <span class="sidebar-icon">
@@ -355,7 +359,7 @@
         <path d="M1 7h14"/><path d="M4 10.5h2"/>
       </svg>
     </span>
-    Subscription | 구독
+    <span data-i18n="db.nav.subscription">Subscription</span>
   </a>
   <a class="sidebar-item" onclick="showPage('settings', this)">
     <span class="sidebar-icon">
@@ -364,7 +368,7 @@
         <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.1 3.1l1.1 1.1M11.8 11.8l1.1 1.1M3.1 12.9l1.1-1.1M11.8 4.2l1.1-1.1"/>
       </svg>
     </span>
-    Settings | 설정
+    <span data-i18n="db.nav.settings">Settings</span>
   </a>
   <a class="sidebar-item" onclick="showPage('guide', this)">
     <span class="sidebar-icon">
@@ -374,7 +378,7 @@
         <path d="M12 4h1.5a.5.5 0 0 1 .5.5V14a1 1 0 0 1-1 1H5"/>
       </svg>
     </span>
-    Guide | 사용 가이드
+    <span data-i18n="db.nav.guide">Guide</span>
   </a>
 
   <div class="sidebar-bottom">
@@ -391,7 +395,7 @@
         <polyline points="16 17 21 12 16 7"/>
         <line x1="21" y1="12" x2="9" y2="12"/>
       </svg>
-      로그아웃
+      <span data-i18n="db.nav.logout">로그아웃</span>
     </button>
   </div>
 </aside>
@@ -403,6 +407,10 @@
   <div class="topbar" id="appTopbar">
     <div class="topbar-title" id="topbarTitle">Dashboard | 대시보드</div>
     <div class="topbar-right">
+      <div class="topbar-lang">
+        <button class="topbar-lang-btn active" id="topbar-lang-en" onclick="setLang('en')">EN</button>
+        <button class="topbar-lang-btn" id="topbar-lang-ko" onclick="setLang('ko')">KO</button>
+      </div>
       <span class="plan-badge" id="planBadge">FREE</span>
       <div class="user-avatar" id="topbarAvatar">A</div>
       <span class="topbar-username" id="topbarUsername">User</span>
@@ -535,10 +543,17 @@
           <div class="view-only-badge">OKX View Only</div>
           <div id="terminalPrice" class="terminal-price">—</div>
           <div style="font-size:12px;color:var(--gray-400);margin-top:4px;margin-bottom:20px;">BTC/USDT Perp</div>
-          <div style="font-size:13px;color:var(--gray-400);margin-bottom:16px;line-height:1.6;">
-            API 키를 등록하면 거래할 수 있습니다
+          <div id="termApiRegisterWrap">
+            <div style="font-size:13px;color:var(--gray-400);margin-bottom:16px;line-height:1.6;" data-i18n="db.term.api_msg">API 키를 등록하면 거래할 수 있습니다</div>
+            <button class="btn-primary" style="width:100%;" data-i18n="db.term.api_register" onclick="showPage('settings', document.querySelector('.sidebar-item[onclick*=settings]'))">API 키 등록</button>
           </div>
-          <button class="btn-primary" style="width:100%;" onclick="showPage('settings', document.querySelector('.sidebar-item[onclick*=settings]'))">API 키 등록</button>
+          <div id="termApiConnectedWrap" style="display:none;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px #22c55e;flex-shrink:0;"></span>
+              <span style="font-size:13px;font-weight:600;color:#22c55e;">OKX Connected</span>
+            </div>
+            <div style="font-size:12px;color:var(--gray-400);line-height:1.6;">거래 준비 완료. 봇 설정을 시작하세요.</div>
+          </div>
         </div>
         <div class="card">
           <div class="card-title" style="margin-bottom:12px;">빠른 정보</div>
@@ -754,7 +769,7 @@
 
     <!-- 1. Profile -->
     <div class="card settings-section" style="margin-bottom:20px;">
-      <div class="settings-section-title">프로필</div>
+      <div class="settings-section-title" data-i18n="db.set.profile">프로필</div>
       <div style="display:flex;align-items:center;gap:20px;margin-bottom:24px;">
         <div class="avatar-circle" id="settingsAvatar">A</div>
         <div>
@@ -772,18 +787,28 @@
           <input type="text" class="d-form-input" id="settingsUsername" placeholder="예: ayilon_trader" oninput="checkUsernameAvail(this)" />
           <div id="usernameHint"></div>
         </div>
-        <div class="d-form-group" style="margin-bottom:0;">
+        <div class="d-form-group" style="margin-bottom:0;grid-column:1/-1;">
           <label class="d-form-label">Email</label>
-          <input type="email" class="d-form-input" id="settingsEmail" placeholder="—" readonly />
+          <div class="input-with-btn">
+            <input type="email" class="d-form-input" id="settingsEmail" placeholder="이메일을 입력하세요" autocomplete="off" />
+            <button type="button" class="inner-btn" id="btnSendEmailCode" data-i18n="db.set.email_verify" onclick="sendEmailVerify()">인증 코드 전송</button>
+          </div>
+          <div id="emailVerifyWrap" style="display:none;margin-top:10px;">
+            <div class="input-with-btn">
+              <input type="text" class="d-form-input" id="settingsEmailCode" data-i18n-ph="db.set.code_ph" placeholder="6자리 코드 입력" maxlength="6" style="letter-spacing:0.15em;" />
+              <button type="button" class="inner-btn" data-i18n="db.set.email_confirm" onclick="confirmEmailChange()">변경 확인</button>
+            </div>
+            <div id="emailVerifyMsg" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
+          </div>
         </div>
       </div>
       <div id="profileMsg" style="font-size:12px;margin-top:12px;min-height:16px;"></div>
-      <button class="btn-primary" style="margin-top:16px;" onclick="saveProfile()">변경사항 저장</button>
+      <button class="btn-primary" style="margin-top:16px;" data-i18n="db.set.save" onclick="saveProfile()">변경사항 저장</button>
     </div>
 
     <!-- 2. API Key -->
     <div class="card settings-section" style="margin-bottom:20px;" id="apiSettingsCard">
-      <div class="settings-section-title">OKX API 키</div>
+      <div class="settings-section-title" data-i18n="db.set.apikey">OKX API 키</div>
       <div id="apiFormWrap">
         <p style="font-size:13px;color:var(--gray-400);margin-bottom:20px;line-height:1.6;">
           OKX API 키를 연결하여 실시간 거래를 활성화하세요. <strong style="color:#fff;">거래 전용</strong> 권한으로 키를 생성하고 출금 권한은 절대 활성화하지 마세요.
@@ -807,7 +832,7 @@
           </div>
         </div>
         <div id="apiFormErr" style="font-size:12px;color:#ef4444;margin-bottom:12px;display:none;"></div>
-        <button class="btn-primary" style="width:100%;padding:12px;" onclick="saveApiKey()">API 키 연결하기 →</button>
+        <button class="btn-primary" style="width:100%;padding:12px;" data-i18n="db.set.api_connect" onclick="saveApiKey()">API 키 연결하기 →</button>
       </div>
       <div id="apiConnectedWrap" style="display:none;">
         <div class="connected-state">
@@ -818,7 +843,7 @@
               <div id="apiKeyMasked" style="font-size:12px;color:var(--gray-400);margin-top:2px;">API: ****...****</div>
             </div>
           </div>
-          <button onclick="disconnectApi()" style="padding:6px 14px;background:none;border:1px solid rgba(239,68,68,0.25);color:#ef4444;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;">연결 해제</button>
+          <button onclick="disconnectApi()" style="padding:6px 14px;background:none;border:1px solid rgba(239,68,68,0.25);color:#ef4444;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;" data-i18n="db.set.api_disconnect">연결 해제</button>
         </div>
         <p style="font-size:12px;color:var(--gray-600);margin-top:8px;line-height:1.6;">API 키는 안전하게 암호화 저장됩니다. 변경하려면 연결 해제 후 새 키를 입력하세요.</p>
       </div>
@@ -826,7 +851,7 @@
 
     <!-- 3. Security -->
     <div class="card settings-section" style="margin-bottom:20px;">
-      <div class="settings-section-title">보안 (2FA)</div>
+      <div class="settings-section-title" data-i18n="db.set.security">보안 (2FA)</div>
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
           <div style="display:flex;align-items:center;gap:12px;">
@@ -853,7 +878,7 @@
 
     <!-- 4. Telegram Alerts -->
     <div class="card settings-section" style="margin-bottom:20px;">
-      <div class="settings-section-title">텔레그램 알림</div>
+      <div class="settings-section-title" data-i18n="db.set.telegram">텔레그램 알림</div>
       <div class="d-form-group">
         <label class="d-form-label">Bot Token</label>
         <input type="text" class="d-form-input" id="tgBotToken" placeholder="1234567890:ABCdef..." autocomplete="off" />
@@ -868,7 +893,7 @@
 
     <!-- 5. Email Alerts -->
     <div class="card settings-section" style="margin-bottom:20px;">
-      <div class="settings-section-title">이메일 알림</div>
+      <div class="settings-section-title" data-i18n="db.set.email_alerts">이메일 알림</div>
       <div class="toggle-row">
         <div class="toggle-label">
           <h3>이메일 알림 수신</h3>
@@ -878,24 +903,15 @@
       </div>
     </div>
 
-    <!-- 6. Language -->
-    <div class="card settings-section" style="margin-bottom:20px;">
-      <div class="settings-section-title">언어 / Language</div>
-      <div class="lang-row">
-        <button class="lang-sel-btn active" id="lang-en" onclick="setLang('en')">EN</button>
-        <button class="lang-sel-btn" id="lang-ko" onclick="setLang('ko')">KO</button>
-      </div>
-    </div>
-
     <!-- 7. Danger Zone -->
     <div class="card" style="border-color:rgba(239,68,68,0.2);">
-      <div class="settings-section-title" style="color:#ef4444;border-bottom-color:rgba(239,68,68,0.15);">위험 영역</div>
+      <div class="settings-section-title" style="color:#ef4444;border-bottom-color:rgba(239,68,68,0.15);" data-i18n="db.set.danger">위험 영역</div>
       <div class="danger-zone">
         <div class="danger-zone-text">
           <h3>계정 삭제</h3>
           <p>계정을 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.</p>
         </div>
-        <button class="btn-danger" onclick="deleteAccount()">계정 삭제</button>
+        <button class="btn-danger" data-i18n="db.set.del_acct" onclick="deleteAccount()">계정 삭제</button>
       </div>
     </div>
 
@@ -1131,6 +1147,19 @@
   var _tvWidgetLoaded = false;
 
   function initTerminal() {
+    // Show/hide API register button based on connection state
+    var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
+    var regWrap = document.getElementById('termApiRegisterWrap');
+    var connWrap = document.getElementById('termApiConnectedWrap');
+    if (regWrap && connWrap) {
+      if (apiData.apiKey) {
+        regWrap.style.display = 'none';
+        connWrap.style.display = 'block';
+      } else {
+        regWrap.style.display = 'block';
+        connWrap.style.display = 'none';
+      }
+    }
     if (_tvWidgetLoaded) return;
     _tvWidgetLoaded = true;
     var script = document.createElement('script');
@@ -1369,6 +1398,14 @@
     el = document.getElementById('settingsEmail');        if(el) el.value = user.email || '';
     loadApiSection();
 
+    // Reset email verify section
+    var evWrap = document.getElementById('emailVerifyWrap');
+    if (evWrap) evWrap.style.display = 'none';
+    var evMsg = document.getElementById('emailVerifyMsg');
+    if (evMsg) evMsg.textContent = '';
+    var codeEl = document.getElementById('settingsEmailCode');
+    if (codeEl) codeEl.value = '';
+
     // Lang buttons
     var lang = localStorage.getItem('ayilon_lang') || 'en';
     document.querySelectorAll('.lang-sel-btn').forEach(function(b){
@@ -1440,6 +1477,76 @@
     } catch(e) {}
     localStorage.removeItem('ayilon_api');
     loadApiSection();
+  }
+
+  var _emailVerifyPending = null;
+
+  async function sendEmailVerify() {
+    var emailEl = document.getElementById('settingsEmail');
+    var msgEl   = document.getElementById('emailVerifyMsg');
+    var btn     = document.getElementById('btnSendEmailCode');
+    var wrapEl  = document.getElementById('emailVerifyWrap');
+    if (!emailEl || !emailEl.value.trim()) {
+      alert('이메일을 입력하세요.');
+      return;
+    }
+    var newEmail = emailEl.value.trim();
+    var user = getUserData();
+    if (newEmail === (user.email || '')) {
+      if (msgEl) { msgEl.style.color = 'var(--gray-400)'; msgEl.textContent = '현재 이메일과 동일합니다.'; }
+      return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = '전송 중...'; }
+    try {
+      var res = await fetch(WORKER_URL + '/send-email-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getSessionToken() },
+        body: JSON.stringify({ newEmail: newEmail })
+      });
+      var data = await res.json();
+      if (data.ok) {
+        _emailVerifyPending = newEmail;
+        if (wrapEl) wrapEl.style.display = 'block';
+        if (msgEl) { msgEl.style.color = '#22c55e'; msgEl.textContent = '인증 코드가 전송되었습니다. 이메일을 확인하세요.'; }
+      } else {
+        if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = data.error || '전송 실패. 다시 시도하세요.'; }
+        if (wrapEl) wrapEl.style.display = 'block';
+      }
+    } catch(e) {
+      if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = '전송 실패. 다시 시도하세요.'; }
+      if (wrapEl) wrapEl.style.display = 'block';
+    }
+    if (btn) { btn.disabled = false; btn.textContent = window.__t ? window.__t('db.set.email_verify') : '인증 코드 전송'; }
+  }
+
+  async function confirmEmailChange() {
+    var codeEl = document.getElementById('settingsEmailCode');
+    var msgEl  = document.getElementById('emailVerifyMsg');
+    var code   = (codeEl || {}).value || '';
+    if (!code || code.length !== 6) {
+      if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = '6자리 코드를 입력하세요.'; }
+      return;
+    }
+    try {
+      var res = await fetch(WORKER_URL + '/verify-email-change', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getSessionToken() },
+        body: JSON.stringify({ code: code, newEmail: _emailVerifyPending })
+      });
+      var data = await res.json();
+      if (data.ok) {
+        var u = getUserData();
+        u.email = _emailVerifyPending;
+        localStorage.setItem('ayilon_user', JSON.stringify(u));
+        _emailVerifyPending = null;
+        if (msgEl) { msgEl.style.color = '#22c55e'; msgEl.textContent = '이메일이 변경되었습니다.'; }
+        setTimeout(function(){ initSettingsPage(); updateTopbar(); }, 1200);
+      } else {
+        if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = data.error || '코드가 올바르지 않습니다.'; }
+      }
+    } catch(e) {
+      if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = '오류가 발생했습니다. 다시 시도하세요.'; }
+    }
   }
 
   async function saveProfile() {
@@ -1573,8 +1680,13 @@
   }
 
   function setLang(lang) {
-    if (typeof window.setLanguage === 'function') window.setLanguage(lang);
     localStorage.setItem('ayilon_lang', lang);
+    if (typeof window.setLanguage === 'function') window.setLanguage(lang);
+    // Sync topbar lang buttons
+    document.querySelectorAll('.topbar-lang-btn').forEach(function(b){
+      b.classList.toggle('active', b.id === 'topbar-lang-' + lang);
+    });
+    // Sync any remaining lang-sel-btn elements
     document.querySelectorAll('.lang-sel-btn').forEach(function(b){
       b.classList.toggle('active', b.id === 'lang-' + lang);
     });
@@ -1767,6 +1879,11 @@
   document.addEventListener('DOMContentLoaded', function() {
     checkAccess();
     updateTopbar();
+    // Sync topbar lang buttons with stored preference
+    var _initLang = localStorage.getItem('ayilon_lang') || 'en';
+    document.querySelectorAll('.topbar-lang-btn').forEach(function(b){
+      b.classList.toggle('active', b.id === 'topbar-lang-' + _initLang);
+    });
 
     // Handle ?page= URL param
     var p = new URLSearchParams(window.location.search).get('page');
