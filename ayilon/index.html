@@ -87,21 +87,8 @@
     .btn-secondary:hover { border-color: rgba(255,255,255,0.45); }
     .hero-visual { display: flex; align-items: center; justify-content: center; }
 
-    /* ── HERO MONITOR ── */
-    .monitor-wrap { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 480px; user-select: none; }
-    .monitor-frame { width: 100%; background: #161616; border: 2px solid #252525; border-radius: 14px; box-shadow: 0 0 0 1px #111, 0 28px 80px rgba(0,0,0,0.7), 0 0 50px rgba(34,197,94,0.05); padding: 10px 10px 8px; }
-    .monitor-screen { position: relative; width: 100%; background: #080808; border-radius: 7px; overflow: hidden; aspect-ratio: 16/9; }
-    #hero-chart { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
-    .screen-hud { position: absolute; top: 0; left: 0; right: 0; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; z-index: 3; pointer-events: none; }
-    .hud-pair { font-family: 'Space Grotesk', sans-serif; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.55); letter-spacing: 0.1em; }
-    .hud-badge { display: flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 700; color: #22c55e; letter-spacing: 0.1em; text-transform: uppercase; }
-    .hud-dot { width: 5px; height: 5px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 6px #22c55e; animation: hud-blink 1.8s ease-in-out infinite; }
-    @keyframes hud-blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .monitor-neck { width: 36px; height: 18px; background: #191919; clip-path: polygon(15% 0, 85% 0, 100% 100%, 0% 100%); }
-    .monitor-foot { width: 120px; height: 6px; background: #1c1c1c; border-radius: 3px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-
-    /* ── HERO PnL OVERLAY ── */
-    .screen-pnl { position: absolute; bottom: 7px; right: 9px; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 700; color: #22c55e; z-index: 3; pointer-events: none; letter-spacing: 0.04em; }
+    /* ── HERO 3D CANVAS ── */
+    #ayilon-3d { width: 100%; max-width: 480px; height: 480px; display: block; cursor: grab; }
 
     /* ── STRATEGY SIMULATION ── */
     .strat-sim { padding: 60px 0; border-top: 1px solid rgba(255,255,255,0.06); }
@@ -302,7 +289,7 @@
       .hero-desc { margin: 0 auto 24px; }
       .hero-cta { justify-content: center; }
       .hero-visual { order: 0; margin-bottom: 12px; }
-      .monitor-wrap { max-width: 300px; }
+      #ayilon-3d { max-width: 300px; height: 300px; }
       .marquee-text { font-size: 36px; }
       .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 24px; }
       .stat-item { border-right: none; padding: 0; }
@@ -401,20 +388,7 @@
         </div>
       </div>
       <div class="hero-visual">
-        <div class="monitor-wrap">
-          <div class="monitor-frame">
-            <div class="monitor-screen">
-              <canvas id="hero-chart"></canvas>
-              <div class="screen-hud">
-                <span class="hud-pair">BTC/USDT PERP</span>
-                <span class="hud-badge"><span class="hud-dot"></span>BOT ACTIVE</span>
-              </div>
-              <div class="screen-pnl" id="hero-pnl">+$0.00</div>
-            </div>
-          </div>
-          <div class="monitor-neck"></div>
-          <div class="monitor-foot"></div>
-        </div>
+        <canvas id="ayilon-3d"></canvas>
       </div>
     </div>
   </section>
@@ -932,6 +906,9 @@
     }
   </script>
 
+  <!-- THREE.JS — 3D trading visualization -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
   <!-- CHART ANIMATIONS -->
   <script>
   (function() {
@@ -959,153 +936,208 @@
     }
 
     /* ────────────────────────────────────────────
-       HERO MONITOR — line chart, bot PnL
+       HERO 3D — algorithmic trading visualization
     ────────────────────────────────────────────*/
     (function() {
-      var canvas = document.getElementById('hero-chart');
-      var pnlEl  = document.getElementById('hero-pnl');
-      if (!canvas) return;
+      var canvas = document.getElementById('ayilon-3d');
+      if (!canvas || typeof THREE === 'undefined') return;
 
-      var dpr = window.devicePixelRatio || 1;
-      var STEP = 12, SPEED = 0.4;
-      var startP = 63000 + rand() * 5000;
+      var W = canvas.parentElement.offsetWidth || 480;
+      var H = 480;
+      canvas.style.height = H + 'px';
 
-      function genPrices(n, start, r) {
-        var pts = [start], signals = [], p = start;
-        var lo = start - 2800, hi = start + 2800, dir = 1;
-        for (var i = 1; i < n; i++) {
-          var noise = (r() - 0.5) * 350;
-          p += (dir > 0 ? hi - p : lo - p) * 0.09 + noise;
-          if (dir > 0 && p >= hi - 200) { dir = -1; signals.push({i: i, type:'short'}); }
-          if (dir < 0 && p <= lo + 200) { dir =  1; signals.push({i: i, type:'long'}); }
-          pts.push(p);
-        }
-        return { pts: pts, signals: signals, lo: lo, hi: hi };
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
+      camera.position.set(1.2, 2.8, 6.8);
+      camera.lookAt(0, 0.3, 0);
+
+      var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+      renderer.setSize(W, H);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setClearColor(0x000000, 0);
+
+      var group = new THREE.Group();
+      scene.add(group);
+
+      /* ── Candle data: simulate a realistic price series ── */
+      var COLS = 7, ROWS = 5;
+      var priceH = [];
+      var isBull = [];
+      var p = 0.5;
+      for (var n = 0; n < COLS * ROWS; n++) {
+        var delta = (rand() - 0.47) * 0.14;
+        p = Math.max(0.12, Math.min(0.92, p + delta));
+        priceH.push(p);
+        isBull.push(delta >= 0);
       }
 
-      var r0 = makeRng((_s * 31337) | 0);
-      var data = genPrices(200, startP, r0);
-      var offset = 0;
-      var W = 0, H = 0;
-      var ctx = canvas.getContext('2d');
-      var pnl = 0, lastTradePrice = startP, inLong = false;
+      var CW = 0.17, CZ = 0.13, CGAP = 0.13, RGAP = 0.22;
+      var floatData = [];
 
-      function resize() {
-        var rect = canvas.parentElement.getBoundingClientRect();
-        W = Math.max(rect.width, 300); H = Math.max(rect.height, 160);
-        canvas.width  = W * dpr; canvas.height = H * dpr;
-        canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-      resize();
-      window.addEventListener('resize', resize);
+      for (var i = 0; i < priceH.length; i++) {
+        var col = i % COLS, row = Math.floor(i / COLS);
+        var h = Math.max(0.08, priceH[i]);
+        var bull = isBull[i];
+        var xPos = (col - (COLS - 1) / 2) * (CW + CGAP);
+        var zPos = (row - (ROWS - 1) / 2) * (CZ + RGAP);
+        var yBase = h / 2;
 
-      function draw() {
-        ctx.clearRect(0, 0, W, H);
-        ctx.fillStyle = '#080808';
-        ctx.fillRect(0, 0, W, H);
-
-        var vs = Math.floor(offset / STEP);
-        var ve = Math.min(data.pts.length - 1, vs + Math.ceil(W / STEP) + 3);
-        var vis = data.pts.slice(vs, ve + 1);
-        if (vis.length < 3) return;
-
-        var lo = data.lo, hi = data.hi;
-        var pad = (hi - lo) * 0.2; lo -= pad; hi += pad;
-        function py(p) { return H - ((p - lo) / (hi - lo)) * (H - 18) - 9; }
-        function xi(i) { return i * STEP - offset + STEP * 0.5; }
-
-        /* grid */
-        ctx.strokeStyle = 'rgba(255,255,255,0.035)';
-        ctx.lineWidth = 1;
-        for (var g = 0; g <= 3; g++) {
-          ctx.beginPath(); ctx.moveTo(0, H * g / 3); ctx.lineTo(W, H * g / 3); ctx.stroke();
-        }
-
-        /* S/R lines */
-        var srColors = [['rgba(34,197,94,0.4)','지지'], ['rgba(249,115,22,0.4)','저항']];
-        [[data.lo, srColors[0]], [data.hi, srColors[1]]].forEach(function(pair) {
-          var iy = py(pair[0]);
-          ctx.strokeStyle = pair[1][0];
-          ctx.lineWidth = 1;
-          ctx.setLineDash([5, 4]);
-          ctx.beginPath(); ctx.moveTo(0, iy); ctx.lineTo(W, iy); ctx.stroke();
-          ctx.setLineDash([]);
+        /* body */
+        var bodyGeo = new THREE.BoxGeometry(CW, h, CZ);
+        var bodyMat = new THREE.MeshBasicMaterial({
+          color: bull ? 0x22c55e : 0xffffff,
+          transparent: true,
+          opacity: bull ? 0.72 : 0.20
         });
+        var body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.set(xPos, yBase, zPos);
+        group.add(body);
 
-        /* EMA */
-        var ema = calcEMA(data.pts, 14);
-        ctx.strokeStyle = 'rgba(59,130,246,0.6)';
-        ctx.lineWidth = 1.3;
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        var fp = true;
-        for (var ci = vs; ci <= ve; ci++) {
-          var ex = xi(ci), ey = py(ema[ci]);
-          if (fp) { ctx.moveTo(ex, ey); fp = false; } else ctx.lineTo(ex, ey);
-        }
-        ctx.stroke();
-
-        /* price line */
-        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-        ctx.lineWidth = 1.8;
-        ctx.beginPath();
-        fp = true;
-        for (var pi = vs; pi <= ve; pi++) {
-          var px = xi(pi), ppx = py(data.pts[pi]);
-          if (fp) { ctx.moveTo(px, ppx); fp = false; } else ctx.lineTo(px, ppx);
-        }
-        ctx.stroke();
-
-        /* signals */
-        data.signals.forEach(function(sig) {
-          var sx = xi(sig.i);
-          if (sx < -20 || sx > W + 20) return;
-          var sy = py(data.pts[sig.i]);
-          var isLong = sig.type === 'long';
-          ctx.beginPath();
-          ctx.arc(sx, sy, 5.5, 0, Math.PI * 2);
-          ctx.strokeStyle = isLong ? '#22c55e' : '#ef4444';
-          ctx.lineWidth = 1.8;
-          ctx.stroke();
-          ctx.fillStyle = isLong ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)';
-          ctx.fill();
+        /* wick */
+        var wkH = h + 0.06 + (i % 4) * 0.05;
+        var wkGeo = new THREE.BoxGeometry(0.016, wkH, 0.016);
+        var wkMat = new THREE.MeshBasicMaterial({
+          color: bull ? 0x22c55e : 0xffffff,
+          transparent: true, opacity: 0.16
         });
+        var wick = new THREE.Mesh(wkGeo, wkMat);
+        wick.position.set(xPos, wkH / 2, zPos);
+        group.add(wick);
 
-        /* update PnL when a signal scrolls to ~75% of screen */
-        data.signals.forEach(function(sig) {
-          var sx = xi(sig.i);
-          if (sx > W * 0.72 && sx < W * 0.78) {
-            var cp = data.pts[sig.i];
-            if (sig.type === 'long' && !inLong) {
-              inLong = true; lastTradePrice = cp;
-            } else if (sig.type === 'short' && inLong) {
-              pnl += cp - lastTradePrice;
-              inLong = false;
-            }
-          }
-        });
-        if (pnlEl) {
-          var display = inLong
-            ? pnl + (data.pts[ve] - lastTradePrice)
-            : pnl;
-          pnlEl.style.color = display >= 0 ? '#22c55e' : '#ef4444';
-          pnlEl.textContent = (display >= 0 ? '+' : '') + '$' + (display * 0.001).toFixed(2);
-        }
+        floatData.push({ mesh: body, baseY: yBase, phase: i * 0.48, speed: 0.28 + (i % 6) * 0.035 });
       }
 
-      function tick() {
-        offset += SPEED;
-        if ((data.pts.length * STEP - offset) < W + STEP * 15) {
-          var ext = genPrices(80, data.pts[data.pts.length - 1], makeRng((rand() * 0xFFFF) | 0));
-          var base = data.pts.length;
-          ext.pts.forEach(function(p) { data.pts.push(p); });
-          ext.signals.forEach(function(s) { data.signals.push({i: s.i + base, type: s.type}); });
-        }
-        draw();
-        requestAnimationFrame(tick);
+      /* ── Horizontal S/R planes (3 levels) ── */
+      var srLevels = [
+        { y: 0.78, color: 0x22c55e,  lineOpacity: 0.30, planeOpacity: 0.04 },
+        { y: 0.50, color: 0xffffff,  lineOpacity: 0.10, planeOpacity: 0.02 },
+        { y: 0.22, color: 0xf97316,  lineOpacity: 0.28, planeOpacity: 0.04 }
+      ];
+      var PW = (COLS - 1) * (CW + CGAP) + CW + 0.6;
+      var PD = (ROWS - 1) * (CZ + RGAP) + CZ + 0.4;
+
+      srLevels.forEach(function(sr) {
+        /* plane fill */
+        var pGeo = new THREE.PlaneGeometry(PW, PD);
+        var pMat = new THREE.MeshBasicMaterial({
+          color: sr.color, transparent: true, opacity: sr.planeOpacity, side: THREE.DoubleSide
+        });
+        var plane = new THREE.Mesh(pGeo, pMat);
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.y = sr.y;
+        group.add(plane);
+
+        /* edge rect */
+        var corners = [
+          new THREE.Vector3(-PW/2, sr.y, -PD/2),
+          new THREE.Vector3( PW/2, sr.y, -PD/2),
+          new THREE.Vector3( PW/2, sr.y,  PD/2),
+          new THREE.Vector3(-PW/2, sr.y,  PD/2),
+          new THREE.Vector3(-PW/2, sr.y, -PD/2)
+        ];
+        var lGeo = new THREE.BufferGeometry().setFromPoints(corners);
+        var lMat = new THREE.LineBasicMaterial({ color: sr.color, transparent: true, opacity: sr.lineOpacity });
+        group.add(new THREE.Line(lGeo, lMat));
+      });
+
+      /* ── Algorithm signal nodes at S/R touches ── */
+      var sigDefs = [
+        { col:1, row:0, srY:0.78, green:false },
+        { col:3, row:1, srY:0.22, green:true  },
+        { col:5, row:1, srY:0.78, green:false },
+        { col:0, row:2, srY:0.22, green:true  },
+        { col:4, row:2, srY:0.22, green:true  },
+        { col:2, row:3, srY:0.78, green:false },
+        { col:6, row:3, srY:0.22, green:true  },
+        { col:1, row:4, srY:0.22, green:true  }
+      ];
+
+      var sigMeshes = [];
+      sigDefs.forEach(function(s, si) {
+        var xPos = (s.col - (COLS-1)/2) * (CW + CGAP);
+        var zPos = (s.row - (ROWS-1)/2) * (CZ + RGAP);
+        var sGeo = new THREE.SphereGeometry(0.048, 14, 14);
+        var sMat = new THREE.MeshBasicMaterial({
+          color: s.green ? 0x22c55e : 0xf97316,
+          transparent: true, opacity: 0.85
+        });
+        var sphere = new THREE.Mesh(sGeo, sMat);
+        sphere.position.set(xPos, s.srY, zPos);
+        group.add(sphere);
+        sigMeshes.push({ mesh: sphere, phase: si * 1.3, green: s.green });
+      });
+
+      /* ── Algo connection lines between nodes ── */
+      var connPairs = [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]];
+      connPairs.forEach(function(cp) {
+        var a = sigMeshes[cp[0]], b = sigMeshes[cp[1]];
+        if (!a || !b) return;
+        var lMat = new THREE.LineBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.18 });
+        var lGeo = new THREE.BufferGeometry().setFromPoints([
+          a.mesh.position.clone(), b.mesh.position.clone()
+        ]);
+        group.add(new THREE.Line(lGeo, lMat));
+      });
+
+      /* ── Floor grid ── */
+      var gMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.025 });
+      for (var gx = -4; gx <= 4; gx++) {
+        var gPts = [new THREE.Vector3(gx * 0.4, 0, -2), new THREE.Vector3(gx * 0.4, 0, 2)];
+        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(gPts), gMat));
       }
-      tick();
+      for (var gz = -4; gz <= 4; gz++) {
+        var gPts2 = [new THREE.Vector3(-2, 0, gz * 0.4), new THREE.Vector3(2, 0, gz * 0.4)];
+        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(gPts2), gMat));
+      }
+
+      /* ── Interaction (click-drag) ── */
+      var isDragging = false, autoRotY = 0, userRotY = 0, userRotX = 0, sx0 = 0, sy0 = 0;
+      canvas.style.cursor = 'grab';
+      canvas.addEventListener('mousedown', function(e) { isDragging = true; sx0 = e.clientX; sy0 = e.clientY; canvas.style.cursor = 'grabbing'; });
+      canvas.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        userRotY += (e.clientX - sx0) * 0.009; userRotX += (e.clientY - sy0) * 0.006;
+        userRotX = Math.max(-0.65, Math.min(0.65, userRotX)); sx0 = e.clientX; sy0 = e.clientY;
+      });
+      function endDrag() { isDragging = false; canvas.style.cursor = 'grab'; }
+      canvas.addEventListener('mouseup', endDrag);
+      canvas.addEventListener('mouseleave', endDrag);
+      canvas.addEventListener('touchstart', function(e) { isDragging = true; sx0 = e.touches[0].clientX; sy0 = e.touches[0].clientY; }, { passive: true });
+      canvas.addEventListener('touchmove', function(e) {
+        if (!isDragging) return; e.preventDefault();
+        userRotY += (e.touches[0].clientX - sx0) * 0.009; userRotX += (e.touches[0].clientY - sy0) * 0.006;
+        userRotX = Math.max(-0.65, Math.min(0.65, userRotX)); sx0 = e.touches[0].clientX; sy0 = e.touches[0].clientY;
+      }, { passive: false });
+      canvas.addEventListener('touchend', function() { isDragging = false; });
+
+      /* ── Animate ── */
+      var t0 = Date.now();
+      function animate() {
+        requestAnimationFrame(animate);
+        var t = (Date.now() - t0) / 1000;
+        if (!isDragging) autoRotY += 0.0035;
+        group.rotation.y = autoRotY + userRotY;
+        group.rotation.x = userRotX * 0.5;
+
+        floatData.forEach(function(fd) {
+          fd.mesh.position.y = fd.baseY + Math.sin(t * fd.speed + fd.phase) * 0.024;
+        });
+        sigMeshes.forEach(function(s) {
+          var pulse = 0.5 + 0.5 * Math.sin(t * 2.4 + s.phase);
+          s.mesh.material.opacity = 0.45 + 0.5 * pulse;
+          var sc = 0.82 + 0.24 * pulse;
+          s.mesh.scale.set(sc, sc, sc);
+        });
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      window.addEventListener('resize', function() {
+        var W2 = canvas.parentElement.offsetWidth || 480;
+        camera.aspect = W2 / H;
+        camera.updateProjectionMatrix();
+        renderer.setSize(W2, H);
+      });
     })();
 
     /* ────────────────────────────────────────────
