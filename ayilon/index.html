@@ -985,9 +985,9 @@
         /* body */
         var bodyGeo = new THREE.BoxGeometry(CW, h, CZ);
         var bodyMat = new THREE.MeshBasicMaterial({
-          color: bull ? 0x22c55e : 0xffffff,
+          color: bull ? 0x22c55e : 0xef4444,
           transparent: true,
-          opacity: bull ? 0.72 : 0.20
+          opacity: bull ? 0.72 : 0.55
         });
         var body = new THREE.Mesh(bodyGeo, bodyMat);
         body.position.set(xPos, yBase, zPos);
@@ -997,7 +997,7 @@
         var wkH = h + 0.06 + (i % 4) * 0.05;
         var wkGeo = new THREE.BoxGeometry(0.016, wkH, 0.016);
         var wkMat = new THREE.MeshBasicMaterial({
-          color: bull ? 0x22c55e : 0xffffff,
+          color: bull ? 0x22c55e : 0xef4444,
           transparent: true, opacity: 0.16
         });
         var wick = new THREE.Mesh(wkGeo, wkMat);
@@ -1181,7 +1181,7 @@
       var ctx = canvas.getContext('2d');
       var W = 0, H = 0;
       var simSeed = 0, simData = null, simOffset = 0, currentIdx = 0;
-      var STEP = 16, SPEED = 0.5;
+      var STEP = 11, SPEED = 0.45;
 
       function resizeSim() {
         W = canvas.parentElement.offsetWidth || 900;
@@ -1450,6 +1450,19 @@
       reset();
 
       /* ── Drawing ── */
+      var CW_SIM = 5; /* candle body width */
+
+      function candleOHLC(prices, i) {
+        var close = prices[i];
+        var open  = i > 0 ? prices[i - 1] : close;
+        var range = Math.abs(close - open);
+        /* deterministic wick using index as seed */
+        var wm = 0.25 + ((i * 6971 + 13) % 100) / 250;
+        var high = Math.max(open, close) + range * wm + (range < 10 ? 40 : 0);
+        var low  = Math.min(open, close) - range * wm - (range < 10 ? 40 : 0);
+        return { open: open, close: close, high: high, low: low, bull: close >= open };
+      }
+
       function drawFrame() {
         if (!simData) return;
         ctx.clearRect(0, 0, W, H);
@@ -1459,22 +1472,26 @@
         var prices = simData.prices;
         var vs = Math.floor(simOffset / STEP);
         var ve = Math.min(prices.length - 1, vs + Math.ceil(W / STEP) + 3);
-        var vis = prices.slice(vs, ve + 1);
-        if (vis.length < 3) return;
+        if (ve - vs < 3) return;
 
-        var pMin = Math.min.apply(null, vis);
-        var pMax = Math.max.apply(null, vis);
+        /* price range from visible candle OHLC */
+        var pMin = Infinity, pMax = -Infinity;
+        for (var ri = vs; ri <= ve; ri++) {
+          var c = candleOHLC(prices, ri);
+          if (c.low  < pMin) pMin = c.low;
+          if (c.high > pMax) pMax = c.high;
+        }
 
-        /* expand range for indicator lines */
+        /* expand for hline indicators */
         simData.indicators.forEach(function(ind) {
           if (ind.type === 'hline') { pMin = Math.min(pMin, ind.y); pMax = Math.max(pMax, ind.y); }
         });
 
         var rng = pMax - pMin;
-        if (rng < 500) { pMin -= 250; pMax += 250; }
-        var pad = rng * 0.18; pMin -= pad; pMax += pad;
+        if (rng < 400) { pMin -= 200; pMax += 200; }
+        var pad = rng * 0.16; pMin -= pad; pMax += pad;
 
-        function py(p) { return H - ((p - pMin) / (pMax - pMin)) * (H - 20) - 10; }
+        function py(p) { return H - ((p - pMin) / (pMax - pMin)) * (H - 24) - 12; }
         function xi(i) { return i * STEP - simOffset + STEP * 0.5; }
 
         /* grid */
@@ -1499,14 +1516,15 @@
               ctx.fillStyle = ind.color;
               ctx.font = '500 11px Inter,sans-serif';
               ctx.textAlign = 'left';
-              ctx.fillText(ind.label, 8, iy - 5);
+              ctx.fillText(ind.label, 8, iy - 4);
             }
           } else if (ind.type === 'curve' && ind.values) {
             ctx.beginPath();
             var fp = true;
             for (var ci = vs; ci <= ve; ci++) {
-              if (!ind.values[ci] && ind.values[ci] !== 0) continue;
-              var cx = xi(ci), cy = py(ind.values[ci]);
+              var v = ind.values[ci];
+              if (v == null) continue;
+              var cx = xi(ci), cy = py(v);
               if (fp) { ctx.moveTo(cx, cy); fp = false; } else ctx.lineTo(cx, cy);
             }
             ctx.stroke();
@@ -1515,30 +1533,55 @@
 
         ctx.setLineDash([]);
 
-        /* price line */
-        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        var fp2 = true;
+        /* candlesticks */
         for (var pi = vs; pi <= ve; pi++) {
-          var px = xi(pi), ppx = py(prices[pi]);
-          if (fp2) { ctx.moveTo(px, ppx); fp2 = false; } else ctx.lineTo(px, ppx);
-        }
-        ctx.stroke();
+          var c = candleOHLC(prices, pi);
+          var cx2 = xi(pi);
+          if (cx2 < -CW_SIM - 2 || cx2 > W + CW_SIM + 2) continue;
 
-        /* signal circles */
+          var bullColor = 'rgba(34,197,94,0.85)';
+          var bearColor = 'rgba(239,68,68,0.80)';
+          var color = c.bull ? bullColor : bearColor;
+
+          /* wick */
+          ctx.strokeStyle = c.bull ? 'rgba(34,197,94,0.45)' : 'rgba(239,68,68,0.45)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(cx2, py(c.high));
+          ctx.lineTo(cx2, py(c.low));
+          ctx.stroke();
+
+          /* body */
+          var bTop = py(Math.max(c.open, c.close));
+          var bBot = py(Math.min(c.open, c.close));
+          ctx.fillStyle = color;
+          ctx.fillRect(cx2 - CW_SIM / 2, bTop, CW_SIM, Math.max(1, bBot - bTop));
+        }
+
+        /* signals — small triangle below (long) or above (short) the candle */
         simData.signals.forEach(function(sig) {
           var sx = xi(sig.i);
-          if (sx < -24 || sx > W + 24) return;
-          var sy = py(prices[sig.i]);
-          var isLong = sig.type === 'long';
-          ctx.beginPath();
-          ctx.arc(sx, sy, 7, 0, Math.PI * 2);
-          ctx.strokeStyle = isLong ? '#22c55e' : '#ef4444';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-          ctx.fillStyle = isLong ? 'rgba(34,197,94,0.22)' : 'rgba(239,68,68,0.22)';
-          ctx.fill();
+          if (sx < -20 || sx > W + 20) return;
+          var c = candleOHLC(prices, sig.i);
+          if (sig.type === 'long') {
+            var ty = py(c.low) + 10;
+            ctx.beginPath();
+            ctx.moveTo(sx,     ty - 6);
+            ctx.lineTo(sx + 4, ty);
+            ctx.lineTo(sx - 4, ty);
+            ctx.closePath();
+            ctx.fillStyle = '#22c55e';
+            ctx.fill();
+          } else {
+            var ty2 = py(c.high) - 10;
+            ctx.beginPath();
+            ctx.moveTo(sx,     ty2 + 6);
+            ctx.lineTo(sx + 4, ty2);
+            ctx.lineTo(sx - 4, ty2);
+            ctx.closePath();
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+          }
         });
       }
 
