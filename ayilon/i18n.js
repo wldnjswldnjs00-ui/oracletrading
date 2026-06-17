@@ -52,8 +52,8 @@
 
       /* ── INDEX: HERO ── */
       'hero.badge':    'Automated Crypto Trading — 24/7',
-      'hero.title1':   'The end',
-      'hero.title2':   'of effort.',
+      'hero.title1':   'While you rest,',
+      'hero.title2':   'the algorithm works.',
       'hero.desc':     "Connect your OKX API key. AYILON's algorithmic bots trade 24/7 on your behalf — no downloads, no setup, no effort.",
       'hero.cta1':     'Automate My Account →',
       'hero.cta2':     'See How It Works',
@@ -461,9 +461,10 @@
       '404.desc':  "The page you're looking for doesn't exist — or it may have moved. Let's get you back on track.",
       '404.home':  'Back to Home',
       '404.dash':  'Go to Dashboard',
-      /* ── INDEX: CHART STREAM ── */
-      'stream.tag':   'Live Strategy',
-      'stream.title': 'Support / Resistance Bot in Action',
+      /* ── INDEX: STRATEGY SIMULATION ── */
+      'sim.tag':   'Strategy Simulation',
+      'sim.title': 'See Each Strategy in Action',
+      'sim.desc':  'Select a strategy to watch its entry and exit logic simulate in real time.',
       /* ── INDEX: SLOGANS & TRUST ── */
       'slogan.marquee':      'Nothing to Everything.',
       'slogan.trust.tag':    'Asset Protection',
@@ -474,8 +475,8 @@
       'trust.item2.desc':    'Your API keys are encrypted at rest and in transit. Never shared with third parties.',
       'trust.item3.title':   '24/7 monitoring',
       'trust.item3.desc':    'Real-time position monitoring with automatic circuit breakers on extreme market conditions.',
-      'slogan.art':          'The art of doing nothing.',
-      'slogan.reengineered': 'Your money, re-engineered.',
+      'slogan.never_stop':   'Trading never stops.',
+      'slogan.always_on':    '365 days. 24 hours. The algorithm never sleeps.',
 
       'legal_disclaimer': 'AYILON is a software tool, not a registered investment advisor or asset manager. Cryptocurrency trading involves substantial risk of loss. Past performance is not indicative of future results. AYILON does not hold your funds. All trading decisions are executed by algorithms you configure — not by AYILON. By using this service you acknowledge that all investment decisions and their consequences are your sole responsibility.',
     },
@@ -506,8 +507,8 @@
       'mobile.getstarted': '시작하기 →',
 
       'hero.badge':  '자동화 암호화폐 거래 — 24시간',
-      'hero.title1': '노력의',
-      'hero.title2': '종말.',
+      'hero.title1': '당신이 쉬는 동안,',
+      'hero.title2': '알고리즘이 일한다.',
       'hero.desc':   'OKX API 키를 연결하세요. AYILON의 알고리즘 봇이 24/7 대신 거래합니다 — 다운로드, 설정, 노력 없이.',
       'hero.cta1':   '내 계좌, 자동화하기',
       'hero.cta2':   '작동 방식 보기',
@@ -897,9 +898,10 @@
       '404.desc':  '찾으시는 페이지가 존재하지 않거나 이동했을 수 있습니다. 다시 안내해 드리겠습니다.',
       '404.home':  '홈으로',
       '404.dash':  '대시보드로',
-      /* ── INDEX: CHART STREAM ── */
-      'stream.tag':   '실시간 전략',
-      'stream.title': '지지/저항 봇 실제 작동',
+      /* ── INDEX: STRATEGY SIMULATION ── */
+      'sim.tag':   '전략 시뮬레이션',
+      'sim.title': '각 전략이 실제로 어떻게 작동하는지 보세요',
+      'sim.desc':  '전략을 선택하면 해당 전략의 진입·청산 로직이 실시간으로 시뮬레이션됩니다.',
       /* ── INDEX: SLOGANS & TRUST ── */
       'slogan.marquee':      '무에서 유로.',
       'slogan.trust.tag':    '자산 보호',
@@ -910,8 +912,8 @@
       'trust.item2.desc':    'API 키는 저장 및 전송 중 암호화됩니다. 제3자와 절대 공유되지 않습니다.',
       'trust.item3.title':   '24/7 모니터링',
       'trust.item3.desc':    '실시간 포지션 모니터링과 극단적 시장 상황에서 자동 서킷 브레이커.',
-      'slogan.art':          '아무것도 하지 않는 미학.',
-      'slogan.reengineered': '당신의 돈, 재설계되었습니다.',
+      'slogan.never_stop':   '거래는 멈추지 않는다.',
+      'slogan.always_on':    '365일, 24시간, 쉬지 않는 알고리즘.',
 
       'legal_disclaimer': 'AYILON은 소프트웨어 도구이며, 자본시장법상 투자자문업·투자일임업 등록 사업자가 아닙니다. 암호화폐 거래는 원금 손실의 위험이 수반되며, 과거 성과는 미래 결과를 보장하지 않습니다. AYILON은 사용자의 자금을 보관하거나 투자 판단을 대신하지 않습니다. 투자에 관한 최종 결정 및 손익에 대한 책임은 이용자 본인에게 있습니다.',
     },
