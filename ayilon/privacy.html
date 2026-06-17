@@ -37,6 +37,11 @@
     .lang-btn { background: none; border: 1px solid transparent; color: var(--gray-400); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
     .lang-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
     .lang-btn.active { color: var(--white); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
+
+    .lang-ko { display: none; }
+    html[lang=ko] .lang-en { display: none; }
+    html[lang=ko] .lang-ko { display: block; }
+
     @media (max-width: 480px) { nav { padding: 20px 24px; } .page-title { font-size: 28px; } }
   </style>
   <script src="i18n.js"></script>
@@ -47,85 +52,156 @@
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
       <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
-      <button class="lang-btn" data-lang="ja" onclick="setLanguage('ja')">JA</button>
-      <button class="lang-btn" data-lang="zh" onclick="setLanguage('zh')">ZH</button>
     </div>
     <a href="index.html" class="nav-back">&larr; Back to Home</a>
   </nav>
 
   <div class="content">
-    <h1 class="page-title">Privacy Policy</h1>
-    <p class="page-meta">Last updated: June 2025 &nbsp;·&nbsp; Effective immediately upon registration</p>
 
-    <h2>1. Overview</h2>
-    <p>AYILON ("we", "us", "our") is committed to protecting your privacy. This Privacy Policy explains what information we collect, how we use it, and your rights regarding that information.</p>
+    <!-- ENGLISH -->
+    <div class="lang-en">
+      <h1 class="page-title">Privacy Policy</h1>
+      <p class="page-meta">Last updated: June 2025 &nbsp;·&nbsp; Effective immediately upon registration</p>
 
-    <h2>2. Information We Collect</h2>
+      <h2>1. Overview</h2>
+      <p>AYILON ("we", "us", "our") is committed to protecting your privacy. This Privacy Policy explains what information we collect, how we use it, and your rights regarding that information.</p>
 
-    <p><strong>Account Information</strong></p>
-    <ul>
-      <li>Email address — used for account verification, login, and service notifications.</li>
-      <li>Display name and username — used to personalise your dashboard experience.</li>
-      <li>Password — stored using secure hashing; never stored or transmitted in plain text.</li>
-    </ul>
+      <h2>2. Information We Collect</h2>
+      <p><strong>Account Information</strong></p>
+      <ul>
+        <li>Email address — used for account verification, login, and service notifications.</li>
+        <li>Display name and username — used to personalise your dashboard experience.</li>
+        <li>Password — stored using secure hashing; never stored or transmitted in plain text.</li>
+      </ul>
+      <p><strong>Subscription & Payment Information</strong></p>
+      <ul>
+        <li>Selected plan, billing cycle, and payment date — stored to manage your subscription.</li>
+        <li>AYILON does not store credit card or bank account numbers. Payment processing is handled by third-party payment processors subject to their own privacy policies.</li>
+      </ul>
+      <p><strong>Exchange API Keys</strong></p>
+      <ul>
+        <li>API keys you provide are encrypted and used exclusively to execute trades on your behalf.</li>
+        <li>API keys are never shared with third parties or used for any purpose other than operating your bots.</li>
+      </ul>
+      <p><strong>Usage Data</strong></p>
+      <ul>
+        <li>Bot configuration settings and trade history — stored to power your dashboard.</li>
+        <li>Standard server logs (IP address, browser type, pages visited) — used for security and service improvement.</li>
+      </ul>
 
-    <p><strong>Subscription & Payment Information</strong></p>
-    <ul>
-      <li>Selected plan, billing cycle, and payment date — stored to manage your subscription.</li>
-      <li>AYILON does not store credit card or bank account numbers. Payment processing is handled by third-party payment processors subject to their own privacy policies.</li>
-    </ul>
+      <h2>3. How We Use Your Information</h2>
+      <ul>
+        <li>To create and manage your account.</li>
+        <li>To operate the trading bot service on your behalf.</li>
+        <li>To send transactional emails (verification codes, subscription confirmations, trade alerts).</li>
+        <li>To respond to support requests.</li>
+        <li>To detect and prevent fraud or abuse.</li>
+      </ul>
+      <p>We do <strong>not</strong> sell, rent, or share your personal information with third parties for marketing purposes.</p>
 
-    <p><strong>Exchange API Keys</strong></p>
-    <ul>
-      <li>API keys you provide are encrypted and used exclusively to execute trades on your behalf.</li>
-      <li>API keys are never shared with third parties or used for any purpose other than operating your bots.</li>
-    </ul>
+      <h2>4. Data Storage</h2>
+      <p>Account and subscription data is stored in your browser's localStorage and in Cloudflare KV (a distributed key-value store). Server infrastructure is provided by <strong>Cloudflare</strong>, subject to <a href="https://www.cloudflare.com/privacypolicy/" style="color:#fff;" target="_blank" rel="noopener">Cloudflare's Privacy Policy</a>.</p>
+      <p>Transactional emails are delivered via <strong>Resend</strong>, subject to <a href="https://resend.com/legal/privacy-policy" style="color:#fff;" target="_blank" rel="noopener">Resend's Privacy Policy</a>.</p>
 
-    <p><strong>Usage Data</strong></p>
-    <ul>
-      <li>Bot configuration settings and trade history — stored to power your dashboard.</li>
-      <li>Standard server logs (IP address, browser type, pages visited) — used for security and service improvement.</li>
-    </ul>
+      <h2>5. Data Retention</h2>
+      <p>We retain your account data for as long as your account is active. If you close your account, your personal data will be deleted within 30 days, except where retention is required by law.</p>
 
-    <h2>3. How We Use Your Information</h2>
-    <ul>
-      <li>To create and manage your account.</li>
-      <li>To operate the trading bot service on your behalf.</li>
-      <li>To send transactional emails (verification codes, subscription confirmations, trade alerts).</li>
-      <li>To respond to support requests.</li>
-      <li>To detect and prevent fraud or abuse.</li>
-    </ul>
-    <p>We do <strong>not</strong> sell, rent, or share your personal information with third parties for marketing purposes.</p>
+      <h2>6. Your Rights</h2>
+      <ul>
+        <li><strong>Access</strong> — You may request a copy of the personal data we hold about you.</li>
+        <li><strong>Correction</strong> — You may update your name, username, and email from your dashboard at any time.</li>
+        <li><strong>Deletion</strong> — You may request deletion of your account and associated data by contacting us.</li>
+        <li><strong>Portability</strong> — You may request your trade history in CSV format.</li>
+      </ul>
 
-    <h2>4. Data Storage</h2>
-    <p>Account and subscription data is stored in your browser's localStorage and in Cloudflare KV (a distributed key-value store). Server infrastructure is provided by <strong>Cloudflare</strong>, subject to <a href="https://www.cloudflare.com/privacypolicy/" style="color:#fff;" target="_blank" rel="noopener">Cloudflare's Privacy Policy</a>.</p>
-    <p>Transactional emails are delivered via <strong>Resend</strong>, subject to <a href="https://resend.com/legal/privacy-policy" style="color:#fff;" target="_blank" rel="noopener">Resend's Privacy Policy</a>.</p>
+      <h2>7. Cookies</h2>
+      <p>AYILON uses localStorage rather than traditional cookies for session management. No tracking cookies or third-party advertising cookies are used.</p>
 
-    <h2>5. Data Retention</h2>
-    <p>We retain your account data for as long as your account is active. If you close your account, your personal data will be deleted within 30 days, except where retention is required by law.</p>
+      <h2>8. Security</h2>
+      <p>We implement industry-standard security measures including HTTPS encryption, encrypted API key storage, and access controls. However, no system is completely secure, and we cannot guarantee absolute security.</p>
 
-    <h2>6. Your Rights</h2>
-    <ul>
-      <li><strong>Access</strong> — You may request a copy of the personal data we hold about you.</li>
-      <li><strong>Correction</strong> — You may update your name, username, and email from your dashboard at any time.</li>
-      <li><strong>Deletion</strong> — You may request deletion of your account and associated data by contacting us.</li>
-      <li><strong>Portability</strong> — You may request your trade history in CSV format.</li>
-    </ul>
+      <h2>9. Children</h2>
+      <p>AYILON is not intended for users under 18 years of age. We do not knowingly collect personal information from minors.</p>
 
-    <h2>7. Cookies</h2>
-    <p>AYILON uses localStorage rather than traditional cookies for session management. No tracking cookies or third-party advertising cookies are used.</p>
+      <h2>10. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. We will notify registered users of material changes via email. Continued use of the service after changes are posted constitutes acceptance.</p>
 
-    <h2>8. Security</h2>
-    <p>We implement industry-standard security measures including HTTPS encryption, encrypted API key storage, and access controls. However, no system is completely secure, and we cannot guarantee absolute security.</p>
+      <h2>11. Contact</h2>
+      <p>For privacy-related questions or requests, contact us at <strong>privacy@ayilon.com</strong>.</p>
+    </div>
 
-    <h2>9. Children</h2>
-    <p>AYILON is not intended for users under 18 years of age. We do not knowingly collect personal information from minors.</p>
+    <!-- KOREAN -->
+    <div class="lang-ko">
+      <h1 class="page-title">개인정보처리방침</h1>
+      <p class="page-meta">최종 수정: 2025년 6월 &nbsp;·&nbsp; 회원가입 즉시 효력 발생</p>
 
-    <h2>10. Changes to This Policy</h2>
-    <p>We may update this Privacy Policy from time to time. We will notify registered users of material changes via email. Continued use of the service after changes are posted constitutes acceptance.</p>
+      <h2>1. 개요</h2>
+      <p>AYILON("당사", "우리")은 귀하의 개인정보를 보호하기 위해 최선을 다합니다. 본 개인정보처리방침은 당사가 수집하는 정보, 이용 방법, 그리고 귀하의 권리에 대해 설명합니다.</p>
 
-    <h2>11. Contact</h2>
-    <p>For privacy-related questions or requests, contact us at <strong>privacy@ayilon.com</strong>.</p>
+      <h2>2. 수집하는 정보</h2>
+      <p><strong>계정 정보</strong></p>
+      <ul>
+        <li>이메일 주소 — 계정 인증, 로그인 및 서비스 알림에 사용됩니다.</li>
+        <li>표시 이름 및 사용자명 — 대시보드 개인화에 사용됩니다.</li>
+        <li>비밀번호 — 안전한 해싱 방식으로 저장되며, 평문으로 저장하거나 전송하지 않습니다.</li>
+      </ul>
+      <p><strong>구독 및 결제 정보</strong></p>
+      <ul>
+        <li>선택한 플랜, 청구 주기, 결제 날짜 — 구독 관리를 위해 저장됩니다.</li>
+        <li>AYILON은 신용카드 번호나 은행 계좌 번호를 저장하지 않습니다. 결제 처리는 제3자 결제 대행사가 담당합니다.</li>
+      </ul>
+      <p><strong>거래소 API 키</strong></p>
+      <ul>
+        <li>제공하신 API 키는 암호화되어 귀하를 대신하여 거래 실행에만 사용됩니다.</li>
+        <li>API 키는 제3자와 절대 공유되지 않으며, 봇 운영 외의 목적으로 사용되지 않습니다.</li>
+      </ul>
+      <p><strong>이용 데이터</strong></p>
+      <ul>
+        <li>봇 설정 및 거래 내역 — 대시보드 구동을 위해 저장됩니다.</li>
+        <li>서버 표준 로그 (IP 주소, 브라우저 유형, 방문 페이지) — 보안 및 서비스 개선을 위해 사용됩니다.</li>
+      </ul>
+
+      <h2>3. 정보 이용 방법</h2>
+      <ul>
+        <li>계정 생성 및 관리.</li>
+        <li>귀하를 대신하여 트레이딩 봇 서비스 운영.</li>
+        <li>트랜잭션 이메일 발송 (인증 코드, 구독 확인, 거래 알림).</li>
+        <li>고객 지원 요청 응대.</li>
+        <li>사기 및 악용 감지 및 예방.</li>
+      </ul>
+      <p>당사는 귀하의 개인정보를 마케팅 목적으로 제3자에게 판매, 대여하거나 공유하지 <strong>않습니다</strong>.</p>
+
+      <h2>4. 데이터 저장</h2>
+      <p>계정 및 구독 데이터는 브라우저의 localStorage와 Cloudflare KV(분산 키-값 저장소)에 저장됩니다. 서버 인프라는 <strong>Cloudflare</strong>에 의해 제공되며, <a href="https://www.cloudflare.com/privacypolicy/" style="color:#fff;" target="_blank" rel="noopener">Cloudflare 개인정보처리방침</a>의 적용을 받습니다.</p>
+      <p>트랜잭션 이메일은 <strong>Resend</strong>를 통해 발송되며, <a href="https://resend.com/legal/privacy-policy" style="color:#fff;" target="_blank" rel="noopener">Resend 개인정보처리방침</a>의 적용을 받습니다.</p>
+
+      <h2>5. 데이터 보유</h2>
+      <p>계정이 활성 상태인 동안 귀하의 계정 데이터를 보유합니다. 계정을 삭제하시면 법령에서 보유를 요구하는 경우를 제외하고 30일 이내에 개인 데이터가 삭제됩니다.</p>
+
+      <h2>6. 귀하의 권리</h2>
+      <ul>
+        <li><strong>열람권</strong> — 당사가 보유한 귀하의 개인정보 사본을 요청하실 수 있습니다.</li>
+        <li><strong>정정권</strong> — 언제든지 대시보드에서 이름, 사용자명, 이메일을 직접 수정하실 수 있습니다.</li>
+        <li><strong>삭제권</strong> — 당사에 연락하여 계정 및 관련 데이터 삭제를 요청하실 수 있습니다.</li>
+        <li><strong>이동권</strong> — CSV 형식으로 거래 내역을 요청하실 수 있습니다.</li>
+      </ul>
+
+      <h2>7. 쿠키</h2>
+      <p>AYILON은 세션 관리를 위해 전통적인 쿠키 대신 localStorage를 사용합니다. 추적 쿠키나 제3자 광고 쿠키는 사용하지 않습니다.</p>
+
+      <h2>8. 보안</h2>
+      <p>HTTPS 암호화, API 키 암호화 저장, 접근 통제 등 업계 표준 보안 조치를 적용합니다. 다만, 어떤 시스템도 완벽히 안전하지는 않으며 절대적인 보안을 보장할 수 없습니다.</p>
+
+      <h2>9. 아동</h2>
+      <p>AYILON은 18세 미만 이용자를 대상으로 하지 않습니다. 당사는 미성년자의 개인정보를 고의로 수집하지 않습니다.</p>
+
+      <h2>10. 방침 변경</h2>
+      <p>본 개인정보처리방침은 수시로 업데이트될 수 있습니다. 중요한 변경 사항은 이메일로 등록 회원에게 통지됩니다. 변경 사항 게시 후 서비스를 계속 이용하시면 동의한 것으로 간주됩니다.</p>
+
+      <h2>11. 문의</h2>
+      <p>개인정보 관련 질문이나 요청은 <strong>privacy@ayilon.com</strong>으로 문의해 주세요.</p>
+    </div>
+
   </div>
 
   <footer>
