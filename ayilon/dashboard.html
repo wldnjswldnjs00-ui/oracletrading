@@ -303,7 +303,7 @@
     <!-- OVERVIEW -->
     <div class="page active" id="page-overview">
       <div class="topbar">
-        <h1>Dashboard</h1>
+        <h1 data-i18n="db.dashboard">Dashboard</h1>
         <div class="topbar-right">
           <div class="badge-live"><span></span> <span data-i18n="db.ov.badge">Bot Running</span></div>
         </div>
@@ -345,7 +345,7 @@
 
         <div class="card" style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
           <div class="card-header" style="width:100%">
-            <span class="card-title">Win Rate</span>
+            <span class="card-title" data-i18n="db.ov.winrate">Win Rate</span>
           </div>
           <div class="ring-wrap">
             <div class="ring">
@@ -478,7 +478,7 @@
     <!-- BOT MANAGER -->
     <div class="page" id="page-bots">
       <div class="topbar">
-        <h1>Bot Manager</h1>
+        <h1 data-i18n="db.bots">Bot Manager</h1>
         <div class="topbar-right">
           <button class="btn-primary" onclick="openAddBotModal()" style="font-size:13px;padding:9px 20px;">+ Add Bot</button>
         </div>
@@ -486,14 +486,14 @@
 
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
-          <span class="card-title">My Bots</span>
+          <span class="card-title" data-i18n="db.card.mybots">My Bots</span>
           <span id="botCount" style="font-size:12px;color:var(--gray-400);">—</span>
         </div>
         <div id="botList"></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><span class="card-title">Available Strategies</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="db.card.strategies">Available Strategies</span></div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
           <div style="padding:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
             <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Grid Trading</div>
@@ -518,7 +518,7 @@
     <!-- POSITIONS -->
     <div class="page" id="page-positions">
       <div class="topbar" style="display:flex;align-items:center;justify-content:space-between;">
-        <h1>Positions</h1>
+        <h1 data-i18n="db.positions">Positions</h1>
         <button onclick="loadPositions()" style="padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--gray-400);font-size:13px;cursor:pointer;font-family:inherit;">↻ Refresh</button>
       </div>
 
@@ -531,7 +531,7 @@
 
     <!-- PERFORMANCE -->
     <div class="page" id="page-analytics">
-      <div class="topbar"><h1>Performance</h1></div>
+      <div class="topbar"><h1 data-i18n="db.performance">Performance</h1></div>
 
       <div class="perf-grid">
         <div class="stat-card">
@@ -558,7 +558,7 @@
 
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
-          <span class="card-title">Equity Curve (All Time)</span>
+          <span class="card-title" data-i18n="db.card.equityall">Equity Curve (All Time)</span>
           <span style="font-size:12px;color:var(--green);font-weight:600;">+$8,420 total</span>
         </div>
         <div style="position:relative;height:200px;">
@@ -568,7 +568,7 @@
 
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
-          <span class="card-title">Monthly P&amp;L</span>
+          <span class="card-title" data-i18n="db.card.monthlypnl">Monthly P&amp;L</span>
           <span style="font-size:12px;color:var(--gray-400);">2024</span>
         </div>
         <div style="position:relative;height:180px;">
@@ -578,7 +578,7 @@
 
       <div class="grid-2">
         <div class="card">
-          <div class="card-header"><span class="card-title">Strategy Breakdown</span></div>
+          <div class="card-header"><span class="card-title" data-i18n="db.card.stratbreakdown">Strategy Breakdown</span></div>
           <table>
             <thead><tr><th>Strategy</th><th>Trades</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
             <tbody>
@@ -590,7 +590,7 @@
           </table>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">Top Pairs</span></div>
+          <div class="card-header"><span class="card-title" data-i18n="db.card.toppairs">Top Pairs</span></div>
           <table>
             <thead><tr><th>Pair</th><th>Trades</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
             <tbody>
@@ -607,7 +607,7 @@
     <!-- TRADE HISTORY -->
     <div class="page" id="page-history">
       <div class="topbar" style="display:flex;align-items:center;justify-content:space-between;">
-        <h1>Trade History</h1>
+        <h1 data-i18n="db.history">Trade History</h1>
         <button onclick="loadHistory()" style="padding:8px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--gray-400);font-size:13px;cursor:pointer;font-family:inherit;">↻ Refresh</button>
       </div>
       <div id="historyContent">
@@ -617,11 +617,11 @@
 
     <!-- API INTEGRATION -->
     <div class="page" id="page-api">
-      <div class="topbar"><h1>API Integration</h1></div>
+      <div class="topbar"><h1 data-i18n="db.api">API Integration</h1></div>
 
       <div class="card" style="margin-bottom:20px;" id="apiConnectCard">
         <div class="card-header">
-          <span class="card-title">OKX API Key</span>
+          <span class="card-title" data-i18n="db.card.apikey">OKX API Key</span>
           <span id="apiStatusBadge" style="font-size:12px;display:none;"></span>
         </div>
 
@@ -667,7 +667,7 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><span class="card-title">API Security Guidelines</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="db.card.apisecurity">API Security Guidelines</span></div>
         <div style="display:flex; flex-direction:column; gap:12px;">
           <div style="display:flex; gap:12px; align-items:flex-start; padding:14px; background:rgba(34,197,94,0.04); border:1px solid rgba(34,197,94,0.12); border-radius:8px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><polyline points="20 6 9 17 4 12"/></svg>
@@ -689,7 +689,7 @@
 
     <!-- SECURITY -->
     <div class="page" id="page-security">
-      <div class="topbar"><h1>Security</h1></div>
+      <div class="topbar"><h1 data-i18n="db.security">Security</h1></div>
 
       <div class="card" style="margin-bottom:20px;">
         <div class="security-section">
@@ -728,7 +728,7 @@
       </div>
 
       <div class="card" style="margin-bottom:20px;">
-        <div class="card-header"><span class="card-title">Change Password</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="db.card.changepw">Change Password</span></div>
         <div style="max-width:400px;">
           <div class="d-form-group">
             <label class="d-form-label">Current Password</label>
@@ -748,24 +748,24 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><span class="card-title">Security Notifications</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="db.card.secnotif">Security Notifications</span></div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>New device login alert</h3>
+            <h3 data-i18n="db.notif.newdevice">New device login alert</h3>
             <p>Email notification when a new device signs in</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>API key change alert</h3>
+            <h3 data-i18n="db.notif.apichange">API key change alert</h3>
             <p>Email notification when API keys are added or removed</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>Suspicious activity alert</h3>
+            <h3 data-i18n="db.notif.suspicious">Suspicious activity alert</h3>
             <p>Immediate notification on anomalous access attempts</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
@@ -775,11 +775,11 @@
 
     <!-- MY ACCOUNT -->
     <div class="page" id="page-mypage">
-      <div class="topbar"><h1>My Account</h1></div>
+      <div class="topbar"><h1 data-i18n="db.myaccount">My Account</h1></div>
 
       <div class="grid-2" style="margin-bottom:20px;">
         <div class="card">
-          <div class="card-header"><span class="card-title">Profile</span></div>
+          <div class="card-header"><span class="card-title" data-i18n="db.card.profile">Profile</span></div>
           <div style="display:flex; align-items:center; gap:20px; margin-bottom:24px;">
             <div id="profileAvatar" style="width:64px;height:64px;background:rgba(255,255,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;">A</div>
             <div>
@@ -821,7 +821,7 @@
         </div>
 
         <div class="card">
-          <div class="card-header"><span class="card-title">Subscription</span></div>
+          <div class="card-header"><span class="card-title" data-i18n="db.card.subscription">Subscription</span></div>
           <div id="subCard" style="padding:20px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; margin-bottom:16px;">
             <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray-400);margin-bottom:8px;">Current Plan</div>
             <div id="subPlanName" style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:4px;">—</div>
@@ -834,7 +834,7 @@
       </div>
 
       <div class="card" style="margin-bottom:20px;">
-        <div class="card-header"><span class="card-title">Two-Factor Authentication</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="db.card.twofa">Two-Factor Authentication</span></div>
         <div class="method-card" id="mc-authenticator-my">
           <div class="method-left">
             <span class="method-icon">🔐</span>
@@ -864,17 +864,17 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><span class="card-title">Notification Preferences</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="db.card.notifpref">Notification Preferences</span></div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>Trade execution alerts</h3>
+            <h3 data-i18n="db.notif.tradeexec">Trade execution alerts</h3>
             <p>Notify every time a bot fills an order</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>Telegram notifications</h3>
+            <h3 data-i18n="db.notif.telegram">Telegram notifications</h3>
             <p>Receive real-time trade alerts via Telegram bot</p>
           </div>
           <div class="toggle" id="tgToggle" onclick="toggleTelegram()"></div>
@@ -893,14 +893,14 @@
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>Daily email report</h3>
+            <h3 data-i18n="db.notif.dailyreport">Daily email report</h3>
             <p>Receive yesterday's performance summary every morning</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
         </div>
         <div class="toggle-row">
           <div class="toggle-label">
-            <h3>Stop-loss triggered alert</h3>
+            <h3 data-i18n="db.notif.stoploss">Stop-loss triggered alert</h3>
             <p>Immediate SMS + email when a stop-loss fires</p>
           </div>
           <div class="toggle on" onclick="this.classList.toggle('on')"></div>
@@ -909,7 +909,7 @@
     </div>
 
     <div class="page" id="page-botsettings">
-      <div class="topbar"><h1>Bot Settings</h1></div>
+      <div class="topbar"><h1 data-i18n="db.botsettings">Bot Settings</h1></div>
 
       <!-- DAILY LOSS LIMIT ALERT (shown when limit hit) -->
       <div id="dailyLossAlert" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:20px 24px;margin-bottom:24px;align-items:center;justify-content:space-between;gap:16px;">
@@ -927,7 +927,7 @@
 
         <!-- BOT STATUS -->
         <div class="card" style="grid-column:1/-1;">
-          <div class="card-header"><span class="card-title">Bot Status</span></div>
+          <div class="card-header"><span class="card-title" data-i18n="db.card.botstatus">Bot Status</span></div>
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:12px;">
               <div id="botStatusDot" style="width:10px;height:10px;border-radius:50%;background:#525252;"></div>
@@ -970,7 +970,7 @@
         <!-- MARKET INTELLIGENCE -->
         <div class="card" id="marketDataCard" style="grid-column:1/-1;display:none;">
           <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;padding-bottom:0;">
-            <span class="card-title">Market Intelligence</span>
+            <span class="card-title" data-i18n="db.card.market">Market Intelligence</span>
             <div style="display:flex;align-items:center;gap:10px;">
               <span id="mktTrend" style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:0.05em;"></span>
               <span id="mktPrice" style="font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;"></span>
@@ -996,7 +996,7 @@
 
         <!-- RISK MANAGEMENT -->
         <div class="card">
-          <div class="card-header"><span class="card-title">Risk Management</span></div>
+          <div class="card-header"><span class="card-title" data-i18n="db.card.risk">Risk Management</span></div>
           <div style="display:flex;flex-direction:column;gap:20px;">
 
             <div>
@@ -1024,7 +1024,7 @@
 
         <!-- DAILY LOSS LIMIT -->
         <div class="card">
-          <div class="card-header"><span class="card-title">Daily Loss Limit</span></div>
+          <div class="card-header"><span class="card-title" data-i18n="db.card.dayloss">Daily Loss Limit</span></div>
           <div style="display:flex;flex-direction:column;gap:20px;">
 
             <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -1072,7 +1072,7 @@
 
         <!-- STRATEGY SETTINGS -->
         <div class="card">
-          <div class="card-header"><span class="card-title">Strategy</span></div>
+          <div class="card-header"><span class="card-title" data-i18n="db.card.strategy">Strategy</span></div>
           <div style="display:flex;flex-direction:column;gap:20px;">
 
             <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;padding:12px 14px;">
