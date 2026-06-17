@@ -1383,37 +1383,80 @@
     }
   }
 
+  function stratIdToWorkerName(id) {
+    var map = {
+      'sr-bounce': 'sr_bounce', 'rsi-dca': 'rsi_dca',
+      'ma-crossover': 'ma_crossover', 'bb-reversion': 'bb_reversion',
+      'breakout': 'breakout', 'ma-ribbon': 'ma_ribbon',
+      'macd-divergence': 'macd_div', 'funding-rate': 'funding_rate',
+      'atr-trend': 'atr_trend'
+    };
+    return map[id] || id.replace(/-/g, '_');
+  }
+
   async function startBot() {
     if (!selectedStrategy) return;
-    var token = getSessionToken();
+    var token    = getSessionToken();
     var leverage = document.getElementById('botLeverage').value;
     var posSize  = document.getElementById('botPosSize').value;
     var risk     = document.getElementById('botRisk').value;
     var entries  = document.getElementById('botEntries').value;
     var mode     = document.querySelector('input[name=botMode]:checked').value;
     var msgEl    = document.getElementById('botConfigMsg');
+    var strategyName = stratIdToWorkerName(selectedStrategy);
     msgEl.style.color = 'var(--gray-400)';
-    msgEl.textContent = '봇 시작 중...';
+    msgEl.textContent = '설정 저장 중...';
     try {
-      var res = await fetch(WORKER_URL + '/bot-control', {
+      // Step 1: save strategy config (merges with existing API key in KV)
+      var saveRes = await fetch(WORKER_URL + '/save-bot-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken: token, action: 'start', strategy: selectedStrategy, leverage: leverage, posSize: posSize, risk: risk, entries: entries, mode: mode })
+        body: JSON.stringify({
+          sessionToken: token,
+          strategy: strategyName,
+          leverage: parseInt(leverage),
+          posSize: parseFloat(posSize),
+          riskPerTrade: parseFloat(risk),
+          numEntries: parseInt(entries),
+          mode: mode,
+          demoMode: mode === 'demo'
+        })
       });
-      var data = await res.json();
-      if (data.ok) {
+      var saveData = await saveRes.json();
+      if (!saveData.ok) {
+        msgEl.style.color = 'var(--red)';
+        msgEl.textContent = saveData.error || '설정 저장에 실패했습니다';
+        return;
+      }
+      // Step 2: set running = true
+      msgEl.textContent = '봇 시작 중...';
+      var startRes = await fetch(WORKER_URL + '/bot-control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token, action: 'start' })
+      });
+      var startData = await startRes.json();
+      if (startData.ok) {
         msgEl.style.color = 'var(--green)';
         msgEl.textContent = '✓ 봇이 시작되었습니다!';
         loadMyBots();
       } else {
         msgEl.style.color = 'var(--red)';
-        msgEl.textContent = data.error || '봇 시작에 실패했습니다';
+        msgEl.textContent = startData.error || '봇 시작에 실패했습니다';
       }
     } catch(e) {
       msgEl.style.color = 'var(--red)';
       msgEl.textContent = '오류: ' + (e.message || '네트워크 오류');
     }
   }
+
+  var STRAT_DISPLAY_NAMES = {
+    'sr_bounce': 'SR Bounce', 'rsi_dca': 'RSI DCA',
+    'ma_support': 'MA Support', 'ma_crossover': 'MA Crossover',
+    'bb_reversion': 'BB Reversion', 'breakout': 'Breakout',
+    'ma_ribbon': 'MA Ribbon', 'macd_div': 'MACD Divergence',
+    'funding_rate': 'Funding Rate', 'atr_trend': 'ATR Trend'
+  };
 
   async function loadMyBots() {
     var token = getSessionToken();
@@ -1426,37 +1469,45 @@
         body: JSON.stringify({ sessionToken: token })
       });
       var data = await res.json();
-      var bots = data.bots || [];
-      if (!bots.length) {
+      if (!data.running) {
         listEl.innerHTML = '<div class="empty-state" style="padding:32px 0;">실행 중인 봇이 없습니다</div>';
+        var dashActive = document.getElementById('dashActiveBots');
+        if (dashActive) dashActive.textContent = '0';
         return;
       }
-      listEl.innerHTML = bots.map(function(b) {
-        return '<div class="bot-item">' +
+      var cfg        = data.config || {};
+      var stratName  = STRAT_DISPLAY_NAMES[cfg.strategy] || cfg.strategy || '—';
+      var modeLabel  = cfg.mode === 'demo' ? 'Demo' : 'Live';
+      var pairLabel  = cfg.tradingPair || 'BTC-USDT-SWAP';
+      var levLabel   = (cfg.leverage || 20) + 'x';
+      listEl.innerHTML =
+        '<div class="bot-item">' +
           '<div style="display:flex;align-items:center;gap:10px;">' +
-            '<div class="bot-status-dot"></div>' +
+            '<div class="bot-status-dot" style="animation:pulse 2s infinite;box-shadow:0 0 6px var(--green);"></div>' +
             '<div>' +
-              '<div style="font-size:14px;font-weight:600;">' + (b.strategy || '—') + '</div>' +
-              '<div style="font-size:12px;color:var(--gray-400);">' + (b.mode || 'live') + ' · Lev ' + (b.leverage || '?') + 'x</div>' +
+              '<div style="font-size:14px;font-weight:600;">' + stratName + '</div>' +
+              '<div style="font-size:12px;color:var(--gray-400);">' + pairLabel + ' · ' + modeLabel + ' · Lev ' + levLabel + '</div>' +
             '</div>' +
           '</div>' +
-          '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot(\'' + b.id + '\')">중지</button>' +
+          '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot()">중지</button>' +
         '</div>';
-      }).join('');
+      var dashActive = document.getElementById('dashActiveBots');
+      if (dashActive) dashActive.textContent = '1';
     } catch(e) {
       listEl.innerHTML = '<div class="empty-state" style="padding:32px 0;">봇 상태를 불러올 수 없습니다</div>';
     }
   }
 
-  async function stopBot(botId) {
+  async function stopBot() {
     var token = getSessionToken();
     try {
-      await fetch(WORKER_URL + '/bot-control', {
+      var res = await fetch(WORKER_URL + '/bot-control', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken: token, action: 'stop', botId: botId })
+        body: JSON.stringify({ sessionToken: token, action: 'stop' })
       });
-      loadMyBots();
+      var data = await res.json();
+      if (data.ok) loadMyBots();
     } catch(e) {}
   }
 
@@ -1562,7 +1613,7 @@
       var res  = await fetch(WORKER_URL + '/save-bot-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken: token, apiKey: key, apiSecret: secret, apiPass: pass })
+        body: JSON.stringify({ sessionToken: token, apiKey: key, apiSecret: secret, apiPassphrase: pass })
       });
       var data = await res.json();
       if (data.ok || res.ok) {
