@@ -461,6 +461,9 @@
       '404.desc':  "The page you're looking for doesn't exist — or it may have moved. Let's get you back on track.",
       '404.home':  'Back to Home',
       '404.dash':  'Go to Dashboard',
+      /* ── INDEX: CHART STREAM ── */
+      'stream.tag':   'Live Strategy',
+      'stream.title': 'Support / Resistance Bot in Action',
       /* ── INDEX: SLOGANS & TRUST ── */
       'slogan.marquee':      'Nothing to Everything.',
       'slogan.trust.tag':    'Asset Protection',
@@ -894,6 +897,9 @@
       '404.desc':  '찾으시는 페이지가 존재하지 않거나 이동했을 수 있습니다. 다시 안내해 드리겠습니다.',
       '404.home':  '홈으로',
       '404.dash':  '대시보드로',
+      /* ── INDEX: CHART STREAM ── */
+      'stream.tag':   '실시간 전략',
+      'stream.title': '지지/저항 봇 실제 작동',
       /* ── INDEX: SLOGANS & TRUST ── */
       'slogan.marquee':      '무에서 유로.',
       'slogan.trust.tag':    '자산 보호',
