@@ -31,26 +31,32 @@
     html { scroll-behavior: smooth; }
     body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); overflow-x: hidden; }
 
+    /* ── WRAP ── */
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+
     /* ── NAV ── */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 48px;
       border-bottom: 1px solid rgba(255,255,255,0.06);
       background: rgba(0,0,0,0.88); backdrop-filter: blur(16px);
     }
-    .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
-    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-inner {
+      max-width: 1080px; margin: 0 auto; padding: 0 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 54px;
+    }
+    .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
     .nav-links a { font-size: 13px; font-weight: 400; color: var(--gray-400); text-decoration: none; letter-spacing: 0.01em; transition: color 0.2s; }
     .nav-links a:hover { color: var(--white); }
-    .nav-actions { display: flex; gap: 10px; align-items: center; }
-    .btn-ghost { padding: 8px 16px; font-size: 13px; font-weight: 500; color: var(--white); background: transparent; border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; cursor: pointer; text-decoration: none; transition: border-color 0.2s, background 0.2s; }
+    .nav-actions { display: flex; gap: 8px; align-items: center; }
+    .btn-ghost { padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--white); background: transparent; border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; cursor: pointer; text-decoration: none; transition: border-color 0.2s, background 0.2s; }
     .btn-ghost:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.04); }
-    .btn-white { padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--black); background: var(--white); border: none; border-radius: 6px; cursor: pointer; text-decoration: none; transition: opacity 0.2s; }
+    .btn-white { padding: 7px 14px; font-size: 13px; font-weight: 600; color: var(--black); background: var(--white); border: none; border-radius: 6px; cursor: pointer; text-decoration: none; transition: opacity 0.2s; }
     .btn-white:hover { opacity: 0.88; }
     .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
     .hamburger span { display: block; width: 20px; height: 2px; background: var(--white); border-radius: 2px; }
-    .mobile-menu { display: none; position: fixed; top: 57px; left: 0; right: 0; background: rgba(0,0,0,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.06); padding: 8px 30px 20px; z-index: 99; }
+    .mobile-menu { display: none; position: fixed; top: 54px; left: 0; right: 0; background: rgba(0,0,0,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.06); padding: 8px 30px 20px; z-index: 99; }
     .mobile-menu.open { display: block; }
     .mobile-menu a { display: block; padding: 13px 0; font-size: 14px; color: var(--gray-400); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.04); transition: color 0.2s; }
     .mobile-menu a:last-child { border-bottom: none; color: var(--white); font-weight: 600; }
@@ -61,174 +67,132 @@
     .lang-btn.active { color: var(--white); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
 
     /* ── HERO ── */
-    .hero {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
-      padding: 120px 60px 80px;
-      gap: 40px;
-      position: relative;
-      overflow: hidden;
-    }
-    .hero-content { }
+    .hero { padding: 88px 0 60px; position: relative; overflow: hidden; }
+    .hero-inner { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 48px; }
     .hero-badge {
-      display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px;
+      display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px;
       background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
       border-radius: 100px; font-size: 11px; font-weight: 500; color: var(--gray-400);
-      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 28px;
+      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 20px;
     }
     .hero-dot { width: 5px; height: 5px; background: var(--green); border-radius: 50%; display: inline-block; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
-    .hero h1 {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(38px, 5vw, 66px);
-      font-weight: 700; line-height: 1.0;
-      letter-spacing: -0.03em; margin-bottom: 14px;
-    }
+    .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700; line-height: 1.0; letter-spacing: -0.03em; margin-bottom: 12px; }
     .hero h1 em { font-style: normal; color: var(--gray-400); }
-    .hero-tagline {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(16px, 2vw, 22px);
-      font-weight: 500; color: var(--gray-400);
-      letter-spacing: -0.01em; margin-bottom: 20px;
-    }
-    .hero-desc {
-      font-size: 14px; color: var(--gray-600); line-height: 1.75;
-      margin-bottom: 36px; max-width: 420px;
-    }
-    .hero-cta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .btn-primary { padding: 12px 26px; font-size: 14px; font-weight: 600; color: var(--black); background: var(--white); border: none; border-radius: 7px; cursor: pointer; text-decoration: none; transition: opacity 0.2s; letter-spacing: 0.01em; white-space: nowrap; }
+    .hero-tagline { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 500; color: var(--gray-400); letter-spacing: -0.01em; margin-bottom: 14px; }
+    .hero-desc { font-size: 14px; color: var(--gray-600); line-height: 1.75; margin-bottom: 28px; max-width: 380px; }
+    .hero-cta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .btn-primary { padding: 10px 20px; font-size: 13px; font-weight: 600; color: var(--black); background: var(--white); border: none; border-radius: 7px; cursor: pointer; text-decoration: none; transition: opacity 0.2s; letter-spacing: 0.01em; white-space: nowrap; }
     .btn-primary:hover { opacity: 0.88; }
-    .btn-secondary { padding: 12px 26px; font-size: 14px; font-weight: 500; color: var(--white); background: transparent; border: 1px solid rgba(255,255,255,0.18); border-radius: 7px; cursor: pointer; text-decoration: none; transition: border-color 0.2s; white-space: nowrap; }
+    .btn-secondary { padding: 10px 20px; font-size: 13px; font-weight: 500; color: var(--white); background: transparent; border: 1px solid rgba(255,255,255,0.18); border-radius: 7px; cursor: pointer; text-decoration: none; transition: border-color 0.2s; white-space: nowrap; }
     .btn-secondary:hover { border-color: rgba(255,255,255,0.45); }
     .hero-visual { display: flex; align-items: center; justify-content: center; }
-    #ayilon-canvas { width: 100%; max-width: 520px; height: 520px; display: block; }
+    #ayilon-canvas { width: 100%; max-width: 460px; height: 460px; display: block; }
 
     /* ── MARQUEE ── */
-    .marquee-section {
-      padding: 72px 60px;
-      text-align: center;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .marquee-text {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(32px, 6vw, 80px);
-      font-weight: 700; letter-spacing: -0.03em;
-      color: rgba(255,255,255,0.12); line-height: 1;
-      transition: color 0.4s;
-    }
+    .marquee-section { padding: 44px 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .marquee-text { font-family: 'Space Grotesk', sans-serif; font-size: 52px; font-weight: 700; letter-spacing: -0.03em; color: rgba(255,255,255,0.12); line-height: 1; transition: color 0.4s; }
     .marquee-text:hover { color: rgba(255,255,255,0.22); }
 
     /* ── STATS ── */
-    .stats {
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      padding: 48px 60px;
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
-    }
-    .stat-item { padding: 0 36px; border-right: 1px solid rgba(255,255,255,0.06); text-align: center; }
+    .stats { border-bottom: 1px solid rgba(255,255,255,0.06); padding: 36px 0; }
+    .stats-inner { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+    .stat-item { padding: 0 28px; border-right: 1px solid rgba(255,255,255,0.06); text-align: center; }
     .stat-item:first-child { padding-left: 0; }
     .stat-item:last-child { border-right: none; padding-right: 0; }
-    .stat-number { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 5px; }
+    .stat-number { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
     .stat-label { font-size: 12px; color: var(--gray-400); font-weight: 400; }
 
     /* ── SECTION ── */
-    section { padding: 80px 60px; }
-    .section-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 16px; }
-    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(26px, 3.5vw, 44px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 16px; max-width: 560px; }
-    .section-desc { font-size: 15px; color: var(--gray-400); line-height: 1.7; max-width: 460px; margin-bottom: 52px; }
+    section { padding: 60px 0; }
+    .section-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 12px; }
+    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 12px; max-width: 500px; }
+    .section-desc { font-size: 14px; color: var(--gray-400); line-height: 1.7; max-width: 420px; margin-bottom: 40px; }
 
     /* ── FEATURES ── */
-    .features-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 48px; }
-    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; overflow: hidden; }
-    .feature-card { background: var(--black); padding: 36px 28px; transition: background 0.25s; position: relative; }
+    .features-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 36px; }
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; }
+    .feature-card { background: var(--black); padding: 28px 22px; transition: background 0.25s; position: relative; }
     .feature-card:hover { background: #080808; }
-    .feature-num { font-size: 11px; font-weight: 600; color: var(--gray-600); letter-spacing: 0.1em; margin-bottom: 24px; font-family: 'Space Grotesk', sans-serif; }
-    .feature-icon { width: 26px; height: 26px; margin-bottom: 16px; }
-    .feature-icon svg { width: 26px; height: 26px; stroke: var(--gray-400); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.25s; }
+    .feature-num { font-size: 11px; font-weight: 600; color: var(--gray-600); letter-spacing: 0.1em; margin-bottom: 18px; font-family: 'Space Grotesk', sans-serif; }
+    .feature-icon { width: 22px; height: 22px; margin-bottom: 12px; }
+    .feature-icon svg { width: 22px; height: 22px; stroke: var(--gray-400); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.25s; }
     .feature-card:hover .feature-icon svg { stroke: var(--white); }
-    .feature-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.01em; }
+    .feature-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; margin-bottom: 7px; letter-spacing: -0.01em; }
     .feature-card p { font-size: 13px; color: var(--gray-600); line-height: 1.65; }
 
     /* ── TRUST SECTION ── */
-    .trust-section {
-      padding: 80px 60px;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: center;
-      border-top: 1px solid rgba(255,255,255,0.06);
-    }
-    .trust-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green); margin-bottom: 14px; }
-    .trust-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(26px, 3vw, 44px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 18px; }
+    .trust-section { padding: 60px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+    .trust-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .trust-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green); margin-bottom: 12px; }
+    .trust-title { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 14px; }
     .trust-desc { font-size: 14px; color: var(--gray-400); line-height: 1.8; }
-    .trust-visual { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 32px; }
-    .trust-item { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 24px; }
+    .trust-visual { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 24px; }
+    .trust-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
     .trust-item:last-child { margin-bottom: 0; }
-    .trust-icon { width: 34px; height: 34px; border-radius: 9px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .trust-icon svg { width: 16px; height: 16px; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .trust-icon { width: 30px; height: 30px; border-radius: 8px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .trust-icon svg { width: 14px; height: 14px; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .trust-item-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
     .trust-item-desc { font-size: 12px; color: var(--gray-400); line-height: 1.55; }
 
     /* ── HOW IT WORKS ── */
-    .how { background: var(--gray-900); border-radius: 20px; margin: 0 60px; }
-    .how-inner { padding: 72px; }
-    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px; margin-top: 52px; }
+    .how-section { padding: 60px 0; }
+    .how { background: var(--gray-900); border-radius: 16px; }
+    .how-inner { padding: 52px 48px; }
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 40px; }
     .step { position: relative; }
-    .step-num { font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--gray-600); margin-bottom: 18px; }
-    .step h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.01em; }
+    .step-num { font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--gray-600); margin-bottom: 14px; }
+    .step h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.01em; }
     .step p { font-size: 13px; color: var(--gray-400); line-height: 1.65; }
-    .step::after { content: '→'; position: absolute; top: 0; right: -18px; color: var(--gray-600); font-size: 14px; }
+    .step::after { content: '→'; position: absolute; top: 0; right: -14px; color: var(--gray-600); font-size: 12px; }
     .step:last-child::after { display: none; }
 
     /* ── EXCHANGE ── */
-    .exchanges { text-align: center; padding: 64px 60px; }
-    .exchanges h2 { font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 500; color: var(--gray-600); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 36px; }
-    .exchange-list { display: flex; gap: 48px; align-items: center; justify-content: center; }
-    .exchange-name { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: var(--gray-600); letter-spacing: 0.02em; transition: color 0.2s; }
+    .exchanges { text-align: center; padding: 44px 0; }
+    .exchanges h2 { font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 500; color: var(--gray-600); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 24px; }
+    .exchange-list { display: flex; gap: 36px; align-items: center; justify-content: center; }
+    .exchange-name { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: var(--gray-600); letter-spacing: 0.02em; transition: color 0.2s; }
     .exchange-name:hover { color: var(--white); }
 
     /* ── QUOTE SECTION ── */
-    .quote-section {
-      padding: 96px 60px; text-align: center;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .quote-main { font-family: 'Space Grotesk', sans-serif; font-size: clamp(30px, 5vw, 68px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 16px; }
-    .quote-sub { font-family: 'Space Grotesk', sans-serif; font-size: clamp(18px, 2.5vw, 32px); font-weight: 500; color: var(--gray-400); letter-spacing: -0.02em; }
+    .quote-section { padding: 60px 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .quote-main { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 10px; }
+    .quote-sub { font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 500; color: var(--gray-400); letter-spacing: -0.02em; }
 
     /* ── PRICING ── */
     .pricing { background: var(--black); }
-    .pricing-header { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 40px; }
+    .pricing-header { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 32px; }
     .pricing-header .section-title { max-width: 100%; }
     .pricing-header .section-desc { margin-bottom: 0; }
-    .billing-toggle { display: inline-flex; align-items: center; gap: 0; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; padding: 4px; margin: 28px 0 0; }
-    .toggle-btn { padding: 7px 18px; font-size: 13px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s, color 0.2s; background: transparent; color: var(--gray-400); font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
+    .billing-toggle { display: inline-flex; align-items: center; gap: 0; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; padding: 4px; margin: 20px 0 0; }
+    .toggle-btn { padding: 6px 16px; font-size: 13px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s, color 0.2s; background: transparent; color: var(--gray-400); font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
     .toggle-btn.active { background: var(--white); color: var(--black); }
     .save-tag { font-size: 10px; font-weight: 700; padding: 2px 7px; background: rgba(255,255,255,0.1); border-radius: 100px; color: var(--gray-400); }
     .toggle-btn.active .save-tag { background: rgba(0,0,0,0.1); color: var(--gray-600); }
-    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; }
-    .pricing-card { border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 32px; transition: border-color 0.2s; position: relative; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 28px; }
+    .pricing-card { border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 26px; transition: border-color 0.2s; position: relative; }
     .pricing-card:hover { border-color: rgba(255,255,255,0.18); }
     .pricing-card.featured { background: var(--white); color: var(--black); border-color: var(--white); }
-    .pricing-plan { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px; color: inherit; }
+    .pricing-plan { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px; color: inherit; }
     .pricing-card.featured .pricing-plan { color: var(--gray-600); }
-    .pricing-price { font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; color: inherit; }
-    .pricing-period { font-size: 12px; color: var(--gray-400); margin-bottom: 6px; }
+    .pricing-price { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; color: inherit; }
+    .pricing-period { font-size: 12px; color: var(--gray-400); margin-bottom: 4px; }
     .pricing-card.featured .pricing-period { color: var(--gray-600); }
-    .pricing-annual-note { font-size: 11px; color: var(--gray-600); margin-bottom: 24px; min-height: 16px; }
+    .pricing-annual-note { font-size: 11px; color: var(--gray-600); margin-bottom: 18px; min-height: 16px; }
     .save-badge { display: inline-block; padding: 2px 7px; background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); border-radius: 100px; font-size: 10px; font-weight: 600; color: var(--green); }
-    .pricing-features { list-style: none; margin-bottom: 28px; }
-    .pricing-features li { font-size: 13px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.06); color: var(--gray-400); display: flex; gap: 9px; align-items: flex-start; }
+    .pricing-features { list-style: none; margin-bottom: 20px; }
+    .pricing-features li { font-size: 13px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); color: var(--gray-400); display: flex; gap: 8px; align-items: flex-start; }
     .pricing-card.featured .pricing-features li { border-bottom-color: rgba(0,0,0,0.08); color: var(--gray-600); }
     .pricing-features li::before { content: '✓'; font-weight: 700; color: var(--white); flex-shrink: 0; margin-top: 1px; }
     .pricing-card.featured .pricing-features li::before { color: var(--black); }
     .pricing-card .btn-primary { width: 100%; text-align: center; display: block; }
-    .btn-outline { display: block; width: 100%; text-align: center; padding: 11px; border: 1px solid rgba(255,255,255,0.18); border-radius: 7px; color: var(--white); font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color 0.2s; }
+    .btn-outline { display: block; width: 100%; text-align: center; padding: 10px; border: 1px solid rgba(255,255,255,0.18); border-radius: 7px; color: var(--white); font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color 0.2s; }
     .btn-outline:hover { border-color: rgba(255,255,255,0.45); }
-    .strategy-compare { margin-top: 44px; }
-    .strategy-compare-title { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-600); text-align: center; margin-bottom: 16px; }
+    .strategy-compare { margin-top: 36px; }
+    .strategy-compare-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-600); text-align: center; margin-bottom: 12px; }
     .strategy-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .strategy-table th { padding: 9px 14px; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-600); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .strategy-table th { padding: 8px 12px; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-600); border-bottom: 1px solid rgba(255,255,255,0.08); }
     .strategy-table th:first-child { text-align: left; }
-    .strategy-table td { padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--gray-400); }
+    .strategy-table td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--gray-400); }
     .strategy-table td:first-child { color: var(--white); font-weight: 500; }
     .strategy-table td:not(:first-child) { text-align: center; }
     .strategy-table tr:last-child td { border-bottom: none; }
@@ -240,124 +204,119 @@
     .st-risk.high { background: rgba(255,59,48,0.13); color: #ff3b30; }
 
     /* ── REFERRAL BANNER ── */
-    .referral-banner { margin: 52px 0 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 48px 52px; background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.01) 100%); display: flex; align-items: center; justify-content: space-between; gap: 36px; position: relative; overflow: hidden; }
-    .referral-banner::before { content: 'LIFETIME'; position: absolute; right: -16px; top: 50%; transform: translateY(-50%) rotate(90deg); font-family: 'Space Grotesk', sans-serif; font-size: 72px; font-weight: 900; letter-spacing: 0.05em; color: rgba(255,255,255,0.02); pointer-events: none; white-space: nowrap; }
+    .referral-banner { margin: 40px 0 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 36px 40px; background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.01) 100%); display: flex; align-items: center; justify-content: space-between; gap: 28px; position: relative; overflow: hidden; }
+    .referral-banner::before { content: 'LIFETIME'; position: absolute; right: -16px; top: 50%; transform: translateY(-50%) rotate(90deg); font-family: 'Space Grotesk', sans-serif; font-size: 60px; font-weight: 900; letter-spacing: 0.05em; color: rgba(255,255,255,0.02); pointer-events: none; white-space: nowrap; }
     .referral-left { flex: 1; }
-    .referral-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 12px; }
-    .referral-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(22px, 2.8vw, 34px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 12px; }
-    .referral-desc { font-size: 14px; color: var(--gray-400); line-height: 1.65; max-width: 500px; }
-    .referral-steps { display: flex; gap: 24px; margin-top: 20px; flex-wrap: wrap; }
-    .referral-step { display: flex; align-items: flex-start; gap: 9px; }
-    .referral-step-num { width: 20px; height: 20px; border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .referral-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 8px; }
+    .referral-title { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 8px; }
+    .referral-desc { font-size: 13px; color: var(--gray-400); line-height: 1.65; max-width: 460px; }
+    .referral-steps { display: flex; gap: 18px; margin-top: 16px; flex-wrap: wrap; }
+    .referral-step { display: flex; align-items: flex-start; gap: 8px; }
+    .referral-step-num { width: 18px; height: 18px; border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
     .referral-step p { font-size: 12px; color: var(--gray-400); line-height: 1.5; }
     .referral-right { flex-shrink: 0; text-align: center; }
-    .btn-referral { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; background: var(--white); color: var(--black); border: none; border-radius: 9px; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
+    .btn-referral { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; background: var(--white); color: var(--black); border: none; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
     .btn-referral:hover { opacity: 0.88; }
-    .referral-note { font-size: 11px; color: var(--gray-600); margin-top: 9px; }
+    .referral-note { font-size: 11px; color: var(--gray-600); margin-top: 7px; }
 
     /* ── FAQ ── */
-    .faq-section { padding: 80px 60px; max-width: 800px; margin: 0 auto; }
-    .faq-list { margin-top: 44px; }
+    .faq-wrap { padding: 60px 0; max-width: 760px; margin: 0 auto; }
+    .faq-list { margin-top: 32px; }
     .faq-item { border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .faq-question { width: 100%; background: none; border: none; color: var(--white); font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; text-align: left; padding: 20px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 18px; transition: color 0.2s; }
+    .faq-question { width: 100%; background: none; border: none; color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; text-align: left; padding: 16px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 18px; transition: color 0.2s; }
     .faq-question:hover { color: rgba(255,255,255,0.7); }
-    .faq-icon { flex-shrink: 0; width: 20px; height: 20px; border: 1px solid rgba(255,255,255,0.13); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: transform 0.25s, background 0.2s; }
+    .faq-icon { flex-shrink: 0; width: 18px; height: 18px; border: 1px solid rgba(255,255,255,0.13); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: transform 0.25s, background 0.2s; }
     .faq-item.open .faq-icon { transform: rotate(45deg); background: rgba(255,255,255,0.07); }
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-    .faq-answer p { font-size: 14px; color: var(--gray-400); line-height: 1.75; padding-bottom: 18px; }
+    .faq-answer p { font-size: 13px; color: var(--gray-400); line-height: 1.75; padding-bottom: 14px; }
     .faq-answer a { color: var(--white); }
 
     /* ── CTA ── */
-    .cta-section {
-      margin: 0 60px 80px; border: 1px solid rgba(255,255,255,0.07); border-radius: 20px;
-      padding: 88px 72px; text-align: center; background: var(--gray-900);
-      position: relative; overflow: hidden;
-    }
-    .cta-section::before { content: ''; position: absolute; bottom: -180px; left: 50%; transform: translateX(-50%); width: 500px; height: 360px; background: radial-gradient(ellipse, rgba(34,197,94,0.04) 0%, transparent 70%); pointer-events: none; }
-    .cta-section h2 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(28px, 4.5vw, 56px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; margin-bottom: 16px; }
-    .cta-section p { font-size: 15px; color: var(--gray-400); margin-bottom: 36px; font-family: 'Space Grotesk', sans-serif; font-weight: 500; letter-spacing: -0.01em; }
+    .cta-wrap { padding: 0 0 60px; }
+    .cta-section { border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 64px 52px; text-align: center; background: var(--gray-900); position: relative; overflow: hidden; }
+    .cta-section::before { content: ''; position: absolute; bottom: -160px; left: 50%; transform: translateX(-50%); width: 420px; height: 300px; background: radial-gradient(ellipse, rgba(34,197,94,0.04) 0%, transparent 70%); pointer-events: none; }
+    .cta-section h2 { font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; margin-bottom: 12px; }
+    .cta-section p { font-size: 14px; color: var(--gray-400); margin-bottom: 28px; font-family: 'Space Grotesk', sans-serif; font-weight: 500; letter-spacing: -0.01em; }
 
     /* ── FOOTER ── */
-    footer { border-top: 1px solid rgba(255,255,255,0.06); padding: 52px 60px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 36px; }
-    .footer-brand .nav-logo { font-size: 17px; display: block; margin-bottom: 10px; }
-    .footer-brand p { font-size: 12px; color: var(--gray-600); line-height: 1.6; max-width: 220px; }
-    .footer-links { display: flex; gap: 52px; flex-wrap: wrap; }
-    .footer-col h4 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-600); margin-bottom: 14px; }
+    footer { border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0; }
+    .footer-inner { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 28px; }
+    .footer-brand .nav-logo { font-size: 16px; display: block; margin-bottom: 8px; }
+    .footer-brand p { font-size: 12px; color: var(--gray-600); line-height: 1.6; max-width: 200px; }
+    .footer-links { display: flex; gap: 44px; flex-wrap: wrap; }
+    .footer-col h4 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-600); margin-bottom: 10px; }
     .footer-col ul { list-style: none; }
-    .footer-col li { margin-bottom: 9px; }
+    .footer-col li { margin-bottom: 7px; }
     .footer-col a { font-size: 13px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
     .footer-col a:hover { color: var(--white); }
-    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.06); padding: 20px 60px; display: flex; justify-content: space-between; align-items: center; }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.06); padding: 14px 0; display: flex; justify-content: space-between; align-items: center; }
     .footer-bottom p { font-size: 12px; color: var(--gray-600); }
-    .legal-disclaimer { padding: 10px 60px 18px; }
-    .legal-disclaimer p { font-size: 10px; color: var(--gray-600); line-height: 1.6; max-width: 860px; margin: 0 auto; text-align: center; }
+    .legal-disclaimer { padding: 6px 0 12px; }
+    .legal-disclaimer p { font-size: 10px; color: var(--gray-600); line-height: 1.6; max-width: 760px; margin: 0 auto; text-align: center; }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 1024px) {
-      nav { padding: 14px 24px; }
+      .wrap { padding: 0 24px; }
+      .nav-inner { padding: 0 24px; }
       .nav-links { display: none; }
       .nav-actions { display: none; }
       .hamburger { display: flex; }
-      .hero { grid-template-columns: 1fr; padding: 100px 30px 60px; text-align: center; }
+      .hero-inner { grid-template-columns: 1fr; text-align: center; }
       .hero-content { order: 1; display: flex; flex-direction: column; align-items: center; }
-      .hero-desc { margin: 0 auto 32px; }
+      .hero-desc { margin: 0 auto 24px; }
       .hero-cta { justify-content: center; }
-      .hero-visual { order: 0; margin-bottom: 20px; }
-      #ayilon-canvas { max-width: 320px; height: 320px; }
-      .marquee-section { padding: 48px 30px; }
-      .stats { grid-template-columns: repeat(2, 1fr); padding: 40px 30px; gap: 32px; }
+      .hero-visual { order: 0; margin-bottom: 12px; }
+      #ayilon-canvas { max-width: 280px; height: 280px; }
+      .marquee-text { font-size: 36px; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 24px; }
       .stat-item { border-right: none; padding: 0; }
-      section { padding: 64px 30px; }
       .features-grid { grid-template-columns: 1fr; }
-      .trust-section { grid-template-columns: 1fr; gap: 40px; padding: 64px 30px; }
-      .how { margin: 0 24px; }
-      .how-inner { padding: 44px 28px; }
-      .steps { grid-template-columns: 1fr 1fr; gap: 28px; }
+      .trust-inner { grid-template-columns: 1fr; gap: 32px; }
+      .how-inner { padding: 36px 28px; }
+      .steps { grid-template-columns: 1fr 1fr; gap: 22px; }
       .step::after { display: none; }
-      .quote-section { padding: 72px 30px; }
       .pricing-grid { grid-template-columns: 1fr; }
-      #strategies > section { padding: 64px 30px; }
-      .faq-section { padding: 64px 30px; }
-      .referral-banner { flex-direction: column; padding: 36px 28px; }
+      .referral-banner { flex-direction: column; padding: 28px 22px; }
       .referral-banner::before { display: none; }
-      .cta-section { margin: 0 24px 64px; padding: 52px 28px; }
-      footer { padding: 48px 30px; }
-      .footer-bottom { padding: 20px 30px; flex-direction: column; gap: 10px; text-align: center; }
-      .legal-disclaimer { padding: 8px 30px 14px; }
-      .strategy-compare { overflow-x: auto; }
-      .strategy-table { font-size: 12px; min-width: 480px; }
-      .features-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .cta-section { padding: 44px 24px; }
+      .features-header { flex-direction: column; align-items: flex-start; gap: 10px; }
     }
     @media (max-width: 640px) {
+      .hero h1 { font-size: 32px; }
+      .marquee-text { font-size: 26px; }
+      .quote-main { font-size: 26px; }
+      .cta-section h2 { font-size: 24px; }
       .steps { grid-template-columns: 1fr; }
-      .footer-links { gap: 32px; }
-      .pricing-card { padding: 24px; }
-      .referral-steps { flex-direction: column; gap: 16px; }
+      .footer-links { gap: 24px; }
+      .pricing-card { padding: 20px; }
+      .referral-steps { flex-direction: column; gap: 12px; }
     }
   </style>
 </head>
 <body>
 
   <nav>
-    <a href="index.html" class="nav-logo">AYILON</a>
-    <ul class="nav-links">
-      <li><a href="#features" data-i18n="nav.features">Features</a></li>
-      <li><a href="#how" data-i18n="nav.how">How It Works</a></li>
-      <li><a href="#pricing" data-i18n="nav.pricing">Pricing</a></li>
-      <li><a href="bot-guide.html" data-i18n="nav.botguide">Bot Guide</a></li>
-      <li><a href="about.html" data-i18n="nav.about">About</a></li>
-    </ul>
-    <div class="lang-switcher">
-      <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
-      <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">AYILON</a>
+      <ul class="nav-links">
+        <li><a href="#features" data-i18n="nav.features">Features</a></li>
+        <li><a href="#how" data-i18n="nav.how">How It Works</a></li>
+        <li><a href="#pricing" data-i18n="nav.pricing">Pricing</a></li>
+        <li><a href="bot-guide.html" data-i18n="nav.botguide">Bot Guide</a></li>
+        <li><a href="about.html" data-i18n="nav.about">About</a></li>
+      </ul>
+      <div class="lang-switcher">
+        <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+        <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
+      </div>
+      <div class="nav-actions" id="navActions">
+        <a href="login.html" class="btn-ghost" data-i18n="nav.login">Log In</a>
+        <a href="signup.html" class="btn-white" data-i18n="nav.getstarted">Get Started</a>
+      </div>
+      <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
     </div>
-    <div class="nav-actions" id="navActions">
-      <a href="login.html" class="btn-ghost" data-i18n="nav.login">Log In</a>
-      <a href="signup.html" class="btn-white" data-i18n="nav.getstarted">Get Started</a>
-    </div>
-    <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
   </nav>
 
   <div class="mobile-menu" id="mobileMenu">
@@ -388,159 +347,171 @@
 
   <!-- HERO -->
   <section class="hero">
-    <div class="hero-content">
-      <div class="hero-badge">
-        <span class="hero-dot"></span>
-        <span data-i18n="hero.badge">Automated Crypto Trading — 24/7</span>
+    <div class="hero-inner wrap">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="hero-dot"></span>
+          <span data-i18n="hero.badge">Automated Crypto Trading — 24/7</span>
+        </div>
+        <h1>
+          <span data-i18n="hero.title1">The end</span><br />
+          <em data-i18n="hero.title2">of effort.</em>
+        </h1>
+        <p class="hero-tagline" data-i18n="hero.tagline">Set, forget, grow.</p>
+        <p class="hero-desc" data-i18n="hero.desc">Connect your OKX API key. AYILON's algorithmic bots trade 24/7 on your behalf — no downloads, no setup, no effort.</p>
+        <div class="hero-cta">
+          <a href="signup.html" class="btn-primary" data-i18n="hero.cta1">Automate My Account →</a>
+          <a href="#how" class="btn-secondary" data-i18n="hero.cta2">See How It Works</a>
+        </div>
       </div>
-      <h1>
-        <span data-i18n="hero.title1">The end</span><br />
-        <em data-i18n="hero.title2">of effort.</em>
-      </h1>
-      <p class="hero-tagline" data-i18n="hero.tagline">Set, forget, grow.</p>
-      <p class="hero-desc" data-i18n="hero.desc">Connect your OKX API key. AYILON's algorithmic bots trade 24/7 on your behalf — no downloads, no setup, no effort.</p>
-      <div class="hero-cta">
-        <a href="signup.html" class="btn-primary" data-i18n="hero.cta1">Automate My Account →</a>
-        <a href="#how" class="btn-secondary" data-i18n="hero.cta2">See How It Works</a>
+      <div class="hero-visual">
+        <canvas id="ayilon-canvas"></canvas>
       </div>
-    </div>
-    <div class="hero-visual">
-      <canvas id="ayilon-canvas"></canvas>
     </div>
   </section>
 
   <!-- MARQUEE -->
   <div class="marquee-section">
-    <div class="marquee-text" data-i18n="slogan.marquee">Nothing to Everything.</div>
+    <div class="wrap">
+      <div class="marquee-text" data-i18n="slogan.marquee">Nothing to Everything.</div>
+    </div>
   </div>
 
   <!-- STATS -->
   <div class="stats">
-    <div class="stat-item">
-      <div class="stat-number">$2.4B+</div>
-      <div class="stat-label" data-i18n="stats.vol.label">Total Volume Traded</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-number">38,000+</div>
-      <div class="stat-label" data-i18n="stats.bots.label">Active Bots</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-number">12,000+</div>
-      <div class="stat-label" data-i18n="stats.traders.label">Traders Worldwide</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-number">99.9%</div>
-      <div class="stat-label" data-i18n="stats.uptime.label">Server Uptime</div>
+    <div class="stats-inner wrap">
+      <div class="stat-item">
+        <div class="stat-number">$2.4B+</div>
+        <div class="stat-label" data-i18n="stats.vol.label">Total Volume Traded</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">38,000+</div>
+        <div class="stat-label" data-i18n="stats.bots.label">Active Bots</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">12,000+</div>
+        <div class="stat-label" data-i18n="stats.traders.label">Traders Worldwide</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">99.9%</div>
+        <div class="stat-label" data-i18n="stats.uptime.label">Server Uptime</div>
+      </div>
     </div>
   </div>
 
   <!-- FEATURES -->
   <section id="features">
-    <div class="features-header">
-      <div>
-        <div class="section-tag" data-i18n="feat.tag">Core Features</div>
-        <h2 class="section-title" data-i18n="feat.title">Everything you need to automate trading</h2>
+    <div class="wrap">
+      <div class="features-header">
+        <div>
+          <div class="section-tag" data-i18n="feat.tag">Core Features</div>
+          <h2 class="section-title" data-i18n="feat.title">Everything you need to automate trading</h2>
+        </div>
+        <p class="section-desc" data-i18n="feat.desc">From strategy selection to execution and profit tracking — AYILON handles it all while you sleep.</p>
       </div>
-      <p class="section-desc" data-i18n="feat.desc">From strategy selection to execution and profit tracking — AYILON handles it all while you sleep.</p>
-    </div>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-num">01</div>
-        <div class="feature-icon"><svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-        <h3 data-i18n="feat.1.title">Automated Trading</h3>
-        <p data-i18n="feat.1.desc">Algorithmic bots that never stop. 24/7/365 market monitoring with instant execution at the optimal moment.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-num">02</div>
-        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
-        <h3 data-i18n="feat.2.title">OKX Integration</h3>
-        <p data-i18n="feat.2.desc">Connect to OKX in seconds via API key. Your funds stay on the exchange — AYILON only trades, never withdraws.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-num">03</div>
-        <div class="feature-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-        <h3 data-i18n="feat.3.title">Multiple Strategies</h3>
-        <p data-i18n="feat.3.desc">Support/resistance entries, fractional DCA, Kelly-sized positions — proven strategies configurable in one click.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-num">04</div>
-        <div class="feature-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-        <h3 data-i18n="feat.4.title">Backtesting</h3>
-        <p data-i18n="feat.4.desc">Simulate strategy performance on historical data before committing real capital. Verify before you deploy.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-num">05</div>
-        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
-        <h3 data-i18n="feat.5.title">Real-Time Alerts</h3>
-        <p data-i18n="feat.5.desc">Instant notifications for fills, stop-losses, and profit targets via email and Telegram.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-num">06</div>
-        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-        <h3 data-i18n="feat.6.title">Asset Protection</h3>
-        <p data-i18n="feat.6.desc">API keys stored with trading-only permissions. Withdrawal access is never requested — your funds stay yours.</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-num">01</div>
+          <div class="feature-icon"><svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+          <h3 data-i18n="feat.1.title">Automated Trading</h3>
+          <p data-i18n="feat.1.desc">Algorithmic bots that never stop. 24/7/365 market monitoring with instant execution at the optimal moment.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-num">02</div>
+          <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+          <h3 data-i18n="feat.2.title">OKX Integration</h3>
+          <p data-i18n="feat.2.desc">Connect to OKX in seconds via API key. Your funds stay on the exchange — AYILON only trades, never withdraws.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-num">03</div>
+          <div class="feature-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+          <h3 data-i18n="feat.3.title">Multiple Strategies</h3>
+          <p data-i18n="feat.3.desc">Support/resistance entries, fractional DCA, Kelly-sized positions — proven strategies configurable in one click.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-num">04</div>
+          <div class="feature-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <h3 data-i18n="feat.4.title">Backtesting</h3>
+          <p data-i18n="feat.4.desc">Simulate strategy performance on historical data before committing real capital. Verify before you deploy.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-num">05</div>
+          <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+          <h3 data-i18n="feat.5.title">Real-Time Alerts</h3>
+          <p data-i18n="feat.5.desc">Instant notifications for fills, stop-losses, and profit targets via email and Telegram.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-num">06</div>
+          <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <h3 data-i18n="feat.6.title">Asset Protection</h3>
+          <p data-i18n="feat.6.desc">API keys stored with trading-only permissions. Withdrawal access is never requested — your funds stay yours.</p>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- TRUST SECTION -->
   <div class="trust-section">
-    <div>
-      <div class="trust-eyebrow" data-i18n="slogan.trust.tag">Asset Protection</div>
-      <div class="trust-title" data-i18n="slogan.trust.title">We trade. You keep.</div>
-      <p class="trust-desc" data-i18n="slogan.trust.desc">Your funds never leave your OKX account. AYILON connects via API key with trade-only permissions — withdrawal access is never requested. Your capital stays exactly where you put it.</p>
-    </div>
-    <div class="trust-visual">
-      <div class="trust-item">
-        <div class="trust-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-        <div>
-          <div class="trust-item-title" data-i18n="feat.6.title">Zero custody risk</div>
-          <div class="trust-item-desc" data-i18n="trust.item1.desc">AYILON never touches your funds. Trade permissions only — no withdraw, no transfer.</div>
-        </div>
+    <div class="trust-inner wrap">
+      <div>
+        <div class="trust-eyebrow" data-i18n="slogan.trust.tag">Asset Protection</div>
+        <div class="trust-title" data-i18n="slogan.trust.title">We trade. You keep.</div>
+        <p class="trust-desc" data-i18n="slogan.trust.desc">Your funds never leave your OKX account. AYILON connects via API key with trade-only permissions — withdrawal access is never requested. Your capital stays exactly where you put it.</p>
       </div>
-      <div class="trust-item">
-        <div class="trust-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-        <div>
-          <div class="trust-item-title" data-i18n="trust.item2.title">Encrypted API storage</div>
-          <div class="trust-item-desc" data-i18n="trust.item2.desc">Your API keys are encrypted at rest and in transit. Never shared with third parties.</div>
+      <div class="trust-visual">
+        <div class="trust-item">
+          <div class="trust-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div>
+            <div class="trust-item-title" data-i18n="feat.6.title">Zero custody risk</div>
+            <div class="trust-item-desc" data-i18n="trust.item1.desc">AYILON never touches your funds. Trade permissions only — no withdraw, no transfer.</div>
+          </div>
         </div>
-      </div>
-      <div class="trust-item">
-        <div class="trust-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-        <div>
-          <div class="trust-item-title" data-i18n="trust.item3.title">24/7 monitoring</div>
-          <div class="trust-item-desc" data-i18n="trust.item3.desc">Real-time position monitoring with automatic circuit breakers on extreme market conditions.</div>
+        <div class="trust-item">
+          <div class="trust-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+          <div>
+            <div class="trust-item-title" data-i18n="trust.item2.title">Encrypted API storage</div>
+            <div class="trust-item-desc" data-i18n="trust.item2.desc">Your API keys are encrypted at rest and in transit. Never shared with third parties.</div>
+          </div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div>
+            <div class="trust-item-title" data-i18n="trust.item3.title">24/7 monitoring</div>
+            <div class="trust-item-desc" data-i18n="trust.item3.desc">Real-time position monitoring with automatic circuit breakers on extreme market conditions.</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- HOW IT WORKS -->
-  <div id="how">
-    <div class="how">
-      <div class="how-inner">
-        <div class="section-tag" data-i18n="how.tag">How It Works</div>
-        <h2 class="section-title" data-i18n="how.title">Up and running in 4 steps</h2>
-        <div class="steps">
-          <div class="step">
-            <div class="step-num">01</div>
-            <h3 data-i18n="how.step1.title">Create Account</h3>
-            <p data-i18n="how.step1.desc">Sign up with your email in under 30 seconds.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">02</div>
-            <h3 data-i18n="how.step2.title">Connect OKX</h3>
-            <p data-i18n="how.step2.desc">Paste your OKX API key and secret. Read + trade permissions only.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">03</div>
-            <h3 data-i18n="how.step3.title">Choose Strategy</h3>
-            <p data-i18n="how.step3.desc">Pick a strategy, select your pairs, and set your capital allocation.</p>
-          </div>
-          <div class="step">
-            <div class="step-num">04</div>
-            <h3 data-i18n="how.step4.title">Let It Run</h3>
-            <p data-i18n="how.step4.desc">Hit start. Your bot trades 24/7 on AYILON's servers — nothing to install or maintain.</p>
+  <div id="how" class="how-section">
+    <div class="wrap">
+      <div class="how">
+        <div class="how-inner">
+          <div class="section-tag" data-i18n="how.tag">How It Works</div>
+          <h2 class="section-title" data-i18n="how.title">Up and running in 4 steps</h2>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">01</div>
+              <h3 data-i18n="how.step1.title">Create Account</h3>
+              <p data-i18n="how.step1.desc">Sign up with your email in under 30 seconds.</p>
+            </div>
+            <div class="step">
+              <div class="step-num">02</div>
+              <h3 data-i18n="how.step2.title">Connect OKX</h3>
+              <p data-i18n="how.step2.desc">Paste your OKX API key and secret. Read + trade permissions only.</p>
+            </div>
+            <div class="step">
+              <div class="step-num">03</div>
+              <h3 data-i18n="how.step3.title">Choose Strategy</h3>
+              <p data-i18n="how.step3.desc">Pick a strategy, select your pairs, and set your capital allocation.</p>
+            </div>
+            <div class="step">
+              <div class="step-num">04</div>
+              <h3 data-i18n="how.step4.title">Let It Run</h3>
+              <p data-i18n="how.step4.desc">Hit start. Your bot trades 24/7 on AYILON's servers — nothing to install or maintain.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -549,78 +520,82 @@
 
   <!-- EXCHANGES -->
   <div class="exchanges">
-    <h2 data-i18n="exch.header">Supported Exchange</h2>
-    <div class="exchange-list">
-      <span class="exchange-name">OKX</span>
+    <div class="wrap">
+      <h2 data-i18n="exch.header">Supported Exchange</h2>
+      <div class="exchange-list">
+        <span class="exchange-name">OKX</span>
+      </div>
     </div>
   </div>
 
   <!-- STRATEGIES -->
   <div id="strategies">
-    <section style="padding:80px 60px;">
-      <div style="text-align:center;margin-bottom:56px;">
-        <div class="section-tag" data-i18n="strat.tag">Our Approach</div>
-        <h2 class="section-title" style="max-width:100%;text-align:center;" data-i18n="strat.title">Institutional-grade logic. Now yours.</h2>
-        <p style="font-size:15px;color:var(--gray-400);max-width:580px;margin:0 auto;line-height:1.7;" data-i18n="strat.desc">The same logic that works in a bull market works in a bear market. AYILON identifies institutional S/R levels and enters in the direction the market is already moving.</p>
-      </div>
+    <section>
+      <div class="wrap">
+        <div style="text-align:center;margin-bottom:44px;">
+          <div class="section-tag" data-i18n="strat.tag">Our Approach</div>
+          <h2 class="section-title" style="max-width:100%;text-align:center;" data-i18n="strat.title">Institutional-grade logic. Now yours.</h2>
+          <p style="font-size:14px;color:var(--gray-400);max-width:540px;margin:0 auto;line-height:1.7;" data-i18n="strat.desc">The same logic that works in a bull market works in a bear market. AYILON identifies institutional S/R levels and enters in the direction the market is already moving.</p>
+        </div>
 
-      <div style="border:1px solid rgba(255,255,255,0.08);border-radius:14px;overflow:hidden;margin-bottom:18px;background:#0d0d0d;">
-        <div style="padding:16px 22px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06);">
-          <div style="display:flex;align-items:center;gap:9px;">
-            <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px #22c55e;"></span>
-            <span style="font-size:12px;font-weight:600;color:var(--white);letter-spacing:0.04em;">BTC/USDT</span>
+        <div style="border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;margin-bottom:16px;background:#0d0d0d;">
+          <div style="padding:14px 20px 9px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px #22c55e;"></span>
+              <span style="font-size:12px;font-weight:600;color:var(--white);letter-spacing:0.04em;">BTC/USDT</span>
+            </div>
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--gray-600);text-transform:uppercase;" data-i18n="strat.chart.entrylogic">ENTRY LOGIC</span>
           </div>
-          <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--gray-600);text-transform:uppercase;" data-i18n="strat.chart.entrylogic">ENTRY LOGIC</span>
+          <svg viewBox="0 0 760 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+            <rect width="760" height="210" fill="#0d0d0d"/>
+            <line x1="10" y1="110" x2="748" y2="110" stroke="rgba(255,255,255,0.025)" stroke-width="1"/>
+            <line x1="10" y1="48" x2="748" y2="48" stroke="#f97316" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
+            <text x="12" y="42" fill="#f97316" font-size="8" font-family="monospace" opacity="0.85" font-weight="600" data-i18n="strat.chart.resistance">RESISTANCE</text>
+            <line x1="10" y1="90" x2="748" y2="90" stroke="#f97316" stroke-width="1" stroke-dasharray="4,6" opacity="0.28"/>
+            <line x1="10" y1="132" x2="748" y2="132" stroke="#22c55e" stroke-width="1" stroke-dasharray="4,6" opacity="0.28"/>
+            <line x1="10" y1="172" x2="748" y2="172" stroke="#22c55e" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
+            <text x="12" y="166" fill="#22c55e" font-size="8" font-family="monospace" opacity="0.85" font-weight="600" data-i18n="strat.chart.support">SUPPORT</text>
+            <polyline points="10,108 30,92 50,104 75,48 95,72 115,58 138,82 162,110 185,135 205,172 228,150 250,162 272,135 295,108 318,80 342,58 352,48 372,68 390,56 415,90 438,110 458,125 462,132 480,118 495,130 512,172 530,150 548,162 562,172 582,148 605,110 628,78 648,48 665,72 680,58 695,95 705,145 718,172 732,118 744,42 748,28" fill="none" stroke="rgba(255,255,255,0.88)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="75" cy="48" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
+            <circle cx="352" cy="48" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
+            <circle cx="415" cy="90" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
+            <circle cx="648" cy="48" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
+            <circle cx="746" cy="28" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
+            <circle cx="205" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
+            <circle cx="462" cy="132" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
+            <circle cx="512" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
+            <circle cx="562" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
+            <circle cx="718" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
+          </svg>
         </div>
-        <svg viewBox="0 0 760 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
-          <rect width="760" height="210" fill="#0d0d0d"/>
-          <line x1="10" y1="110" x2="748" y2="110" stroke="rgba(255,255,255,0.025)" stroke-width="1"/>
-          <line x1="10" y1="48" x2="748" y2="48" stroke="#f97316" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
-          <text x="12" y="42" fill="#f97316" font-size="8" font-family="monospace" opacity="0.85" font-weight="600" data-i18n="strat.chart.resistance">RESISTANCE</text>
-          <line x1="10" y1="90" x2="748" y2="90" stroke="#f97316" stroke-width="1" stroke-dasharray="4,6" opacity="0.28"/>
-          <line x1="10" y1="132" x2="748" y2="132" stroke="#22c55e" stroke-width="1" stroke-dasharray="4,6" opacity="0.28"/>
-          <line x1="10" y1="172" x2="748" y2="172" stroke="#22c55e" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
-          <text x="12" y="166" fill="#22c55e" font-size="8" font-family="monospace" opacity="0.85" font-weight="600" data-i18n="strat.chart.support">SUPPORT</text>
-          <polyline points="10,108 30,92 50,104 75,48 95,72 115,58 138,82 162,110 185,135 205,172 228,150 250,162 272,135 295,108 318,80 342,58 352,48 372,68 390,56 415,90 438,110 458,125 462,132 480,118 495,130 512,172 530,150 548,162 562,172 582,148 605,110 628,78 648,48 665,72 680,58 695,95 705,145 718,172 732,118 744,42 748,28" fill="none" stroke="rgba(255,255,255,0.88)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="75" cy="48" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
-          <circle cx="352" cy="48" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
-          <circle cx="415" cy="90" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
-          <circle cx="648" cy="48" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
-          <circle cx="746" cy="28" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
-          <circle cx="205" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
-          <circle cx="462" cy="132" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
-          <circle cx="512" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
-          <circle cx="562" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
-          <circle cx="718" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
-        </svg>
-      </div>
 
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:40px;">
-        <div style="padding:18px 20px;border:1px solid rgba(255,255,255,0.07);border-radius:11px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3b82f6;margin-bottom:7px;" data-i18n="strat.f1.tag">Multi-Touch S/R Detection</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f1.desc">Levels are only validated after 3+ confirmed price reactions. The algorithm measures wick precision and body rejection — not just proximity.</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:32px;">
+          <div style="padding:16px 18px;border:1px solid rgba(255,255,255,0.07);border-radius:10px;background:rgba(255,255,255,0.02);">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3b82f6;margin-bottom:6px;" data-i18n="strat.f1.tag">Multi-Touch S/R Detection</div>
+            <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f1.desc">Levels are only validated after 3+ confirmed price reactions. The algorithm measures wick precision and body rejection — not just proximity.</div>
+          </div>
+          <div style="padding:16px 18px;border:1px solid rgba(255,255,255,0.07);border-radius:10px;background:rgba(255,255,255,0.02);">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#22c55e;margin-bottom:6px;" data-i18n="strat.f2.tag">Wick-Only Entry Filter</div>
+            <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f2.desc">Entry triggers only on 5m wick contact with the level — never on a body breakout. The same technique used by institutional desks.</div>
+          </div>
+          <div style="padding:16px 18px;border:1px solid rgba(255,255,255,0.07);border-radius:10px;background:rgba(255,255,255,0.02);">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f97316;margin-bottom:6px;" data-i18n="strat.f3.tag">Volume Pattern Confirmation</div>
+            <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f3.desc">Volume spikes at the level confirm institutional participation. Low-volume touches are skipped — only high-conviction setups are taken.</div>
+          </div>
+          <div style="padding:16px 18px;border:1px solid rgba(255,255,255,0.07);border-radius:10px;background:rgba(255,255,255,0.02);">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#a855f7;margin-bottom:6px;" data-i18n="strat.f4.tag">Ranging Market Filter</div>
+            <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f4.desc">Detects choppy, low-structure phases and pauses trading automatically. Prevents repeated stop-losses during consolidation.</div>
+          </div>
         </div>
-        <div style="padding:18px 20px;border:1px solid rgba(255,255,255,0.07);border-radius:11px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#22c55e;margin-bottom:7px;" data-i18n="strat.f2.tag">Wick-Only Entry Filter</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f2.desc">Entry triggers only on 5m wick contact with the level — never on a body breakout. The same technique used by institutional desks.</div>
-        </div>
-        <div style="padding:18px 20px;border:1px solid rgba(255,255,255,0.07);border-radius:11px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f97316;margin-bottom:7px;" data-i18n="strat.f3.tag">Volume Pattern Confirmation</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f3.desc">Volume spikes at the level confirm institutional participation. Low-volume touches are skipped — only high-conviction setups are taken.</div>
-        </div>
-        <div style="padding:18px 20px;border:1px solid rgba(255,255,255,0.07);border-radius:11px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#a855f7;margin-bottom:7px;" data-i18n="strat.f4.tag">Ranging Market Filter</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f4.desc">Detects choppy, low-structure phases and pauses trading automatically. Prevents repeated stop-losses during consolidation.</div>
-        </div>
-      </div>
 
-      <div style="padding:28px 36px;border:1px solid rgba(255,255,255,0.07);border-radius:14px;background:rgba(255,255,255,0.02);display:flex;gap:28px;align-items:flex-start;">
-        <div style="flex-shrink:0;width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin-bottom:7px;" data-i18n="strat.risk.title">The algorithm that learned not to lose first.</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.75;max-width:600px;" data-i18n="strat.risk.desc">Every position is monitored in real time. Volatility-based position sizing, dynamic stop-loss adjustment, and circuit breakers that automatically pause trading during extreme market conditions — because protecting your capital always comes before making profit.</div>
+        <div style="padding:24px 32px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);display:flex;gap:24px;align-items:flex-start;">
+          <div style="flex-shrink:0;width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:6px;" data-i18n="strat.risk.title">The algorithm that learned not to lose first.</div>
+            <div style="font-size:13px;color:var(--gray-400);line-height:1.75;max-width:580px;" data-i18n="strat.risk.desc">Every position is monitored in real time. Volatility-based position sizing, dynamic stop-loss adjustment, and circuit breakers that automatically pause trading during extreme market conditions — because protecting your capital always comes before making profit.</div>
+          </div>
         </div>
       </div>
     </section>
@@ -628,135 +603,139 @@
 
   <!-- QUOTE SECTION -->
   <div class="quote-section">
-    <div class="quote-main" data-i18n="slogan.art">The art of doing nothing.</div>
-    <div class="quote-sub" data-i18n="slogan.reengineered">Your money, re-engineered.</div>
+    <div class="wrap">
+      <div class="quote-main" data-i18n="slogan.art">The art of doing nothing.</div>
+      <div class="quote-sub" data-i18n="slogan.reengineered">Your money, re-engineered.</div>
+    </div>
   </div>
 
   <!-- PRICING -->
   <section class="pricing" id="pricing">
-    <div class="pricing-header">
-      <div class="section-tag" data-i18n="price.tag">Pricing</div>
-      <h2 class="section-title" data-i18n="price.title">Simple, transparent pricing</h2>
-      <p class="section-desc" data-i18n="price.desc">No hidden fees. Your trading profit — 100% yours.</p>
-      <div class="billing-toggle">
-        <button class="toggle-btn active" id="btn-monthly" onclick="setPeriod('monthly')" data-i18n="price.toggle.mo">Monthly</button>
-        <button class="toggle-btn" id="btn-annual" onclick="setPeriod('annual')"><span data-i18n="price.toggle.yr">Annual</span> <span class="save-tag" data-i18n="price.toggle.save">Save up to 15%</span></button>
-      </div>
-    </div>
-
-    <div class="pricing-grid">
-      <div class="pricing-card">
-        <div class="pricing-plan" data-i18n="price.plan.starter">Starter</div>
-        <div class="pricing-price" id="price-starter">$100</div>
-        <div class="pricing-period" data-i18n="price.period">/ month</div>
-        <div class="pricing-annual-note" id="note-starter"></div>
-        <ul class="pricing-features">
-          <li data-i18n="price.starter.f1">1 active trading bot</li>
-          <li data-i18n="price.starter.f2">OKX perpetual swaps</li>
-          <li data-i18n="price.starter.f3">3 strategies: RSI DCA · MA Support · S/R Bounce</li>
-          <li data-i18n="price.starter.f4">Fixed Fractional risk sizing</li>
-          <li data-i18n="price.starter.f5">Real-time dashboard</li>
-          <li data-i18n="price.starter.f6">Email notifications</li>
-        </ul>
-        <a href="payment.html?plan=starter" class="btn-outline" data-i18n="price.cta" onclick="return planCta(event,'starter')">Get Started</a>
-      </div>
-
-      <div class="pricing-card featured">
-        <div class="pricing-plan" data-i18n="price.plan.pro">Pro</div>
-        <div class="pricing-price" id="price-pro">$500</div>
-        <div class="pricing-period" data-i18n="price.period">/ month</div>
-        <div class="pricing-annual-note" id="note-pro"></div>
-        <ul class="pricing-features">
-          <li data-i18n="price.pro.f1">5 active trading bots</li>
-          <li data-i18n="price.pro.f2">OKX perpetual swaps</li>
-          <li data-i18n="price.pro.f3">7 strategies: all Starter + MA Crossover · Bollinger Band · Breakout + Volume · MA Ribbon</li>
-          <li data-i18n="price.pro.f4">Backtesting engine</li>
-          <li data-i18n="price.pro.f5">Email &amp; Telegram alerts</li>
-          <li data-i18n="price.pro.f6">Custom entry sizing: equal / weighted / martingale</li>
-          <li data-i18n="price.pro.f7">Priority support</li>
-        </ul>
-        <a href="payment.html?plan=pro" class="btn-primary" data-i18n="price.cta" onclick="return planCta(event,'pro')">Get Started</a>
-      </div>
-
-      <div class="pricing-card">
-        <div class="pricing-plan" data-i18n="price.plan.elite">Elite</div>
-        <div class="pricing-price" id="price-elite">$1,000</div>
-        <div class="pricing-period" data-i18n="price.period">/ month</div>
-        <div class="pricing-annual-note" id="note-elite"></div>
-        <ul class="pricing-features">
-          <li data-i18n="price.elite.f1">Unlimited trading bots</li>
-          <li data-i18n="price.elite.f2">OKX perpetual swaps</li>
-          <li data-i18n="price.elite.f3">All 10 strategies: MACD Divergence · Funding Rate · ATR Trend + all Pro</li>
-          <li data-i18n="price.elite.f4">Full analytics suite</li>
-          <li data-i18n="price.elite.f5">Email, Telegram &amp; SMS alerts</li>
-          <li data-i18n="price.elite.f6">Dedicated account manager</li>
-          <li data-i18n="price.elite.f7">24/7 premium support</li>
-        </ul>
-        <a href="payment.html?plan=elite" class="btn-outline" data-i18n="price.cta" onclick="return planCta(event,'elite')">Get Started</a>
-      </div>
-    </div>
-
-    <div class="strategy-compare">
-      <div class="strategy-compare-title" data-i18n="strat.compare.title">Strategy availability by plan</div>
-      <table class="strategy-table">
-        <thead>
-          <tr>
-            <th data-i18n="strat.col.strategy">Strategy</th>
-            <th data-i18n="strat.col.dir">Direction</th>
-            <th data-i18n="strat.col.risk">Risk</th>
-            <th data-i18n="price.plan.starter">Starter</th>
-            <th data-i18n="price.plan.pro">Pro</th>
-            <th data-i18n="price.plan.elite">Elite</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td data-i18n="strat.1">RSI Oversold DCA Long</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-          <tr><td data-i18n="strat.2">MA Support DCA</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-          <tr><td data-i18n="strat.3">S/R Bounce</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-          <tr><td data-i18n="strat.4">MA Crossover + RSI</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-          <tr><td data-i18n="strat.5">Bollinger Band Mean Reversion</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-          <tr><td data-i18n="strat.6">Breakout + Volume</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-          <tr><td data-i18n="strat.7">MA Ribbon Long</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-          <tr><td data-i18n="strat.8">MACD Divergence</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk high" data-i18n="strat.risk.high">High</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
-          <tr><td data-i18n="strat.9">Funding Rate Contrarian</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk high" data-i18n="strat.risk.high">High</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
-          <tr><td data-i18n="strat.10">ATR Trend Following</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- REFERRAL BANNER -->
-    <div class="referral-banner">
-      <div class="referral-left">
-        <div class="referral-tag" data-i18n="ref.tag">Special Offer</div>
-        <div class="referral-title" data-i18n="ref.title">Elite plan. Free forever.</div>
-        <div class="referral-desc" data-i18n="ref.desc">Sign up for OKX through our referral link, complete your registration, and unlock permanent lifetime Elite access at absolutely no cost.</div>
-        <div class="referral-steps">
-          <div class="referral-step">
-            <div class="referral-step-num">1</div>
-            <p data-i18n="ref.s1">Open an OKX account via our referral link</p>
-          </div>
-          <div class="referral-step">
-            <div class="referral-step-num">2</div>
-            <p data-i18n="ref.s2">Complete identity verification on OKX</p>
-          </div>
-          <div class="referral-step">
-            <div class="referral-step-num">3</div>
-            <p data-i18n="ref.s3">Contact AYILON support with your OKX UID</p>
-          </div>
+    <div class="wrap">
+      <div class="pricing-header">
+        <div class="section-tag" data-i18n="price.tag">Pricing</div>
+        <h2 class="section-title" data-i18n="price.title">Simple, transparent pricing</h2>
+        <p class="section-desc" data-i18n="price.desc">No hidden fees. Your trading profit — 100% yours.</p>
+        <div class="billing-toggle">
+          <button class="toggle-btn active" id="btn-monthly" onclick="setPeriod('monthly')" data-i18n="price.toggle.mo">Monthly</button>
+          <button class="toggle-btn" id="btn-annual" onclick="setPeriod('annual')"><span data-i18n="price.toggle.yr">Annual</span> <span class="save-tag" data-i18n="price.toggle.save">Save up to 15%</span></button>
         </div>
       </div>
-      <div class="referral-right">
-        <a href="https://okx.com/join/AYILON" target="_blank" class="btn-referral" data-i18n="ref.cta">
-          Open OKX Account →
-        </a>
-        <div class="referral-note" data-i18n="ref.code">Referral code: AYILON</div>
+
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <div class="pricing-plan" data-i18n="price.plan.starter">Starter</div>
+          <div class="pricing-price" id="price-starter">$100</div>
+          <div class="pricing-period" data-i18n="price.period">/ month</div>
+          <div class="pricing-annual-note" id="note-starter"></div>
+          <ul class="pricing-features">
+            <li data-i18n="price.starter.f1">1 active trading bot</li>
+            <li data-i18n="price.starter.f2">OKX perpetual swaps</li>
+            <li data-i18n="price.starter.f3">3 strategies: RSI DCA · MA Support · S/R Bounce</li>
+            <li data-i18n="price.starter.f4">Fixed Fractional risk sizing</li>
+            <li data-i18n="price.starter.f5">Real-time dashboard</li>
+            <li data-i18n="price.starter.f6">Email notifications</li>
+          </ul>
+          <a href="payment.html?plan=starter" class="btn-outline" data-i18n="price.cta" onclick="return planCta(event,'starter')">Get Started</a>
+        </div>
+
+        <div class="pricing-card featured">
+          <div class="pricing-plan" data-i18n="price.plan.pro">Pro</div>
+          <div class="pricing-price" id="price-pro">$500</div>
+          <div class="pricing-period" data-i18n="price.period">/ month</div>
+          <div class="pricing-annual-note" id="note-pro"></div>
+          <ul class="pricing-features">
+            <li data-i18n="price.pro.f1">5 active trading bots</li>
+            <li data-i18n="price.pro.f2">OKX perpetual swaps</li>
+            <li data-i18n="price.pro.f3">7 strategies: all Starter + MA Crossover · Bollinger Band · Breakout + Volume · MA Ribbon</li>
+            <li data-i18n="price.pro.f4">Backtesting engine</li>
+            <li data-i18n="price.pro.f5">Email &amp; Telegram alerts</li>
+            <li data-i18n="price.pro.f6">Custom entry sizing: equal / weighted / martingale</li>
+            <li data-i18n="price.pro.f7">Priority support</li>
+          </ul>
+          <a href="payment.html?plan=pro" class="btn-primary" data-i18n="price.cta" onclick="return planCta(event,'pro')">Get Started</a>
+        </div>
+
+        <div class="pricing-card">
+          <div class="pricing-plan" data-i18n="price.plan.elite">Elite</div>
+          <div class="pricing-price" id="price-elite">$1,000</div>
+          <div class="pricing-period" data-i18n="price.period">/ month</div>
+          <div class="pricing-annual-note" id="note-elite"></div>
+          <ul class="pricing-features">
+            <li data-i18n="price.elite.f1">Unlimited trading bots</li>
+            <li data-i18n="price.elite.f2">OKX perpetual swaps</li>
+            <li data-i18n="price.elite.f3">All 10 strategies: MACD Divergence · Funding Rate · ATR Trend + all Pro</li>
+            <li data-i18n="price.elite.f4">Full analytics suite</li>
+            <li data-i18n="price.elite.f5">Email, Telegram &amp; SMS alerts</li>
+            <li data-i18n="price.elite.f6">Dedicated account manager</li>
+            <li data-i18n="price.elite.f7">24/7 premium support</li>
+          </ul>
+          <a href="payment.html?plan=elite" class="btn-outline" data-i18n="price.cta" onclick="return planCta(event,'elite')">Get Started</a>
+        </div>
+      </div>
+
+      <div class="strategy-compare">
+        <div class="strategy-compare-title" data-i18n="strat.compare.title">Strategy availability by plan</div>
+        <table class="strategy-table">
+          <thead>
+            <tr>
+              <th data-i18n="strat.col.strategy">Strategy</th>
+              <th data-i18n="strat.col.dir">Direction</th>
+              <th data-i18n="strat.col.risk">Risk</th>
+              <th data-i18n="price.plan.starter">Starter</th>
+              <th data-i18n="price.plan.pro">Pro</th>
+              <th data-i18n="price.plan.elite">Elite</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td data-i18n="strat.1">RSI Oversold DCA Long</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+            <tr><td data-i18n="strat.2">MA Support DCA</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+            <tr><td data-i18n="strat.3">S/R Bounce</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+            <tr><td data-i18n="strat.4">MA Crossover + RSI</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+            <tr><td data-i18n="strat.5">Bollinger Band Mean Reversion</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+            <tr><td data-i18n="strat.6">Breakout + Volume</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+            <tr><td data-i18n="strat.7">MA Ribbon Long</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+            <tr><td data-i18n="strat.8">MACD Divergence</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk high" data-i18n="strat.risk.high">High</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
+            <tr><td data-i18n="strat.9">Funding Rate Contrarian</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk high" data-i18n="strat.risk.high">High</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
+            <tr><td data-i18n="strat.10">ATR Trend Following</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- REFERRAL BANNER -->
+      <div class="referral-banner">
+        <div class="referral-left">
+          <div class="referral-tag" data-i18n="ref.tag">Special Offer</div>
+          <div class="referral-title" data-i18n="ref.title">Elite plan. Free forever.</div>
+          <div class="referral-desc" data-i18n="ref.desc">Sign up for OKX through our referral link, complete your registration, and unlock permanent lifetime Elite access at absolutely no cost.</div>
+          <div class="referral-steps">
+            <div class="referral-step">
+              <div class="referral-step-num">1</div>
+              <p data-i18n="ref.s1">Open an OKX account via our referral link</p>
+            </div>
+            <div class="referral-step">
+              <div class="referral-step-num">2</div>
+              <p data-i18n="ref.s2">Complete identity verification on OKX</p>
+            </div>
+            <div class="referral-step">
+              <div class="referral-step-num">3</div>
+              <p data-i18n="ref.s3">Contact AYILON support with your OKX UID</p>
+            </div>
+          </div>
+        </div>
+        <div class="referral-right">
+          <a href="https://okx.com/join/AYILON" target="_blank" class="btn-referral" data-i18n="ref.cta">
+            Open OKX Account →
+          </a>
+          <div class="referral-note" data-i18n="ref.code">Referral code: AYILON</div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- FAQ -->
   <div id="faq">
-    <div class="faq-section">
+    <div class="faq-wrap wrap">
       <div class="section-tag" data-i18n="faq.tag">FAQ</div>
       <h2 class="section-title" data-i18n="faq.title">Everything you need to know</h2>
       <div class="faq-list">
@@ -774,52 +753,56 @@
   </div>
 
   <!-- CTA -->
-  <div class="cta-section">
-    <h2 data-i18n="cta.title">Nothing to Everything.</h2>
-    <p data-i18n="cta.subtitle">Simply, more.</p>
-    <a href="signup.html" class="btn-primary" data-i18n="cta.btn">Automate My Account →</a>
+  <div class="cta-wrap wrap">
+    <div class="cta-section">
+      <h2 data-i18n="cta.title">Nothing to Everything.</h2>
+      <p data-i18n="cta.subtitle">Simply, more.</p>
+      <a href="signup.html" class="btn-primary" data-i18n="cta.btn">Automate My Account →</a>
+    </div>
   </div>
 
   <!-- FOOTER -->
   <footer>
-    <div class="footer-brand">
-      <a href="index.html" class="nav-logo">AYILON</a>
-      <p data-i18n="footer.tagline">Creating profit from nothing.<br />Automated crypto trading platform powered by algorithmic intelligence.</p>
-    </div>
-    <div class="footer-links">
-      <div class="footer-col">
-        <h4 data-i18n="footer.product">Product</h4>
-        <ul>
-          <li><a href="#features" data-i18n="footer.features">Features</a></li>
-          <li><a href="#pricing" data-i18n="footer.pricing">Pricing</a></li>
-          <li><a href="#how" data-i18n="footer.how">How It Works</a></li>
-          <li><a href="bot-guide.html" data-i18n="footer.botguide">Bot Guide</a></li>
-        </ul>
+    <div class="footer-inner wrap">
+      <div class="footer-brand">
+        <a href="index.html" class="nav-logo">AYILON</a>
+        <p data-i18n="footer.tagline">Creating profit from nothing.<br />Automated crypto trading platform powered by algorithmic intelligence.</p>
       </div>
-      <div class="footer-col">
-        <h4 data-i18n="footer.support">Support</h4>
-        <ul>
-          <li><a href="bot-guide.html" data-i18n="footer.logic">Trading Logic</a></li>
-          <li><a href="dashboard.html" data-i18n="footer.dashboard">Dashboard</a></li>
-          <li><a href="about.html" data-i18n="footer.about">About Us</a></li>
-          <li><a href="signup.html" data-i18n="footer.getstarted">Get Started</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4 data-i18n="footer.company">Company</h4>
-        <ul>
-          <li><a href="about.html" data-i18n="footer.aboutco">About</a></li>
-          <li><a href="privacy.html" data-i18n="footer.privacy">Privacy Policy</a></li>
-          <li><a href="terms.html" data-i18n="footer.terms">Terms of Service</a></li>
-        </ul>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4 data-i18n="footer.product">Product</h4>
+          <ul>
+            <li><a href="#features" data-i18n="footer.features">Features</a></li>
+            <li><a href="#pricing" data-i18n="footer.pricing">Pricing</a></li>
+            <li><a href="#how" data-i18n="footer.how">How It Works</a></li>
+            <li><a href="bot-guide.html" data-i18n="footer.botguide">Bot Guide</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4 data-i18n="footer.support">Support</h4>
+          <ul>
+            <li><a href="bot-guide.html" data-i18n="footer.logic">Trading Logic</a></li>
+            <li><a href="dashboard.html" data-i18n="footer.dashboard">Dashboard</a></li>
+            <li><a href="about.html" data-i18n="footer.about">About Us</a></li>
+            <li><a href="signup.html" data-i18n="footer.getstarted">Get Started</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4 data-i18n="footer.company">Company</h4>
+          <ul>
+            <li><a href="about.html" data-i18n="footer.aboutco">About</a></li>
+            <li><a href="privacy.html" data-i18n="footer.privacy">Privacy Policy</a></li>
+            <li><a href="terms.html" data-i18n="footer.terms">Terms of Service</a></li>
+          </ul>
+        </div>
       </div>
     </div>
   </footer>
-  <div class="footer-bottom">
+  <div class="footer-bottom wrap">
     <p data-i18n="footer.copy">© 2026 AYILON. All rights reserved.</p>
     <p data-i18n="footer.risk">Trading involves risk. Past performance does not guarantee future results.</p>
   </div>
-  <div class="legal-disclaimer">
+  <div class="legal-disclaimer wrap">
     <p data-i18n="legal_disclaimer">AYILON is a software tool, not a registered investment advisor or asset manager. Cryptocurrency trading involves substantial risk of loss. Past performance is not indicative of future results. AYILON does not hold your funds. All trading decisions are executed by algorithms you configure — not by AYILON. By using this service you acknowledge that all investment decisions and their consequences are your sole responsibility.</p>
   </div>
 
@@ -879,20 +862,21 @@
     }
   </script>
 
-  <!-- THREE.JS — 3D Algorithm Visualization -->
+  <!-- THREE.JS — 3D Candlestick Trading Visualization -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
   (function() {
     var canvas = document.getElementById('ayilon-canvas');
     if (!canvas || typeof THREE === 'undefined') return;
 
-    var W = canvas.parentElement.offsetWidth || 480;
-    var H = 520;
+    var W = canvas.parentElement.offsetWidth || 460;
+    var H = 460;
     canvas.style.height = H + 'px';
+    canvas.style.cursor = 'grab';
 
     var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
-    camera.position.z = 3.8;
+    var camera = new THREE.PerspectiveCamera(44, W / H, 0.1, 100);
+    camera.position.set(0, 0.1, 5.2);
 
     var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
     renderer.setSize(W, H);
@@ -902,94 +886,155 @@
     var group = new THREE.Group();
     scene.add(group);
 
-    /* ── Particle sphere (Fibonacci distribution) ── */
-    var N = 2600;
-    var pos = new Float32Array(N * 3);
-    var col = new Float32Array(N * 3);
+    /* ── Candlestick grid ── */
+    var candleData = [
+      {h:0.28,bull:true},{h:0.14,bull:false},{h:0.36,bull:true},{h:0.18,bull:false},{h:0.44,bull:true},{h:0.10,bull:false},
+      {h:0.32,bull:true},{h:0.22,bull:true},{h:0.16,bull:false},{h:0.40,bull:true},{h:0.12,bull:false},{h:0.30,bull:true},
+      {h:0.20,bull:false},{h:0.38,bull:true},{h:0.14,bull:false},{h:0.46,bull:true},{h:0.18,bull:false},{h:0.34,bull:true},
+      {h:0.09,bull:false},{h:0.42,bull:true},{h:0.26,bull:true},{h:0.16,bull:false},{h:0.38,bull:true},{h:0.20,bull:false},
+      {h:0.30,bull:true},{h:0.22,bull:false},{h:0.48,bull:true},{h:0.13,bull:false},{h:0.36,bull:true},{h:0.24,bull:true}
+    ];
 
-    for (var i = 0; i < N; i++) {
-      var phi   = Math.acos(1 - 2 * (i + 0.5) / N);
-      var theta = Math.PI * (1 + Math.sqrt(5)) * i;
-      pos[i*3]   = Math.sin(phi) * Math.cos(theta);
-      pos[i*3+1] = Math.sin(phi) * Math.sin(theta);
-      pos[i*3+2] = Math.cos(phi);
+    var floatData = [];
+    var cols = 6, rows = 5;
+    for (var i = 0; i < candleData.length; i++) {
+      var d = candleData[i];
+      var col = i % cols;
+      var row = Math.floor(i / cols);
 
-      var rnd = Math.random();
-      if (rnd < 0.15) {
-        col[i*3] = 0.133; col[i*3+1] = 0.773; col[i*3+2] = 0.369; // #22c55e
-      } else if (rnd < 0.20) {
-        col[i*3] = 0.976; col[i*3+1] = 0.451; col[i*3+2] = 0.086; // #f97316
-      } else {
-        var b = 0.28 + Math.random() * 0.52;
-        col[i*3] = b; col[i*3+1] = b; col[i*3+2] = b;
-      }
+      var bodyColor = d.bull ? 0x22c55e : 0xffffff;
+      var bodyOpacity = d.bull ? 0.80 : 0.28;
+
+      var bodyGeo = new THREE.BoxGeometry(0.11, d.h, 0.11);
+      var bodyMat = new THREE.MeshBasicMaterial({ color: bodyColor, transparent: true, opacity: bodyOpacity });
+      var body = new THREE.Mesh(bodyGeo, bodyMat);
+
+      var wickH = d.h + 0.04 + (i % 3) * 0.04;
+      var wickGeo = new THREE.BoxGeometry(0.014, wickH, 0.014);
+      var wickMat = new THREE.MeshBasicMaterial({ color: bodyColor, transparent: true, opacity: 0.22 });
+      var wick = new THREE.Mesh(wickGeo, wickMat);
+
+      var cg = new THREE.Group();
+      cg.add(body);
+      cg.add(wick);
+
+      var xOff = (col - (cols - 1) / 2) * 0.36;
+      var yOff = (row - (rows - 1) / 2) * 0.50;
+      var zOff = ((i % 5) - 2) * 0.28;
+      cg.position.set(xOff, yOff, zOff);
+      cg.rotation.y = (i % 7 - 3) * 0.06;
+
+      group.add(cg);
+      floatData.push({ mesh: cg, baseY: yOff, phase: i * 0.41, speed: 0.28 + (i % 5) * 0.04 });
     }
 
-    var geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+    /* ── S/R level lines ── */
+    var srMatG = new THREE.LineBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.28 });
+    group.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-2.2, 0.95, -0.5), new THREE.Vector3(2.2, 0.95, -0.5)]),
+      srMatG
+    ));
+    var srMatO = new THREE.LineBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.28 });
+    group.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-2.2, -0.75, -0.5), new THREE.Vector3(2.2, -0.75, -0.5)]),
+      srMatO
+    ));
 
-    var mat = new THREE.PointsMaterial({
-      size: 0.017, vertexColors: true,
-      transparent: true, opacity: 0.82, sizeAttenuation: true
-    });
-    group.add(new THREE.Points(geo, mat));
+    /* ── Background chart grid ── */
+    var gm = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.025 });
+    for (var g = -2; g <= 2; g++) {
+      group.add(new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-2.4, g * 0.52, -1.4), new THREE.Vector3(2.4, g * 0.52, -1.4)]),
+        gm
+      ));
+    }
+    for (var v = -3; v <= 3; v++) {
+      group.add(new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(v * 0.7, -1.6, -1.4), new THREE.Vector3(v * 0.7, 1.6, -1.4)]),
+        gm
+      ));
+    }
 
-    /* ── Orbiting nodes (active bots) ── */
-    var orbits = [];
-    for (var j = 0; j < 4; j++) {
-      var g2 = new THREE.SphereGeometry(0.032, 8, 8);
-      var m2 = new THREE.MeshBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.95 });
-      var mesh = new THREE.Mesh(g2, m2);
-      var baseAngle = (j / 4) * Math.PI * 2;
-      mesh.userData = {
-        baseAngle: baseAngle,
-        r: 0.68 + Math.random() * 0.24,
-        oy: (Math.random() - 0.5) * 0.5,
-        speed: 0.22 + Math.random() * 0.14,
-        phase: Math.random() * Math.PI * 2
-      };
+    /* ── Entry signal spheres ── */
+    var signals = [
+      { x: -1.08, y: -0.76, z: 0.3, green: true },
+      { x:  0.72, y:  0.94, z: 0.5, green: false },
+      { x:  1.44, y: -0.74, z: 0.2, green: true },
+      { x: -0.36, y:  0.93, z: -0.2, green: false },
+      { x:  0.0,  y: -0.77, z: 0.6, green: true }
+    ];
+    var sigMeshes = [];
+    signals.forEach(function(s) {
+      var sg = new THREE.SphereGeometry(0.04, 8, 8);
+      var sm = new THREE.MeshBasicMaterial({ color: s.green ? 0x22c55e : 0xf97316, transparent: true, opacity: 0.9 });
+      var mesh = new THREE.Mesh(sg, sm);
+      mesh.position.set(s.x, s.y, s.z);
       group.add(mesh);
-      orbits.push(mesh);
-    }
-
-    /* ── Mouse interaction ── */
-    var mx = 0, my = 0, tx = 0, ty = 0;
-    document.addEventListener('mousemove', function(e) {
-      mx = (e.clientX / window.innerWidth  - 0.5) * 0.55;
-      my = (e.clientY / window.innerHeight - 0.5) * 0.38;
+      sigMeshes.push({ mesh: mesh, phase: Math.random() * Math.PI * 2 });
     });
 
-    /* ── Animation ── */
+    /* ── Click / drag ── */
+    var isDragging = false;
+    var startX = 0, startY = 0;
+    var userRotY = 0, userRotX = 0;
+    var autoRotY = 0;
+
+    canvas.addEventListener('mousedown', function(e) {
+      isDragging = true;
+      startX = e.clientX; startY = e.clientY;
+      canvas.style.cursor = 'grabbing';
+    });
+    canvas.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      userRotY += (e.clientX - startX) * 0.009;
+      userRotX += (e.clientY - startY) * 0.006;
+      userRotX = Math.max(-0.72, Math.min(0.72, userRotX));
+      startX = e.clientX; startY = e.clientY;
+    });
+    function endDrag() { isDragging = false; canvas.style.cursor = 'grab'; }
+    canvas.addEventListener('mouseup', endDrag);
+    canvas.addEventListener('mouseleave', endDrag);
+
+    canvas.addEventListener('touchstart', function(e) {
+      isDragging = true;
+      startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+    }, { passive: true });
+    canvas.addEventListener('touchmove', function(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      userRotY += (e.touches[0].clientX - startX) * 0.009;
+      userRotX += (e.touches[0].clientY - startY) * 0.006;
+      userRotX = Math.max(-0.72, Math.min(0.72, userRotX));
+      startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+    }, { passive: false });
+    canvas.addEventListener('touchend', function() { isDragging = false; });
+
+    /* ── Animate ── */
     var t0 = Date.now();
     function animate() {
       requestAnimationFrame(animate);
       var t = (Date.now() - t0) / 1000;
 
-      tx += (mx - tx) * 0.04;
-      ty += (my - ty) * 0.04;
+      if (!isDragging) autoRotY += 0.0038;
 
-      group.rotation.y = t * 0.11 + tx;
-      group.rotation.x = ty * 0.45;
+      group.rotation.y = autoRotY + userRotY;
+      group.rotation.x = userRotX;
 
-      for (var i = 0; i < orbits.length; i++) {
-        var o = orbits[i], d = o.userData;
-        var a = d.baseAngle + t * d.speed;
-        o.position.x = Math.cos(a) * d.r;
-        o.position.z = Math.sin(a) * d.r * 0.55;
-        o.position.y = d.oy + Math.sin(t * 0.5 + d.phase) * 0.13;
-        var sc = 1 + 0.22 * Math.sin(t * 1.6 + d.phase);
-        o.scale.setScalar(sc);
+      for (var i = 0; i < floatData.length; i++) {
+        var fd = floatData[i];
+        fd.mesh.position.y = fd.baseY + Math.sin(t * fd.speed + fd.phase) * 0.028;
+      }
+      for (var j = 0; j < sigMeshes.length; j++) {
+        var s = sigMeshes[j];
+        s.mesh.material.opacity = 0.6 + 0.35 * Math.sin(t * 1.8 + s.phase);
       }
 
-      mat.opacity = 0.72 + 0.16 * Math.sin(t * 0.38);
       renderer.render(scene, camera);
     }
     animate();
 
-    /* ── Resize ── */
     window.addEventListener('resize', function() {
-      var W2 = canvas.parentElement.offsetWidth || 480;
+      var W2 = canvas.parentElement.offsetWidth || 460;
       camera.aspect = W2 / H;
       camera.updateProjectionMatrix();
       renderer.setSize(W2, H);
