@@ -48,6 +48,10 @@
     .form-hint.error { color: var(--error); }
     .form-hint.success { color: var(--success); }
 
+    .form-select { width: 100%; padding: 12px 16px; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a3a3a3' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; cursor: pointer; }
+    .form-select:focus { border-color: rgba(255,255,255,0.3); }
+    .form-select option { background: #111; color: #fff; }
+
     .email-row { display: flex; gap: 10px; }
     .email-row .form-input { flex: 1; }
     .btn-verify { padding: 12px 18px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: var(--white); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.2s; font-family: 'Inter', sans-serif; }
@@ -133,6 +137,41 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label">Country</label>
+          <select class="form-select" id="country">
+            <option value="" disabled selected>Select your country</option>
+            <option value="KR">South Korea</option>
+            <option value="US">United States</option>
+            <option value="GB">United Kingdom</option>
+            <option value="JP">Japan</option>
+            <option value="SG">Singapore</option>
+            <option value="HK">Hong Kong</option>
+            <option value="AU">Australia</option>
+            <option value="DE">Germany</option>
+            <option value="FR">France</option>
+            <option value="CA">Canada</option>
+            <option value="NL">Netherlands</option>
+            <option value="CH">Switzerland</option>
+            <option value="AE">UAE</option>
+            <option value="IN">India</option>
+            <option value="VN">Vietnam</option>
+            <option value="TH">Thailand</option>
+            <option value="MY">Malaysia</option>
+            <option value="ID">Indonesia</option>
+            <option value="PH">Philippines</option>
+            <option value="TW">Taiwan</option>
+            <option value="CN">China</option>
+            <option value="TR">Turkey</option>
+            <option value="BR">Brazil</option>
+            <option value="MX">Mexico</option>
+            <option value="AR">Argentina</option>
+            <option value="NG">Nigeria</option>
+            <option value="ZA">South Africa</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label class="form-label" data-i18n="signup.pw">Password</label>
           <div class="password-wrap">
             <input type="password" class="form-input" id="password" data-i18n-ph="signup.pw.ph" placeholder="8+ characters, letters + numbers + symbols" oninput="checkPasswordStrength(this)" />
@@ -188,6 +227,7 @@
     const WORKER_URL = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
     let timerInterval = null;
     let emailVerified = false;
+    let verifiedCodeValue = null;
     let verifiedEmail = null; // email whose code was confirmed server-side
 
     async function sendVerificationCode() {
@@ -274,6 +314,7 @@
         const data = await res.json();
         if (data.valid) {
           emailVerified = true;
+          verifiedCodeValue = document.getElementById('verifyCode').value;
           clearInterval(timerInterval);
           document.getElementById('verifyCode').classList.add('success');
           document.getElementById('verifyCode').disabled = true;
@@ -400,12 +441,14 @@
       const name     = document.getElementById('name').value.trim();
       const nickname = document.getElementById('nickname').value.trim();
       const email    = document.getElementById('email').value.trim();
+      const country  = document.getElementById('country').value;
       const password = document.getElementById('password').value;
       const confirm  = document.getElementById('passwordConfirm').value;
       const terms1   = document.getElementById('terms1').checked;
       const terms2   = document.getElementById('terms2').checked;
 
       if (!name || !nickname || !email || !password || !confirm) return;
+      if (!country) { alert('Please select your country.'); return; }
       if (!emailVerified) { alert('Please verify your email first.'); return; }
       if (!nicknameAvailable && nicknameAvailable !== null) { alert('Please choose a valid, available username.'); return; }
       if (password !== confirm) { alert('Passwords do not match.'); return; }
@@ -418,7 +461,7 @@
       try {
         const res = await fetch(WORKER_URL + '/register-user', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, username: nickname, name, password })
+          body: JSON.stringify({ email, username: nickname, name, password, code: verifiedCodeValue, country })
         });
         const data = await res.json();
         if (data.error === 'email_taken') {

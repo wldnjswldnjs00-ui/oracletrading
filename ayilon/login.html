@@ -325,13 +325,6 @@
 
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
 
-      var storedEmail = (localStorage.getItem('ayilon_email') || '').toLowerCase();
-      if (email.toLowerCase() !== storedEmail) {
-        errEl.textContent = 'Email address not found.';
-        errEl.classList.add('show');
-        return;
-      }
-
       var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
       if (methods.indexOf('authenticator') !== -1 && methods.indexOf('email') === -1) {
         document.getElementById('forgotVerifyTitle').textContent = 'Authenticator App';
