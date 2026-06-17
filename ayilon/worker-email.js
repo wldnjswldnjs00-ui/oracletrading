@@ -42,6 +42,8 @@ export default {
       if (path === '/bot-status')        return handleBotStatus(request, env);
       if (path === '/bot-control')       return handleBotControl(request, env);
       if (path === '/get-positions')     return handleGetPositions(request, env);
+      if (path === '/admin-users')       return handleAdminUsers(request, env);
+      if (path === '/admin-user-detail') return handleAdminUserDetail(request, env);
     }
 
     return corsResponse(JSON.stringify({ error: 'Not found' }), 404);
@@ -73,7 +75,7 @@ async function handleCheckUsername(request, env) {
 
 // ── REGISTER USER ────────────────────────────────────────────
 async function handleRegisterUser(request, env) {
-  const { email, username, name, password, code } = await request.json();
+  const { email, username, name, password, code, country } = await request.json();
   if (!email || !username || !code) return json({ success: false, error: 'missing_fields' }, 400);
 
   // Verify email code server-side — always required
@@ -96,7 +98,7 @@ async function handleRegisterUser(request, env) {
     // Fix: hash password with SHA-256 before storing (never store plaintext)
     const hashedPw = password ? await hashPassword(password) : null;
     await env.USERS_KV.put(emailKey, JSON.stringify({
-      email, username, name,
+      email, username, name, country: country || '',
       password: hashedPw,
       createdAt: Date.now()
     }));
@@ -1765,6 +1767,75 @@ async function hmac(secret, message) {
   const k = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('HMAC', k, enc.encode(message));
   return btoa(String.fromCharCode(...new Uint8Array(sig)));
+}
+
+// ════════════════════════════════════════════════════════════
+// ADMIN ENDPOINTS
+// ════════════════════════════════════════════════════════════
+
+async function handleAdminUsers(request, env) {
+  const body = await request.json();
+  const session = await requireSession(body, env);
+  if (!session) return json({ error: 'unauthorized' }, 401);
+  if (session.email.toLowerCase() !== 'wldnjswldnjs00@gmail.com') return json({ error: 'forbidden' }, 403);
+  if (!env.USERS_KV) return json({ users: [] });
+
+  const { keys } = await env.USERS_KV.list({ prefix: 'user:' });
+  const users = [];
+  for (const key of keys) {
+    const user = await env.USERS_KV.get(key.name, { type: 'json' });
+    if (user) {
+      users.push({
+        email: user.email,
+        username: user.username || '',
+        name: user.name || '',
+        country: user.country || '',
+        plan: user.subscription?.plan || 'none',
+        createdAt: user.createdAt || null
+      });
+    }
+  }
+  return json({ users });
+}
+
+async function handleAdminUserDetail(request, env) {
+  const body = await request.json();
+  const session = await requireSession(body, env);
+  if (!session) return json({ error: 'unauthorized' }, 401);
+  if (session.email.toLowerCase() !== 'wldnjswldnjs00@gmail.com') return json({ error: 'forbidden' }, 403);
+  if (!env.USERS_KV) return json({ error: 'service_unavailable' }, 503);
+
+  const { targetEmail } = body;
+  if (!targetEmail) return json({ error: 'missing_email' }, 400);
+
+  const user = await env.USERS_KV.get('user:' + targetEmail.toLowerCase(), { type: 'json' });
+  if (!user) return json({ error: 'user_not_found' }, 404);
+
+  const [botConfig, botLogs, positions] = await Promise.all([
+    env.USERS_KV.get('bot:config:'         + targetEmail.toLowerCase(), { type: 'json' }),
+    env.USERS_KV.get('bot:logs:'           + targetEmail.toLowerCase(), { type: 'json' }),
+    env.USERS_KV.get('bot:position_state:' + targetEmail.toLowerCase(), { type: 'json' })
+  ]);
+
+  let config = botConfig ? { ...botConfig } : null;
+  if (config?.apiKey)        config.apiKey        = '••••' + config.apiKey.slice(-4);
+  if (config?.apiSecret)     config.apiSecret     = '••••••••';
+  if (config?.apiPassphrase) config.apiPassphrase = '••••••••';
+
+  return json({
+    user: {
+      email: user.email,
+      username: user.username || '',
+      name: user.name || '',
+      country: user.country || '',
+      plan: user.subscription?.plan || 'none',
+      subscription: user.subscription || null,
+      createdAt: user.createdAt || null
+    },
+    botConfig: config,
+    botLogs: botLogs || [],
+    positions: positions || {}
+  });
 }
 
 // ── BOT LOG & NOTIFY ──────────────────────────────────────────

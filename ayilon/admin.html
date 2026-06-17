@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — AYILON</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --black: #000; --white: #fff;
+      --gray-100: #f5f5f5; --gray-400: #a3a3a3; --gray-600: #525252;
+      --gray-800: #1f1f1f; --gray-900: #111111;
+      --error: #ef4444; --success: #22c55e; --warn: #f59e0b;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
+
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 48px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
+    .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
+    .nav-badge { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 4px; margin-left: 10px; }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-user { font-size: 13px; color: var(--gray-400); }
+    .btn-logout { background: none; border: 1px solid rgba(255,255,255,0.12); color: var(--gray-400); font-size: 12px; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+    .btn-logout:hover { border-color: rgba(255,255,255,0.3); color: var(--white); }
+
+    .main { flex: 1; display: flex; }
+
+    /* SIDEBAR */
+    .sidebar { width: 220px; border-right: 1px solid rgba(255,255,255,0.06); padding: 24px 0; flex-shrink: 0; }
+    .sidebar-section { padding: 0 16px; margin-bottom: 24px; }
+    .sidebar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; color: var(--gray-600); text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; }
+    .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--gray-400); transition: all 0.15s; border: none; background: none; width: 100%; text-align: left; font-family: 'Inter', sans-serif; }
+    .sidebar-item:hover { background: rgba(255,255,255,0.04); color: var(--white); }
+    .sidebar-item.active { background: rgba(255,255,255,0.07); color: var(--white); font-weight: 500; }
+    .sidebar-icon { font-size: 15px; flex-shrink: 0; }
+
+    /* CONTENT */
+    .content { flex: 1; padding: 32px 40px; overflow-y: auto; }
+    .page-header { margin-bottom: 28px; }
+    .page-title { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+    .page-sub { font-size: 13px; color: var(--gray-400); margin-top: 4px; }
+
+    /* STATS ROW */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-card { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 18px 20px; }
+    .stat-label { font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; }
+    .stat-value.green { color: var(--success); }
+
+    /* SEARCH BAR */
+    .search-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .search-input { flex: 1; max-width: 360px; padding: 10px 14px; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--white); font-family: 'Inter', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s; }
+    .search-input::placeholder { color: var(--gray-600); }
+    .search-input:focus { border-color: rgba(255,255,255,0.25); }
+    .search-count { font-size: 13px; color: var(--gray-400); }
+
+    /* USER TABLE */
+    .table-wrap { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid rgba(255,255,255,0.06); white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background 0.15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+    tbody tr.selected { background: rgba(255,255,255,0.06); }
+    tbody td { padding: 12px 16px; font-size: 13px; color: var(--gray-400); }
+    tbody td.primary { color: var(--white); font-weight: 500; }
+    .plan-badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+    .plan-badge.starter { background: rgba(163,163,163,0.12); color: var(--gray-400); }
+    .plan-badge.pro { background: rgba(245,158,11,0.12); color: var(--warn); }
+    .plan-badge.elite { background: rgba(34,197,94,0.12); color: var(--success); }
+    .plan-badge.none { background: rgba(255,255,255,0.06); color: var(--gray-600); }
+
+    /* DETAIL PANEL */
+    .detail-panel { background: var(--gray-900); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 28px; margin-top: 28px; display: none; }
+    .detail-panel.show { display: block; }
+    .detail-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+    .detail-name { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; }
+    .detail-email { font-size: 13px; color: var(--gray-400); margin-top: 2px; }
+    .btn-close-detail { background: none; border: 1px solid rgba(255,255,255,0.1); color: var(--gray-400); font-size: 13px; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-close-detail:hover { color: var(--white); border-color: rgba(255,255,255,0.3); }
+
+    .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .detail-field { }
+    .field-label { font-size: 11px; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .field-value { font-size: 13px; color: var(--white); word-break: break-all; }
+    .field-value.mono { font-family: monospace; font-size: 12px; }
+
+    .section-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 20px 0; }
+    .section-heading { font-size: 12px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+
+    .log-list { max-height: 240px; overflow-y: auto; }
+    .log-item { display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
+    .log-item:last-child { border-bottom: none; }
+    .log-time { color: var(--gray-600); white-space: nowrap; flex-shrink: 0; }
+    .log-msg { color: var(--gray-400); }
+
+    .bot-config-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+    .empty-state { text-align: center; padding: 40px; color: var(--gray-600); font-size: 14px; }
+
+    /* ACCESS DENIED */
+    .access-denied { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+    .access-denied h2 { font-family: 'Space Grotesk', sans-serif; font-size: 24px; color: var(--error); }
+    .access-denied p { font-size: 14px; color: var(--gray-400); }
+
+    /* LOADING */
+    .loading-overlay { flex: 1; display: flex; align-items: center; justify-content: center; }
+    .spinner { width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.1); border-top-color: rgba(255,255,255,0.6); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 900px) {
+      nav { padding: 18px 24px; }
+      .sidebar { display: none; }
+      .content { padding: 24px 20px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .detail-grid { grid-template-columns: repeat(2, 1fr); }
+      .bot-config-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div style="display:flex; align-items:center;">
+      <a href="index.html" class="nav-logo">AYILON</a>
+      <span class="nav-badge">ADMIN</span>
+    </div>
+    <div class="nav-right">
+      <span class="nav-user" id="navEmail"></span>
+      <button class="btn-logout" onclick="logout()">Log Out</button>
+    </div>
+  </nav>
+
+  <div class="main" id="loadingView">
+    <div class="loading-overlay"><div class="spinner"></div></div>
+  </div>
+
+  <div class="main" id="deniedView" style="display:none;">
+    <div class="access-denied">
+      <h2>Access Denied</h2>
+      <p>This page is restricted to the site owner only.</p>
+    </div>
+  </div>
+
+  <div class="main" id="adminView" style="display:none;">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Overview</div>
+        <button class="sidebar-item active" onclick="showSection('users')">
+          <span class="sidebar-icon">👥</span> Users
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="page-header">
+        <div class="page-title">User Management</div>
+        <div class="page-sub">All registered accounts</div>
+      </div>
+
+      <div class="stats-row" id="statsRow">
+        <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value" id="statTotal">—</div></div>
+        <div class="stat-card"><div class="stat-label">Elite</div><div class="stat-value green" id="statElite">—</div></div>
+        <div class="stat-card"><div class="stat-label">Pro</div><div class="stat-value" id="statPro">—</div></div>
+        <div class="stat-card"><div class="stat-label">Free</div><div class="stat-value" id="statFree">—</div></div>
+      </div>
+
+      <div class="search-row">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search by email, username, or name…" oninput="filterUsers()" />
+        <span class="search-count" id="searchCount"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Email</th>
+              <th>Username</th>
+              <th>Name</th>
+              <th>Country</th>
+              <th>Plan</th>
+              <th>Registered</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+        <div class="empty-state" id="tableEmpty" style="display:none;">No users found.</div>
+      </div>
+
+      <div class="detail-panel" id="detailPanel">
+        <div class="detail-header">
+          <div>
+            <div class="detail-name" id="dName"></div>
+            <div class="detail-email" id="dEmail"></div>
+          </div>
+          <button class="btn-close-detail" onclick="closeDetail()">Close ✕</button>
+        </div>
+
+        <div class="detail-grid" id="dInfoGrid"></div>
+
+        <hr class="section-divider" />
+        <div class="section-heading">Bot Configuration</div>
+        <div class="bot-config-grid" id="dBotConfig"></div>
+
+        <hr class="section-divider" />
+        <div class="section-heading">Active Positions</div>
+        <div id="dPositions"></div>
+
+        <hr class="section-divider" />
+        <div class="section-heading">Bot Logs (last 50)</div>
+        <div class="log-list" id="dLogs"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const WORKER = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
+    const ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
+    let allUsers = [];
+    let sessionToken = null;
+
+    async function init() {
+      sessionToken = localStorage.getItem('ayilon_session_token');
+      if (!sessionToken) { showDenied(); return; }
+
+      try {
+        const res  = await fetch(WORKER + '/me', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken })
+        });
+        const data = await res.json();
+        if (!data.authenticated || data.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+          showDenied(); return;
+        }
+        document.getElementById('navEmail').textContent = data.email;
+        showAdmin();
+        loadUsers();
+      } catch(e) {
+        showDenied();
+      }
+    }
+
+    function showDenied() {
+      document.getElementById('loadingView').style.display = 'none';
+      document.getElementById('deniedView').style.display = 'flex';
+      setTimeout(() => { window.location.href = 'login.html'; }, 2500);
+    }
+
+    function showAdmin() {
+      document.getElementById('loadingView').style.display = 'none';
+      document.getElementById('adminView').style.display = 'flex';
+    }
+
+    async function loadUsers() {
+      try {
+        const res  = await fetch(WORKER + '/admin-users', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken })
+        });
+        const data = await res.json();
+        allUsers = data.users || [];
+        renderStats(allUsers);
+        renderTable(allUsers);
+      } catch(e) {
+        document.getElementById('tableEmpty').style.display = 'block';
+        document.getElementById('tableEmpty').textContent = 'Failed to load users: ' + e.message;
+      }
+    }
+
+    function renderStats(users) {
+      document.getElementById('statTotal').textContent = users.length;
+      document.getElementById('statElite').textContent = users.filter(u => u.plan === 'elite').length;
+      document.getElementById('statPro').textContent   = users.filter(u => u.plan === 'pro').length;
+      document.getElementById('statFree').textContent  = users.filter(u => u.plan === 'none' || u.plan === 'starter').length;
+    }
+
+    function renderTable(users) {
+      const tbody = document.getElementById('userTableBody');
+      const empty = document.getElementById('tableEmpty');
+      document.getElementById('searchCount').textContent = users.length + ' user' + (users.length !== 1 ? 's' : '');
+
+      if (users.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+      tbody.innerHTML = users.map((u, i) => `
+        <tr onclick="loadDetail('${escStr(u.email)}', this)">
+          <td>${i + 1}</td>
+          <td class="primary">${escStr(u.email)}</td>
+          <td>${escStr(u.username || '—')}</td>
+          <td>${escStr(u.name || '—')}</td>
+          <td>${escStr(u.country || '—')}</td>
+          <td><span class="plan-badge ${u.plan || 'none'}">${u.plan || 'none'}</span></td>
+          <td>${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function filterUsers() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      if (!q) { renderTable(allUsers); return; }
+      const filtered = allUsers.filter(u =>
+        (u.email    || '').toLowerCase().includes(q) ||
+        (u.username || '').toLowerCase().includes(q) ||
+        (u.name     || '').toLowerCase().includes(q)
+      );
+      renderTable(filtered);
+    }
+
+    async function loadDetail(email, rowEl) {
+      document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
+      if (rowEl) rowEl.classList.add('selected');
+
+      const panel = document.getElementById('detailPanel');
+      panel.classList.add('show');
+      document.getElementById('dName').textContent  = '...';
+      document.getElementById('dEmail').textContent = email;
+      document.getElementById('dInfoGrid').innerHTML = '<div style="color:var(--gray-600);font-size:13px;">Loading…</div>';
+      document.getElementById('dBotConfig').innerHTML = '';
+      document.getElementById('dPositions').innerHTML = '';
+      document.getElementById('dLogs').innerHTML = '';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      try {
+        const res  = await fetch(WORKER + '/admin-user-detail', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken, targetEmail: email })
+        });
+        const data = await res.json();
+        if (data.error) {
+          document.getElementById('dInfoGrid').innerHTML = `<div style="color:var(--error)">Error: ${escStr(data.error)}</div>`;
+          return;
+        }
+        renderDetail(data);
+      } catch(e) {
+        document.getElementById('dInfoGrid').innerHTML = `<div style="color:var(--error)">Network error: ${escStr(e.message)}</div>`;
+      }
+    }
+
+    function renderDetail(data) {
+      const { user, botConfig, botLogs, positions } = data;
+      document.getElementById('dName').textContent  = user.name || user.username || '—';
+      document.getElementById('dEmail').textContent = user.email;
+
+      const sub = user.subscription;
+      const infoFields = [
+        { label: 'Email',     value: user.email },
+        { label: 'Username',  value: user.username || '—' },
+        { label: 'Full Name', value: user.name || '—' },
+        { label: 'Country',   value: user.country || '—' },
+        { label: 'Plan',      value: user.plan },
+        { label: 'Registered', value: user.createdAt ? new Date(user.createdAt).toLocaleString() : '—' },
+        { label: 'Sub Activated', value: sub?.activatedAt ? new Date(sub.activatedAt).toLocaleString() : '—' },
+        { label: 'Sub Amount',    value: sub?.amount ? '$' + sub.amount : '—' },
+        { label: 'Tx Hash',       value: sub?.txHash || '—', mono: true }
+      ];
+      document.getElementById('dInfoGrid').innerHTML = infoFields.map(f =>
+        `<div class="detail-field"><div class="field-label">${f.label}</div><div class="field-value${f.mono ? ' mono' : ''}">${escStr(String(f.value))}</div></div>`
+      ).join('');
+
+      // Bot config
+      if (botConfig) {
+        const configFields = [
+          { label: 'Trading Pair', value: botConfig.tradingPair || '—' },
+          { label: 'Strategy',     value: botConfig.strategy || '—' },
+          { label: 'Leverage',     value: botConfig.leverage != null ? botConfig.leverage + 'x' : '—' },
+          { label: 'Pos Size',     value: botConfig.posSize != null ? botConfig.posSize + '%' : '—' },
+          { label: 'Risk/Trade',   value: botConfig.riskPerTrade != null ? botConfig.riskPerTrade + '%' : '—' },
+          { label: 'Num Entries',  value: botConfig.numEntries || '—' },
+          { label: 'Running',      value: botConfig.running ? '✅ Yes' : '⛔ No' },
+          { label: 'API Key',      value: botConfig.apiKey || '—', mono: true }
+        ];
+        document.getElementById('dBotConfig').innerHTML = configFields.map(f =>
+          `<div class="detail-field"><div class="field-label">${f.label}</div><div class="field-value${f.mono ? ' mono' : ''}">${escStr(String(f.value))}</div></div>`
+        ).join('');
+      } else {
+        document.getElementById('dBotConfig').innerHTML = '<div style="color:var(--gray-600);font-size:13px;">No bot configured.</div>';
+      }
+
+      // Positions
+      const posEl = document.getElementById('dPositions');
+      const posEntries = Object.entries(positions || {});
+      if (posEntries.length === 0) {
+        posEl.innerHTML = '<div style="color:var(--gray-600);font-size:13px;">No active positions.</div>';
+      } else {
+        posEl.innerHTML = posEntries.map(([pair, state]) => `
+          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+            <div style="font-weight:600;margin-bottom:8px;">${escStr(pair)} — ${escStr(state.direction || '?').toUpperCase()}</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px;color:var(--gray-400);">
+              <div><span style="color:var(--gray-600)">Entries:</span> ${(state.entries||[]).length}</div>
+              <div><span style="color:var(--gray-600)">TP:</span> ${state.takeProfit ? state.takeProfit.toFixed(2) : '—'}</div>
+              <div><span style="color:var(--gray-600)">SL:</span> ${state.stopLoss ? state.stopLoss.toFixed(2) : '—'}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Logs
+      const logsEl = document.getElementById('dLogs');
+      const logs = (botLogs || []).slice(0, 50);
+      if (logs.length === 0) {
+        logsEl.innerHTML = '<div style="color:var(--gray-600);font-size:13px;">No logs.</div>';
+      } else {
+        logsEl.innerHTML = logs.map(l => `
+          <div class="log-item">
+            <span class="log-time">${l.time ? new Date(l.time).toLocaleString() : '—'}</span>
+            <span class="log-msg">${escStr(l.msg || '')}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    function closeDetail() {
+      document.getElementById('detailPanel').classList.remove('show');
+      document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
+    }
+
+    function showSection(s) {
+      document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+    }
+
+    async function logout() {
+      if (sessionToken) {
+        await fetch(WORKER + '/logout', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken })
+        }).catch(() => {});
+      }
+      localStorage.removeItem('ayilon_session_token');
+      localStorage.removeItem('ayilon_logged_in');
+      window.location.href = 'login.html';
+    }
+
+    function escStr(s) {
+      return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    init();
+  </script>
+</body>
+</html>
