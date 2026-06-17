@@ -312,9 +312,13 @@ async function handleConfirmation(request, env) {
   const body = await request.json();
   const session = await requireSession(body, env);
   if (!session) return json({ error: 'unauthorized' }, 401);
-  const { plan, billing, amount } = body;
   const email = session.email;
-  if (!plan) return json({ error: 'Missing fields' }, 400);
+  const user = await env.USERS_KV.get('user:' + email, { type: 'json' });
+  const sub = user?.subscription;
+  if (!sub?.plan) return json({ error: 'No active subscription found' }, 400);
+  const plan = sub.plan;
+  const billing = sub.billing;
+  const amount = sub.amount;
   const billingLabel = billing === 'annual' ? 'Annual' : 'Monthly';
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -331,6 +335,10 @@ async function handleConfirmation(request, env) {
 }
 
 // ── HELPERS ──────────────────────────────────────────────────
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function json(body, status = 200) {
   return corsResponse(JSON.stringify(body), status);
 }
@@ -1041,7 +1049,7 @@ async function runBotForUser(env, email, cfg) {
       }
 
       const tpStr    = useTP ? ` | TP:${tp.toFixed(2)}` : '';
-      const gradeStr = signal.grade ? `[${signal.grade}급] ` : '';
+      const gradeStr = signal.grade ? `[Grade ${signal.grade}] ` : '';
       const trendStr = trend.dir !== 'neutral' ? ` | trend:${trend.dir}${trend.strong ? '' : '(w)'}` : '';
       const riskStr  = `risk:${(lossLimitNorm*100).toFixed(0)}%@${numEntries}x`;
       await botLog(env, email, `${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${fillPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | ${riskStr}${tpStr}${trendStr} | sz:${sz}`);
@@ -1778,7 +1786,7 @@ async function botNotify(env, cfg, msg) {
           from: 'AYILON <onboarding@resend.dev>',
           to: [cfg.userEmail],
           subject: 'AYILON Bot Alert',
-          html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:40px;max-width:480px;border-radius:12px;"><h2 style="margin-bottom:8px;">AYILON Bot</h2><p style="color:#a3a3a3;margin-bottom:24px;">${msg}</p><a href="https://oracletrading-01o.pages.dev/dashboard.html" style="display:inline-block;background:#fff;color:#000;padding:12px 24px;border-radius:8px;font-weight:600;text-decoration:none;">Dashboard →</a></div>`
+          html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:40px;max-width:480px;border-radius:12px;"><h2 style="margin-bottom:8px;">AYILON Bot</h2><p style="color:#a3a3a3;margin-bottom:24px;">${escapeHtml(msg)}</p><a href="https://oracletrading-01o.pages.dev/dashboard.html" style="display:inline-block;background:#fff;color:#000;padding:12px 24px;border-radius:8px;font-weight:600;text-decoration:none;">Dashboard →</a></div>`
         })
       });
     } catch {}
