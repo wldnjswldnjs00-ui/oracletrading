@@ -100,13 +100,29 @@
     .monitor-neck { width: 36px; height: 18px; background: #191919; clip-path: polygon(15% 0, 85% 0, 100% 100%, 0% 100%); }
     .monitor-foot { width: 120px; height: 6px; background: #1c1c1c; border-radius: 3px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
 
-    /* ── CHART STREAM SECTION ── */
-    .chart-stream { padding: 56px 0 0; border-top: 1px solid rgba(255,255,255,0.06); }
-    .chart-stream-head { text-align: center; margin-bottom: 28px; }
-    .chart-stream-head .section-title { max-width: 100%; text-align: center; margin: 0 auto; }
-    .chart-stream-head em { font-style: normal; color: var(--gray-400); }
-    .chart-canvas-wrap { width: 100%; overflow: hidden; position: relative; height: 200px; }
-    #stream-chart { display: block; width: 100%; height: 100%; }
+    /* ── HERO PnL OVERLAY ── */
+    .screen-pnl { position: absolute; bottom: 7px; right: 9px; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 700; color: #22c55e; z-index: 3; pointer-events: none; letter-spacing: 0.04em; }
+
+    /* ── STRATEGY SIMULATION ── */
+    .strat-sim { padding: 60px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+    .strat-sim-head { text-align: center; margin-bottom: 28px; }
+    .strat-sim-head .section-title { max-width: 100%; text-align: center; margin: 0 auto; }
+    .sim-tabs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; padding: 0 16px; }
+    .sim-tab { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 100px; background: transparent; color: var(--gray-400); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.18s; white-space: nowrap; }
+    .sim-tab:hover { border-color: rgba(255,255,255,0.25); color: #fff; }
+    .sim-tab.active { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.28); color: #fff; }
+    .sim-tier { font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .sim-tier-free  { background: rgba(34,197,94,0.15);  color: #22c55e; }
+    .sim-tier-pro   { background: rgba(59,130,246,0.15);  color: #3b82f6; }
+    .sim-tier-elite { background: rgba(168,85,247,0.15); color: #a855f7; }
+    .sim-chart-outer { }
+    .sim-card { background: #080808; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; }
+    .sim-card-header { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .sim-pair-label { display: flex; align-items: center; gap: 6px; font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.7); }
+    .sim-pair-dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 5px #22c55e; }
+    .sim-logic-label { font-size: 11px; color: var(--gray-400); }
+    .sim-canvas-wrap { position: relative; height: 260px; }
+    #sim-chart { display: block; width: 100%; height: 100%; }
 
     /* ── MARQUEE ── */
     .marquee-section { padding: 44px 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -287,7 +303,6 @@
       .hero-cta { justify-content: center; }
       .hero-visual { order: 0; margin-bottom: 12px; }
       .monitor-wrap { max-width: 300px; }
-      .chart-canvas-wrap { height: 140px; }
       .marquee-text { font-size: 36px; }
       .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 24px; }
       .stat-item { border-right: none; padding: 0; }
@@ -375,8 +390,8 @@
           <span data-i18n="hero.badge">Automated Crypto Trading — 24/7</span>
         </div>
         <h1>
-          <span data-i18n="hero.title1">The end</span><br />
-          <em data-i18n="hero.title2">of effort.</em>
+          <span data-i18n="hero.title1">당신이 쉬는 동안,</span><br />
+          <em data-i18n="hero.title2">알고리즘이 일한다.</em>
         </h1>
         <p class="hero-tagline" data-i18n="hero.tagline">Set, forget, grow.</p>
         <p class="hero-desc" data-i18n="hero.desc">Connect your OKX API key. AYILON's algorithmic bots trade 24/7 on your behalf — no downloads, no setup, no effort.</p>
@@ -394,6 +409,7 @@
                 <span class="hud-pair">BTC/USDT PERP</span>
                 <span class="hud-badge"><span class="hud-dot"></span>BOT ACTIVE</span>
               </div>
+              <div class="screen-pnl" id="hero-pnl">+$0.00</div>
             </div>
           </div>
           <div class="monitor-neck"></div>
@@ -634,22 +650,32 @@
     </section>
   </div>
 
-  <!-- CHART STREAM SECTION -->
-  <div class="chart-stream">
-    <div class="chart-stream-head wrap">
-      <div class="section-tag" data-i18n="stream.tag">Live Strategy</div>
-      <h2 class="section-title" data-i18n="stream.title">Support / Resistance <em>Bot in Action</em></h2>
+  <!-- STRATEGY SIMULATION -->
+  <section class="strat-sim" id="strategy-sim">
+    <div class="strat-sim-head wrap">
+      <div class="section-tag" data-i18n="sim.tag">전략 시뮬레이션</div>
+      <h2 class="section-title" data-i18n="sim.title">각 전략이 실제로 어떻게 작동하는지 보세요</h2>
+      <p class="section-desc" style="text-align:center;margin:8px auto 0;" data-i18n="sim.desc">전략을 선택하면 해당 전략의 진입·청산 로직이 실시간으로 시뮬레이션됩니다.</p>
     </div>
-    <div class="chart-canvas-wrap">
-      <canvas id="stream-chart"></canvas>
+    <div class="sim-tabs" id="sim-tabs"></div>
+    <div class="sim-chart-outer wrap">
+      <div class="sim-card">
+        <div class="sim-card-header">
+          <div class="sim-pair-label"><span class="sim-pair-dot"></span>BTC/USDT</div>
+          <span class="sim-logic-label" id="sim-logic-label">진입 로직</span>
+        </div>
+        <div class="sim-canvas-wrap">
+          <canvas id="sim-chart"></canvas>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
 
   <!-- QUOTE SECTION -->
   <div class="quote-section">
     <div class="wrap">
-      <div class="quote-main" data-i18n="slogan.art">The art of doing nothing.</div>
-      <div class="quote-sub" data-i18n="slogan.reengineered">Your money, re-engineered.</div>
+      <div class="quote-main" data-i18n="slogan.never_stop">거래는 멈추지 않는다.</div>
+      <div class="quote-sub" data-i18n="slogan.always_on">365일, 24시간, 쉬지 않는 알고리즘.</div>
     </div>
   </div>
 
@@ -908,15 +934,613 @@
 
   <!-- CHART ANIMATIONS -->
   <script>
-  /* ── Shared PRNG (seeded per page load so charts differ each refresh) ── */
   (function() {
-    var seed = Date.now() ^ (Math.random() * 0xFFFFFF | 0);
+    /* ── PRNG seeded per page load ── */
+    var _s = (Date.now() ^ (Math.random() * 0xFFFFFF | 0)) >>> 0;
     function rand() {
-      seed = (seed ^ (seed << 13)) >>> 0;
-      seed = (seed ^ (seed >> 17)) >>> 0;
-      seed = (seed ^ (seed << 5)) >>> 0;
-      return seed / 0xFFFFFFFF;
+      _s = (_s ^ (_s << 13)) >>> 0;
+      _s = (_s ^ (_s >> 17)) >>> 0;
+      _s = (_s ^ (_s << 5))  >>> 0;
+      return _s / 0xFFFFFFFF;
     }
+    function makeRng(seed) {
+      var s = seed >>> 0;
+      return function() {
+        s = (s ^ (s << 13)) >>> 0;
+        s = (s ^ (s >> 17)) >>> 0;
+        s = (s ^ (s << 5))  >>> 0;
+        return s / 0xFFFFFFFF;
+      };
+    }
+
+    function calcEMA(arr, period) {
+      var k = 2 / (period + 1), e = arr[0];
+      return arr.map(function(v) { e = v * k + e * (1 - k); return e; });
+    }
+
+    /* ────────────────────────────────────────────
+       HERO MONITOR — line chart, bot PnL
+    ────────────────────────────────────────────*/
+    (function() {
+      var canvas = document.getElementById('hero-chart');
+      var pnlEl  = document.getElementById('hero-pnl');
+      if (!canvas) return;
+
+      var dpr = window.devicePixelRatio || 1;
+      var STEP = 12, SPEED = 0.4;
+      var startP = 63000 + rand() * 5000;
+
+      function genPrices(n, start, r) {
+        var pts = [start], signals = [], p = start;
+        var lo = start - 2800, hi = start + 2800, dir = 1;
+        for (var i = 1; i < n; i++) {
+          var noise = (r() - 0.5) * 350;
+          p += (dir > 0 ? hi - p : lo - p) * 0.09 + noise;
+          if (dir > 0 && p >= hi - 200) { dir = -1; signals.push({i: i, type:'short'}); }
+          if (dir < 0 && p <= lo + 200) { dir =  1; signals.push({i: i, type:'long'}); }
+          pts.push(p);
+        }
+        return { pts: pts, signals: signals, lo: lo, hi: hi };
+      }
+
+      var r0 = makeRng((_s * 31337) | 0);
+      var data = genPrices(200, startP, r0);
+      var offset = 0;
+      var W = 0, H = 0;
+      var ctx = canvas.getContext('2d');
+      var pnl = 0, lastTradePrice = startP, inLong = false;
+
+      function resize() {
+        var rect = canvas.parentElement.getBoundingClientRect();
+        W = Math.max(rect.width, 300); H = Math.max(rect.height, 160);
+        canvas.width  = W * dpr; canvas.height = H * dpr;
+        canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = '#080808';
+        ctx.fillRect(0, 0, W, H);
+
+        var vs = Math.floor(offset / STEP);
+        var ve = Math.min(data.pts.length - 1, vs + Math.ceil(W / STEP) + 3);
+        var vis = data.pts.slice(vs, ve + 1);
+        if (vis.length < 3) return;
+
+        var lo = data.lo, hi = data.hi;
+        var pad = (hi - lo) * 0.2; lo -= pad; hi += pad;
+        function py(p) { return H - ((p - lo) / (hi - lo)) * (H - 18) - 9; }
+        function xi(i) { return i * STEP - offset + STEP * 0.5; }
+
+        /* grid */
+        ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+        ctx.lineWidth = 1;
+        for (var g = 0; g <= 3; g++) {
+          ctx.beginPath(); ctx.moveTo(0, H * g / 3); ctx.lineTo(W, H * g / 3); ctx.stroke();
+        }
+
+        /* S/R lines */
+        var srColors = [['rgba(34,197,94,0.4)','지지'], ['rgba(249,115,22,0.4)','저항']];
+        [[data.lo, srColors[0]], [data.hi, srColors[1]]].forEach(function(pair) {
+          var iy = py(pair[0]);
+          ctx.strokeStyle = pair[1][0];
+          ctx.lineWidth = 1;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath(); ctx.moveTo(0, iy); ctx.lineTo(W, iy); ctx.stroke();
+          ctx.setLineDash([]);
+        });
+
+        /* EMA */
+        var ema = calcEMA(data.pts, 14);
+        ctx.strokeStyle = 'rgba(59,130,246,0.6)';
+        ctx.lineWidth = 1.3;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        var fp = true;
+        for (var ci = vs; ci <= ve; ci++) {
+          var ex = xi(ci), ey = py(ema[ci]);
+          if (fp) { ctx.moveTo(ex, ey); fp = false; } else ctx.lineTo(ex, ey);
+        }
+        ctx.stroke();
+
+        /* price line */
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        fp = true;
+        for (var pi = vs; pi <= ve; pi++) {
+          var px = xi(pi), ppx = py(data.pts[pi]);
+          if (fp) { ctx.moveTo(px, ppx); fp = false; } else ctx.lineTo(px, ppx);
+        }
+        ctx.stroke();
+
+        /* signals */
+        data.signals.forEach(function(sig) {
+          var sx = xi(sig.i);
+          if (sx < -20 || sx > W + 20) return;
+          var sy = py(data.pts[sig.i]);
+          var isLong = sig.type === 'long';
+          ctx.beginPath();
+          ctx.arc(sx, sy, 5.5, 0, Math.PI * 2);
+          ctx.strokeStyle = isLong ? '#22c55e' : '#ef4444';
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
+          ctx.fillStyle = isLong ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)';
+          ctx.fill();
+        });
+
+        /* update PnL when a signal scrolls to ~75% of screen */
+        data.signals.forEach(function(sig) {
+          var sx = xi(sig.i);
+          if (sx > W * 0.72 && sx < W * 0.78) {
+            var cp = data.pts[sig.i];
+            if (sig.type === 'long' && !inLong) {
+              inLong = true; lastTradePrice = cp;
+            } else if (sig.type === 'short' && inLong) {
+              pnl += cp - lastTradePrice;
+              inLong = false;
+            }
+          }
+        });
+        if (pnlEl) {
+          var display = inLong
+            ? pnl + (data.pts[ve] - lastTradePrice)
+            : pnl;
+          pnlEl.style.color = display >= 0 ? '#22c55e' : '#ef4444';
+          pnlEl.textContent = (display >= 0 ? '+' : '') + '$' + (display * 0.001).toFixed(2);
+        }
+      }
+
+      function tick() {
+        offset += SPEED;
+        if ((data.pts.length * STEP - offset) < W + STEP * 15) {
+          var ext = genPrices(80, data.pts[data.pts.length - 1], makeRng((rand() * 0xFFFF) | 0));
+          var base = data.pts.length;
+          ext.pts.forEach(function(p) { data.pts.push(p); });
+          ext.signals.forEach(function(s) { data.signals.push({i: s.i + base, type: s.type}); });
+        }
+        draw();
+        requestAnimationFrame(tick);
+      }
+      tick();
+    })();
+
+    /* ────────────────────────────────────────────
+       STRATEGY SIMULATION
+    ────────────────────────────────────────────*/
+    (function() {
+      var STRATS = [
+        {name:'S/R Bounce',       nameKo:'S/R 반등',          tier:'FREE',  logic:'SR 레벨 반등 진입/청산',  mode:'sr'},
+        {name:'RSI DCA',          nameKo:'RSI DCA',            tier:'FREE',  logic:'RSI 과매도 다단계 진입',  mode:'dca'},
+        {name:'MA Support',       nameKo:'MA 지지',            tier:'FREE',  logic:'MA 지지 반등 매수',       mode:'masup'},
+        {name:'MA Crossover',     nameKo:'MA 골든/데드크로스', tier:'PRO',   logic:'단기/장기 MA 교차 신호',  mode:'macross'},
+        {name:'BB Reversion',     nameKo:'BB 반전',            tier:'PRO',   logic:'볼린저 밴드 이탈 반전',   mode:'bb'},
+        {name:'Breakout+Volume',  nameKo:'돌파+거래량',        tier:'PRO',   logic:'박스권 상단 돌파 진입',   mode:'breakout'},
+        {name:'MA Ribbon',        nameKo:'MA 리본',            tier:'PRO',   logic:'다중 MA 정렬 추세 추종',  mode:'ribbon'},
+        {name:'MACD Divergence',  nameKo:'MACD 다이버전스',    tier:'ELITE', logic:'MACD 다이버전스 반전',    mode:'macd'},
+        {name:'Funding Rate',     nameKo:'펀딩비 역추세',      tier:'ELITE', logic:'펀딩비 극단치 역추세',    mode:'funding'},
+        {name:'ATR Trend',        nameKo:'ATR 추세 추종',      tier:'ELITE', logic:'ATR 기반 추세 추종',      mode:'atr'}
+      ];
+
+      var canvas = document.getElementById('sim-chart');
+      var tabsEl = document.getElementById('sim-tabs');
+      var logicEl = document.getElementById('sim-logic-label');
+      if (!canvas || !tabsEl) return;
+
+      /* Build tabs */
+      STRATS.forEach(function(s, i) {
+        var btn = document.createElement('button');
+        btn.className = 'sim-tab' + (i === 0 ? ' active' : '');
+        btn.innerHTML = s.nameKo + ' <span class="sim-tier sim-tier-' + s.tier.toLowerCase() + '">' + s.tier + '</span>';
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.sim-tab').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          currentIdx = i;
+          if (logicEl) logicEl.textContent = s.logic;
+          reset();
+        });
+        tabsEl.appendChild(btn);
+      });
+
+      var dpr = window.devicePixelRatio || 1;
+      var ctx = canvas.getContext('2d');
+      var W = 0, H = 0;
+      var simSeed = 0, simData = null, simOffset = 0, currentIdx = 0;
+      var STEP = 16, SPEED = 0.5;
+
+      function resizeSim() {
+        W = canvas.parentElement.offsetWidth || 900;
+        H = canvas.parentElement.offsetHeight || 260;
+        canvas.width  = W * dpr; canvas.height = H * dpr;
+        canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      resizeSim();
+      window.addEventListener('resize', function() { resizeSim(); });
+
+      /* ── Price generators ── */
+      function genSR(n, r) {
+        var base = 63000 + r() * 5000;
+        var lo = base - 2600, hi = base + 2600;
+        var prices = [base], signals = [], dir = 1, p = base;
+        for (var i = 1; i < n; i++) {
+          p += (dir > 0 ? hi - p : lo - p) * 0.1 + (r() - 0.5) * 280;
+          if (dir > 0 && p >= hi - 150) { dir = -1; signals.push({i:i, type:'short'}); }
+          if (dir < 0 && p <= lo + 150) { dir =  1; signals.push({i:i, type:'long'}); }
+          prices.push(p);
+        }
+        return {
+          prices: prices, signals: signals,
+          indicators: [
+            {type:'hline', y:hi, color:'rgba(249,115,22,0.55)', dash:[5,3], label:'저항'},
+            {type:'hline', y:lo, color:'rgba(34,197,94,0.55)',  dash:[5,3], label:'지지'}
+          ]
+        };
+      }
+
+      function genDCA(n, r) {
+        var base = 62000 + r() * 6000;
+        var prices = [base], signals = [], p = base;
+        var trend = 25, dcaTriggered = false;
+        for (var i = 1; i < n; i++) {
+          var noise = (r() - 0.48) * 400;
+          if (r() < 0.04 && !dcaTriggered) { noise -= 1400; dcaTriggered = true; }
+          else if (dcaTriggered && r() < 0.15) { dcaTriggered = false; }
+          p += trend + noise;
+          prices.push(p);
+          if (dcaTriggered && i > 1 && prices[i] < prices[i-1] * 0.998) {
+            signals.push({i:i, type:'long'});
+          }
+        }
+        var ovMA = 60500 + r() * 2000;
+        return {
+          prices: prices, signals: signals,
+          indicators: [
+            {type:'hline', y:base - 1200, color:'rgba(34,197,94,0.4)', dash:[4,3], label:'과매도 구간'},
+            {type:'curve', values: calcEMA(prices, 20), color:'rgba(59,130,246,0.6)'}
+          ]
+        };
+      }
+
+      function genMASup(n, r) {
+        var base = 63000 + r() * 5000;
+        var prices = [base], signals = [], p = base;
+        for (var i = 1; i < n; i++) {
+          p += (r() - 0.47) * 500 + 18;
+          prices.push(p);
+        }
+        var ema20 = calcEMA(prices, 20);
+        for (var j = 3; j < n - 1; j++) {
+          if (prices[j] <= ema20[j] * 1.001 && prices[j+1] > ema20[j+1]) {
+            signals.push({i:j, type:'long'});
+          }
+          if (prices[j] >= ema20[j] * 0.999 && prices[j] > prices[j-3] * 1.015) {
+            signals.push({i:j, type:'short'});
+          }
+        }
+        return {
+          prices: prices, signals: signals,
+          indicators: [{type:'curve', values:ema20, color:'rgba(59,130,246,0.7)'}]
+        };
+      }
+
+      function genMACross(n, r) {
+        var base = 63000 + r() * 5000;
+        var prices = [base], signals = [], p = base;
+        for (var i = 1; i < n; i++) {
+          p += (r() - 0.47) * 500 + 15;
+          prices.push(p);
+        }
+        var fast = calcEMA(prices, 7), slow = calcEMA(prices, 21);
+        for (var j = 2; j < n; j++) {
+          if (fast[j-1] <= slow[j-1] && fast[j] > slow[j]) signals.push({i:j, type:'long'});
+          if (fast[j-1] >= slow[j-1] && fast[j] < slow[j]) signals.push({i:j, type:'short'});
+        }
+        return {
+          prices: prices, signals: signals,
+          indicators: [
+            {type:'curve', values:fast, color:'rgba(59,130,246,0.8)', label:'MA7'},
+            {type:'curve', values:slow, color:'rgba(249,115,22,0.8)', label:'MA21'}
+          ]
+        };
+      }
+
+      function genBB(n, r) {
+        var base = 63000 + r() * 5000;
+        var prices = [base], signals = [], p = base;
+        for (var i = 1; i < n; i++) {
+          p += (r() - 0.5) * 600;
+          prices.push(p);
+        }
+        var mid = calcEMA(prices, 20);
+        var stds = prices.map(function(_, idx) {
+          if (idx < 19) return 400;
+          var slice = prices.slice(idx - 19, idx + 1);
+          var mean = slice.reduce(function(a,b){return a+b;},0)/20;
+          var variance = slice.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/20;
+          return Math.sqrt(variance);
+        });
+        var upper = mid.map(function(m,i){ return m + stds[i] * 2; });
+        var lower = mid.map(function(m,i){ return m - stds[i] * 2; });
+        for (var j = 20; j < n; j++) {
+          if (prices[j] <= lower[j] * 1.001) signals.push({i:j, type:'long'});
+          if (prices[j] >= upper[j] * 0.999) signals.push({i:j, type:'short'});
+        }
+        return {
+          prices: prices, signals: signals,
+          indicators: [
+            {type:'curve', values:upper, color:'rgba(249,115,22,0.5)', dash:[3,3]},
+            {type:'curve', values:mid,   color:'rgba(255,255,255,0.25)'},
+            {type:'curve', values:lower, color:'rgba(34,197,94,0.5)',   dash:[3,3]}
+          ]
+        };
+      }
+
+      function genBreakout(n, r) {
+        var base = 63000 + r() * 4000;
+        var prices = [base], signals = [], p = base;
+        var rangeHi = base + 800, rangeLo = base - 800;
+        var consolidated = true, breakoutAt = Math.floor(n * 0.45 + r() * n * 0.2);
+        for (var i = 1; i < n; i++) {
+          if (i < breakoutAt) {
+            p = Math.max(rangeLo + 50, Math.min(rangeHi - 50, p + (r() - 0.5) * 300));
+          } else {
+            if (consolidated) { consolidated = false; signals.push({i:i, type:'long'}); }
+            p += 60 + (r() - 0.4) * 400;
+          }
+          prices.push(p);
+        }
+        return {
+          prices: prices, signals: signals,
+          indicators: [
+            {type:'hline', y:rangeHi, color:'rgba(249,115,22,0.5)', dash:[5,3], label:'저항'},
+            {type:'hline', y:rangeLo, color:'rgba(34,197,94,0.4)',  dash:[5,3], label:'지지'}
+          ]
+        };
+      }
+
+      function genRibbon(n, r) {
+        var base = 63000 + r() * 5000;
+        var prices = [base], signals = [], p = base;
+        for (var i = 1; i < n; i++) {
+          p += (r() - 0.44) * 400 + 30;
+          prices.push(p);
+        }
+        var ma5  = calcEMA(prices, 5);
+        var ma10 = calcEMA(prices, 10);
+        var ma20 = calcEMA(prices, 20);
+        var ma50 = calcEMA(prices, 50);
+        for (var j = 55; j < n; j++) {
+          if (ma5[j] > ma10[j] && ma10[j] > ma20[j] && ma20[j] > ma50[j]) {
+            if (!(ma5[j-1] > ma10[j-1] && ma10[j-1] > ma20[j-1])) {
+              signals.push({i:j, type:'long'});
+            }
+          }
+        }
+        return {
+          prices: prices, signals: signals,
+          indicators: [
+            {type:'curve', values:ma50, color:'rgba(168,85,247,0.6)'},
+            {type:'curve', values:ma20, color:'rgba(249,115,22,0.6)'},
+            {type:'curve', values:ma10, color:'rgba(59,130,246,0.6)'},
+            {type:'curve', values:ma5,  color:'rgba(34,197,94,0.6)'}
+          ]
+        };
+      }
+
+      function genMACD(n, r) {
+        var base = 63000 + r() * 5000;
+        var prices = [base], signals = [], p = base;
+        for (var i = 1; i < n; i++) {
+          p += (r() - 0.47) * 500 + 12;
+          prices.push(p);
+        }
+        var fast12 = calcEMA(prices, 12), slow26 = calcEMA(prices, 26);
+        var macdLine = fast12.map(function(f,i){ return f - slow26[i]; });
+        var signal9  = calcEMA(macdLine, 9);
+        for (var j = 30; j < n; j++) {
+          if (macdLine[j-1] <= signal9[j-1] && macdLine[j] > signal9[j]) signals.push({i:j, type:'long'});
+          if (macdLine[j-1] >= signal9[j-1] && macdLine[j] < signal9[j]) signals.push({i:j, type:'short'});
+        }
+        return {
+          prices: prices, signals: signals,
+          indicators: [{type:'curve', values:calcEMA(prices,26), color:'rgba(168,85,247,0.6)'}]
+        };
+      }
+
+      function genFunding(n, r) {
+        var base = 63000 + r() * 5000;
+        var prices = [base], signals = [], p = base;
+        for (var i = 1; i < n; i++) {
+          p += (r() - 0.47) * 500 + 10;
+          prices.push(p);
+        }
+        /* Funding extremes every ~35 bars */
+        for (var j = 20; j < n; j += 30 + Math.floor(r() * 20)) {
+          var isHigh = r() > 0.5;
+          signals.push({i:j, type: isHigh ? 'short' : 'long'});
+        }
+        return {
+          prices: prices, signals: signals,
+          indicators: [{type:'curve', values:calcEMA(prices,20), color:'rgba(168,85,247,0.45)'}]
+        };
+      }
+
+      function genATR(n, r) {
+        var base = 63000 + r() * 5000;
+        var prices = [base], signals = [], p = base;
+        var trendDir = 1, stopLine = [];
+        var atrStop = base - 600;
+        for (var i = 1; i < n; i++) {
+          p += trendDir * (30 + r() * 20) + (r() - 0.5) * 300;
+          if (trendDir > 0) {
+            atrStop = Math.max(atrStop, p - 600);
+            if (p < atrStop) { trendDir = -1; atrStop = p + 600; signals.push({i:i, type:'short'}); }
+          } else {
+            atrStop = Math.min(atrStop, p + 600);
+            if (p > atrStop) { trendDir =  1; atrStop = p - 600; signals.push({i:i, type:'long'}); }
+          }
+          prices.push(p);
+          stopLine.push(atrStop);
+        }
+        stopLine.unshift(stopLine[0]);
+        return {
+          prices: prices, signals: signals,
+          indicators: [{type:'curve', values:stopLine, color:'rgba(249,115,22,0.6)', dash:[4,3]}]
+        };
+      }
+
+      function buildSim(mode, localRng) {
+        var N = 280;
+        switch (mode) {
+          case 'sr':       return genSR(N, localRng);
+          case 'dca':      return genDCA(N, localRng);
+          case 'masup':    return genMASup(N, localRng);
+          case 'macross':  return genMACross(N, localRng);
+          case 'bb':       return genBB(N, localRng);
+          case 'breakout': return genBreakout(N, localRng);
+          case 'ribbon':   return genRibbon(N, localRng);
+          case 'macd':     return genMACD(N, localRng);
+          case 'funding':  return genFunding(N, localRng);
+          case 'atr':      return genATR(N, localRng);
+          default:         return genSR(N, localRng);
+        }
+      }
+
+      function reset() {
+        simSeed = (rand() * 0xFFFFFF) | 0;
+        simData = buildSim(STRATS[currentIdx].mode, makeRng(simSeed));
+        simOffset = 0;
+      }
+      reset();
+
+      /* ── Drawing ── */
+      function drawFrame() {
+        if (!simData) return;
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = '#080808';
+        ctx.fillRect(0, 0, W, H);
+
+        var prices = simData.prices;
+        var vs = Math.floor(simOffset / STEP);
+        var ve = Math.min(prices.length - 1, vs + Math.ceil(W / STEP) + 3);
+        var vis = prices.slice(vs, ve + 1);
+        if (vis.length < 3) return;
+
+        var pMin = Math.min.apply(null, vis);
+        var pMax = Math.max.apply(null, vis);
+
+        /* expand range for indicator lines */
+        simData.indicators.forEach(function(ind) {
+          if (ind.type === 'hline') { pMin = Math.min(pMin, ind.y); pMax = Math.max(pMax, ind.y); }
+        });
+
+        var rng = pMax - pMin;
+        if (rng < 500) { pMin -= 250; pMax += 250; }
+        var pad = rng * 0.18; pMin -= pad; pMax += pad;
+
+        function py(p) { return H - ((p - pMin) / (pMax - pMin)) * (H - 20) - 10; }
+        function xi(i) { return i * STEP - simOffset + STEP * 0.5; }
+
+        /* grid */
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([]);
+        for (var g = 0; g <= 4; g++) {
+          ctx.beginPath(); ctx.moveTo(0, H * g / 4); ctx.lineTo(W, H * g / 4); ctx.stroke();
+        }
+
+        /* indicators */
+        simData.indicators.forEach(function(ind) {
+          ctx.strokeStyle = ind.color || 'rgba(255,255,255,0.4)';
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash(ind.dash || []);
+
+          if (ind.type === 'hline') {
+            var iy = py(ind.y);
+            ctx.beginPath(); ctx.moveTo(0, iy); ctx.lineTo(W, iy); ctx.stroke();
+            if (ind.label) {
+              ctx.setLineDash([]);
+              ctx.fillStyle = ind.color;
+              ctx.font = '500 11px Inter,sans-serif';
+              ctx.textAlign = 'left';
+              ctx.fillText(ind.label, 8, iy - 5);
+            }
+          } else if (ind.type === 'curve' && ind.values) {
+            ctx.beginPath();
+            var fp = true;
+            for (var ci = vs; ci <= ve; ci++) {
+              if (!ind.values[ci] && ind.values[ci] !== 0) continue;
+              var cx = xi(ci), cy = py(ind.values[ci]);
+              if (fp) { ctx.moveTo(cx, cy); fp = false; } else ctx.lineTo(cx, cy);
+            }
+            ctx.stroke();
+          }
+        });
+
+        ctx.setLineDash([]);
+
+        /* price line */
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        var fp2 = true;
+        for (var pi = vs; pi <= ve; pi++) {
+          var px = xi(pi), ppx = py(prices[pi]);
+          if (fp2) { ctx.moveTo(px, ppx); fp2 = false; } else ctx.lineTo(px, ppx);
+        }
+        ctx.stroke();
+
+        /* signal circles */
+        simData.signals.forEach(function(sig) {
+          var sx = xi(sig.i);
+          if (sx < -24 || sx > W + 24) return;
+          var sy = py(prices[sig.i]);
+          var isLong = sig.type === 'long';
+          ctx.beginPath();
+          ctx.arc(sx, sy, 7, 0, Math.PI * 2);
+          ctx.strokeStyle = isLong ? '#22c55e' : '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = isLong ? 'rgba(34,197,94,0.22)' : 'rgba(239,68,68,0.22)';
+          ctx.fill();
+        });
+      }
+
+      function extend() {
+        var last = simData.prices[simData.prices.length - 1];
+        var base = simData.prices.length;
+        var extra = buildSim(STRATS[currentIdx].mode + '_ext', makeRng((rand() * 0xFFFF) | 0));
+        /* re-use same generator but shift prices */
+        var freshMode = STRATS[currentIdx].mode;
+        var lr = makeRng((rand() * 0xFFFF) | 0);
+        var ext = buildSim(freshMode, lr);
+        /* offset prices to continue from last */
+        var firstP = ext.prices[0];
+        var delta = last - firstP;
+        ext.prices.forEach(function(p, i) { simData.prices.push(p + delta); });
+        ext.signals.forEach(function(s) { simData.signals.push({i: s.i + base, type: s.type}); });
+        /* re-compute curve indicators */
+        ext.indicators.forEach(function(srcInd, idx) {
+          if (srcInd.type === 'curve' && srcInd.values && simData.indicators[idx] && simData.indicators[idx].type === 'curve') {
+            srcInd.values.forEach(function(v) { simData.indicators[idx].values.push(v + delta); });
+          }
+        });
+      }
+
+      function tick() {
+        simOffset += SPEED;
+        if (simData && (simData.prices.length * STEP - simOffset) < W + STEP * 20) {
+          extend();
+        }
+        drawFrame();
+        requestAnimationFrame(tick);
+      }
+      tick();
+    })();
 
     /* ────────────────────────────
        Generate OHLC candle series
@@ -1099,182 +1723,6 @@
       tick();
     })();
 
-    /* ────────────────────────────
-       STREAM CHART (full-width)
-    ──────────────────────────────*/
-    (function() {
-      var el = document.getElementById('stream-chart');
-      if (!el) return;
-
-      var dpr = window.devicePixelRatio || 1;
-      var CW = 9, CG = 4, STEP = CW + CG;
-      var SPEED = 0.5;
-
-      var startPx = 63000 + (rand() - 0.5) * 6000;
-      var candles = genCandles(startPx, 200, 700);
-
-      /* pick 2 S/R levels from first 80 candles */
-      var sub80 = candles.slice(0, 80);
-      var hi80 = -Infinity, lo80 = Infinity;
-      sub80.forEach(function(c) { hi80 = Math.max(hi80, c.high); lo80 = Math.min(lo80, c.low); });
-      var resPrice = hi80 - (rand() * (hi80 - lo80) * 0.15);
-      var supPrice = lo80 + (rand() * (hi80 - lo80) * 0.15);
-
-      /* signals near those levels */
-      var signalAt = [];
-      candles.forEach(function(c, i) {
-        if (i < 5) return;
-        var nearSup = Math.abs(c.low - supPrice) < 300;
-        var nearRes = Math.abs(c.high - resPrice) < 300;
-        if (nearSup || nearRes) signalAt.push({ i: i, long: nearSup });
-      });
-
-      var offset = 0;
-      var W = 0, H = 0;
-
-      function resize() {
-        W = el.parentElement.offsetWidth || 1200;
-        H = el.parentElement.offsetHeight || 200;
-        el.width  = W * dpr; el.height = H * dpr;
-        el.style.width = W + 'px'; el.style.height = H + 'px';
-      }
-      resize();
-      var ctx = el.getContext('2d');
-      ctx.scale(dpr, dpr);
-      var scaled2 = false;
-
-      function draw() {
-        if (!scaled2) { ctx.scale(dpr, dpr); scaled2 = true; }
-        ctx.clearRect(0, 0, W, H);
-        ctx.fillStyle = '#040404';
-        ctx.fillRect(0, 0, W, H);
-
-        var visStart = Math.floor(offset / STEP);
-        var visEnd   = visStart + Math.ceil(W / STEP) + 3;
-        var visible  = candles.slice(visStart, Math.min(visEnd, candles.length));
-        if (visible.length < 3) return;
-
-        var pMin = Infinity, pMax = -Infinity;
-        visible.forEach(function(c) { pMin = Math.min(pMin, c.low); pMax = Math.max(pMax, c.high); });
-        var pad = (pMax - pMin) * 0.22;
-        pMin -= pad; pMax += pad;
-        /* clamp S/R into visible range */
-        pMin = Math.min(pMin, supPrice - pad * 0.5);
-        pMax = Math.max(pMax, resPrice + pad * 0.5);
-
-        function py(p) { return H - ((p - pMin) / (pMax - pMin)) * (H - 10) - 5; }
-
-        /* grid */
-        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-        ctx.lineWidth = 1;
-        for (var g = 0; g <= 3; g++) {
-          var gy = H * g / 3;
-          ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
-        }
-
-        /* S/R lines */
-        var resY = py(resPrice), supY = py(supPrice);
-
-        ctx.setLineDash([6, 4]);
-        ctx.lineWidth = 1;
-
-        ctx.strokeStyle = 'rgba(34,197,94,0.35)';
-        ctx.beginPath(); ctx.moveTo(0, resY); ctx.lineTo(W, resY); ctx.stroke();
-        ctx.fillStyle = 'rgba(34,197,94,0.6)';
-        ctx.font = '500 10px Inter,sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('Resistance', 6, resY - 4);
-
-        ctx.strokeStyle = 'rgba(249,115,22,0.35)';
-        ctx.beginPath(); ctx.moveTo(0, supY); ctx.lineTo(W, supY); ctx.stroke();
-        ctx.fillStyle = 'rgba(249,115,22,0.6)';
-        ctx.fillText('Support', 6, supY + 12);
-
-        ctx.setLineDash([]);
-
-        /* EMA */
-        var ema = calcEMA(candles, 20);
-        ctx.beginPath();
-        ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-        ctx.lineWidth = 1.2;
-        var first = true;
-        visible.forEach(function(_, i) {
-          var ci = visStart + i;
-          if (ci >= ema.length) return;
-          var x = ci * STEP - offset + STEP / 2;
-          var y = py(ema[ci]);
-          if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-
-        /* candles */
-        visible.forEach(function(c, i) {
-          var ci = visStart + i;
-          var x = ci * STEP - offset + STEP / 2;
-          if (x < -CW || x > W + CW) return;
-          var bull = c.close >= c.open;
-
-          ctx.strokeStyle = bull ? '#22c55e' : 'rgba(255,255,255,0.3)';
-          ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.moveTo(x, py(c.high)); ctx.lineTo(x, py(c.low)); ctx.stroke();
-
-          ctx.fillStyle = bull ? 'rgba(34,197,94,0.8)' : 'rgba(255,255,255,0.18)';
-          var top = py(Math.max(c.open, c.close));
-          var bot = py(Math.min(c.open, c.close));
-          ctx.fillRect(x - CW / 2, top, CW, Math.max(1, bot - top));
-        });
-
-        /* signals */
-        signalAt.forEach(function(sig) {
-          var x = sig.i * STEP - offset + STEP / 2;
-          if (x < 0 || x > W) return;
-          var c = candles[sig.i];
-          if (!c) return;
-          if (sig.long) {
-            var sy = py(c.low) + 10;
-            ctx.beginPath();
-            ctx.moveTo(x, sy - 8); ctx.lineTo(x + 6, sy); ctx.lineTo(x - 6, sy);
-            ctx.closePath();
-            ctx.fillStyle = '#22c55e';
-            ctx.fill();
-          } else {
-            var sy2 = py(c.high) - 10;
-            ctx.beginPath();
-            ctx.moveTo(x, sy2 + 8); ctx.lineTo(x + 6, sy2); ctx.lineTo(x - 6, sy2);
-            ctx.closePath();
-            ctx.fillStyle = '#f97316';
-            ctx.fill();
-          }
-        });
-      }
-
-      function tick() {
-        offset += SPEED;
-        if ((candles.length * STEP - offset) < W + STEP * 15) {
-          var last = candles[candles.length - 1];
-          var extra = genCandles(last.close, 40, 700);
-          var base = candles.length;
-          extra.forEach(function(c) { candles.push(c); });
-          candles.slice(base).forEach(function(c, i) {
-            var ci = base + i;
-            var nearSup2 = Math.abs(c.low  - supPrice) < 300;
-            var nearRes2 = Math.abs(c.high - resPrice) < 300;
-            if (nearSup2 || nearRes2) signalAt.push({ i: ci, long: nearSup2 });
-          });
-        }
-        draw();
-        requestAnimationFrame(tick);
-      }
-
-      window.addEventListener('resize', function() {
-        W = el.parentElement.offsetWidth || 1200;
-        H = el.parentElement.offsetHeight || 200;
-        el.width  = W * dpr; el.height = H * dpr;
-        el.style.width = W + 'px'; el.style.height = H + 'px';
-        ctx.scale(dpr, dpr); scaled2 = false;
-      });
-      tick();
-    })();
   })();
   </script>
 
