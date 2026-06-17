@@ -1,21 +1,33 @@
 const WALLET = 'TBvtft3H8B4Rv4cEHTotyak3Ds2mLur99E';
 const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
-const ALLOWED_ORIGINS = ['https://oracletrading-01o.pages.dev'];
+const ALLOWED_ORIGINS = [
+  'https://oracletrading-01o.pages.dev',
+  'http://localhost',
+  'http://127.0.0.1'
+];
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  // Allow all Cloudflare Pages preview deployments for this project
+  if (/^https:\/\/[^.]+\.oracletrading-01o\.pages\.dev$/.test(origin)) return true;
+  return false;
+}
 
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
-    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    if (origin && !isAllowedOrigin(origin)) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403, headers: { 'Content-Type': 'application/json' }
       });
     }
+    const corsOrigin = origin || ALLOWED_ORIGINS[0];
     if (request.method === 'OPTIONS') {
       return new Response('', { status: 204, headers: {
-        'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0],
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Origin': corsOrigin,
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Vary': 'Origin'
       }});
     }
@@ -39,11 +51,17 @@ export default {
       if (path === '/reset-password')    return handleResetPassword(request, env);
       if (path === '/update-profile')    return handleUpdateProfile(request, env);
       if (path === '/save-bot-settings') return handleSaveBotSettings(request, env);
-      if (path === '/bot-status')        return handleBotStatus(request, env);
-      if (path === '/bot-control')       return handleBotControl(request, env);
+      if (path === '/bot-status')           return handleBotStatus(request, env);
+      if (path === '/bot-control')          return handleBotControl(request, env);
+      if (path === '/send-email-verify')    return handleSendEmailVerify(request, env);
+      if (path === '/verify-email-change')  return handleVerifyEmailChange(request, env);
       if (path === '/get-positions')     return handleGetPositions(request, env);
       if (path === '/admin-users')       return handleAdminUsers(request, env);
       if (path === '/admin-user-detail') return handleAdminUserDetail(request, env);
+    }
+
+    if (request.method === 'GET') {
+      if (path === '/bot-status') return handleBotStatus(request, env);
     }
 
     return corsResponse(JSON.stringify({ error: 'Not found' }), 404);
@@ -312,7 +330,7 @@ async function handleVerification(request, env) {
 // ── SEND CONFIRMATION EMAIL ──────────────────────────────────
 async function handleConfirmation(request, env) {
   const body = await request.json();
-  const session = await requireSession(body, env);
+  const session = await requireSession(body, env, request);
   if (!session) return json({ error: 'unauthorized' }, 401);
   const email = session.email;
   const user = await env.USERS_KV.get('user:' + email, { type: 'json' });
@@ -350,9 +368,9 @@ function corsResponse(body, status) {
     status,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': ALLOWED_ORIGINS[0],
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     }
   });
 }
@@ -368,8 +386,13 @@ async function hashPassword(password) {
 // SESSION AUTH
 // ════════════════════════════════════════════════════════════
 
-async function requireSession(body, env) {
-  const token = body?.sessionToken;
+async function requireSession(body, env, request = null) {
+  let token = body?.sessionToken;
+  // Also accept token from Authorization: Bearer <token> header
+  if (!token && request) {
+    const auth = request.headers.get('Authorization') || '';
+    if (auth.startsWith('Bearer ')) token = auth.slice(7).trim();
+  }
   if (!token || !env.USERS_KV) return null;
   return env.USERS_KV.get('session:' + token, { type: 'json' });
 }
@@ -414,14 +437,14 @@ async function handleLogout(request, env) {
 
 async function handleMe(request, env) {
   const body = await request.json().catch(() => ({}));
-  const session = await requireSession(body, env);
+  const session = await requireSession(body, env, request);
   if (!session) return json({ authenticated: false }, 401);
   return json({ authenticated: true, email: session.email, username: session.username, name: session.name });
 }
 
 async function handleChangePassword(request, env) {
   const body = await request.json();
-  const session = await requireSession(body, env);
+  const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
 
   const { currentPassword, newPassword } = body;
@@ -468,7 +491,7 @@ async function handleResetPassword(request, env) {
 
 async function handleUpdateProfile(request, env) {
   const body = await request.json();
-  const session = await requireSession(body, env);
+  const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
   if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
 
@@ -503,7 +526,7 @@ async function handleSaveBotSettings(request, env) {
   const body = await request.json();
   if (!env.USERS_KV) return json({ ok: false });
 
-  const session = await requireSession(body, env);
+  const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
 
   // Preserve existing clientToken or generate a new one on first save
@@ -530,8 +553,8 @@ async function handleSaveBotSettings(request, env) {
 
 async function handleBotStatus(request, env) {
   if (!env.USERS_KV) return json({ running: false, logs: [] });
-  const body = await request.json().catch(() => ({}));
-  const session = await requireSession(body, env);
+  const body = request.method === 'GET' ? {} : await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
   if (!session) return json({ running: false, logs: [], error: 'unauthorized' }, 401);
 
   const u = session.email;
@@ -566,7 +589,7 @@ async function handleBotControl(request, env) {
   const body = await request.json();
   const { action } = body;
   if (!env.USERS_KV) return json({ ok: false });
-  const session = await requireSession(body, env);
+  const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
 
   const configKey = 'bot:config:' + session.email;
@@ -592,7 +615,7 @@ async function handleBotControl(request, env) {
 async function handleGetPositions(request, env) {
   if (!env.USERS_KV) return json({ positions: [] });
   const body = await request.json().catch(() => ({}));
-  const session = await requireSession(body, env);
+  const session = await requireSession(body, env, request);
   if (!session) return json({ positions: [], error: 'unauthorized' }, 401);
 
   // Use stored API keys from bot:config — never accept from client
@@ -1775,7 +1798,7 @@ async function hmac(secret, message) {
 
 async function handleAdminUsers(request, env) {
   const body = await request.json();
-  const session = await requireSession(body, env);
+  const session = await requireSession(body, env, request);
   if (!session) return json({ error: 'unauthorized' }, 401);
   if (session.email.toLowerCase() !== 'wldnjswldnjs00@gmail.com') return json({ error: 'forbidden' }, 403);
   if (!env.USERS_KV) return json({ users: [] });
@@ -1798,9 +1821,86 @@ async function handleAdminUsers(request, env) {
   return json({ users });
 }
 
+async function handleSendEmailVerify(request, env) {
+  const body = await request.json();
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
+
+  const { newEmail } = body;
+  if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail))
+    return json({ ok: false, error: 'invalid_email' }, 400);
+
+  const existing = await env.USERS_KV.get('user:' + newEmail.toLowerCase(), { type: 'json' });
+  if (existing) return json({ ok: false, error: 'email_taken' }, 409);
+
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  await env.USERS_KV.put(
+    'email_change:' + session.email,
+    JSON.stringify({ code, newEmail, ts: Date.now() }),
+    { expirationTtl: 600 }
+  );
+
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'AYILON <noreply@oracletrading-01o.pages.dev>',
+        to: [newEmail],
+        subject: 'AYILON — 이메일 변경 인증 코드',
+        html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:12px;">
+          <h2 style="font-size:20px;font-weight:700;margin-bottom:8px;">이메일 변경 인증</h2>
+          <p style="color:#a3a3a3;font-size:14px;margin-bottom:24px;">아래 6자리 코드를 입력하여 이메일을 변경하세요. 코드는 10분간 유효합니다.</p>
+          <div style="background:#111;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:20px;text-align:center;font-size:32px;font-weight:700;letter-spacing:0.15em;">${code}</div>
+          <p style="color:#525252;font-size:12px;margin-top:20px;">본인이 요청하지 않은 경우 이 이메일을 무시하세요.</p>
+        </div>`
+      })
+    });
+  } catch(e) {}
+
+  return json({ ok: true });
+}
+
+async function handleVerifyEmailChange(request, env) {
+  const body = await request.json();
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
+
+  const { code, newEmail } = body;
+  const stored = await env.USERS_KV.get('email_change:' + session.email, { type: 'json' });
+  if (!stored) return json({ ok: false, error: 'code_expired' }, 400);
+  if (stored.code !== String(code) || stored.newEmail !== newEmail)
+    return json({ ok: false, error: 'invalid_code' }, 400);
+  if (Date.now() - stored.ts > 600000) return json({ ok: false, error: 'code_expired' }, 400);
+
+  // Move user data from old email key to new email key
+  const oldKey = 'user:' + session.email.toLowerCase();
+  const newKey = 'user:' + newEmail.toLowerCase();
+  const userData = await env.USERS_KV.get(oldKey, { type: 'json' });
+  if (userData) {
+    userData.email = newEmail;
+    await Promise.all([
+      env.USERS_KV.put(newKey, JSON.stringify(userData)),
+      env.USERS_KV.delete(oldKey),
+      env.USERS_KV.delete('email_change:' + session.email)
+    ]);
+    // Update session to new email
+    const sessionKey = 'session:' + (body.sessionToken || request.headers.get('Authorization')?.slice(7)?.trim() || '');
+    const sessionData = await env.USERS_KV.get(sessionKey, { type: 'json' });
+    if (sessionData) {
+      sessionData.email = newEmail;
+      await env.USERS_KV.put(sessionKey, JSON.stringify(sessionData));
+    }
+  }
+
+  return json({ ok: true, newEmail });
+}
+
 async function handleAdminUserDetail(request, env) {
   const body = await request.json();
-  const session = await requireSession(body, env);
+  const session = await requireSession(body, env, request);
   if (!session) return json({ error: 'unauthorized' }, 401);
   if (session.email.toLowerCase() !== 'wldnjswldnjs00@gmail.com') return json({ error: 'forbidden' }, 403);
   if (!env.USERS_KV) return json({ error: 'service_unavailable' }, 503);
