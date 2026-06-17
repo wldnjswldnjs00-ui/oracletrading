@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AYILON — Automated Crypto Trading Bots 24/7</title>
-  <meta name="description" content="AYILON automates your crypto trading on OKX 24/7. 10 strategies, 3 plan tiers, engineered for BTC and ETH. Start for free." />
-  <meta property="og:title" content="AYILON — Create Profit from Nothing" />
-  <meta property="og:description" content="Automated crypto trading bots running 24/7 on OKX. 10 strategies across 3 plan tiers for BTC and ETH — engineered for every capital size." />
+  <title>AYILON — The end of effort.</title>
+  <meta name="description" content="AYILON automates your crypto trading on OKX 24/7. Set, forget, grow." />
+  <meta property="og:title" content="AYILON — The end of effort." />
+  <meta property="og:description" content="Automated crypto trading bots running 24/7 on OKX. 10 strategies across 3 plan tiers." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://oracletrading-01o.pages.dev" />
   <meta property="og:image" content="https://oracletrading-01o.pages.dev/og-image.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="AYILON — Create Profit from Nothing" />
+  <meta name="twitter:title" content="AYILON — The end of effort." />
   <meta name="twitter:description" content="Automated crypto trading bots running 24/7 on OKX." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -25,291 +25,314 @@
       --gray-100: #f5f5f5; --gray-200: #e5e5e5;
       --gray-400: #a3a3a3; --gray-600: #525252;
       --gray-800: #262626; --gray-900: #111111;
+      --green: #22c55e; --orange: #f97316;
     }
 
     html { scroll-behavior: smooth; }
     body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); overflow-x: hidden; }
 
-    /* NAV */
+    /* ── NAV ── */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 60px; border-bottom: 1px solid rgba(255,255,255,0.06);
-      background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
+      padding: 14px 48px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: rgba(0,0,0,0.88); backdrop-filter: blur(16px);
     }
-    .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
-    .nav-links { display: flex; align-items: center; gap: 36px; list-style: none; }
-    .nav-links a { font-size: 14px; font-weight: 400; color: var(--gray-400); text-decoration: none; letter-spacing: 0.02em; transition: color 0.2s; }
+    .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a { font-size: 13px; font-weight: 400; color: var(--gray-400); text-decoration: none; letter-spacing: 0.01em; transition: color 0.2s; }
     .nav-links a:hover { color: var(--white); }
-    .nav-actions { display: flex; gap: 12px; align-items: center; }
-    .btn-ghost { padding: 10px 20px; font-size: 14px; font-weight: 500; color: var(--white); background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; cursor: pointer; text-decoration: none; transition: border-color 0.2s, background 0.2s; }
-    .btn-ghost:hover { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.05); }
-    .btn-white { padding: 10px 20px; font-size: 14px; font-weight: 600; color: var(--black); background: var(--white); border: none; border-radius: 6px; cursor: pointer; text-decoration: none; transition: opacity 0.2s; }
+    .nav-actions { display: flex; gap: 10px; align-items: center; }
+    .btn-ghost { padding: 8px 16px; font-size: 13px; font-weight: 500; color: var(--white); background: transparent; border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; cursor: pointer; text-decoration: none; transition: border-color 0.2s, background 0.2s; }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.04); }
+    .btn-white { padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--black); background: var(--white); border: none; border-radius: 6px; cursor: pointer; text-decoration: none; transition: opacity 0.2s; }
     .btn-white:hover { opacity: 0.88; }
     .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
-    .hamburger span { display: block; width: 22px; height: 2px; background: var(--white); border-radius: 2px; }
-    .mobile-menu { display: none; position: fixed; top: 61px; left: 0; right: 0; background: rgba(0,0,0,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.06); padding: 8px 30px 20px; z-index: 99; }
+    .hamburger span { display: block; width: 20px; height: 2px; background: var(--white); border-radius: 2px; }
+    .mobile-menu { display: none; position: fixed; top: 57px; left: 0; right: 0; background: rgba(0,0,0,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.06); padding: 8px 30px 20px; z-index: 99; }
     .mobile-menu.open { display: block; }
-    .mobile-menu a { display: block; padding: 14px 0; font-size: 15px; color: var(--gray-400); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.04); transition: color 0.2s; }
+    .mobile-menu a { display: block; padding: 13px 0; font-size: 14px; color: var(--gray-400); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.04); transition: color 0.2s; }
     .mobile-menu a:last-child { border-bottom: none; color: var(--white); font-weight: 600; }
     .mobile-menu a:hover { color: var(--white); }
-
-    /* LANG SWITCHER */
     .lang-switcher { display: flex; gap: 4px; align-items: center; }
     .lang-btn { background: none; border: 1px solid transparent; color: var(--gray-400); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
     .lang-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
     .lang-btn.active { color: var(--white); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
 
-    /* HERO */
+    /* ── HERO ── */
     .hero {
-      min-height: 100vh; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; text-align: center;
-      padding: 120px 24px 80px; position: relative; overflow: hidden;
-    }
-    .hero::before {
-      content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
-      width: 800px; height: 800px;
-      background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px;
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 100px; font-size: 12px; font-weight: 500; color: var(--gray-400);
-      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 36px;
-      white-space: nowrap;
-    }
-    .hero-dot { width: 6px; height: 6px; background: var(--white); border-radius: 50%; display: inline-block; flex-shrink: 0; }
-    .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(48px, 8vw, 96px); font-weight: 700; line-height: 1.0; letter-spacing: -0.03em; margin-bottom: 28px; max-width: 900px; }
-    .hero h1 em { font-style: normal; color: var(--gray-400); }
-    .hero p { font-size: clamp(16px, 2vw, 19px); font-weight: 400; color: var(--gray-400); line-height: 1.65; max-width: 520px; margin-bottom: 48px; }
-    .hero-cta { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; justify-content: center; }
-    .btn-primary { padding: 14px 32px; font-size: 15px; font-weight: 600; color: var(--black); background: var(--white); border: none; border-radius: 8px; cursor: pointer; text-decoration: none; transition: opacity 0.2s; letter-spacing: 0.01em; }
-    .btn-primary:hover { opacity: 0.88; }
-    .btn-secondary { padding: 14px 32px; font-size: 15px; font-weight: 500; color: var(--white); background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; text-decoration: none; transition: border-color 0.2s; }
-    .btn-secondary:hover { border-color: rgba(255,255,255,0.5); }
-
-    /* STATS */
-    .stats {
-      border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06);
-      padding: 60px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
-    }
-    .stat-item { padding: 0 40px; border-right: 1px solid rgba(255,255,255,0.06); text-align: center; }
-    .stat-item:first-child { padding-left: 0; }
-    .stat-item:last-child { border-right: none; padding-right: 0; }
-    .stat-number { font-family: 'Space Grotesk', sans-serif; font-size: 42px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
-    .stat-label { font-size: 13px; color: var(--gray-400); font-weight: 400; letter-spacing: 0.02em; }
-
-    /* SECTION */
-    section { padding: 100px 60px; }
-    .section-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 20px; }
-    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(32px, 4vw, 52px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 20px; max-width: 600px; }
-    .section-desc { font-size: 16px; color: var(--gray-400); line-height: 1.7; max-width: 480px; margin-bottom: 60px; }
-
-    /* FEATURES */
-    .features-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 60px; }
-    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; overflow: hidden; }
-    .feature-card { background: var(--black); padding: 52px 40px; transition: background 0.25s; position: relative; }
-    .feature-card:hover { background: #0a0a0a; }
-    .feature-card:hover .feature-icon svg { stroke: var(--white); }
-    .feature-num { font-size: 11px; font-weight: 600; color: var(--gray-600); letter-spacing: 0.1em; margin-bottom: 32px; font-family: 'Space Grotesk', sans-serif; }
-    .feature-icon { width: 32px; height: 32px; margin-bottom: 24px; }
-    .feature-icon svg { width: 32px; height: 32px; stroke: var(--gray-400); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.25s; }
-    .feature-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.01em; color: var(--white); }
-    .feature-card p { font-size: 13px; color: var(--gray-600); line-height: 1.7; }
-
-    /* HOW IT WORKS */
-    .how { background: var(--gray-900); border-radius: 24px; margin: 0 60px; }
-    .how-inner { padding: 80px; }
-    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; margin-top: 60px; }
-    .step { position: relative; }
-    .step-num { font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--gray-600); margin-bottom: 20px; }
-    .step h3 { font-size: 17px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.01em; }
-    .step p { font-size: 14px; color: var(--gray-400); line-height: 1.65; }
-    .step::after { content: '→'; position: absolute; top: 0; right: -20px; color: var(--gray-600); font-size: 16px; }
-    .step:last-child::after { display: none; }
-
-    /* EXCHANGE */
-    .exchanges { text-align: center; padding: 80px 60px; }
-    .exchanges h2 { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 500; color: var(--gray-600); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 40px; }
-    .exchange-list { display: flex; gap: 48px; align-items: center; justify-content: center; flex-wrap: wrap; }
-    .exchange-name { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: var(--gray-600); letter-spacing: 0.02em; transition: color 0.2s; }
-    .exchange-name:hover { color: var(--white); }
-
-    /* PRICING */
-    .pricing { background: var(--black); }
-    .pricing-header { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 48px; }
-    .pricing-header .section-title { max-width: 100%; }
-    .pricing-header .section-desc { margin-bottom: 0; }
-
-    .billing-toggle {
-      display: inline-flex; align-items: center; gap: 0;
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px; padding: 4px; margin: 32px 0 0;
-    }
-    .toggle-btn {
-      padding: 8px 20px; font-size: 14px; font-weight: 500; border: none;
-      border-radius: 7px; cursor: pointer; transition: background 0.2s, color 0.2s;
-      background: transparent; color: var(--gray-400); font-family: 'Inter', sans-serif;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .toggle-btn.active { background: var(--white); color: var(--black); }
-    .save-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; background: rgba(255,255,255,0.12); border-radius: 100px; color: var(--gray-400); }
-    .toggle-btn.active .save-tag { background: rgba(0,0,0,0.1); color: var(--gray-600); }
-
-    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px; }
-
-    .strategy-compare { margin-top: 48px; }
-    .strategy-compare-title { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-600); text-align: center; margin-bottom: 20px; }
-    .strategy-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .strategy-table th { padding: 10px 16px; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-600); border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .strategy-table th:first-child { text-align: left; }
-    .strategy-table td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--gray-400); }
-    .strategy-table td:first-child { color: var(--white); font-weight: 500; }
-    .strategy-table td:not(:first-child) { text-align: center; }
-    .strategy-table tr:last-child td { border-bottom: none; }
-    .st-check { color: #34c759; font-weight: 700; font-size: 15px; }
-    .st-dash { color: rgba(255,255,255,0.15); font-size: 15px; }
-    .st-risk { font-size: 11px; padding: 2px 7px; border-radius: 100px; font-weight: 600; margin-left: 6px; }
-    .st-risk.low { background: rgba(52,199,89,0.15); color: #34c759; }
-    .st-risk.med { background: rgba(255,149,0,0.15); color: #ff9500; }
-    .st-risk.high { background: rgba(255,59,48,0.15); color: #ff3b30; }
-    .pricing-card { border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 40px; transition: border-color 0.2s; position: relative; }
-    .pricing-card:hover { border-color: rgba(255,255,255,0.2); }
-    .pricing-card.featured { background: var(--white); color: var(--black); border-color: var(--white); }
-
-    .pricing-plan { font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 24px; color: inherit; }
-    .pricing-card.featured .pricing-plan { color: var(--gray-600); }
-
-    .pricing-price { font-family: 'Space Grotesk', sans-serif; font-size: 48px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; color: inherit; }
-    .pricing-period { font-size: 13px; color: var(--gray-400); margin-bottom: 6px; }
-    .pricing-card.featured .pricing-period { color: var(--gray-600); }
-    .pricing-annual-note { font-size: 12px; color: var(--gray-600); margin-bottom: 28px; min-height: 18px; }
-    .pricing-card.featured .pricing-annual-note { color: var(--gray-600); }
-    .save-badge { display: inline-block; padding: 2px 8px; background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); border-radius: 100px; font-size: 11px; font-weight: 600; color: #22c55e; }
-
-    .pricing-features { list-style: none; margin-bottom: 36px; }
-    .pricing-features li { font-size: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); color: var(--gray-400); display: flex; gap: 10px; align-items: flex-start; }
-    .pricing-card.featured .pricing-features li { border-bottom-color: rgba(0,0,0,0.08); color: var(--gray-600); }
-    .pricing-features li::before { content: '✓'; font-weight: 700; color: var(--white); flex-shrink: 0; margin-top: 1px; }
-    .pricing-card.featured .pricing-features li::before { color: var(--black); }
-
-    .pricing-card .btn-primary { width: 100%; text-align: center; display: block; }
-    .btn-outline { display: block; width: 100%; text-align: center; padding: 13px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: var(--white); font-size: 14px; font-weight: 600; text-decoration: none; transition: border-color 0.2s; }
-    .btn-outline:hover { border-color: rgba(255,255,255,0.5); }
-
-    /* OKX REFERRAL BANNER */
-    .referral-banner {
-      margin: 60px 0 0;
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 20px;
-      padding: 56px 60px;
-      background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
-      display: flex;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       align-items: center;
-      justify-content: space-between;
+      padding: 120px 60px 80px;
       gap: 40px;
       position: relative;
       overflow: hidden;
     }
-    .referral-banner::before {
-      content: 'LIFETIME';
-      position: absolute;
-      right: -20px;
-      top: 50%;
-      transform: translateY(-50%) rotate(90deg);
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 80px;
-      font-weight: 900;
-      letter-spacing: 0.05em;
-      color: rgba(255,255,255,0.025);
-      pointer-events: none;
-      white-space: nowrap;
+    .hero-content { }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 100px; font-size: 11px; font-weight: 500; color: var(--gray-400);
+      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 28px;
     }
-    .referral-left { flex: 1; }
-    .referral-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 14px; }
-    .referral-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(24px, 3vw, 36px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 14px; }
-    .referral-desc { font-size: 15px; color: var(--gray-400); line-height: 1.6; max-width: 540px; }
-    .referral-steps { display: flex; gap: 28px; margin-top: 24px; flex-wrap: wrap; }
-    .referral-step { display: flex; align-items: flex-start; gap: 10px; }
-    .referral-step-num { width: 22px; height: 22px; border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
-    .referral-step p { font-size: 13px; color: var(--gray-400); line-height: 1.5; }
-    .referral-right { flex-shrink: 0; text-align: center; }
-    .btn-referral { display: inline-flex; align-items: center; gap: 10px; padding: 16px 32px; background: var(--white); color: var(--black); border: none; border-radius: 10px; font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
-    .btn-referral:hover { opacity: 0.88; }
-    .referral-note { font-size: 12px; color: var(--gray-600); margin-top: 10px; }
+    .hero-dot { width: 5px; height: 5px; background: var(--green); border-radius: 50%; display: inline-block; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+    .hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(38px, 5vw, 66px);
+      font-weight: 700; line-height: 1.0;
+      letter-spacing: -0.03em; margin-bottom: 14px;
+    }
+    .hero h1 em { font-style: normal; color: var(--gray-400); }
+    .hero-tagline {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(16px, 2vw, 22px);
+      font-weight: 500; color: var(--gray-400);
+      letter-spacing: -0.01em; margin-bottom: 20px;
+    }
+    .hero-desc {
+      font-size: 14px; color: var(--gray-600); line-height: 1.75;
+      margin-bottom: 36px; max-width: 420px;
+    }
+    .hero-cta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .btn-primary { padding: 12px 26px; font-size: 14px; font-weight: 600; color: var(--black); background: var(--white); border: none; border-radius: 7px; cursor: pointer; text-decoration: none; transition: opacity 0.2s; letter-spacing: 0.01em; white-space: nowrap; }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-secondary { padding: 12px 26px; font-size: 14px; font-weight: 500; color: var(--white); background: transparent; border: 1px solid rgba(255,255,255,0.18); border-radius: 7px; cursor: pointer; text-decoration: none; transition: border-color 0.2s; white-space: nowrap; }
+    .btn-secondary:hover { border-color: rgba(255,255,255,0.45); }
+    .hero-visual { display: flex; align-items: center; justify-content: center; }
+    #ayilon-canvas { width: 100%; max-width: 520px; height: 520px; display: block; }
 
-    /* FAQ */
-    .faq-section { padding: 100px 60px; max-width: 800px; margin: 0 auto; }
-    .faq-list { margin-top: 48px; display: flex; flex-direction: column; gap: 0; }
+    /* ── MARQUEE ── */
+    .marquee-section {
+      padding: 72px 60px;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .marquee-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(32px, 6vw, 80px);
+      font-weight: 700; letter-spacing: -0.03em;
+      color: rgba(255,255,255,0.12); line-height: 1;
+      transition: color 0.4s;
+    }
+    .marquee-text:hover { color: rgba(255,255,255,0.22); }
+
+    /* ── STATS ── */
+    .stats {
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 48px 60px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+    }
+    .stat-item { padding: 0 36px; border-right: 1px solid rgba(255,255,255,0.06); text-align: center; }
+    .stat-item:first-child { padding-left: 0; }
+    .stat-item:last-child { border-right: none; padding-right: 0; }
+    .stat-number { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 5px; }
+    .stat-label { font-size: 12px; color: var(--gray-400); font-weight: 400; }
+
+    /* ── SECTION ── */
+    section { padding: 80px 60px; }
+    .section-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 16px; }
+    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(26px, 3.5vw, 44px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 16px; max-width: 560px; }
+    .section-desc { font-size: 15px; color: var(--gray-400); line-height: 1.7; max-width: 460px; margin-bottom: 52px; }
+
+    /* ── FEATURES ── */
+    .features-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 48px; }
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; overflow: hidden; }
+    .feature-card { background: var(--black); padding: 36px 28px; transition: background 0.25s; position: relative; }
+    .feature-card:hover { background: #080808; }
+    .feature-num { font-size: 11px; font-weight: 600; color: var(--gray-600); letter-spacing: 0.1em; margin-bottom: 24px; font-family: 'Space Grotesk', sans-serif; }
+    .feature-icon { width: 26px; height: 26px; margin-bottom: 16px; }
+    .feature-icon svg { width: 26px; height: 26px; stroke: var(--gray-400); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.25s; }
+    .feature-card:hover .feature-icon svg { stroke: var(--white); }
+    .feature-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.01em; }
+    .feature-card p { font-size: 13px; color: var(--gray-600); line-height: 1.65; }
+
+    /* ── TRUST SECTION ── */
+    .trust-section {
+      padding: 80px 60px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: center;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .trust-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green); margin-bottom: 14px; }
+    .trust-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(26px, 3vw, 44px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 18px; }
+    .trust-desc { font-size: 14px; color: var(--gray-400); line-height: 1.8; }
+    .trust-visual { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 32px; }
+    .trust-item { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 24px; }
+    .trust-item:last-child { margin-bottom: 0; }
+    .trust-icon { width: 34px; height: 34px; border-radius: 9px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .trust-icon svg { width: 16px; height: 16px; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .trust-item-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .trust-item-desc { font-size: 12px; color: var(--gray-400); line-height: 1.55; }
+
+    /* ── HOW IT WORKS ── */
+    .how { background: var(--gray-900); border-radius: 20px; margin: 0 60px; }
+    .how-inner { padding: 72px; }
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px; margin-top: 52px; }
+    .step { position: relative; }
+    .step-num { font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--gray-600); margin-bottom: 18px; }
+    .step h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.01em; }
+    .step p { font-size: 13px; color: var(--gray-400); line-height: 1.65; }
+    .step::after { content: '→'; position: absolute; top: 0; right: -18px; color: var(--gray-600); font-size: 14px; }
+    .step:last-child::after { display: none; }
+
+    /* ── EXCHANGE ── */
+    .exchanges { text-align: center; padding: 64px 60px; }
+    .exchanges h2 { font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 500; color: var(--gray-600); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 36px; }
+    .exchange-list { display: flex; gap: 48px; align-items: center; justify-content: center; }
+    .exchange-name { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: var(--gray-600); letter-spacing: 0.02em; transition: color 0.2s; }
+    .exchange-name:hover { color: var(--white); }
+
+    /* ── QUOTE SECTION ── */
+    .quote-section {
+      padding: 96px 60px; text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .quote-main { font-family: 'Space Grotesk', sans-serif; font-size: clamp(30px, 5vw, 68px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 16px; }
+    .quote-sub { font-family: 'Space Grotesk', sans-serif; font-size: clamp(18px, 2.5vw, 32px); font-weight: 500; color: var(--gray-400); letter-spacing: -0.02em; }
+
+    /* ── PRICING ── */
+    .pricing { background: var(--black); }
+    .pricing-header { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 40px; }
+    .pricing-header .section-title { max-width: 100%; }
+    .pricing-header .section-desc { margin-bottom: 0; }
+    .billing-toggle { display: inline-flex; align-items: center; gap: 0; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; padding: 4px; margin: 28px 0 0; }
+    .toggle-btn { padding: 7px 18px; font-size: 13px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s, color 0.2s; background: transparent; color: var(--gray-400); font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
+    .toggle-btn.active { background: var(--white); color: var(--black); }
+    .save-tag { font-size: 10px; font-weight: 700; padding: 2px 7px; background: rgba(255,255,255,0.1); border-radius: 100px; color: var(--gray-400); }
+    .toggle-btn.active .save-tag { background: rgba(0,0,0,0.1); color: var(--gray-600); }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; }
+    .pricing-card { border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 32px; transition: border-color 0.2s; position: relative; }
+    .pricing-card:hover { border-color: rgba(255,255,255,0.18); }
+    .pricing-card.featured { background: var(--white); color: var(--black); border-color: var(--white); }
+    .pricing-plan { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px; color: inherit; }
+    .pricing-card.featured .pricing-plan { color: var(--gray-600); }
+    .pricing-price { font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; color: inherit; }
+    .pricing-period { font-size: 12px; color: var(--gray-400); margin-bottom: 6px; }
+    .pricing-card.featured .pricing-period { color: var(--gray-600); }
+    .pricing-annual-note { font-size: 11px; color: var(--gray-600); margin-bottom: 24px; min-height: 16px; }
+    .save-badge { display: inline-block; padding: 2px 7px; background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); border-radius: 100px; font-size: 10px; font-weight: 600; color: var(--green); }
+    .pricing-features { list-style: none; margin-bottom: 28px; }
+    .pricing-features li { font-size: 13px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.06); color: var(--gray-400); display: flex; gap: 9px; align-items: flex-start; }
+    .pricing-card.featured .pricing-features li { border-bottom-color: rgba(0,0,0,0.08); color: var(--gray-600); }
+    .pricing-features li::before { content: '✓'; font-weight: 700; color: var(--white); flex-shrink: 0; margin-top: 1px; }
+    .pricing-card.featured .pricing-features li::before { color: var(--black); }
+    .pricing-card .btn-primary { width: 100%; text-align: center; display: block; }
+    .btn-outline { display: block; width: 100%; text-align: center; padding: 11px; border: 1px solid rgba(255,255,255,0.18); border-radius: 7px; color: var(--white); font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color 0.2s; }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.45); }
+    .strategy-compare { margin-top: 44px; }
+    .strategy-compare-title { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-600); text-align: center; margin-bottom: 16px; }
+    .strategy-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .strategy-table th { padding: 9px 14px; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-600); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .strategy-table th:first-child { text-align: left; }
+    .strategy-table td { padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--gray-400); }
+    .strategy-table td:first-child { color: var(--white); font-weight: 500; }
+    .strategy-table td:not(:first-child) { text-align: center; }
+    .strategy-table tr:last-child td { border-bottom: none; }
+    .st-check { color: #34c759; font-weight: 700; font-size: 14px; }
+    .st-dash { color: rgba(255,255,255,0.13); font-size: 14px; }
+    .st-risk { font-size: 10px; padding: 2px 6px; border-radius: 100px; font-weight: 600; }
+    .st-risk.low { background: rgba(52,199,89,0.13); color: #34c759; }
+    .st-risk.med { background: rgba(255,149,0,0.13); color: #ff9500; }
+    .st-risk.high { background: rgba(255,59,48,0.13); color: #ff3b30; }
+
+    /* ── REFERRAL BANNER ── */
+    .referral-banner { margin: 52px 0 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 48px 52px; background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.01) 100%); display: flex; align-items: center; justify-content: space-between; gap: 36px; position: relative; overflow: hidden; }
+    .referral-banner::before { content: 'LIFETIME'; position: absolute; right: -16px; top: 50%; transform: translateY(-50%) rotate(90deg); font-family: 'Space Grotesk', sans-serif; font-size: 72px; font-weight: 900; letter-spacing: 0.05em; color: rgba(255,255,255,0.02); pointer-events: none; white-space: nowrap; }
+    .referral-left { flex: 1; }
+    .referral-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 12px; }
+    .referral-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(22px, 2.8vw, 34px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 12px; }
+    .referral-desc { font-size: 14px; color: var(--gray-400); line-height: 1.65; max-width: 500px; }
+    .referral-steps { display: flex; gap: 24px; margin-top: 20px; flex-wrap: wrap; }
+    .referral-step { display: flex; align-items: flex-start; gap: 9px; }
+    .referral-step-num { width: 20px; height: 20px; border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .referral-step p { font-size: 12px; color: var(--gray-400); line-height: 1.5; }
+    .referral-right { flex-shrink: 0; text-align: center; }
+    .btn-referral { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; background: var(--white); color: var(--black); border: none; border-radius: 9px; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
+    .btn-referral:hover { opacity: 0.88; }
+    .referral-note { font-size: 11px; color: var(--gray-600); margin-top: 9px; }
+
+    /* ── FAQ ── */
+    .faq-section { padding: 80px 60px; max-width: 800px; margin: 0 auto; }
+    .faq-list { margin-top: 44px; }
     .faq-item { border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .faq-question { width: 100%; background: none; border: none; color: var(--white); font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; text-align: left; padding: 22px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 20px; transition: color 0.2s; }
+    .faq-question { width: 100%; background: none; border: none; color: var(--white); font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; text-align: left; padding: 20px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 18px; transition: color 0.2s; }
     .faq-question:hover { color: rgba(255,255,255,0.7); }
-    .faq-icon { flex-shrink: 0; width: 22px; height: 22px; border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: transform 0.25s, background 0.2s; }
-    .faq-item.open .faq-icon { transform: rotate(45deg); background: rgba(255,255,255,0.08); }
-    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
-    .faq-answer p { font-size: 15px; color: var(--gray-400); line-height: 1.75; padding-bottom: 20px; }
+    .faq-icon { flex-shrink: 0; width: 20px; height: 20px; border: 1px solid rgba(255,255,255,0.13); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: transform 0.25s, background 0.2s; }
+    .faq-item.open .faq-icon { transform: rotate(45deg); background: rgba(255,255,255,0.07); }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .faq-answer p { font-size: 14px; color: var(--gray-400); line-height: 1.75; padding-bottom: 18px; }
     .faq-answer a { color: var(--white); }
 
-    /* STRATEGIES */
-    .strat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:40px; }
-
-    /* CTA */
+    /* ── CTA ── */
     .cta-section {
-      margin: 0 60px 100px; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px;
-      padding: 100px 80px; text-align: center; background: var(--gray-900);
+      margin: 0 60px 80px; border: 1px solid rgba(255,255,255,0.07); border-radius: 20px;
+      padding: 88px 72px; text-align: center; background: var(--gray-900);
       position: relative; overflow: hidden;
     }
-    .cta-section::before {
-      content: ''; position: absolute; bottom: -200px; left: 50%; transform: translateX(-50%);
-      width: 600px; height: 400px;
-      background: radial-gradient(ellipse, rgba(255,255,255,0.04) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .cta-section h2 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(32px, 5vw, 58px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 20px; }
-    .cta-section p { font-size: 16px; color: var(--gray-400); margin-bottom: 40px; }
+    .cta-section::before { content: ''; position: absolute; bottom: -180px; left: 50%; transform: translateX(-50%); width: 500px; height: 360px; background: radial-gradient(ellipse, rgba(34,197,94,0.04) 0%, transparent 70%); pointer-events: none; }
+    .cta-section h2 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(28px, 4.5vw, 56px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; margin-bottom: 16px; }
+    .cta-section p { font-size: 15px; color: var(--gray-400); margin-bottom: 36px; font-family: 'Space Grotesk', sans-serif; font-weight: 500; letter-spacing: -0.01em; }
 
-    /* FOOTER */
-    footer { border-top: 1px solid rgba(255,255,255,0.06); padding: 60px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 40px; }
-    .footer-brand .nav-logo { font-size: 18px; display: block; margin-bottom: 12px; }
-    .footer-brand p { font-size: 13px; color: var(--gray-600); line-height: 1.6; max-width: 240px; }
-    .footer-links { display: flex; gap: 60px; flex-wrap: wrap; }
-    .footer-col h4 { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-600); margin-bottom: 16px; }
+    /* ── FOOTER ── */
+    footer { border-top: 1px solid rgba(255,255,255,0.06); padding: 52px 60px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 36px; }
+    .footer-brand .nav-logo { font-size: 17px; display: block; margin-bottom: 10px; }
+    .footer-brand p { font-size: 12px; color: var(--gray-600); line-height: 1.6; max-width: 220px; }
+    .footer-links { display: flex; gap: 52px; flex-wrap: wrap; }
+    .footer-col h4 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-600); margin-bottom: 14px; }
     .footer-col ul { list-style: none; }
-    .footer-col li { margin-bottom: 10px; }
-    .footer-col a { font-size: 14px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
+    .footer-col li { margin-bottom: 9px; }
+    .footer-col a { font-size: 13px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
     .footer-col a:hover { color: var(--white); }
-    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.06); padding: 24px 60px; display: flex; justify-content: space-between; align-items: center; }
-    .footer-bottom p { font-size: 13px; color: var(--gray-600); }
-    .legal-disclaimer { padding: 12px 60px 20px; }
-    .legal-disclaimer p { font-size: 11px; color: var(--gray-600); line-height: 1.6; max-width: 860px; margin: 0 auto; text-align: center; }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.06); padding: 20px 60px; display: flex; justify-content: space-between; align-items: center; }
+    .footer-bottom p { font-size: 12px; color: var(--gray-600); }
+    .legal-disclaimer { padding: 10px 60px 18px; }
+    .legal-disclaimer p { font-size: 10px; color: var(--gray-600); line-height: 1.6; max-width: 860px; margin: 0 auto; text-align: center; }
 
+    /* ── RESPONSIVE ── */
     @media (max-width: 1024px) {
-      nav { padding: 20px 30px; }
+      nav { padding: 14px 24px; }
       .nav-links { display: none; }
       .nav-actions { display: none; }
       .hamburger { display: flex; }
-      .lang-switcher { margin-right: 8px; }
-      section { padding: 80px 30px; }
-      .stats { grid-template-columns: repeat(2, 1fr); padding: 60px 30px; gap: 40px; }
+      .hero { grid-template-columns: 1fr; padding: 100px 30px 60px; text-align: center; }
+      .hero-content { order: 1; display: flex; flex-direction: column; align-items: center; }
+      .hero-desc { margin: 0 auto 32px; }
+      .hero-cta { justify-content: center; }
+      .hero-visual { order: 0; margin-bottom: 20px; }
+      #ayilon-canvas { max-width: 320px; height: 320px; }
+      .marquee-section { padding: 48px 30px; }
+      .stats { grid-template-columns: repeat(2, 1fr); padding: 40px 30px; gap: 32px; }
       .stat-item { border-right: none; padding: 0; }
+      section { padding: 64px 30px; }
       .features-grid { grid-template-columns: 1fr; }
-      .steps { grid-template-columns: 1fr 1fr; }
+      .trust-section { grid-template-columns: 1fr; gap: 40px; padding: 64px 30px; }
+      .how { margin: 0 24px; }
+      .how-inner { padding: 44px 28px; }
+      .steps { grid-template-columns: 1fr 1fr; gap: 28px; }
       .step::after { display: none; }
-      .how { margin: 0 30px; }
-      .how-inner { padding: 50px 30px; }
+      .quote-section { padding: 72px 30px; }
       .pricing-grid { grid-template-columns: 1fr; }
-      #strategies > section { padding: 80px 30px; }
-      .strat-grid { grid-template-columns: 1fr; }
-      .faq-section { padding: 80px 30px; }
-      .referral-banner { flex-direction: column; padding: 40px 30px; margin: 40px 0 0; }
+      #strategies > section { padding: 64px 30px; }
+      .faq-section { padding: 64px 30px; }
+      .referral-banner { flex-direction: column; padding: 36px 28px; }
       .referral-banner::before { display: none; }
-      .cta-section { margin: 0 30px 80px; padding: 60px 30px; }
-      footer { padding: 60px 30px; }
-      .footer-bottom { padding: 24px 30px; flex-direction: column; gap: 12px; text-align: center; }
-      .legal-disclaimer { padding: 8px 30px 16px; }
+      .cta-section { margin: 0 24px 64px; padding: 52px 28px; }
+      footer { padding: 48px 30px; }
+      .footer-bottom { padding: 20px 30px; flex-direction: column; gap: 10px; text-align: center; }
+      .legal-disclaimer { padding: 8px 30px 14px; }
       .strategy-compare { overflow-x: auto; }
       .strategy-table { font-size: 12px; min-width: 480px; }
+      .features-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    }
+    @media (max-width: 640px) {
+      .steps { grid-template-columns: 1fr; }
+      .footer-links { gap: 32px; }
+      .pricing-card { padding: 24px; }
+      .referral-steps { flex-direction: column; gap: 16px; }
     }
   </style>
 </head>
@@ -321,12 +344,12 @@
       <li><a href="#features" data-i18n="nav.features">Features</a></li>
       <li><a href="#how" data-i18n="nav.how">How It Works</a></li>
       <li><a href="#pricing" data-i18n="nav.pricing">Pricing</a></li>
+      <li><a href="bot-guide.html" data-i18n="nav.botguide">Bot Guide</a></li>
+      <li><a href="about.html" data-i18n="nav.about">About</a></li>
     </ul>
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
       <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
-      <button class="lang-btn" data-lang="ja" onclick="setLanguage('ja')">JA</button>
-      <button class="lang-btn" data-lang="zh" onclick="setLanguage('zh')">ZH</button>
     </div>
     <div class="nav-actions" id="navActions">
       <a href="login.html" class="btn-ghost" data-i18n="nav.login">Log In</a>
@@ -336,6 +359,7 @@
       <span></span><span></span><span></span>
     </button>
   </nav>
+
   <div class="mobile-menu" id="mobileMenu">
     <a href="#features" onclick="closeMobileMenu()" data-i18n="mobile.features">Features</a>
     <a href="#how" onclick="closeMobileMenu()" data-i18n="mobile.how">How It Works</a>
@@ -348,15 +372,11 @@
     (function() {
       if (localStorage.getItem('ayilon_logged_in') === 'true') {
         document.getElementById('navActions').innerHTML =
-          '<a href="dashboard.html" class="btn-white">Dashboard →</a>';
+          '<a href="dashboard.html" class="btn-white" data-i18n="nav.dashboard">Dashboard →</a>';
       }
     })();
-    function toggleMobileMenu() {
-      document.getElementById('mobileMenu').classList.toggle('open');
-    }
-    function closeMobileMenu() {
-      document.getElementById('mobileMenu').classList.remove('open');
-    }
+    function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('open'); }
+    function closeMobileMenu() { document.getElementById('mobileMenu').classList.remove('open'); }
     document.addEventListener('click', function(e) {
       var menu = document.getElementById('mobileMenu');
       var btn = document.getElementById('hamburger');
@@ -368,16 +388,31 @@
 
   <!-- HERO -->
   <section class="hero">
-    <div class="hero-badge">
-      <span data-i18n="hero.badge">Automated Crypto Trading — 24/7</span>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="hero-dot"></span>
+        <span data-i18n="hero.badge">Automated Crypto Trading — 24/7</span>
+      </div>
+      <h1>
+        <span data-i18n="hero.title1">The end</span><br />
+        <em data-i18n="hero.title2">of effort.</em>
+      </h1>
+      <p class="hero-tagline" data-i18n="hero.tagline">Set, forget, grow.</p>
+      <p class="hero-desc" data-i18n="hero.desc">Connect your OKX API key. AYILON's algorithmic bots trade 24/7 on your behalf — no downloads, no setup, no effort.</p>
+      <div class="hero-cta">
+        <a href="signup.html" class="btn-primary" data-i18n="hero.cta1">Automate My Account →</a>
+        <a href="#how" class="btn-secondary" data-i18n="hero.cta2">See How It Works</a>
+      </div>
     </div>
-    <h1><span data-i18n="hero.title1">Create Profit</span><br /><em data-i18n="hero.title2">from Nothing</em></h1>
-    <p data-i18n="hero.desc">Connect your OKX API key and let AYILON's algorithmic bots trade for you around the clock. No downloads. No setup. Just results.</p>
-    <div class="hero-cta">
-      <a href="signup.html" class="btn-primary" data-i18n="hero.cta1">Start Trading →</a>
-      <a href="#how" class="btn-secondary" data-i18n="hero.cta2">See How It Works</a>
+    <div class="hero-visual">
+      <canvas id="ayilon-canvas"></canvas>
     </div>
   </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee-section">
+    <div class="marquee-text" data-i18n="slogan.marquee">Nothing to Everything.</div>
+  </div>
 
   <!-- STATS -->
   <div class="stats">
@@ -411,54 +446,74 @@
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-num">01</div>
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        </div>
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <h3 data-i18n="feat.1.title">Automated Trading</h3>
         <p data-i18n="feat.1.desc">Algorithmic bots that never stop. 24/7/365 market monitoring with instant execution at the optimal moment.</p>
       </div>
       <div class="feature-card">
         <div class="feature-num">02</div>
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        </div>
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
         <h3 data-i18n="feat.2.title">OKX Integration</h3>
         <p data-i18n="feat.2.desc">Connect to OKX in seconds via API key. Your funds stay on the exchange — AYILON only trades, never withdraws.</p>
       </div>
       <div class="feature-card">
         <div class="feature-num">03</div>
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        </div>
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
         <h3 data-i18n="feat.3.title">Multiple Strategies</h3>
         <p data-i18n="feat.3.desc">Support/resistance entries, fractional DCA, Kelly-sized positions — proven strategies configurable in one click.</p>
       </div>
       <div class="feature-card">
         <div class="feature-num">04</div>
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        </div>
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
         <h3 data-i18n="feat.4.title">Backtesting</h3>
         <p data-i18n="feat.4.desc">Simulate strategy performance on historical data before committing real capital. Verify before you deploy.</p>
       </div>
       <div class="feature-card">
         <div class="feature-num">05</div>
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        </div>
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
         <h3 data-i18n="feat.5.title">Real-Time Alerts</h3>
         <p data-i18n="feat.5.desc">Instant notifications for fills, stop-losses, and profit targets via email and Telegram.</p>
       </div>
       <div class="feature-card">
         <div class="feature-num">06</div>
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
+        <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
         <h3 data-i18n="feat.6.title">Asset Protection</h3>
         <p data-i18n="feat.6.desc">API keys stored with trading-only permissions. Withdrawal access is never requested — your funds stay yours.</p>
       </div>
     </div>
   </section>
+
+  <!-- TRUST SECTION -->
+  <div class="trust-section">
+    <div>
+      <div class="trust-eyebrow" data-i18n="slogan.trust.tag">Asset Protection</div>
+      <div class="trust-title" data-i18n="slogan.trust.title">We trade. You keep.</div>
+      <p class="trust-desc" data-i18n="slogan.trust.desc">Your funds never leave your OKX account. AYILON connects via API key with trade-only permissions — withdrawal access is never requested. Your capital stays exactly where you put it.</p>
+    </div>
+    <div class="trust-visual">
+      <div class="trust-item">
+        <div class="trust-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div>
+          <div class="trust-item-title" data-i18n="feat.6.title">Zero custody risk</div>
+          <div class="trust-item-desc" data-i18n="trust.item1.desc">AYILON never touches your funds. Trade permissions only — no withdraw, no transfer.</div>
+        </div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <div>
+          <div class="trust-item-title" data-i18n="trust.item2.title">Encrypted API storage</div>
+          <div class="trust-item-desc" data-i18n="trust.item2.desc">Your API keys are encrypted at rest and in transit. Never shared with third parties.</div>
+        </div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div>
+          <div class="trust-item-title" data-i18n="trust.item3.title">24/7 monitoring</div>
+          <div class="trust-item-desc" data-i18n="trust.item3.desc">Real-time position monitoring with automatic circuit breakers on extreme market conditions.</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- HOW IT WORKS -->
   <div id="how">
@@ -502,86 +557,79 @@
 
   <!-- STRATEGIES -->
   <div id="strategies">
-    <section style="padding:100px 60px;">
-      <div style="text-align:center;margin-bottom:64px;">
+    <section style="padding:80px 60px;">
+      <div style="text-align:center;margin-bottom:56px;">
         <div class="section-tag" data-i18n="strat.tag">Our Approach</div>
-        <h2 class="section-title" style="max-width:100%;text-align:center;" data-i18n="strat.title">What makes AYILON different?</h2>
-        <p style="font-size:16px;color:var(--gray-400);max-width:620px;margin:0 auto;line-height:1.7;" data-i18n="strat.desc">The same logic that works in a bull market works in a bear market. AYILON identifies institutional S/R levels and enters in the direction the market is already moving — long from support, short from resistance.</p>
+        <h2 class="section-title" style="max-width:100%;text-align:center;" data-i18n="strat.title">Institutional-grade logic. Now yours.</h2>
+        <p style="font-size:15px;color:var(--gray-400);max-width:580px;margin:0 auto;line-height:1.7;" data-i18n="strat.desc">The same logic that works in a bull market works in a bear market. AYILON identifies institutional S/R levels and enters in the direction the market is already moving.</p>
       </div>
 
-      <!-- DETAIL CHART CARD -->
-      <div style="border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden;margin-bottom:20px;background:#0d0d0d;">
-        <div style="padding:18px 24px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06);">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 6px #22c55e;"></span>
+      <div style="border:1px solid rgba(255,255,255,0.08);border-radius:14px;overflow:hidden;margin-bottom:18px;background:#0d0d0d;">
+        <div style="padding:16px 22px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;align-items:center;gap:9px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px #22c55e;"></span>
             <span style="font-size:12px;font-weight:600;color:var(--white);letter-spacing:0.04em;">BTC/USDT</span>
           </div>
           <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--gray-600);text-transform:uppercase;" data-i18n="strat.chart.entrylogic">ENTRY LOGIC</span>
         </div>
         <svg viewBox="0 0 760 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
           <rect width="760" height="210" fill="#0d0d0d"/>
-          <!-- mid grid -->
           <line x1="10" y1="110" x2="748" y2="110" stroke="rgba(255,255,255,0.025)" stroke-width="1"/>
-          <!-- R_main (upper resistance) orange strong -->
           <line x1="10" y1="48" x2="748" y2="48" stroke="#f97316" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
           <text x="12" y="42" fill="#f97316" font-size="8" font-family="monospace" opacity="0.85" font-weight="600" data-i18n="strat.chart.resistance">RESISTANCE</text>
-          <!-- R_mid (lower resistance) orange faint -->
-          <line x1="10" y1="90" x2="748" y2="90" stroke="#f97316" stroke-width="1" stroke-dasharray="4,6" opacity="0.3"/>
-          <!-- S_mid (upper support) green faint -->
-          <line x1="10" y1="132" x2="748" y2="132" stroke="#22c55e" stroke-width="1" stroke-dasharray="4,6" opacity="0.3"/>
-          <!-- S_main (lower support) green strong -->
+          <line x1="10" y1="90" x2="748" y2="90" stroke="#f97316" stroke-width="1" stroke-dasharray="4,6" opacity="0.28"/>
+          <line x1="10" y1="132" x2="748" y2="132" stroke="#22c55e" stroke-width="1" stroke-dasharray="4,6" opacity="0.28"/>
           <line x1="10" y1="172" x2="748" y2="172" stroke="#22c55e" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.65"/>
           <text x="12" y="166" fill="#22c55e" font-size="8" font-family="monospace" opacity="0.85" font-weight="600" data-i18n="strat.chart.support">SUPPORT</text>
-          <!-- white price line -->
-          <polyline
-            points="10,108 30,92 50,104 75,48 95,72 115,58 138,82 162,110 185,135 205,172 228,150 250,162 272,135 295,108 318,80 342,58 352,48 372,68 390,56 415,90 438,110 458,125 462,132 480,118 495,130 512,172 530,150 548,162 562,172 582,148 605,110 628,78 648,48 665,72 680,58 695,95 705,145 718,172 732,118 744,42 748,28"
-            fill="none" stroke="rgba(255,255,255,0.88)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- RED circles: resistance touches (sell/short) -->
-          <circle cx="75" cy="48" r="6" fill="rgba(239,68,68,0.14)" stroke="#ef4444" stroke-width="1.8"/>
-          <circle cx="352" cy="48" r="6" fill="rgba(239,68,68,0.14)" stroke="#ef4444" stroke-width="1.8"/>
-          <circle cx="415" cy="90" r="6" fill="rgba(239,68,68,0.14)" stroke="#ef4444" stroke-width="1.8"/>
-          <circle cx="648" cy="48" r="6" fill="rgba(239,68,68,0.14)" stroke="#ef4444" stroke-width="1.8"/>
-          <circle cx="746" cy="28" r="6" fill="rgba(239,68,68,0.14)" stroke="#ef4444" stroke-width="1.8"/>
-          <!-- GREEN circles: support touches (buy/long) -->
-          <circle cx="205" cy="172" r="6" fill="rgba(34,197,94,0.14)" stroke="#22c55e" stroke-width="1.8"/>
-          <circle cx="462" cy="132" r="6" fill="rgba(34,197,94,0.14)" stroke="#22c55e" stroke-width="1.8"/>
-          <circle cx="512" cy="172" r="6" fill="rgba(34,197,94,0.14)" stroke="#22c55e" stroke-width="1.8"/>
-          <circle cx="562" cy="172" r="6" fill="rgba(34,197,94,0.14)" stroke="#22c55e" stroke-width="1.8"/>
-          <circle cx="718" cy="172" r="6" fill="rgba(34,197,94,0.14)" stroke="#22c55e" stroke-width="1.8"/>
+          <polyline points="10,108 30,92 50,104 75,48 95,72 115,58 138,82 162,110 185,135 205,172 228,150 250,162 272,135 295,108 318,80 342,58 352,48 372,68 390,56 415,90 438,110 458,125 462,132 480,118 495,130 512,172 530,150 548,162 562,172 582,148 605,110 628,78 648,48 665,72 680,58 695,95 705,145 718,172 732,118 744,42 748,28" fill="none" stroke="rgba(255,255,255,0.88)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="75" cy="48" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
+          <circle cx="352" cy="48" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
+          <circle cx="415" cy="90" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
+          <circle cx="648" cy="48" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
+          <circle cx="746" cy="28" r="5.5" fill="rgba(239,68,68,0.13)" stroke="#ef4444" stroke-width="1.6"/>
+          <circle cx="205" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
+          <circle cx="462" cy="132" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
+          <circle cx="512" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
+          <circle cx="562" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
+          <circle cx="718" cy="172" r="5.5" fill="rgba(34,197,94,0.13)" stroke="#22c55e" stroke-width="1.6"/>
         </svg>
       </div>
 
-      <!-- UNIQUE TECH FEATURES -->
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:48px;">
-        <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3b82f6;margin-bottom:8px;" data-i18n="strat.f1.tag">Multi-Touch S/R Detection</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;" data-i18n="strat.f1.desc">Levels are only validated after 3+ confirmed price reactions. The algorithm measures wick precision and body rejection — not just proximity. No guesswork, no lagging indicators.</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:40px;">
+        <div style="padding:18px 20px;border:1px solid rgba(255,255,255,0.07);border-radius:11px;background:rgba(255,255,255,0.02);">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3b82f6;margin-bottom:7px;" data-i18n="strat.f1.tag">Multi-Touch S/R Detection</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f1.desc">Levels are only validated after 3+ confirmed price reactions. The algorithm measures wick precision and body rejection — not just proximity.</div>
         </div>
-        <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#22c55e;margin-bottom:8px;" data-i18n="strat.f2.tag">Wick-Only Entry Filter</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;" data-i18n="strat.f2.desc">Entry triggers only on 5m wick contact with the level — never on a body breakout. The same technique used by institutional desks to get filled at exact levels without chasing.</div>
+        <div style="padding:18px 20px;border:1px solid rgba(255,255,255,0.07);border-radius:11px;background:rgba(255,255,255,0.02);">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#22c55e;margin-bottom:7px;" data-i18n="strat.f2.tag">Wick-Only Entry Filter</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f2.desc">Entry triggers only on 5m wick contact with the level — never on a body breakout. The same technique used by institutional desks.</div>
         </div>
-        <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f97316;margin-bottom:8px;" data-i18n="strat.f3.tag">Volume Pattern Confirmation</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;" data-i18n="strat.f3.desc">Volume spikes at the level confirm institutional participation. Low-volume touches are skipped — they signal retail noise, not real support. Only high-conviction setups are taken.</div>
+        <div style="padding:18px 20px;border:1px solid rgba(255,255,255,0.07);border-radius:11px;background:rgba(255,255,255,0.02);">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f97316;margin-bottom:7px;" data-i18n="strat.f3.tag">Volume Pattern Confirmation</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f3.desc">Volume spikes at the level confirm institutional participation. Low-volume touches are skipped — only high-conviction setups are taken.</div>
         </div>
-        <div style="padding:20px;border:1px solid rgba(255,255,255,0.07);border-radius:12px;background:rgba(255,255,255,0.02);">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#a855f7;margin-bottom:8px;" data-i18n="strat.f4.tag">Ranging Market Filter</div>
-          <div style="font-size:13px;color:var(--gray-400);line-height:1.65;" data-i18n="strat.f4.desc">Detects choppy, low-structure phases and pauses trading automatically. Prevents the repeated stop-losses that destroy most bots during consolidation. Trades only when structure is clear.</div>
+        <div style="padding:18px 20px;border:1px solid rgba(255,255,255,0.07);border-radius:11px;background:rgba(255,255,255,0.02);">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#a855f7;margin-bottom:7px;" data-i18n="strat.f4.tag">Ranging Market Filter</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.6;" data-i18n="strat.f4.desc">Detects choppy, low-structure phases and pauses trading automatically. Prevents repeated stop-losses during consolidation.</div>
         </div>
       </div>
 
-      <!-- Risk management callout -->
-      <div style="padding:32px 40px;border:1px solid rgba(255,255,255,0.08);border-radius:16px;background:rgba(255,255,255,0.02);display:flex;gap:32px;align-items:flex-start;">
-        <div style="flex-shrink:0;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <div style="padding:28px 36px;border:1px solid rgba(255,255,255,0.07);border-radius:14px;background:rgba(255,255,255,0.02);display:flex;gap:28px;align-items:flex-start;">
+        <div style="flex-shrink:0;width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;margin-bottom:8px;" data-i18n="strat.risk.title">Obsessive risk management — capital protection first.</div>
-          <div style="font-size:14px;color:var(--gray-400);line-height:1.75;max-width:640px;" data-i18n="strat.risk.desc">Every position is monitored in real time. Volatility-based position sizing, dynamic stop-loss adjustment, and circuit breakers that automatically pause trading during extreme market conditions — because protecting your capital always comes before making profit.</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin-bottom:7px;" data-i18n="strat.risk.title">The algorithm that learned not to lose first.</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.75;max-width:600px;" data-i18n="strat.risk.desc">Every position is monitored in real time. Volatility-based position sizing, dynamic stop-loss adjustment, and circuit breakers that automatically pause trading during extreme market conditions — because protecting your capital always comes before making profit.</div>
         </div>
       </div>
     </section>
+  </div>
+
+  <!-- QUOTE SECTION -->
+  <div class="quote-section">
+    <div class="quote-main" data-i18n="slogan.art">The art of doing nothing.</div>
+    <div class="quote-sub" data-i18n="slogan.reengineered">Your money, re-engineered.</div>
   </div>
 
   <!-- PRICING -->
@@ -589,7 +637,7 @@
     <div class="pricing-header">
       <div class="section-tag" data-i18n="price.tag">Pricing</div>
       <h2 class="section-title" data-i18n="price.title">Simple, transparent pricing</h2>
-      <p class="section-desc" data-i18n="price.desc">One subscription unlocks everything. No hidden fees. No trading commissions taken by AYILON.</p>
+      <p class="section-desc" data-i18n="price.desc">No hidden fees. Your trading profit — 100% yours.</p>
       <div class="billing-toggle">
         <button class="toggle-btn active" id="btn-monthly" onclick="setPeriod('monthly')" data-i18n="price.toggle.mo">Monthly</button>
         <button class="toggle-btn" id="btn-annual" onclick="setPeriod('annual')"><span data-i18n="price.toggle.yr">Annual</span> <span class="save-tag" data-i18n="price.toggle.save">Save up to 15%</span></button>
@@ -597,7 +645,6 @@
     </div>
 
     <div class="pricing-grid">
-      <!-- STARTER -->
       <div class="pricing-card">
         <div class="pricing-plan" data-i18n="price.plan.starter">Starter</div>
         <div class="pricing-price" id="price-starter">$100</div>
@@ -614,7 +661,6 @@
         <a href="payment.html?plan=starter" class="btn-outline" data-i18n="price.cta" onclick="return planCta(event,'starter')">Get Started</a>
       </div>
 
-      <!-- PRO (featured) -->
       <div class="pricing-card featured">
         <div class="pricing-plan" data-i18n="price.plan.pro">Pro</div>
         <div class="pricing-price" id="price-pro">$500</div>
@@ -632,7 +678,6 @@
         <a href="payment.html?plan=pro" class="btn-primary" data-i18n="price.cta" onclick="return planCta(event,'pro')">Get Started</a>
       </div>
 
-      <!-- ELITE -->
       <div class="pricing-card">
         <div class="pricing-plan" data-i18n="price.plan.elite">Elite</div>
         <div class="pricing-price" id="price-elite">$1,000</div>
@@ -651,7 +696,6 @@
       </div>
     </div>
 
-    <!-- STRATEGY COMPARISON TABLE -->
     <div class="strategy-compare">
       <div class="strategy-compare-title" data-i18n="strat.compare.title">Strategy availability by plan</div>
       <table class="strategy-table">
@@ -666,95 +710,25 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td data-i18n="strat.1">RSI Oversold DCA Long</td>
-            <td data-i18n="strat.dir.long">Long Only</td>
-            <td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td>
-            <td><span class="st-check">✓</span></td>
-            <td><span class="st-check">✓</span></td>
-            <td><span class="st-check">✓</span></td>
-          </tr>
-          <tr>
-            <td data-i18n="strat.2">MA Support DCA</td>
-            <td data-i18n="strat.dir.long">Long Only</td>
-            <td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td>
-            <td><span class="st-check">✓</span></td>
-            <td><span class="st-check">✓</span></td>
-            <td><span class="st-check">✓</span></td>
-          </tr>
-          <tr>
-            <td data-i18n="strat.3">S/R Bounce</td>
-            <td data-i18n="strat.dir.ls">Long / Short</td>
-            <td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td>
-            <td><span class="st-check">✓</span></td>
-            <td><span class="st-check">✓</span></td>
-            <td><span class="st-check">✓</span></td>
-          </tr>
-          <tr>
-            <td data-i18n="strat.4">MA Crossover + RSI</td>
-            <td data-i18n="strat.dir.ls">Long / Short</td>
-            <td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td>
-            <td><span class="st-dash">—</span></td>
-            <td><span class="st-check">✓</span></td>
-            <td><span class="st-check">✓</span></td>
-          </tr>
-          <tr>
-            <td data-i18n="strat.5">Bollinger Band Mean Reversion</td>
-            <td data-i18n="strat.dir.ls">Long / Short</td>
-            <td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td>
-            <td><span class="st-dash">—</span></td>
-            <td><span class="st-check">✓</span></td>
-            <td><span class="st-check">✓</span></td>
-          </tr>
-          <tr>
-            <td data-i18n="strat.6">Breakout + Volume</td>
-            <td data-i18n="strat.dir.ls">Long / Short</td>
-            <td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td>
-            <td><span class="st-dash">—</span></td>
-            <td><span class="st-check">✓</span></td>
-            <td><span class="st-check">✓</span></td>
-          </tr>
-          <tr>
-            <td data-i18n="strat.7">MA Ribbon Long</td>
-            <td data-i18n="strat.dir.long">Long Only</td>
-            <td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td>
-            <td><span class="st-dash">—</span></td>
-            <td><span class="st-check">✓</span></td>
-            <td><span class="st-check">✓</span></td>
-          </tr>
-          <tr>
-            <td data-i18n="strat.8">MACD Divergence</td>
-            <td data-i18n="strat.dir.ls">Long / Short</td>
-            <td><span class="st-risk high" data-i18n="strat.risk.high">High</span></td>
-            <td><span class="st-dash">—</span></td>
-            <td><span class="st-dash">—</span></td>
-            <td><span class="st-check">✓</span></td>
-          </tr>
-          <tr>
-            <td data-i18n="strat.9">Funding Rate Contrarian</td>
-            <td data-i18n="strat.dir.ls">Long / Short</td>
-            <td><span class="st-risk high" data-i18n="strat.risk.high">High</span></td>
-            <td><span class="st-dash">—</span></td>
-            <td><span class="st-dash">—</span></td>
-            <td><span class="st-check">✓</span></td>
-          </tr>
-          <tr>
-            <td data-i18n="strat.10">ATR Trend Following</td>
-            <td data-i18n="strat.dir.ls">Long / Short</td>
-            <td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td>
-            <td><span class="st-dash">—</span></td>
-            <td><span class="st-dash">—</span></td>
-            <td><span class="st-check">✓</span></td>
-          </tr>
+          <tr><td data-i18n="strat.1">RSI Oversold DCA Long</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+          <tr><td data-i18n="strat.2">MA Support DCA</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+          <tr><td data-i18n="strat.3">S/R Bounce</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+          <tr><td data-i18n="strat.4">MA Crossover + RSI</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+          <tr><td data-i18n="strat.5">Bollinger Band Mean Reversion</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+          <tr><td data-i18n="strat.6">Breakout + Volume</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+          <tr><td data-i18n="strat.7">MA Ribbon Long</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
+          <tr><td data-i18n="strat.8">MACD Divergence</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk high" data-i18n="strat.risk.high">High</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
+          <tr><td data-i18n="strat.9">Funding Rate Contrarian</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk high" data-i18n="strat.risk.high">High</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
+          <tr><td data-i18n="strat.10">ATR Trend Following</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
         </tbody>
       </table>
     </div>
 
-    <!-- OKX REFERRAL LIFETIME BANNER -->
+    <!-- REFERRAL BANNER -->
     <div class="referral-banner">
       <div class="referral-left">
         <div class="referral-tag" data-i18n="ref.tag">Special Offer</div>
-        <div class="referral-title" data-i18n="ref.title">Get Elite Plan — Free Forever</div>
+        <div class="referral-title" data-i18n="ref.title">Elite plan. Free forever.</div>
         <div class="referral-desc" data-i18n="ref.desc">Sign up for OKX through our referral link, complete your registration, and unlock permanent lifetime Elite access at absolutely no cost.</div>
         <div class="referral-steps">
           <div class="referral-step">
@@ -785,90 +759,25 @@
     <div class="faq-section">
       <div class="section-tag" data-i18n="faq.tag">FAQ</div>
       <h2 class="section-title" data-i18n="faq.title">Everything you need to know</h2>
-
       <div class="faq-list">
-
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            <span data-i18n="faq.q1">What is AYILON?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer"><p data-i18n="faq.a1">AYILON is a fully automated crypto trading platform that runs bots on your OKX account 24/7. You connect your API key, and the bot handles everything — entries, exits, and position management — while you sleep.</p></div>
-        </div>
-
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            <span data-i18n="faq.q2">Is my money safe? Does AYILON hold my funds?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer"><p data-i18n="faq.a2">No — AYILON never holds or touches your funds. All trades happen directly on your OKX account via an API key that you create and control. We strongly recommend enabling Trade-only permissions (no Withdraw access) on your API key so that funds can never leave your exchange account.</p></div>
-        </div>
-
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            <span data-i18n="faq.q3">What exchanges are supported?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer"><p data-i18n="faq.a3">Currently AYILON supports OKX. Support for Binance, Bybit, and other major exchanges is on our roadmap.</p></div>
-        </div>
-
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            <span data-i18n="faq.q4">What trading strategies are available?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer"><p data-i18n="faq.a4">AYILON offers 10 trading strategies available across plan tiers. Starter includes RSI Oversold DCA, MA Support DCA, and S/R Bounce. Pro adds MA Crossover + RSI, Bollinger Band Reversion, Breakout + Volume, and MA Ribbon Long. Elite unlocks all 10 strategies, including MACD Divergence, Funding Rate Contrarian, and ATR Trend Following.</p></div>
-        </div>
-
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            <span data-i18n="faq.q5">Do I need any trading experience?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer"><p data-i18n="faq.a5">No. AYILON is built for everyone — from complete beginners to experienced traders. Each bot comes with default parameters tuned for safety. Advanced users can customise leverage, position size, and stop-loss levels.</p></div>
-        </div>
-
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            <span data-i18n="faq.q6">Can I get a refund?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer"><p data-i18n="faq.a6">Yes — if you have not yet connected an API key and your request is within 7 days of purchase, you are eligible for a full refund. After 7 days or after connecting an API key, only cancellation is available.</p></div>
-        </div>
-
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            <span data-i18n="faq.q7">How do I cancel my subscription?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer"><p data-i18n="faq.a7">Go to Dashboard → My Account → Subscription and click "Cancel Subscription." Your access continues until the end of the current billing period.</p></div>
-        </div>
-
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            <span data-i18n="faq.q8">What is the minimum amount to start?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer"><p data-i18n="faq.a8">There is no minimum set by AYILON. OKX has minimum order sizes per pair (typically $5–$10). For bots to work effectively we recommend starting with at least $500–$1,000 per active bot.</p></div>
-        </div>
-
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            <span data-i18n="faq.q9">Is there a demo or trial mode?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer"><p data-i18n="faq.a9">Yes — you can connect OKX's Demo Trading account (free virtual $100,000 USDT) to test any strategy risk-free before going live. Demo mode is available on all plans.</p></div>
-        </div>
-
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q1">What is AYILON?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a1">AYILON is a fully automated crypto trading platform that runs bots on your OKX account 24/7. You connect your API key, and the bot handles everything — entries, exits, and position management — while you sleep.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q2">Is my money safe? Does AYILON hold my funds?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a2">No — AYILON never holds or touches your funds. All trades happen directly on your OKX account via an API key that you create and control. We strongly recommend enabling Trade-only permissions (no Withdraw access) on your API key so that funds can never leave your exchange account.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q3">What exchanges are supported?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a3">Currently AYILON supports OKX. Support for Binance, Bybit, and other major exchanges is on our roadmap.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q4">What trading strategies are available?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a4">AYILON offers 10 trading strategies available across plan tiers. Starter includes RSI Oversold DCA, MA Support DCA, and S/R Bounce. Pro adds MA Crossover + RSI, Bollinger Band Reversion, Breakout + Volume, and MA Ribbon Long. Elite unlocks all 10 strategies, including MACD Divergence, Funding Rate Contrarian, and ATR Trend Following.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q5">Do I need any trading experience?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a5">No. AYILON is built for everyone — from complete beginners to experienced traders. Each bot comes with default parameters tuned for safety. Advanced users can customise leverage, position size, and stop-loss levels.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q6">Can I get a refund?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a6">Yes — if you have not yet connected an API key and your request is within 7 days of purchase, you are eligible for a full refund. After 7 days or after connecting an API key, only cancellation is available.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q7">How do I cancel my subscription?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a7">Go to Dashboard → My Account → Subscription and click "Cancel Subscription." Your access continues until the end of the current billing period.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q8">What is the minimum amount to start?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a8">There is no minimum set by AYILON. OKX has minimum order sizes per pair (typically $5–$10). For bots to work effectively we recommend starting with at least $500–$1,000 per active bot.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q9">Is there a demo or trial mode?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a9">Yes — you can connect OKX's Demo Trading account (free virtual $100,000 USDT) to test any strategy risk-free before going live. Demo mode is available on all plans.</p></div></div>
       </div>
     </div>
   </div>
 
   <!-- CTA -->
   <div class="cta-section">
-    <h2 data-i18n="cta.title">Start trading on autopilot</h2>
-    <p data-i18n="cta.subtitle">Your OKX account, AYILON's intelligence — working together 24/7.</p>
-    <a href="signup.html" class="btn-primary" data-i18n="cta.btn">Create Your Account →</a>
+    <h2 data-i18n="cta.title">Nothing to Everything.</h2>
+    <p data-i18n="cta.subtitle">Simply, more.</p>
+    <a href="signup.html" class="btn-primary" data-i18n="cta.btn">Automate My Account →</a>
   </div>
 
   <!-- FOOTER -->
@@ -936,7 +845,6 @@
       pro:     { monthly: 500, annual: 450, save: 10 },
       elite:   { monthly: 1000, annual: 850, save: 15 }
     };
-
     function planCta(e, plan) {
       if (localStorage.getItem('ayilon_logged_in') !== 'true') {
         e.preventDefault();
@@ -944,12 +852,10 @@
         return false;
       }
     }
-
     function setPeriod(period) {
       window.__currentPeriod = period;
       document.getElementById('btn-monthly').classList.toggle('active', period === 'monthly');
       document.getElementById('btn-annual').classList.toggle('active', period === 'annual');
-
       ['starter', 'pro', 'elite'].forEach(plan => {
         const p = pricing[plan];
         const priceEl = document.getElementById('price-' + plan);
@@ -961,13 +867,10 @@
           var amount = '$' + (p.annual * 12).toLocaleString();
           var billedTpl = (window.__t && window.__t('price.billed.yr')) || 'Billed {amount}/yr';
           var saveTpl = (window.__t && window.__t('price.save.badge')) || 'Save {pct}%';
-          var billedStr = billedTpl.replace('{amount}', amount);
-          var saveStr = saveTpl.replace('{pct}', p.save);
           priceEl.textContent = '$' + p.annual.toLocaleString();
-          noteEl.innerHTML = billedStr + ' &nbsp;<span class="save-badge">' + saveStr + '</span>';
+          noteEl.innerHTML = billedTpl.replace('{amount}', amount) + ' &nbsp;<span class="save-badge">' + saveTpl.replace('{pct}', p.save) + '</span>';
         }
       });
-
       document.querySelectorAll('[href*="payment.html"]').forEach(a => {
         const url = new URL(a.href, window.location.href);
         url.searchParams.set('billing', period);
@@ -975,5 +878,124 @@
       });
     }
   </script>
+
+  <!-- THREE.JS — 3D Algorithm Visualization -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  (function() {
+    var canvas = document.getElementById('ayilon-canvas');
+    if (!canvas || typeof THREE === 'undefined') return;
+
+    var W = canvas.parentElement.offsetWidth || 480;
+    var H = 520;
+    canvas.style.height = H + 'px';
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
+    camera.position.z = 3.8;
+
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+
+    var group = new THREE.Group();
+    scene.add(group);
+
+    /* ── Particle sphere (Fibonacci distribution) ── */
+    var N = 2600;
+    var pos = new Float32Array(N * 3);
+    var col = new Float32Array(N * 3);
+
+    for (var i = 0; i < N; i++) {
+      var phi   = Math.acos(1 - 2 * (i + 0.5) / N);
+      var theta = Math.PI * (1 + Math.sqrt(5)) * i;
+      pos[i*3]   = Math.sin(phi) * Math.cos(theta);
+      pos[i*3+1] = Math.sin(phi) * Math.sin(theta);
+      pos[i*3+2] = Math.cos(phi);
+
+      var rnd = Math.random();
+      if (rnd < 0.15) {
+        col[i*3] = 0.133; col[i*3+1] = 0.773; col[i*3+2] = 0.369; // #22c55e
+      } else if (rnd < 0.20) {
+        col[i*3] = 0.976; col[i*3+1] = 0.451; col[i*3+2] = 0.086; // #f97316
+      } else {
+        var b = 0.28 + Math.random() * 0.52;
+        col[i*3] = b; col[i*3+1] = b; col[i*3+2] = b;
+      }
+    }
+
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+
+    var mat = new THREE.PointsMaterial({
+      size: 0.017, vertexColors: true,
+      transparent: true, opacity: 0.82, sizeAttenuation: true
+    });
+    group.add(new THREE.Points(geo, mat));
+
+    /* ── Orbiting nodes (active bots) ── */
+    var orbits = [];
+    for (var j = 0; j < 4; j++) {
+      var g2 = new THREE.SphereGeometry(0.032, 8, 8);
+      var m2 = new THREE.MeshBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.95 });
+      var mesh = new THREE.Mesh(g2, m2);
+      var baseAngle = (j / 4) * Math.PI * 2;
+      mesh.userData = {
+        baseAngle: baseAngle,
+        r: 0.68 + Math.random() * 0.24,
+        oy: (Math.random() - 0.5) * 0.5,
+        speed: 0.22 + Math.random() * 0.14,
+        phase: Math.random() * Math.PI * 2
+      };
+      group.add(mesh);
+      orbits.push(mesh);
+    }
+
+    /* ── Mouse interaction ── */
+    var mx = 0, my = 0, tx = 0, ty = 0;
+    document.addEventListener('mousemove', function(e) {
+      mx = (e.clientX / window.innerWidth  - 0.5) * 0.55;
+      my = (e.clientY / window.innerHeight - 0.5) * 0.38;
+    });
+
+    /* ── Animation ── */
+    var t0 = Date.now();
+    function animate() {
+      requestAnimationFrame(animate);
+      var t = (Date.now() - t0) / 1000;
+
+      tx += (mx - tx) * 0.04;
+      ty += (my - ty) * 0.04;
+
+      group.rotation.y = t * 0.11 + tx;
+      group.rotation.x = ty * 0.45;
+
+      for (var i = 0; i < orbits.length; i++) {
+        var o = orbits[i], d = o.userData;
+        var a = d.baseAngle + t * d.speed;
+        o.position.x = Math.cos(a) * d.r;
+        o.position.z = Math.sin(a) * d.r * 0.55;
+        o.position.y = d.oy + Math.sin(t * 0.5 + d.phase) * 0.13;
+        var sc = 1 + 0.22 * Math.sin(t * 1.6 + d.phase);
+        o.scale.setScalar(sc);
+      }
+
+      mat.opacity = 0.72 + 0.16 * Math.sin(t * 0.38);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    /* ── Resize ── */
+    window.addEventListener('resize', function() {
+      var W2 = canvas.parentElement.offsetWidth || 480;
+      camera.aspect = W2 / H;
+      camera.updateProjectionMatrix();
+      renderer.setSize(W2, H);
+    });
+  })();
+  </script>
+
 </body>
 </html>
