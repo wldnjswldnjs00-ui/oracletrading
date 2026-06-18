@@ -1068,14 +1068,19 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       }
     }
 
-    // ── TP = next S/R level in trade direction ────────────────
-    const tp = signal.type === 'long'
+    // ── TP = next S/R level in trade direction (RSI DCA uses fixed 1.5% fallback) ────
+    let tp = signal.type === 'long'
       ? levels.resistances[0]?.price
       : levels.supports[0]?.price;
-    const tpMinDist = strategy === 'rsi_dca' ? 1.003 : 1.005;
-    const useTP = tp && (signal.type === 'long' ? tp > currentPrice * tpMinDist : tp < currentPrice / tpMinDist);
+    if (strategy === 'rsi_dca') {
+      const fixedTP = signal.type === 'long'
+        ? currentPrice * 1.015
+        : currentPrice * 0.985;
+      tp = (tp && signal.type === 'long' ? Math.max(tp, fixedTP) : tp && Math.min(tp, fixedTP)) || fixedTP;
+    }
+    const useTP = tp && (signal.type === 'long' ? tp > currentPrice * 1.003 : tp < currentPrice * 0.997);
 
-    // ── R:R filter — minimum 1.0:1 required ──────────────────
+    // ── R:R filter ───────────────────────────────────────────
     const slDistRR = Math.abs(currentPrice - signal.stopLoss) / currentPrice;
     const tpDistRR = useTP ? Math.abs(tp - currentPrice) / currentPrice : 0;
     const minRR = strategy === 'rsi_dca' ? 0.8 : 1.0;
