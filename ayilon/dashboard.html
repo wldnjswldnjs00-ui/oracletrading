@@ -693,6 +693,17 @@
         <div class="empty-state" style="padding:32px 0;" data-i18n="db.bots.no_bots">실행 중인 봇이 없습니다</div>
       </div>
     </div>
+
+    <!-- Bot Logs -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-header">
+        <span class="card-title">Bot Logs</span>
+        <button class="btn-sm" onclick="loadMyBots()">↻ Refresh</button>
+      </div>
+      <div id="botLogsContent" style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;max-height:360px;overflow-y:auto;">
+        <div style="color:var(--gray-600);padding:16px 0;">No logs yet. Logs appear once the bot runs.</div>
+      </div>
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
@@ -1600,6 +1611,7 @@
         body: JSON.stringify({ sessionToken: token })
       });
       var data = await res.json();
+      renderBotLogs(data.logs || [], data.lastScan);
       if (!data.running) {
         listEl.innerHTML = '<div class="empty-state" style="padding:32px 0;">' + (window.__t ? window.__t('db.bots.no_bots') : '실행 중인 봇이 없습니다') + '</div>';
         var dashActive = document.getElementById('dashActiveBots');
@@ -1624,9 +1636,38 @@
         '</div>';
       var dashActive = document.getElementById('dashActiveBots');
       if (dashActive) dashActive.textContent = '1';
+
+      // Render logs
+      renderBotLogs(data.logs || [], data.lastScan);
     } catch(e) {
       listEl.innerHTML = '<div class="empty-state" style="padding:32px 0;">' + (window.__t ? window.__t('db.bots.load_error') : '봇 상태를 불러올 수 없습니다') + '</div>';
     }
+  }
+
+  function renderBotLogs(logs, lastScan) {
+    var el = document.getElementById('botLogsContent');
+    if (!el) return;
+    if (lastScan) {
+      var scanTime = new Date(lastScan).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      el.innerHTML = '<div style="color:var(--gray-600);font-size:11px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06);">Last scan: ' + scanTime + '</div>';
+    } else {
+      el.innerHTML = '';
+    }
+    if (!logs.length) {
+      el.innerHTML += '<div style="color:var(--gray-600);padding:8px 0;">No logs yet.</div>';
+      return;
+    }
+    el.innerHTML += logs.map(function(l) {
+      var t = new Date(l.time).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      var color = l.msg.startsWith('Skip') ? '#f59e0b' :
+                  l.msg.startsWith('⚠️') ? '#ef4444' :
+                  l.msg.startsWith('LONG') || l.msg.startsWith('SHORT') ? '#22c55e' :
+                  'var(--gray-400)';
+      return '<div style="display:flex;gap:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.03);">' +
+        '<span style="color:var(--gray-600);white-space:nowrap;flex-shrink:0;">' + t + '</span>' +
+        '<span style="color:' + color + ';">' + l.msg + '</span>' +
+      '</div>';
+    }).join('');
   }
 
   async function stopBot() {
