@@ -772,7 +772,7 @@
             결제는 <strong style="color:#fff;">USDT TRC-20</strong>으로만 받습니다. 아래 주소로 정확한 금액을 전송한 후 관리자에게 연락해 주세요.
           </div>
           <div style="font-size:12px;color:var(--gray-600);margin-bottom:8px;" data-i18n="db.sub.deposit_addr">USDT TRC-20 입금 주소</div>
-          <div class="wallet-addr" id="subWalletAddr">관리자에게 문의하여 주소를 받으세요</div>
+          <div class="wallet-addr" id="subWalletAddr" data-i18n="db.sub.contact_admin">관리자에게 문의하여 주소를 받으세요</div>
         </div>
         <div style="font-size:12px;color:var(--gray-400);line-height:1.8;">
           <div data-i18n="db.sub.pay_step1">1. 구독 플랜을 선택하세요</div>
@@ -806,7 +806,7 @@
         </div>
         <div class="d-form-group" style="margin-bottom:0;">
           <label class="d-form-label">Username</label>
-          <input type="text" class="d-form-input" id="settingsUsername" placeholder="예: ayilon_trader" oninput="checkUsernameAvail(this)" />
+          <input type="text" class="d-form-input" id="settingsUsername" placeholder="예: ayilon_trader" data-i18n-ph="db.profile.username_ph" oninput="checkUsernameAvail(this)" />
           <div id="usernameHint"></div>
         </div>
         <div class="d-form-group" style="margin-bottom:0;grid-column:1/-1;">
@@ -966,7 +966,7 @@
 
     <!-- Loading -->
     <div id="upgradeStep-loading" style="text-align:center;padding:32px 0;">
-      <div style="color:var(--gray-400);font-size:14px;">결제 주소 생성 중...</div>
+      <div style="color:var(--gray-400);font-size:14px;" data-i18n="db.upgrade.generating">결제 주소 생성 중...</div>
     </div>
 
     <!-- Payment info -->
@@ -1006,7 +1006,7 @@
     <!-- Success -->
     <div id="upgradeStep-success" style="display:none;text-align:center;padding:32px 0;">
       <div style="font-size:48px;margin-bottom:16px;">✅</div>
-      <div style="font-size:18px;font-weight:700;margin-bottom:8px;">결제 확인 완료!</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:8px;" data-i18n="db.upgrade.success_title">결제 확인 완료!</div>
       <div style="font-size:14px;color:var(--gray-400);" id="upgradeSuccessMsg">플랜이 활성화되었습니다.</div>
     </div>
 
@@ -1054,6 +1054,17 @@
     try { return JSON.parse(localStorage.getItem('ayilon_subscription') || '{}'); } catch(e) { return {}; }
   }
 
+  function getPageTitles() {
+    var t = window.__t || function(k) { return k; };
+    return {
+      dashboard:    t('db.nav.dashboard'),
+      terminal:     t('db.nav.terminal'),
+      bots:         t('db.nav.bots'),
+      subscription: t('db.nav.subscription'),
+      settings:     t('db.nav.settings'),
+      guide:        t('db.nav.guide')
+    };
+  }
   var PAGE_TITLES = {
     dashboard:    'Dashboard | 대시보드',
     terminal:     'Terminal | 수동 터미널',
@@ -1107,7 +1118,7 @@
     if (pg) pg.classList.add('active');
     // Update topbar title
     var titleEl = document.getElementById('topbarTitle');
-    if (titleEl) titleEl.textContent = PAGE_TITLES[name] || name;
+    if (titleEl) titleEl.textContent = (getPageTitles()[name] || PAGE_TITLES[name] || name);
     // Update sidebar active
     document.querySelectorAll('.sidebar-item').forEach(function(a){ a.classList.remove('active'); });
     if (el) el.classList.add('active');
@@ -1524,7 +1535,7 @@
       });
       var data = await res.json();
       if (!data.running) {
-        listEl.innerHTML = '<div class="empty-state" style="padding:32px 0;" data-i18n="db.bots.no_bots">실행 중인 봇이 없습니다</div>';
+        listEl.innerHTML = '<div class="empty-state" style="padding:32px 0;">' + (window.__t ? window.__t('db.bots.no_bots') : '실행 중인 봇이 없습니다') + '</div>';
         var dashActive = document.getElementById('dashActiveBots');
         if (dashActive) dashActive.textContent = '0';
         return;
@@ -1543,12 +1554,12 @@
               '<div style="font-size:12px;color:var(--gray-400);">' + pairLabel + ' · ' + modeLabel + ' · Lev ' + levLabel + '</div>' +
             '</div>' +
           '</div>' +
-          '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot()">중지</button>' +
+          '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot()">' + (window.__t ? window.__t('db.stop') : '중지') + '</button>' +
         '</div>';
       var dashActive = document.getElementById('dashActiveBots');
       if (dashActive) dashActive.textContent = '1';
     } catch(e) {
-      listEl.innerHTML = '<div class="empty-state" style="padding:32px 0;">봇 상태를 불러올 수 없습니다</div>';
+      listEl.innerHTML = '<div class="empty-state" style="padding:32px 0;">' + (window.__t ? window.__t('db.bots.load_error') : '봇 상태를 불러올 수 없습니다') + '</div>';
     }
   }
 
@@ -1574,8 +1585,8 @@
     var planNames = { free: 'FREE', starter: 'Starter', pro: 'Pro', elite: 'Elite' };
     document.getElementById('currentPlanName').textContent   = planNames[plan] || 'FREE';
     document.getElementById('currentPlanDetail').textContent = plan === 'free'
-      ? '구독이 활성화되지 않았습니다'
-      : ('현재 ' + planNames[plan] + ' 플랜 이용 중');
+      ? (window.__t ? window.__t('db.sub.no_plan') : '구독이 활성화되지 않았습니다')
+      : (window.__t ? window.__t('db.sub.current_plan') + ': ' + planNames[plan] : '현재 ' + planNames[plan] + ' 플랜 이용 중');
 
     // Mark current plan card
     ['starter','pro','elite'].forEach(function(p) {
@@ -1587,7 +1598,7 @@
       btn.disabled = false;
       if (p === plan) {
         card.classList.add('current');
-        btn.textContent = '현재 플랜';
+        btn.textContent = window.__t ? window.__t('db.sub.current_plan') : '현재 플랜';
         btn.disabled = true;
       }
     });
