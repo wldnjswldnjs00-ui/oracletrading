@@ -395,6 +395,7 @@
     </span>
     <span data-i18n="db.nav.guide">Guide</span>
   </a>
+  <a class="sidebar-item" id="adminSidebarItem" style="display:none;" onclick="showPage('admin', this)" data-i18n="db.nav.admin">관리자</a>
 
   <div class="sidebar-bottom">
     <div class="user-info-sb">
@@ -964,6 +965,59 @@
     <div class="articles-grid" id="articlesGrid"></div>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════
+       PAGE: ADMIN
+  ═══════════════════════════════════════════════════ -->
+  <div id="page-admin" class="page">
+    <div class="page-header">
+      <div class="page-title" data-i18n="db.nav.admin">관리자</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;">
+        <div class="card" style="padding:20px;">
+          <div style="font-size:12px;color:var(--gray-400);margin-bottom:6px;">총 회원</div>
+          <div id="adminTotalUsers" style="font-size:24px;font-weight:700;">—</div>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:12px;color:var(--gray-400);margin-bottom:6px;">유료 구독</div>
+          <div id="adminPaidUsers" style="font-size:24px;font-weight:700;color:#22c55e;">—</div>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:12px;color:var(--gray-400);margin-bottom:6px;">봇 실행 중</div>
+          <div id="adminActiveBots" style="font-size:24px;font-weight:700;color:#3b82f6;">—</div>
+        </div>
+      </div>
+      <!-- Search + user table -->
+      <div class="card" style="padding:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+          <div style="font-size:16px;font-weight:600;">회원 목록</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input id="adminSearchInput" type="text" placeholder="이메일 검색..." style="padding:8px 12px;background:var(--surface);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:13px;width:200px;" oninput="adminFilterUsers()" />
+            <button class="btn-sm" onclick="loadAdminUsers()">새로고침</button>
+          </div>
+        </div>
+        <div id="adminUserTable" style="overflow-x:auto;">
+          <div class="empty-state" style="padding:32px 0;">로딩 중...</div>
+        </div>
+      </div>
+      <!-- Set plan inline panel -->
+      <div id="adminSetPlanWrap" style="display:none;" class="card">
+        <div style="padding:24px;">
+          <div style="font-size:15px;font-weight:600;margin-bottom:16px;">플랜 설정</div>
+          <div id="adminSetPlanTarget" style="font-size:13px;color:var(--gray-400);margin-bottom:12px;"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+            <button class="btn-sm" onclick="adminDoSetPlan('free')">Free</button>
+            <button class="btn-sm" style="color:#22c55e;border-color:rgba(34,197,94,0.3);" onclick="adminDoSetPlan('starter')">Starter (30일)</button>
+            <button class="btn-sm" style="color:#3b82f6;border-color:rgba(59,130,246,0.3);" onclick="adminDoSetPlan('pro')">Pro (30일)</button>
+            <button class="btn-sm" style="color:#a855f7;border-color:rgba(168,85,247,0.3);" onclick="adminDoSetPlan('elite')">Elite (30일)</button>
+            <button class="btn-sm" style="color:#ef4444;border-color:rgba(239,68,68,0.2);" onclick="document.getElementById('adminSetPlanWrap').style.display='none'">취소</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- end .main -->
 
 <!-- ═══════════════════════════════════════════════════
@@ -1081,7 +1135,8 @@
       bots:         t('db.nav.bots'),
       subscription: t('db.nav.subscription'),
       settings:     t('db.nav.settings'),
-      guide:        t('db.nav.guide')
+      guide:        t('db.nav.guide'),
+      admin:        t('db.nav.admin')
     };
   }
   var PAGE_TITLES = {
@@ -1090,7 +1145,8 @@
     bots:         'Signal Bots | 시그널 봇',
     subscription: 'Subscription | 구독',
     settings:     'Settings | 설정',
-    guide:        'Guide | 사용 가이드'
+    guide:        'Guide | 사용 가이드',
+    admin:        'Admin | 관리자'
   };
 
   /* ── Access Check ── */
@@ -1112,6 +1168,9 @@
     document.getElementById('sidebarAvatar').textContent  = initial;
     document.getElementById('sidebarName').textContent    = name;
     document.getElementById('sidebarEmail').textContent   = email;
+
+    var adminLink = document.getElementById('adminSidebarItem');
+    if (adminLink) adminLink.style.display = (email === ADMIN_EMAIL) ? '' : 'none';
 
     var badge = document.getElementById('planBadge');
     var plan  = (sub.plan || 'free').toLowerCase();
@@ -1157,6 +1216,7 @@
     if (name === 'subscription') initSubscriptionPage();
     if (name === 'settings')     initSettingsPage();
     if (name === 'guide')        renderGuide();
+    if (name === 'admin')        initAdminPage();
     // Close mobile sidebar
     closeSidebar();
   }
@@ -1398,10 +1458,11 @@
     var isLong  = p.posSide === 'long' || (p.posSide === 'net' && posAmt > 0);
     var ctVal   = parseFloat(p.ctVal || 0.01);
     var contracts = Math.abs(posAmt);
+    var size    = contracts * ctVal;
     var notional  = parseFloat(p.avgPx || 0) * contracts * ctVal;
     var initMargin = notional / parseFloat(p.lever || 5);
     var roe = initMargin > 0 ? parseFloat(p.upl || 0) / initMargin * 100 : 0;
-    return { isLong: isLong, contracts: contracts, roe: roe };
+    return { isLong: isLong, contracts: contracts, size: size, roe: roe };
   }
 
   async function loadTerminalPositions() {
@@ -1454,7 +1515,7 @@
             return '<tr>' +
               '<td>' + escapeHtml(p.instId || '—') + '</td>' +
               '<td>' + side + '</td>' +
-              '<td style="min-width:60px;font-variant-numeric:tabular-nums;">' + fmtNum(calc.contracts, 0) + '</td>' +
+              '<td style="min-width:90px;font-variant-numeric:tabular-nums;">' + fmtNum(calc.size, 4) + '</td>' +
               '<td style="min-width:100px;font-variant-numeric:tabular-nums;">$' + fmtNum(p.avgPx, 2) + '</td>' +
               '<td id="pm_' + k + '" style="min-width:100px;font-variant-numeric:tabular-nums;">$' + fmtNum(p.markPx, 2) + '</td>' +
               '<td style="min-width:140px;font-variant-numeric:tabular-nums;">' + pnlHtml + '</td>' +
@@ -2675,6 +2736,106 @@
     var d = document.createElement('div');
     d.textContent = String(s);
     return d.innerHTML;
+  }
+
+  /* ════════════════════════════════════════
+     ADMIN PAGE
+  ════════════════════════════════════════ */
+  var _adminUsers = [];
+  var _adminPlanTarget = null;
+
+  async function initAdminPage() {
+    await loadAdminUsers();
+  }
+
+  async function loadAdminUsers() {
+    var token = getSessionToken();
+    var tableEl = document.getElementById('adminUserTable');
+    if (tableEl) tableEl.innerHTML = '<div class="empty-state" style="padding:32px 0;">로딩 중...</div>';
+    try {
+      var res = await fetch(WORKER_URL + '/admin/list-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token })
+      });
+      var data = await res.json();
+      if (!data.ok) { if (tableEl) tableEl.innerHTML = '<div class="empty-state" style="color:#ef4444;">권한 없음</div>'; return; }
+      _adminUsers = data.users || [];
+      var paid = _adminUsers.filter(function(u) { return u.plan && u.plan !== 'free'; }).length;
+      var bots = _adminUsers.filter(function(u) { return u.botRunning; }).length;
+      var totalEl = document.getElementById('adminTotalUsers');
+      var paidEl = document.getElementById('adminPaidUsers');
+      var botsEl = document.getElementById('adminActiveBots');
+      if (totalEl) totalEl.textContent = _adminUsers.length;
+      if (paidEl) paidEl.textContent = paid;
+      if (botsEl) botsEl.textContent = bots;
+      adminFilterUsers();
+    } catch(e) {
+      if (tableEl) tableEl.innerHTML = '<div class="empty-state" style="color:#ef4444;">불러오기 실패: ' + e.message + '</div>';
+    }
+  }
+
+  function adminFilterUsers() {
+    var q = (document.getElementById('adminSearchInput') || {}).value || '';
+    q = q.toLowerCase();
+    var filtered = q ? _adminUsers.filter(function(u) { return u.email.toLowerCase().indexOf(q) !== -1; }) : _adminUsers;
+    renderAdminUsers(filtered);
+  }
+
+  function renderAdminUsers(users) {
+    var el = document.getElementById('adminUserTable');
+    if (!el) return;
+    if (!users.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">회원 없음</div>'; return; }
+    var planColor = { free: 'var(--gray-400)', starter: '#22c55e', pro: '#3b82f6', elite: '#a855f7' };
+    el.innerHTML = '<table class="term-table"><thead><tr>' +
+      '<th>이메일</th><th>플랜</th><th>만료일</th><th>봇</th><th>가입일</th><th>관리</th>' +
+      '</tr></thead><tbody>' +
+      users.map(function(u) {
+        var plan = u.plan || 'free';
+        var expiry = u.planExpiresAt ? new Date(u.planExpiresAt).toLocaleDateString('ko-KR') : '—';
+        var botBadge = u.botRunning ? '<span style="color:#22c55e;font-size:11px;">실행 중</span>' : '<span style="color:var(--gray-400);font-size:11px;">—</span>';
+        var joined = u.createdAt ? new Date(u.createdAt).toLocaleDateString('ko-KR') : '—';
+        return '<tr>' +
+          '<td style="font-size:12px;">' + escapeHtml(u.email) + '</td>' +
+          '<td><span style="color:' + (planColor[plan] || 'var(--gray-400)') + ';font-weight:600;font-size:12px;">' + plan.toUpperCase() + '</span></td>' +
+          '<td style="font-size:12px;color:var(--gray-400);">' + expiry + '</td>' +
+          '<td>' + botBadge + '</td>' +
+          '<td style="font-size:12px;color:var(--gray-400);">' + joined + '</td>' +
+          '<td><button class="btn-sm" style="font-size:11px;" onclick="adminShowSetPlan(\'' + escapeHtml(u.email) + '\')">플랜 설정</button></td>' +
+          '</tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  function adminShowSetPlan(email) {
+    _adminPlanTarget = email;
+    var wrap = document.getElementById('adminSetPlanWrap');
+    var targetEl = document.getElementById('adminSetPlanTarget');
+    if (targetEl) targetEl.textContent = '대상: ' + email;
+    if (wrap) wrap.style.display = '';
+    wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  async function adminDoSetPlan(plan) {
+    if (!_adminPlanTarget) return;
+    var token = getSessionToken();
+    try {
+      var res = await fetch(WORKER_URL + '/admin/set-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token, email: _adminPlanTarget, plan: plan })
+      });
+      var data = await res.json();
+      if (data.ok) {
+        document.getElementById('adminSetPlanWrap').style.display = 'none';
+        _adminPlanTarget = null;
+        alert('플랜 설정 완료: ' + plan);
+        await loadAdminUsers();
+      } else {
+        alert('실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    } catch(e) {
+      alert('실패: ' + e.message);
+    }
   }
 </script>
 </body>
