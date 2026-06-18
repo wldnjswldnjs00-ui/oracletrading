@@ -1745,7 +1745,7 @@
               '<div style="font-size:12px;color:var(--gray-400);">' + pairLabel + ' · ' + modeLabel + ' · Lev ' + levLabel + posLabel + '</div>' +
             '</div>' +
           '</div>' +
-          '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot(\'' + strat + '\')">' + (window.__t ? window.__t('db.stop') : '중지') + '</button>' +
+          '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot(\'' + strat + '\', this)">' + (window.__t ? window.__t('db.stop') : '중지') + '</button>' +
         '</div>';
       }).join('');
 
@@ -1758,7 +1758,7 @@
             '<div><div style="font-size:14px;font-weight:600;">' + fbStrat + '</div>' +
             '<div style="font-size:12px;color:var(--gray-400);">' + pairLabel + ' · ' + modeLabel + ' · Lev ' + levLabel + '</div></div>' +
           '</div>' +
-          '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot()">' + (window.__t ? window.__t('db.stop') : '중지') + '</button>' +
+          '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot(null, this)">' + (window.__t ? window.__t('db.stop') : '중지') + '</button>' +
         '</div>';
       }
 
@@ -1799,7 +1799,8 @@
     }).join('');
   }
 
-  async function stopBot(strategy) {
+  async function stopBot(strategy, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = '중지 중...'; }
     var token = getSessionToken();
     try {
       var payload = { sessionToken: token, action: 'stop' };
@@ -1810,8 +1811,16 @@
         body: JSON.stringify(payload)
       });
       var data = await res.json();
-      if (data.ok) loadMyBots();
-    } catch(e) {}
+      if (data.ok) {
+        loadMyBots();
+      } else {
+        alert('중지 실패: ' + (data.error || '서버 오류'));
+        if (btn) { btn.disabled = false; btn.textContent = '중지'; }
+      }
+    } catch(e) {
+      alert('중지 실패: ' + (e.message || '네트워크 오류'));
+      if (btn) { btn.disabled = false; btn.textContent = '중지'; }
+    }
   }
 
   /* ════════════════════════════════════════
