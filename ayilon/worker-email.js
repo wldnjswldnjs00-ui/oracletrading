@@ -405,10 +405,26 @@ async function requireSession(body, env, request = null) {
     const auth = request.headers.get('Authorization') || '';
     if (auth.startsWith('Bearer ')) token = auth.slice(7).trim();
   }
-  if (!token || !env.USERS_KV) return null;
-  const session = await env.USERS_KV.get('session:' + token, { type: 'json' });
-  if (!session || !session.email) return null;
-  return session;
+  if (!token) return null;
+
+  // D1 first (no KV write limit)
+  if (env.BOT_DB) {
+    try {
+      await ensureDB(env);
+      const row = await env.BOT_DB.prepare(
+        'SELECT email, username, name FROM sessions WHERE token=? AND expires_at>?'
+      ).bind(token, Date.now()).first();
+      if (row) return { email: row.email, username: row.username, name: row.name };
+    } catch(e) {}
+  }
+
+  // KV fallback for sessions created before D1 migration
+  if (!env.USERS_KV) return null;
+  try {
+    const session = await env.USERS_KV.get('session:' + token, { type: 'json' });
+    if (session && session.email) return session;
+  } catch(e) {}
+  return null;
 }
 
 async function handleLogin(request, env) {
@@ -436,9 +452,13 @@ async function handleLogin(request, env) {
     try { await env.USERS_KV.delete(loginRateKey); } catch(e) {}
 
     const sessionToken = crypto.randomUUID();
-    await env.USERS_KV.put('session:' + sessionToken, JSON.stringify({
-      email: user.email, username: user.username, name: user.name
-    }), { expirationTtl: 604800 }); // 7 days
+    const expiresAt = Date.now() + 604800 * 1000; // 7 days
+
+    // Write session to D1 (no KV write limit)
+    await ensureDB(env);
+    await env.BOT_DB.prepare(
+      'INSERT OR REPLACE INTO sessions (token, email, username, name, expires_at) VALUES (?, ?, ?, ?, ?)'
+    ).bind(sessionToken, user.email, user.username || '', user.name || '', expiresAt).run();
 
     return json({ ok: true, sessionToken, email: user.email, username: user.username || '', name: user.name || '' });
   } catch(e) {
@@ -448,8 +468,13 @@ async function handleLogin(request, env) {
 
 async function handleLogout(request, env) {
   const body = await request.json().catch(() => ({}));
-  if (body.sessionToken && env.USERS_KV) {
-    await env.USERS_KV.delete('session:' + body.sessionToken);
+  if (body.sessionToken) {
+    if (env.BOT_DB) {
+      try { await env.BOT_DB.prepare('DELETE FROM sessions WHERE token=?').bind(body.sessionToken).run(); } catch(e) {}
+    }
+    if (env.USERS_KV) {
+      try { await env.USERS_KV.delete('session:' + body.sessionToken); } catch(e) {}
+    }
   }
   return json({ ok: true });
 }
@@ -819,6 +844,7 @@ const OKX_BASE = 'https://www.okx.com';
 
 // ── D1 HELPERS ────────────────────────────────────────────────
 
+let _dbReady = false;
 async function initDB(env) {
   if (!env.BOT_DB) return;
   try {
@@ -837,10 +863,23 @@ async function initDB(env) {
       lock_key TEXT PRIMARY KEY,
       expires_at INTEGER NOT NULL
     )`).run();
+    await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      username TEXT DEFAULT '',
+      name TEXT DEFAULT '',
+      expires_at INTEGER NOT NULL
+    )`).run();
     // Add new columns to existing tables (no-op if already present)
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN running INTEGER DEFAULT 1`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN stopped_strategies TEXT DEFAULT NULL`).run().catch(() => {});
+    _dbReady = true;
   } catch(e) {}
+}
+
+async function ensureDB(env) {
+  if (_dbReady) return;
+  await initDB(env);
 }
 
 async function getBotState(env, email) {
