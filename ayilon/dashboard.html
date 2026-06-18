@@ -1350,11 +1350,16 @@
 
   function startTermPosRefresh() {
     stopTermPosRefresh();
-    termPosRefreshTimer = setInterval(loadTerminalPositions, 1000);
+    termPosRefreshActive = true;
+    (async function loop() {
+      while (termPosRefreshActive) {
+        await loadTerminalPositions();
+      }
+    })();
   }
 
   function stopTermPosRefresh() {
-    if (termPosRefreshTimer) { clearInterval(termPosRefreshTimer); termPosRefreshTimer = null; }
+    termPosRefreshActive = false;
   }
 
   function switchTerminalTab(tab, btn) {
@@ -1516,7 +1521,7 @@
      BOTS
   ════════════════════════════════════════ */
   var selectedStrategies = [];
-  var termPosRefreshTimer = null;
+  var termPosRefreshActive = false;
 
   var STRATEGIES = [
     { id: 'sr-bounce',       name: 'SR Bounce',       tier: 'FREE',  desc: 'Support & Resistance Bounce — 지지/저항 레벨에서 반등 진입 전략' },
