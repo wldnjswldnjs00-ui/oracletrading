@@ -241,6 +241,7 @@
           if (data.error === 'too_many_attempts') {
             errEl.textContent = 'Too many attempts. Please try again in 15 minutes.';
           } else if (data.error === 'server_error' || data.error === 'service_unavailable') {
+            console.error('[login] server_error detail:', data.detail);
             errEl.textContent = 'Server error. Please try again.';
           } else {
             errEl.textContent = 'Incorrect email or password.';
