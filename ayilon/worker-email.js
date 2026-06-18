@@ -404,7 +404,9 @@ async function requireSession(body, env, request = null) {
     if (auth.startsWith('Bearer ')) token = auth.slice(7).trim();
   }
   if (!token || !env.USERS_KV) return null;
-  return env.USERS_KV.get('session:' + token, { type: 'json' });
+  const session = await env.USERS_KV.get('session:' + token, { type: 'json' });
+  if (!session || !session.email) return null;
+  return session;
 }
 
 async function handleLogin(request, env) {
@@ -872,8 +874,14 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       getCandles(tradingPair, '1D', 60),
       getCandles(tradingPair, '5m', 25)
     ]);
-    if (candles1H.length < 20 && candles4H.length < 20) return;
-    if (c5.length < 4) return;
+    if (candles1H.length < 20 && candles4H.length < 20) {
+      await botLog(env, email, `Skip: insufficient candle data (1H:${candles1H.length} 4H:${candles4H.length})`);
+      return;
+    }
+    if (c5.length < 4) {
+      await botLog(env, email, `Skip: insufficient 5m candles (got ${c5.length}, need 4)`);
+      return;
+    }
     const [currentPrice, ctVal] = await Promise.all([
       getTicker(tradingPair),
       getCtVal(tradingPair)
@@ -1233,7 +1241,9 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
       const tkRes = await fetch(`${OKX_BASE}/api/v5/market/ticker?instId=${pair}`);
       const tk = await tkRes.json();
       price = parseFloat(tk?.data?.[0]?.last || '0');
-    } catch {}
+    } catch(e) {
+      await botLog(env, email, `checkSL: ticker fetch failed for ${pair} — ${e.message}`);
+    }
     if (price > 0) {
       const tpHit = state.direction === 'long' ? price >= state.takeProfit : price <= state.takeProfit;
       if (tpHit) {
@@ -1276,7 +1286,7 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
   if ((state.entries?.length || 0) < parseInt(numEntries)) return;
 
   const floatPnl     = openPos.reduce((s, p) => s + parseFloat(p.upl || '0'), 0);
-  const floatLossPct = floatPnl < 0 ? Math.abs(floatPnl) / equity : 0;
+  const floatLossPct = floatPnl < 0 ? Math.abs(floatPnl) / (equity || 1) : 0;
   const dl           = await env.USERS_KV.get('bot:daily_loss:' + email + ':' + today, { type: 'json' }) || { pct: 0 };
   const totalLossPct = (dl.pct || 0) + floatLossPct;
 
@@ -1898,7 +1908,12 @@ async function okxGet(apiKey, secret, pass, path, demo = false) {
   const res = await fetch(OKX_BASE + path, {
     headers: okxHeaders(apiKey, sign, ts, pass, demo)
   });
-  return res.json();
+  if (!res.ok) throw new Error(`OKX HTTP ${res.status} on GET ${path}`);
+  try {
+    return await res.json();
+  } catch(e) {
+    throw new Error(`OKX non-JSON response on GET ${path}: ${e.message}`);
+  }
 }
 
 async function okxPost(apiKey, secret, pass, path, body, demo = false) {
@@ -1910,7 +1925,12 @@ async function okxPost(apiKey, secret, pass, path, body, demo = false) {
     headers: okxHeaders(apiKey, sign, ts, pass, demo),
     body: bodyStr
   });
-  return res.json();
+  if (!res.ok) throw new Error(`OKX HTTP ${res.status} on POST ${path}`);
+  try {
+    return await res.json();
+  } catch(e) {
+    throw new Error(`OKX non-JSON response on POST ${path}: ${e.message}`);
+  }
 }
 
 function okxHeaders(key, sign, ts, pass, demo = false) {

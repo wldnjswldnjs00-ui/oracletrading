@@ -1383,9 +1383,9 @@
         rows.map(function(p) {
           var side = p.posSide === 'long' ? '<span class="pos-side-long">LONG</span>' : '<span class="pos-side-short">SHORT</span>';
           var roe  = parseFloat(p.upl || 0) / (parseFloat(p.margin || 1)) * 100;
-          return '<tr><td>' + (p.instId || '—') + '</td><td>' + side + '</td><td>' + fmtNum(p.pos, 4) + '</td><td>$' + fmtNum(p.avgPx, 2) + '</td><td>$' + fmtNum(p.markPx, 2) + '</td><td>' + fmtPnl(p.upl) + '</td><td><span class="' + (roe >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg') + '">' + (roe >= 0 ? '+' : '') + fmtNum(roe, 2) + '%</span></td></tr>';
+          return '<tr><td>' + escapeHtml(p.instId || '—') + '</td><td>' + side + '</td><td>' + fmtNum(p.pos, 4) + '</td><td>$' + fmtNum(p.avgPx, 2) + '</td><td>$' + fmtNum(p.markPx, 2) + '</td><td>' + fmtPnl(p.upl) + '</td><td><span class="' + (roe >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg') + '">' + (roe >= 0 ? '+' : '') + fmtNum(roe, 2) + '%</span></td></tr>';
         }).join('') + '</tbody></table>';
-    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">' + _t('db.term.load_fail') + ': ' + e.message + '</div>'; }
+    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">' + _t('db.term.load_fail') + ': ' + escapeHtml(e.message || '') + '</div>'; }
   }
 
   async function loadTerminalOrders() {
@@ -1402,7 +1402,7 @@
       el.innerHTML = '<table class="term-table"><thead><tr><th>' + _t('db.term.symbol') + '</th><th>' + _t('db.term.direction') + '</th><th>' + _t('db.term.ord_type') + '</th><th>' + _t('db.term.qty') + '</th><th>' + _t('db.term.price') + '</th><th>' + _t('db.term.status') + '</th></tr></thead><tbody>' +
         rows.map(function(o) {
           var side = o.side === 'buy' ? '<span class="pos-side-long">BUY</span>' : '<span class="pos-side-short">SELL</span>';
-          return '<tr><td>' + (o.instId||'—') + '</td><td>' + side + '</td><td>' + (o.ordType||'—') + '</td><td>' + fmtNum(o.sz,4) + '</td><td>$' + fmtNum(o.px,2) + '</td><td>' + (o.state||'—') + '</td></tr>';
+          return '<tr><td>' + escapeHtml(o.instId||'—') + '</td><td>' + side + '</td><td>' + escapeHtml(o.ordType||'—') + '</td><td>' + fmtNum(o.sz,4) + '</td><td>$' + fmtNum(o.px,2) + '</td><td>' + escapeHtml(o.state||'—') + '</td></tr>';
         }).join('') + '</tbody></table>';
     } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">' + _t('db.term.load_fail') + '</div>'; }
   }
@@ -1422,7 +1422,7 @@
         rows.map(function(h) {
           var side = h.side === 'buy' ? '<span class="pos-side-long">BUY</span>' : '<span class="pos-side-short">SELL</span>';
           var ts   = h.ts ? new Date(parseInt(h.ts)).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
-          return '<tr><td style="color:var(--gray-400);font-size:11px;">' + ts + '</td><td>' + (h.instId||'—') + '</td><td>' + side + '</td><td>' + fmtNum(h.fillSz,4) + '</td><td>$' + fmtNum(h.fillPx,2) + '</td><td>' + fmtNum(h.fee,6) + '</td></tr>';
+          return '<tr><td style="color:var(--gray-400);font-size:11px;">' + ts + '</td><td>' + escapeHtml(h.instId||'—') + '</td><td>' + side + '</td><td>' + fmtNum(h.fillSz,4) + '</td><td>$' + fmtNum(h.fillPx,2) + '</td><td>' + fmtNum(h.fee,6) + '</td></tr>';
         }).join('') + '</tbody></table>';
     } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">' + _t('db.term.load_fail') + '</div>'; }
   }
@@ -1717,7 +1717,7 @@
                   'var(--gray-400)';
       return '<div style="display:flex;gap:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.03);">' +
         '<span style="color:var(--gray-600);white-space:nowrap;flex-shrink:0;">' + t + '</span>' +
-        '<span style="color:' + color + ';">' + l.msg + '</span>' +
+        '<span style="color:' + color + ';">' + escapeHtml(l.msg || '') + '</span>' +
       '</div>';
     }).join('');
   }
@@ -2575,6 +2575,12 @@
       if (t2) t2.classList.add('on');
     }
   });
+
+  function escapeHtml(s) {
+    var d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
 </script>
 </body>
 </html>
