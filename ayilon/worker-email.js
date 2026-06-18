@@ -618,12 +618,18 @@ async function handleBotStatus(request, env) {
   // D1 running=0 means stop was triggered via dashboard (D1 overrides KV)
   const d1Stopped = botStateRow.running === 0;
   const effectiveRunning = !d1Stopped && _config.running === true;
+  const stoppedStrategies = botStateRow.stopped_strategies
+    ? JSON.parse(botStateRow.stopped_strategies) : [];
+  const allStrategies = _config.strategies || (_config.strategy ? [_config.strategy] : []);
+  const activeStrategies = effectiveRunning
+    ? allStrategies.filter(s => !stoppedStrategies.includes(s))
+    : [];
 
   return json({
-    running: effectiveRunning,
+    running: effectiveRunning && activeStrategies.length > 0,
     config: {
       strategy:    _config.strategy    || null,
-      strategies:  _config.strategies  || null,
+      strategies:  activeStrategies.length > 0 ? activeStrategies : (_config.strategies || null),
       mode:        _config.mode        || 'live',
       leverage:    _config.leverage    || 20,
       posSize:     _config.posSize     || 40,

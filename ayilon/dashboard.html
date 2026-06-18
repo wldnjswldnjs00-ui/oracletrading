@@ -1812,7 +1812,13 @@
       });
       var data = await res.json();
       if (data.ok) {
-        loadMyBots();
+        // Immediately remove the stopped bot item from UI
+        if (btn) {
+          var item = btn.closest('.bot-item');
+          if (item) item.remove();
+        }
+        // Re-fetch full state after a short delay
+        setTimeout(loadMyBots, 800);
       } else {
         alert('중지 실패: ' + (data.error || '서버 오류'));
         if (btn) { btn.disabled = false; btn.textContent = '중지'; }
