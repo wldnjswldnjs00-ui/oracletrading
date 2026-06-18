@@ -940,7 +940,7 @@ async function runBotForUser(env, email, cfg) {
       const slice20 = candles1H.slice(0, 20);
       const h1High  = Math.max(...slice20.map(c => parseFloat(c[2])));
       const h1Low   = Math.min(...slice20.map(c => parseFloat(c[3])));
-      if ((h1High - h1Low) / (h1Low || 1) < 0.015) return;
+      if ((h1High - h1Low) / (h1Low || 1) < 0.010) return;
     }
 
     // ── Funding rate gate + capture ──────────────────────────
@@ -1000,8 +1000,8 @@ async function runBotForUser(env, email, cfg) {
     if (signal.type === 'short') {
       const h1c    = candles1H[0]?.map(parseFloat);
       const h1Bear = h1c && h1c[4] < h1c[1];
-      const h1NRes = sr1H.resistances.some(r => Math.abs(currentPrice - r.price) / r.price <= 0.01);
-      if (!h1Bear && !h1NRes) return;
+      const h1NRes = sr1H.resistances.some(r => Math.abs(currentPrice - r.price) / r.price <= 0.015);
+      if (!h1Bear && !h1NRes) return; // need at least one: bearish candle OR near resistance
     }
 
     if (state.direction && state.direction !== signal.type) return;
@@ -1034,8 +1034,8 @@ async function runBotForUser(env, email, cfg) {
     // ── Fix: R:R filter — minimum 1.5:1 required ─────────────
     const slDistRR = Math.abs(currentPrice - signal.stopLoss) / currentPrice;
     const tpDistRR = useTP ? Math.abs(tp - currentPrice) / currentPrice : 0;
-    if (!useTP || tpDistRR / slDistRR < 1.5) {
-      await botLog(env, email, `Skip: R:R ${useTP ? (tpDistRR / slDistRR).toFixed(2) : 'n/a'}:1 < 1.5 | TP:${tp?.toFixed(0) ?? 'none'} SL:${signal.stopLoss.toFixed(0)}`);
+    if (!useTP || tpDistRR / slDistRR < 1.2) {
+      await botLog(env, email, `Skip: R:R ${useTP ? (tpDistRR / slDistRR).toFixed(2) : 'n/a'}:1 < 1.2 | TP:${tp?.toFixed(0) ?? 'none'} SL:${signal.stopLoss.toFixed(0)}`);
       return;
     }
 
@@ -1463,7 +1463,7 @@ function detectSignalBreakout(candles1H, candles5m, currentPrice) {
   const cur5m  = candles5m[0]?.map(parseFloat);
   if (!prev5m || !cur5m) return null;
   const avgVol = candles5m.slice(1, 21).map(c => parseFloat(c[5])).reduce((s, v) => s + v, 0) / 20;
-  if (parseFloat(cur5m[5]) < avgVol * 2) return null;
+  if (parseFloat(cur5m[5]) < avgVol * 1.5) return null;
 
   if (prev5m[4] <= res20 && currentPrice > res20 * 1.001) {
     const sl = prev5m[3];
@@ -1482,16 +1482,25 @@ function detectSignalBreakout(candles1H, candles5m, currentPrice) {
 
 function detectSignalMARibbon(candles1H, currentPrice) {
   const closes = candles1H.map(c => parseFloat(c[4]));
-  const mas = [10, 20, 34, 50, 100, 200].map(p => ({ p, v: _sma(closes, p) })).filter(m => m.v);
-  if (mas.length < 5) return null;
-  const sorted = [...mas].sort((a, b) => a.p - b.p);
-  const bullish = sorted.every((m, i) => i === 0 ? m.v < currentPrice : m.v < sorted[i - 1].v);
-  if (!bullish) return null;
-  if (Math.abs(currentPrice - sorted[0].v) / currentPrice > 0.005) return null;
-  const sl = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
-  const d = (currentPrice - sl) / currentPrice;
+  // Only require 4 core MAs to be aligned (drop 100/200 — too slow for daily signals)
+  const mas = [10, 20, 50, 100].map(p => ({ p, v: _sma(closes, p) })).filter(m => m.v);
+  if (mas.length < 4) return null;
+  const sorted = [...mas].sort((a, b) => a.p - b.p); // ascending period
+  // Bullish: price > MA10 > MA20 > MA50 > MA100
+  const bullish = currentPrice > sorted[0].v && sorted.every((m, i) => i === 0 || sorted[i-1].v > m.v);
+  // Bearish: price < MA10 < MA20 < MA50 < MA100
+  const bearish = currentPrice < sorted[0].v && sorted.every((m, i) => i === 0 || sorted[i-1].v < m.v);
+  if (!bullish && !bearish) return null;
+  // Price within 1% of fastest MA (pullback entry)
+  if (Math.abs(currentPrice - sorted[0].v) / currentPrice > 0.010) return null;
+  const sl = bullish
+    ? Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])))
+    : Math.max(...candles1H.slice(0, 5).map(c => parseFloat(c[2])));
+  const d = Math.abs(currentPrice - sl) / currentPrice;
   if (d < 0.005 || d > 0.12) return null;
-  return { type: 'long', level: sorted[0].v, grade: 'A', stopLoss: sl, strategy: 'ma_ribbon' };
+  return bullish
+    ? { type: 'long',  level: sorted[0].v, grade: 'A', stopLoss: sl, strategy: 'ma_ribbon' }
+    : { type: 'short', level: sorted[0].v, grade: 'A', stopLoss: sl, strategy: 'ma_ribbon' };
 }
 
 function detectSignalMACDDiv(candles1H, candles5m, currentPrice) {
@@ -1725,9 +1734,9 @@ function detectSignal(c5, levels) {
   const swingLow  = Math.min(prev1[3], prev2[3], prev3[3]);
   const swingHigh = Math.max(prev1[2], prev2[2], prev3[2]);
 
-  const TOUCH_TOL = 0.005;
-  const SL_MIN    = 0.01;
-  const SL_MAX    = 0.07;
+  const TOUCH_TOL = 0.006;
+  const SL_MIN    = 0.008;
+  const SL_MAX    = 0.08;
 
   // ── LONG: support touch → bounce entry ───────────────────────
   for (const s of levels.supports) {
