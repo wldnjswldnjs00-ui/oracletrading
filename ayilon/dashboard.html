@@ -2343,8 +2343,9 @@
   ════════════════════════════════════════ */
   var GUIDE_ARTICLES = [
     {
-      id: 1, title: 'AYILON Trading 시작하기', cat: 'tutorial', date: '2025-01-01',
+      id: 1, title: 'AYILON Trading 시작하기', title_en: 'Getting Started with AYILON Trading', cat: 'tutorial', date: '2025-01-01',
       desc: 'AYILON 플랫폼 사용법을 처음부터 단계별로 안내합니다. 계정 생성부터 첫 봇 실행까지.',
+      desc_en: 'Step-by-step guide to the AYILON platform. From account creation to running your first bot.',
       content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:20px;">AYILON Trading 시작하기</h2>' +
         '<p style="color:var(--gray-400);margin-bottom:24px;">계정 생성부터 첫 번째 매매 봇 실행까지 전체 과정을 단계별로 안내합니다.</p>' +
         '<div style="display:flex;flex-direction:column;gap:20px;">' +
@@ -2373,11 +2374,41 @@
         '<div style="font-weight:600;margin-bottom:8px;">봇 설정 및 시작</div>' +
         '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">대시보드 → 봇 탭에서 전략을 선택하세요. 레버리지(추천: 5–10x), 포지션 크기(추천: 10–20%), 리스크(추천: 1–2%)를 설정하고 "봇 시작" 버튼을 누르세요. 봇은 1분마다 자동으로 시장을 분석하고 조건이 맞으면 자동으로 주문합니다.</div>' +
         '</div>' +
+        '</div>',
+      content_en: '<h2 style="font-size:18px;font-weight:700;margin-bottom:20px;">Getting Started with AYILON Trading</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;">Complete step-by-step guide from account creation to your first automated trade.</p>' +
+        '<div style="display:flex;flex-direction:column;gap:20px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 1</div>' +
+        '<div style="font-weight:600;margin-bottom:8px;">Sign Up & Email Verification</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Click the "Get Started" button at the top right and create an account with your email, username, and password. After signing up, a 6-digit verification code will be sent to your email. Enter the code to activate your account.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 2</div>' +
+        '<div style="font-weight:600;margin-bottom:8px;">Create OKX Account & Enter Referral Code</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">When signing up for OKX, make sure to enter partner code <span style="color:#fff;font-weight:600;background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:4px;font-family:monospace;">AYILON</span>. Signing up with this code gives you a <strong style="color:#fff;">free lifetime Elite plan</strong>. Complete KYC verification after signing up to enable API key generation.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 3</div>' +
+        '<div style="font-weight:600;margin-bottom:8px;">Generate & Connect OKX API Key</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">On the OKX website → Account Settings → API Management, create an API key. Permissions: check only <span style="color:#fff;">Trade</span> — never grant Withdraw permission. Enter the API Key, Secret Key, and Passphrase in AYILON Dashboard → API tab and save.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 4</div>' +
+        '<div style="font-weight:600;margin-bottom:8px;">Choose a Subscription Plan</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Go to Dashboard → Subscription tab to select your plan. If you registered on OKX with partner code AYILON, you can receive the Elite plan for free. Payment is processed in USDT TRC-20.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 5</div>' +
+        '<div style="font-weight:600;margin-bottom:8px;">Configure & Start Bot</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Go to Dashboard → Bot tab to select a strategy. Set leverage (recommended: 5–10x), position size (recommended: 10–20%), and risk (recommended: 1–2%), then click "Start Bot". The bot automatically analyzes the market every minute and places orders when conditions are met.</div>' +
+        '</div>' +
         '</div>'
     },
     {
-      id: 2, title: '공지사항: OKX API 발급 가이드', cat: 'notice', date: '2026-05-31',
+      id: 2, title: '공지사항: OKX API 발급 가이드', title_en: 'Notice: OKX API Key Guide', cat: 'notice', date: '2026-05-31',
       desc: 'OKX에서 API 키를 발급하는 방법과 AYILON에 연결하는 방법을 안내합니다.',
+      desc_en: 'How to generate API keys on OKX and connect them to AYILON.',
       content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">OKX API 키 발급 가이드</h2>' +
         '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">최종 업데이트: 2026-05-31</p>' +
         '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px;margin-bottom:20px;color:#fbbf24;font-size:13px;">⚠️ API 키에 <strong>출금(Withdraw) 권한은 절대 부여하지 마세요.</strong> 거래(Trade) 권한만 설정해야 안전합니다.</div>' +
@@ -2404,11 +2435,39 @@
         '<div style="font-weight:600;margin-bottom:10px;">4. AYILON에 연결</div>' +
         '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">생성된 API Key, Secret Key, Passphrase를 복사하여 AYILON 대시보드 → API 탭에 붙여넣고 저장을 누르면 연결이 완료됩니다. API 키는 생성 시에만 확인 가능하니 반드시 저장해두세요.</div>' +
         '</div>' +
+        '</div>',
+      content_en: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">OKX API Key Guide</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">Last updated: 2026-05-31</p>' +
+        '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px;margin-bottom:20px;color:#fbbf24;font-size:13px;">⚠️ <strong>Never grant Withdraw permission</strong> to your API key. Only set Trade permission to stay secure.</div>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">1. Log in to OKX and click the profile icon at the top right</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Log in to the OKX website (okx.com) and click the profile icon at the top right.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">2. Go to Account Settings → API Management</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Navigate to "Account Settings" → "API Management". Click the "Create API Key" button.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">3. API Key Settings</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;margin-bottom:12px;">Configure as follows:</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">API Name</td><td style="padding:8px 4px;">AYILON (any recognizable name)</td></tr>' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">Passphrase</td><td style="padding:8px 4px;">Set a memorable password (save it!)</td></tr>' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">Permissions</td><td style="padding:8px 4px;color:#22c55e;font-weight:600;">Trade only ✓</td></tr>' +
+        '<tr><td style="padding:8px 4px;color:var(--gray-400);">IP Restriction</td><td style="padding:8px 4px;">Leave blank (or set if needed)</td></tr>' +
+        '</table>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">4. Connect to AYILON</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Copy the generated API Key, Secret Key, and Passphrase, then paste them into AYILON Dashboard → API tab and save. The API key can only be viewed at creation time — make sure to save it immediately.</div>' +
+        '</div>' +
         '</div>'
     },
     {
-      id: 3, title: '공지사항: OKX 가입 상세 가이드', cat: 'notice', date: '2026-05-31',
+      id: 3, title: '공지사항: OKX 가입 상세 가이드', title_en: 'Notice: OKX Registration Guide', cat: 'notice', date: '2026-05-31',
       desc: 'OKX 거래소에 가입하는 방법을 단계별로 상세히 안내합니다. KYC 인증 포함.',
+      desc_en: 'Step-by-step guide to registering on OKX exchange. Includes KYC verification.',
       content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">OKX 가입 상세 가이드</h2>' +
         '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">최종 업데이트: 2026-05-31</p>' +
         '<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:16px;margin-bottom:20px;font-size:13px;">💡 파트너 코드 <span style="color:#22c55e;font-weight:600;font-family:monospace;">AYILON</span>으로 가입하면 <strong style="color:#fff;">평생 Elite 플랜 무료</strong> 혜택을 받을 수 있습니다.</div>' +
@@ -2433,11 +2492,37 @@
         '<div style="font-weight:600;margin-bottom:10px;">5. AYILON에 파트너 코드 등록</div>' +
         '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">OKX에 파트너 코드 AYILON으로 가입한 후, AYILON 대시보드 → 구독 탭 → "파트너 등록" 버튼을 눌러 OKX 계정 이메일을 등록하면 Elite 플랜이 자동 활성화됩니다. (24시간 이내 처리)</div>' +
         '</div>' +
+        '</div>',
+      content_en: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">OKX Detailed Registration Guide</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">Last updated: 2026-05-31</p>' +
+        '<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:16px;margin-bottom:20px;font-size:13px;">💡 Sign up with partner code <span style="color:#22c55e;font-weight:600;font-family:monospace;">AYILON</span> to receive a <strong style="color:#fff;">free lifetime Elite plan</strong>.</div>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">1. Visit the OKX Official Website</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Go to okx.com. Make sure you are on the official domain. Beware of phishing sites.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">2. Sign Up → Enter Partner Code</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Click "Sign Up" → create an account with email or phone. On the registration screen, enter <span style="color:#fff;font-weight:600;background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:4px;font-family:monospace;">AYILON</span> in the "Referral Code" field.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">3. Email Verification & 2FA Setup</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">A verification code will be sent to your registered email. Enter the code to complete email verification. For security, set up Google Authenticator or SMS 2FA.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">4. KYC Identity Verification (Required)</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">KYC verification is required to generate API keys and trade. Go to Account Settings → Verification and upload your passport or ID. Verification is usually completed within minutes to a few hours.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">5. Register Partner Code on AYILON</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">After signing up on OKX with partner code AYILON, go to AYILON Dashboard → Subscription tab → click "Partner Registration" and enter your OKX account email. The Elite plan will be automatically activated within 24 hours.</div>' +
+        '</div>' +
         '</div>'
     },
     {
-      id: 4, title: 'AYILON 파트너 등록 방법 (OKX)', cat: 'tutorial', date: '2026-05-29',
+      id: 4, title: 'AYILON 파트너 등록 방법 (OKX)', title_en: 'How to Register as AYILON Partner (OKX)', cat: 'tutorial', date: '2026-05-29',
       desc: 'OKX 파트너 코드 AYILON을 사용하여 가입하면 평생 Elite 플랜을 무료로 받을 수 있습니다.',
+      desc_en: 'Sign up on OKX with partner code AYILON to receive a free lifetime Elite plan.',
       content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">AYILON 파트너 등록 방법</h2>' +
         '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">OKX 파트너 코드로 무료 Elite 플랜 받는 방법</p>' +
         '<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:20px;margin-bottom:24px;">' +
@@ -2465,11 +2550,40 @@
         '<li>24시간 이내 Elite 플랜 자동 활성화</li>' +
         '</ol>' +
         '</div>' +
+        '</div>',
+      content_en: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">How to Register as AYILON Partner</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">Get a free Elite plan with OKX partner code</p>' +
+        '<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:20px;margin-bottom:24px;">' +
+        '<div style="font-size:15px;font-weight:700;color:#22c55e;margin-bottom:8px;">Partner Benefits</div>' +
+        '<ul style="color:var(--gray-400);font-size:13px;line-height:2;list-style:none;padding:0;">' +
+        '<li>✅ Free lifetime Elite plan (worth $49/mo)</li>' +
+        '<li>✅ Up to 20% discount on OKX trading fees</li>' +
+        '<li>✅ Access to all 10 AYILON strategies</li>' +
+        '<li>✅ No renewal needed — permanent</li>' +
+        '</ul>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">Eligibility</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">You must enter partner (referral) code <span style="color:#fff;font-weight:700;background:rgba(255,255,255,0.12);padding:3px 10px;border-radius:5px;font-family:monospace;font-size:14px;">AYILON</span> when creating a new OKX account. Cannot be applied retroactively to existing accounts.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">Registration Steps</div>' +
+        '<ol style="color:var(--gray-400);font-size:13px;line-height:2;padding-left:18px;">' +
+        '<li>Enter referral code AYILON when signing up for OKX</li>' +
+        '<li>Complete KYC verification</li>' +
+        '<li>Go to AYILON Dashboard → Subscription tab</li>' +
+        '<li>Click "Get Elite with Partner Code" button</li>' +
+        '<li>Enter your OKX registration email and submit</li>' +
+        '<li>Elite plan automatically activated within 24 hours</li>' +
+        '</ol>' +
+        '</div>' +
         '</div>'
     },
     {
-      id: 5, title: 'USDT 결제 가이드', cat: 'tutorial', date: '2026-05-29',
+      id: 5, title: 'USDT 결제 가이드', title_en: 'USDT Payment Guide', cat: 'tutorial', date: '2026-05-29',
       desc: 'USDT TRC-20으로 구독 결제하는 방법을 안내합니다. OKX에서 출금하는 방법 포함.',
+      desc_en: 'How to pay for your subscription with USDT TRC-20. Includes withdrawal from OKX.',
       content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">USDT 결제 가이드</h2>' +
         '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">USDT TRC-20으로 구독 결제하는 방법</p>' +
         '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px;margin-bottom:20px;color:#fbbf24;font-size:13px;">⚠️ 반드시 <strong>TRC-20 네트워크</strong>로 송금하세요. ERC-20이나 BEP-20으로 보내면 영구적으로 분실됩니다.</div>' +
@@ -2486,11 +2600,29 @@
         '<div style="font-weight:600;margin-bottom:10px;">3. 자동 감지 대기</div>' +
         '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">송금 후 1–10분 이내에 시스템이 자동으로 결제를 감지합니다. 결제가 확인되면 즉시 구독이 활성화되고 이메일 알림이 발송됩니다. 10분 이상 지연 시 관리자에게 TXID와 함께 문의하세요.</div>' +
         '</div>' +
+        '</div>',
+      content_en: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">USDT Payment Guide</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">How to pay for your subscription with USDT TRC-20</p>' +
+        '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px;margin-bottom:20px;color:#fbbf24;font-size:13px;">⚠️ Always send via <strong>TRC-20 network</strong>. Sending via ERC-20 or BEP-20 will result in permanent loss.</div>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">1. Check Payment Amount</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Go to Dashboard → Subscription tab and click "Upgrade" for your desired plan. A <strong style="color:#fff;">unique payment amount</strong> will be shown (e.g. $29.37 USDT). You must send this exact amount for automatic detection.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">2. Withdraw USDT from OKX</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">OKX → Assets → Withdraw → Select USDT → Network: <span style="color:#fff;font-weight:600;">TRC20</span> → Enter the AYILON address shown on screen → Enter the exact amount and submit.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">3. Wait for Automatic Detection</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">The system automatically detects payments within 1–10 minutes. Once confirmed, your subscription activates immediately and an email notification is sent. If delayed over 10 minutes, contact support with your TXID.</div>' +
+        '</div>' +
         '</div>'
     },
     {
-      id: 6, title: 'API 키 발급 가이드', cat: 'tutorial', date: '2025-01-02',
+      id: 6, title: 'API 키 발급 가이드', title_en: 'API Key Setup Guide', cat: 'tutorial', date: '2025-01-02',
       desc: 'OKX에서 거래 전용 API 키를 발급하고 보안 설정하는 방법을 단계별로 안내합니다.',
+      desc_en: 'Step-by-step guide to generating and securing a trading-only API key on OKX.',
       content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">API 키 발급 및 보안 가이드</h2>' +
         '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">OKX 거래 전용 API 키 설정 방법</p>' +
         '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin-bottom:16px;">' +
@@ -2521,6 +2653,37 @@
         '<div style="font-weight:600;margin-bottom:10px;">AYILON에서 API 연결</div>' +
         '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">대시보드 → API 탭 → API Key, Secret Key, Passphrase 입력 → 저장. API 키는 암호화되어 Cloudflare KV에 저장됩니다. 연결 후 터미널 탭에서 계좌 잔고를 확인할 수 있습니다.</div>' +
         '</div>' +
+        '</div>',
+      content_en: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">API Key Setup & Security Guide</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">How to set up a trading-only API key on OKX</p>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin-bottom:16px;">' +
+        '<div style="font-weight:600;margin-bottom:12px;">API Key Security Checklist</div>' +
+        '<ul style="color:var(--gray-400);font-size:13px;line-height:2;list-style:none;padding:0;">' +
+        '<li>✅ Grant Trade permission only</li>' +
+        '<li>❌ Never grant Withdraw permission</li>' +
+        '<li>✅ Keep Passphrase stored safely</li>' +
+        '<li>✅ Copy and save API key immediately after creation</li>' +
+        '<li>✅ Delete unused API keys immediately</li>' +
+        '</ul>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">OKX → Account Settings → API Management</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Log in to OKX → Profile (top right) → Account Settings → Select "API Management" from the left menu → Click "Create API Key".</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">Required Settings</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">Purpose</td><td style="padding:8px 4px;">API Trading</td></tr>' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">Permissions</td><td style="padding:8px 4px;color:#22c55e;font-weight:600;">Trade only ✓ (Read optional)</td></tr>' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">Passphrase</td><td style="padding:8px 4px;">Recommend letters + numbers + symbols</td></tr>' +
+        '<tr><td style="padding:8px 4px;color:var(--gray-400);">IP Whitelist</td><td style="padding:8px 4px;">Leave blank or enter Cloudflare IP</td></tr>' +
+        '</table>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">Connect API on AYILON</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Dashboard → API tab → Enter API Key, Secret Key, Passphrase → Save. After connecting, you can check your account balance in the Terminal tab.</div>' +
+        '</div>' +
         '</div>'
     }
   ];
@@ -2528,10 +2691,15 @@
   var guideFilter = 'all';
   var guideSearch = '';
 
+  function getGuideLang() { return localStorage.getItem('ayilon_lang') || 'en'; }
+
   function renderGuide() {
+    var lang = getGuideLang();
     var filtered = GUIDE_ARTICLES.filter(function(a) {
+      var t = lang === 'ko' ? a.title : (a.title_en || a.title);
+      var d = lang === 'ko' ? a.desc  : (a.desc_en  || a.desc);
       var matchCat  = guideFilter === 'all' || a.cat === guideFilter;
-      var matchSrch = !guideSearch || a.title.toLowerCase().indexOf(guideSearch.toLowerCase()) !== -1 || a.desc.toLowerCase().indexOf(guideSearch.toLowerCase()) !== -1;
+      var matchSrch = !guideSearch || t.toLowerCase().indexOf(guideSearch.toLowerCase()) !== -1 || d.toLowerCase().indexOf(guideSearch.toLowerCase()) !== -1;
       return matchCat && matchSrch;
     });
     var catLabels = { notice: _t('db.guide.notice'), tutorial: _t('db.guide.tutorial'), faq: 'FAQ' };
@@ -2543,14 +2711,19 @@
       return;
     }
     grid.innerHTML = filtered.map(function(a) {
+      var lang2 = getGuideLang();
+      var title = lang2 === 'ko' ? a.title : (a.title_en || a.title);
+      var desc  = lang2 === 'ko' ? a.desc  : (a.desc_en  || a.desc);
       return '<div class="article-card" onclick="openArticle(' + a.id + ')">' +
         '<div class="article-cat ' + (catCls[a.cat] || '') + '">' + (catLabels[a.cat] || a.cat) + '</div>' +
-        '<div class="article-title">' + a.title + '</div>' +
-        '<div class="article-desc">' + a.desc + '</div>' +
+        '<div class="article-title">' + title + '</div>' +
+        '<div class="article-desc">' + desc + '</div>' +
         '<div class="article-date">' + a.date + '</div>' +
       '</div>';
     }).join('');
   }
+
+  window.__onLangChange = function() { renderGuide(); };
 
   function filterGuide(cat, btn) {
     guideFilter = cat;
@@ -2570,7 +2743,11 @@
     var modal = document.getElementById('guideArticleModal');
     var body  = document.getElementById('guideArticleBody');
     if (!modal || !body) return;
-    body.innerHTML = a.content || ('<h2>' + a.title + '</h2><p>' + a.desc + '</p>');
+    var lang = getGuideLang();
+    var content = lang === 'ko' ? a.content : (a.content_en || a.content);
+    var title   = lang === 'ko' ? a.title   : (a.title_en   || a.title);
+    var desc    = lang === 'ko' ? a.desc    : (a.desc_en    || a.desc);
+    body.innerHTML = content || ('<h2>' + title + '</h2><p>' + desc + '</p>');
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   }

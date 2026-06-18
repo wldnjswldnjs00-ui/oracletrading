@@ -1299,6 +1299,8 @@
 
     localStorage.setItem(LANG_KEY, lang);
 
+    if (typeof window.__onLangChange === 'function') window.__onLangChange(lang);
+
     /* re-render dynamically-generated pricing period note if on annual view */
     if (typeof window.setPeriod === 'function' && window.__currentPeriod) {
       window.setPeriod(window.__currentPeriod);
