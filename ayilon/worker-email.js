@@ -580,16 +580,18 @@ async function handleBotStatus(request, env) {
   const session = await requireSession(body, env, request);
   if (!session) return json({ running: false, logs: [], error: 'unauthorized' }, 401);
 
+  await initDB(env);
   const u = session.email;
-  const [config, logs, alert, pos, lastScan, marketData] = await Promise.all([
-    env.USERS_KV.get('bot:config:'               + u, { type: 'json' }),
-    env.USERS_KV.get('bot:logs:'                 + u, { type: 'json' }),
-    env.USERS_KV.get('bot:daily_loss_triggered:' + u, { type: 'json' }),
-    env.USERS_KV.get('bot:position_state:'       + u, { type: 'json' }),
-    env.USERS_KV.get('bot:last_scan:'            + u),
-    env.USERS_KV.get('bot:market_data:'          + u, { type: 'json' })
+  const [config, botStateRow] = await Promise.all([
+    env.USERS_KV.get('bot:config:' + u, { type: 'json' }),
+    getBotState(env, u)
   ]);
-  const _config = config || {}, _logs = logs || [], _pos = pos || {};
+  const _config   = config || {};
+  const _logs     = JSON.parse(botStateRow.logs || '[]');
+  const _pos      = JSON.parse(botStateRow.position_state || '{}');
+  const lastScan  = botStateRow.last_scan || null;
+  const alertRaw  = botStateRow.daily_loss_triggered || null;
+  const alert     = alertRaw ? JSON.parse(alertRaw) : null;
 
   // Funding rate — public endpoint, no auth
   let fundingRate = null;
@@ -623,7 +625,7 @@ async function handleBotStatus(request, env) {
       posSize:     _config.posSize     || 40,
       tradingPair: _config.tradingPair || 'BTC-USDT-SWAP'
     },
-    logs: _logs, alert, positions: _pos, positionSummary, lastScan, fundingRate, marketData
+    logs: _logs, alert, positions: _pos, positionSummary, lastScan, fundingRate, marketData: null
   });
 }
 
@@ -657,15 +659,16 @@ async function handleBotControl(request, env) {
     }
   }
   if (action === 'dismiss') {
-    await env.USERS_KV.delete('bot:daily_loss_triggered:' + session.email);
+    await upsertBotState(env, session.email, { daily_loss_triggered: null });
     return json({ ok: true });
   }
   if (action === 'resume') {
     config.running = true;
-    await env.USERS_KV.delete('bot:daily_loss_triggered:' + session.email);
-    const today = new Date().toDateString();
-    await env.USERS_KV.delete('bot:daily_loss:' + session.email + ':' + today);
-    await env.USERS_KV.delete('bot:peak_equity:' + session.email);
+    await upsertBotState(env, session.email, {
+      daily_loss: '{}',
+      daily_loss_triggered: null,
+      peak_equity: 0
+    });
   }
   // Retry KV put up to 3 times (rate limit can be transient)
   let putErr;
@@ -772,7 +775,68 @@ async function handleGetAccount(request, env) {
 // BOT TRADING LOGIC
 // ════════════════════════════════════════════════════════════
 
+// Module-level heartbeat map (replaces KV bot:hb:* throttling — no persistence needed)
+const _lastHb = new Map();
+
 const OKX_BASE = 'https://www.okx.com';
+
+// ── D1 HELPERS ────────────────────────────────────────────────
+
+async function initDB(env) {
+  if (!env.BOT_DB) return;
+  try {
+    await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS bot_state (
+      email TEXT PRIMARY KEY,
+      position_state TEXT DEFAULT '{}',
+      logs TEXT DEFAULT '[]',
+      peak_equity REAL DEFAULT 0,
+      daily_loss TEXT DEFAULT '{}',
+      daily_loss_triggered TEXT DEFAULT NULL,
+      last_scan TEXT DEFAULT ''
+    )`).run();
+    await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS entry_locks (
+      lock_key TEXT PRIMARY KEY,
+      expires_at INTEGER NOT NULL
+    )`).run();
+  } catch(e) {}
+}
+
+async function getBotState(env, email) {
+  if (!env.BOT_DB) return {};
+  try {
+    const row = await env.BOT_DB.prepare('SELECT * FROM bot_state WHERE email=?').bind(email).first();
+    return row || {};
+  } catch { return {}; }
+}
+
+async function upsertBotState(env, email, fields) {
+  if (!env.BOT_DB) return;
+  const keys = Object.keys(fields);
+  if (!keys.length) return;
+  const setClauses = keys.map(k => `${k}=?`).join(', ');
+  const values = keys.map(k => fields[k]);
+  await env.BOT_DB.prepare(
+    `INSERT INTO bot_state(email,${keys.join(',')}) VALUES(?${',?'.repeat(keys.length)})
+     ON CONFLICT(email) DO UPDATE SET ${setClauses}`
+  ).bind(email, ...values, ...values).run();
+}
+
+async function acquireEntryLock(env, lockKey) {
+  if (!env.BOT_DB) return true;
+  try {
+    const lock = await env.BOT_DB.prepare('SELECT expires_at FROM entry_locks WHERE lock_key=?').bind(lockKey).first();
+    if (lock && lock.expires_at > Date.now()) return false;
+    await env.BOT_DB.prepare('INSERT OR REPLACE INTO entry_locks(lock_key,expires_at) VALUES(?,?)').bind(lockKey, Date.now() + 60000).run();
+    return true;
+  } catch { return true; }
+}
+
+async function releaseEntryLock(env, lockKey) {
+  if (!env.BOT_DB) return;
+  try {
+    await env.BOT_DB.prepare('DELETE FROM entry_locks WHERE lock_key=?').bind(lockKey).run();
+  } catch {}
+}
 
 async function getCtVal(instId) {
   try {
@@ -797,6 +861,7 @@ async function getTicker(instId) {
 
 async function runBot(env) {
   if (!env.USERS_KV) return;
+  await initDB(env);
   try {
     const { keys } = await env.USERS_KV.list({ prefix: 'bot:config:' });
     for (const key of keys) {
@@ -813,12 +878,13 @@ async function runBot(env) {
         await runBotForUser(env, email, cfg, strat).catch(() => {});
       }
       _logBufs.delete(email);
-      // Flush all logs in one KV write per user per cron tick
+      // Flush all logs in one D1 write per user per cron tick
       if (logBuf.length > 0) {
         try {
-          const existing = await env.USERS_KV.get('bot:logs:' + email, { type: 'json' }) || [];
+          const existingState = await getBotState(env, email);
+          const existing = JSON.parse(existingState.logs || '[]');
           const merged = [...logBuf, ...existing].slice(0, 100);
-          await env.USERS_KV.put('bot:logs:' + email, JSON.stringify(merged));
+          await upsertBotState(env, email, { logs: JSON.stringify(merged) });
         } catch(e) {}
       }
     }
@@ -848,17 +914,27 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     // Fix: cap leverage at 50x regardless of user input
     const safeLeverage = Math.min(parseInt(leverage) || 20, 50);
 
-    await env.USERS_KV.put('bot:last_scan:' + email, new Date().toISOString());
+    // Load bot state from D1 once at start of tick
+    const botStateRow = await getBotState(env, email);
+    let ps = JSON.parse(botStateRow.position_state || '{}');
+    const psModifiedRef = { modified: false };
+
+    // Save last_scan to D1
+    await upsertBotState(env, email, { last_scan: new Date().toISOString() });
 
     // ── Daily loss check ──────────────────────────────────────
     if (lossLimitEnabled) {
-      const dl = await env.USERS_KV.get('bot:daily_loss:' + email + ':' + today, { type: 'json' }) || { pct: 0 };
+      const dlRaw = botStateRow.daily_loss || '{}';
+      const dlObj = JSON.parse(dlRaw);
+      const dl = (dlObj.date === today) ? dlObj : { pct: 0 };
       if (dl.pct >= lossLimitNorm) {
         cfg.running = false;
         await env.USERS_KV.put('bot:config:' + email, JSON.stringify(cfg));
-        await env.USERS_KV.put('bot:daily_loss_triggered:' + email, JSON.stringify({
-          date: today, loss: (dl.pct * 100).toFixed(2) + '%', triggeredAt: Date.now()
-        }));
+        await upsertBotState(env, email, {
+          daily_loss_triggered: JSON.stringify({
+            date: today, loss: (dl.pct * 100).toFixed(2) + '%', triggeredAt: Date.now()
+          })
+        });
         await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
           `Daily loss limit reached: ${(dl.pct * 100).toFixed(2)}%. Bot paused.`);
         return;
@@ -878,15 +954,15 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     // Track peak equity and halt bot if overall drawdown exceeds mddLimit (default 30%)
     const mddLimitRaw = parseFloat(cfg.mddLimit || 30);
     const mddLimit = mddLimitRaw > 1 ? mddLimitRaw / 100 : mddLimitRaw;
-    const peakData = await env.USERS_KV.get('bot:peak_equity:' + email, { type: 'json' });
-    if (!peakData || equity > peakData.peak) {
-      await env.USERS_KV.put('bot:peak_equity:' + email, JSON.stringify({ peak: equity, date: new Date().toISOString() }));
-    } else if (peakData.peak > 0 && (peakData.peak - equity) / peakData.peak >= mddLimit) {
+    const peakEquity = parseFloat(botStateRow.peak_equity || '0');
+    if (peakEquity === 0 || equity > peakEquity) {
+      await upsertBotState(env, email, { peak_equity: equity });
+    } else if (peakEquity > 0 && (peakEquity - equity) / peakEquity >= mddLimit) {
       cfg.running = false;
       await env.USERS_KV.put('bot:config:' + email, JSON.stringify(cfg));
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
-        `⚠️ Max drawdown ${(mddLimit*100).toFixed(0)}% reached ($${peakData.peak.toFixed(0)} → $${equity.toFixed(0)}). Bot stopped.`);
-      await botLog(env, email, `MDD limit ${(mddLimit*100).toFixed(0)}% triggered: $${peakData.peak.toFixed(0)} → $${equity.toFixed(0)} — bot stopped`);
+        `⚠️ Max drawdown ${(mddLimit*100).toFixed(0)}% reached ($${peakEquity.toFixed(0)} → $${equity.toFixed(0)}). Bot stopped.`);
+      await botLog(env, email, `MDD limit ${(mddLimit*100).toFixed(0)}% triggered: $${peakEquity.toFixed(0)} → $${equity.toFixed(0)} — bot stopped`);
       return;
     }
 
@@ -896,14 +972,16 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     // Detect whether account is in one-way mode (posSide='net') vs hedge mode (posSide='long'/'short')
     const isOneWayMode = openPos.some(p => p.posSide === 'net');
 
-    // ── Position state (loaded before checkSL to prevent race condition) ────
-    let ps = await env.USERS_KV.get('bot:position_state:' + email, { type: 'json' }) || {};
+    // ── Position state already loaded from D1 at start of tick ─
 
     // ── Stop loss / TP check ─────────────────────────────────
     const hadPosition = !!ps[stateKey]?.direction;
-    await checkSL(env, email, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demoMode, ps, stateKey, isOneWayMode);
-    // If loss-limit fired this tick and closed the position, skip new entries until next cron
-    if (hadPosition && !ps[stateKey]?.direction) return;
+    await checkSL(env, email, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demoMode, ps, stateKey, isOneWayMode, psModifiedRef);
+    // If loss-limit fired this tick and closed the position, flush state and skip new entries
+    if (hadPosition && !ps[stateKey]?.direction) {
+      if (psModifiedRef.modified) await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
+      return;
+    }
 
     // ── Fetch all candles in parallel ─────────────────────────
     const [candles1H, candles4H, candlesD, c5] = await Promise.all([
@@ -938,12 +1016,6 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     const levels    = mergeLevels(srLevels, volLevels);
     if (!levels.supports.length && !levels.resistances.length) return;
 
-    try {
-      await env.USERS_KV.put('bot:market_data:' + email, JSON.stringify({
-        price: currentPrice, trend: trend.dir, trendStrong: trend.strong, levels, updatedAt: Date.now()
-      }), { expirationTtl: 300 });
-    } catch {}
-
     // ── Sync position state with OKX ─────────────────────────
     if (ps[stateKey]?.direction) {
       const dir = ps[stateKey].direction;
@@ -958,7 +1030,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
         if (ps[stateKey].slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[stateKey].slAlgoId, demoMode);
         await botLog(env, email, `[${strategy}] Sync: cleared ${tradingPair} state — position closed externally`);
         delete ps[stateKey];
-        await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
+        psModifiedRef.modified = true;
       }
     }
     const state = ps[stateKey] || { entries: [], direction: null, takeProfit: null };
@@ -994,11 +1066,11 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
 
           if (newRemaining <= 0) {
             delete ps[stateKey];
-            await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
+            await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
             await botLog(env, email, `[${strategy}] TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} — position fully closed`);
           } else {
             ps[stateKey] = state;
-            await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
+            await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
             await botLog(env, email, `[${strategy}] TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | Rem:${newRemaining}cts`);
           }
         } else {
@@ -1061,11 +1133,11 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     }
     if (!signal) {
       // Heartbeat: log once per 5 min so user can confirm bot is alive
-      const hbKey = 'bot:hb:' + email + ':' + strategy;
-      const lastHb = parseInt(await env.USERS_KV.get(hbKey) || '0');
-      if (Date.now() - lastHb > 5 * 60 * 1000) {
+      const hbKey = email + ':' + strategy;
+      const lastHbTs = _lastHb.get(hbKey) || 0;
+      if (Date.now() - lastHbTs > 5 * 60 * 1000) {
         await botLog(env, email, `[${strategy}] Scan: $${currentPrice.toFixed(0)} — no entry signal`);
-        await env.USERS_KV.put(hbKey, String(Date.now()));
+        _lastHb.set(hbKey, Date.now());
       }
       return;
     }
@@ -1178,12 +1250,11 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
 
     // ── Entry lock: prevent duplicate orders from concurrent cron instances ──
     const lockKey = 'bot:entry_lock:' + email + ':' + tradingPair;
-    const existingLock = await env.USERS_KV.get(lockKey);
-    if (existingLock) {
+    const lockAcquired = await acquireEntryLock(env, lockKey);
+    if (!lockAcquired) {
       await botLog(env, email, `Skip: entry lock active — concurrent execution prevented`);
       return;
     }
-    await env.USERS_KV.put(lockKey, '1', { expirationTtl: 60 });
 
     // ── Place market order ────────────────────────────────────
     // Try hedge mode first, fall back to one-way (net) if account is in one-way mode
@@ -1209,7 +1280,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     if (orderRes?.data?.[0]?.ordId) {
       const { price: fillPrice, filledSz, confirmed: fillConfirmed } = await queryFillPrice(apiKey, apiSecret, apiPassphrase, tradingPair, orderRes.data[0].ordId, currentPrice, szContracts, demoMode);
       if (!fillConfirmed) {
-        await env.USERS_KV.delete(lockKey).catch(() => {});
+        await releaseEntryLock(env, lockKey);
         await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
           instId: tradingPair, mgnMode: 'cross',
           posSide: isOneWayMode ? 'net' : (signal.type === 'long' ? 'long' : 'short')
@@ -1219,7 +1290,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       }
       // Partial fill guard: if less than 90% filled, don't track — state mismatch risk
       if (filledSz < szContracts * 0.90) {
-        await env.USERS_KV.delete(lockKey).catch(() => {});
+        await releaseEntryLock(env, lockKey);
         await botLog(env, email, `Partial fill: ${filledSz}/${szContracts} contracts — skipping state update`);
         return;
       }
@@ -1256,17 +1327,17 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
 
       ps[stateKey] = state;
       try {
-        await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
-        await env.USERS_KV.delete(lockKey).catch(() => {}); // release lock only after state saved
-      } catch(kvErr) {
-        // If KV write fails, cancel TP/SL algos AND close the position to prevent an orphan
+        await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
+        await releaseEntryLock(env, lockKey); // release lock only after state saved
+      } catch(dbErr) {
+        // If D1 write fails, cancel TP/SL algos AND close the position to prevent an orphan
         if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
         if (state.slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.slAlgoId, demoMode);
         await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
           instId: tradingPair, mgnMode: 'cross',
           posSide: isOneWayMode ? 'net' : (signal.type === 'long' ? 'long' : 'short')
         }, demoMode);
-        await botLog(env, email, `[${strategy}] KV write failed — position closed to prevent orphan: ${kvErr.message}`);
+        await botLog(env, email, `[${strategy}] D1 write failed — position closed to prevent orphan: ${dbErr.message}`);
         return;
       }
 
@@ -1283,13 +1354,18 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       await botLog(env, email, `Order FAILED [${errCode}]: ${signal.type.toUpperCase()} @ ${currentPrice} — ${errMsg}`);
     }
 
+    // Flush position state to D1 once if modified during this tick (not already written inline)
+    if (psModifiedRef.modified) {
+      await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
+    }
+
   } catch(e) {
     await botLog(env, email, 'Bot error: ' + e.message);
   }
 }
 
 // ── STOP LOSS / TP CHECK ──────────────────────────────────────
-async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demo, ps, stateKey, isOneWayMode = false) {
+async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demo, ps, stateKey, isOneWayMode = false, psModifiedRef = { modified: false }) {
   const actualKey = stateKey || pair;
   const state = ps[actualKey];
   if (!state?.direction) return;
@@ -1310,7 +1386,6 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
       if (tpHit) {
         const totalSz       = state.entries.reduce((sum, e) => sum + parseInt(e.sz), 0);
         const halfContracts = Math.max(1, Math.floor(totalSz / 2));
-        const avgEntry      = state.entries.reduce((sum, e) => sum + e.price * parseInt(e.sz), 0) / totalSz;
 
         const tpCloseRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
           instId: pair, tdMode: 'cross',
@@ -1335,7 +1410,7 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
         state.tpAlgoId           = null;
         state.slAlgoId           = null;
         ps[actualKey] = state;
-        await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
+        psModifiedRef.modified = true;
         await botLog(env, email, `TP hit @ ${price} — 50% closed | trailing 10% active`);
         return;
       }
@@ -1348,7 +1423,11 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
 
   const floatPnl     = openPos.reduce((s, p) => s + parseFloat(p.upl || '0'), 0);
   const floatLossPct = floatPnl < 0 ? Math.abs(floatPnl) / (equity || 1) : 0;
-  const dl           = await env.USERS_KV.get('bot:daily_loss:' + email + ':' + today, { type: 'json' }) || { pct: 0 };
+  // Load daily_loss from D1 (passed via the bot state row — re-read for freshness)
+  const dlStateRow   = await getBotState(env, email);
+  const dlRaw        = dlStateRow.daily_loss || '{}';
+  const dlObj        = JSON.parse(dlRaw);
+  const dl           = (dlObj.date === today) ? dlObj : { date: today, pct: 0 };
   const totalLossPct = (dl.pct || 0) + floatLossPct;
 
   if (totalLossPct < lossLimitNorm) return;
@@ -1366,9 +1445,9 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
   if (state.slAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.slAlgoId, demo);
 
   dl.pct = totalLossPct;
-  await env.USERS_KV.put('bot:daily_loss:' + email + ':' + today, JSON.stringify(dl), { expirationTtl: 86400 });
+  await upsertBotState(env, email, { daily_loss: JSON.stringify({ date: today, pct: totalLossPct }) });
   delete ps[actualKey];
-  await env.USERS_KV.put('bot:position_state:' + email, JSON.stringify(ps));
+  psModifiedRef.modified = true;
   await botLog(env, email, `Loss limit ${(totalLossPct*100).toFixed(2)}% reached (float: ${(floatLossPct*100).toFixed(2)}%) — position closed`);
 }
 
@@ -2159,11 +2238,13 @@ async function handleAdminUserDetail(request, env) {
   const user = await env.USERS_KV.get('user:' + targetEmail.toLowerCase(), { type: 'json' });
   if (!user) return json({ error: 'user_not_found' }, 404);
 
-  const [botConfig, botLogs, positions] = await Promise.all([
-    env.USERS_KV.get('bot:config:'         + targetEmail.toLowerCase(), { type: 'json' }),
-    env.USERS_KV.get('bot:logs:'           + targetEmail.toLowerCase(), { type: 'json' }),
-    env.USERS_KV.get('bot:position_state:' + targetEmail.toLowerCase(), { type: 'json' })
+  const targetEmailLower = targetEmail.toLowerCase();
+  const [botConfig, adminBotState] = await Promise.all([
+    env.USERS_KV.get('bot:config:' + targetEmailLower, { type: 'json' }),
+    getBotState(env, targetEmailLower)
   ]);
+  const botLogs  = JSON.parse(adminBotState.logs || '[]');
+  const positions = JSON.parse(adminBotState.position_state || '{}');
 
   let config = botConfig ? { ...botConfig } : null;
   if (config?.apiKey)        config.apiKey        = '••••' + config.apiKey.slice(-4);
@@ -2199,14 +2280,17 @@ async function handleDeleteAccount(request, env) {
   const dels = [
     env.USERS_KV.delete('user:' + email),
     env.USERS_KV.delete('bot:config:' + email),
-    env.USERS_KV.delete('bot:logs:' + email),
-    env.USERS_KV.delete('bot:position_state:' + email),
-    env.USERS_KV.delete('bot:peak_equity:' + email),
-    env.USERS_KV.delete('bot:daily_loss_triggered:' + email),
   ];
   if (body.sessionToken) dels.push(env.USERS_KV.delete('session:' + body.sessionToken));
   if (user?.username)    dels.push(env.USERS_KV.delete('username:' + user.username.toLowerCase()));
   await Promise.all(dels);
+  // Delete D1 bot_state and entry_locks rows
+  if (env.BOT_DB) {
+    try {
+      await env.BOT_DB.prepare('DELETE FROM bot_state WHERE email=?').bind(email).run();
+      await env.BOT_DB.prepare('DELETE FROM entry_locks WHERE lock_key LIKE ?').bind('bot:entry_lock:' + email + ':%').run();
+    } catch(e) {}
+  }
   return json({ ok: true });
 }
 
@@ -2220,13 +2304,13 @@ async function botLog(env, email, msg) {
     buf.unshift({ time: new Date().toISOString(), msg });
     return;
   }
-  // Fallback: direct KV write (used outside cron context)
-  if (!env.USERS_KV) return;
+  // Fallback: direct D1 write (used outside cron context)
   try {
-    const logs = await env.USERS_KV.get('bot:logs:' + email, { type: 'json' }) || [];
+    const stateRow = await getBotState(env, email);
+    const logs = JSON.parse(stateRow.logs || '[]');
     logs.unshift({ time: new Date().toISOString(), msg });
     if (logs.length > 100) logs.splice(100);
-    await env.USERS_KV.put('bot:logs:' + email, JSON.stringify(logs));
+    await upsertBotState(env, email, { logs: JSON.stringify(logs) });
   } catch(e) {}
 }
 
