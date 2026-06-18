@@ -947,16 +947,14 @@ async function runBotForUser(env, email, cfg) {
       const frData = await frRes.json();
       if (!frData?.data?.[0]) throw new Error('empty funding rate response');
       capturedFR = parseFloat(frData.data[0].fundingRate);
-      // For all strategies except funding_rate: skip if rate is extreme
-      if (strategy !== 'funding_rate' && Math.abs(capturedFR) > 0.001) {
-        await botLog(env, email, `Skip: funding rate ${(capturedFR * 100).toFixed(4)}%/8h > 0.1% — no new entries`);
+      // Skip only if funding rate is truly extreme (> 0.3%/8h)
+      if (strategy !== 'funding_rate' && Math.abs(capturedFR) > 0.003) {
+        await botLog(env, email, `Skip: funding rate ${(capturedFR * 100).toFixed(4)}%/8h > 0.3% — no new entries`);
         return;
       }
     } catch(frErr) {
-      if (strategy !== 'funding_rate') {
-        await botLog(env, email, `Skip: could not verify funding rate (${frErr.message}) — no new entries`);
-        return;
-      }
+      // Don't block on funding rate fetch failure — log and continue
+      await botLog(env, email, `Warn: could not fetch funding rate (${frErr.message}) — proceeding`);
     }
 
     // ── Plan-based strategy gate ──────────────────────────────
@@ -992,7 +990,7 @@ async function runBotForUser(env, email, cfg) {
     if (strategy !== 'funding_rate') {
       if (trend.dir === 'up'   && signal.type === 'short') return;
       if (trend.dir === 'down' && signal.type === 'long')  return;
-      if (!trend.strong && signal.grade !== 'S') return;
+      if (!trend.strong && signal.grade === 'B') return;
     }
 
     // ── 1H confirmation for SHORT ─────────────────────────────

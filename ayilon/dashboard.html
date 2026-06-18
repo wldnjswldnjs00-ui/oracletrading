@@ -1016,6 +1016,14 @@
   </div>
 </div>
 
+<!-- Guide Article Modal -->
+<div class="modal-overlay" id="guideArticleModal" style="display:none;align-items:flex-start;padding-top:40px;" onclick="if(event.target===this)closeGuideArticle()">
+  <div class="modal" style="max-width:600px;max-height:80vh;overflow-y:auto;position:relative;">
+    <button onclick="closeGuideArticle()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">×</button>
+    <div id="guideArticleBody" style="padding-right:8px;"></div>
+  </div>
+</div>
+
 <!-- 2FA Modal -->
 <div class="modal-overlay" id="twoFaModal">
   <div class="modal">
@@ -1291,84 +1299,86 @@
     return '<span class="' + cls + '">' + sign + fmtNum(v, 4) + ' USDT</span>';
   }
 
+  function _t(k) { return (window.__t ? window.__t(k) : k); }
+
   async function loadTerminalPositions() {
     var el = document.getElementById('term-positions-content');
     if (!el) return;
     var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
-    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">API 키를 연결하면 포지션이 표시됩니다</div>'; return; }
-    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">불러오는 중...</div>';
+    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.term.no_api_pos') + '</div>'; return; }
+    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.loading') + '</div>';
     try {
       var res  = await fetch(WORKER_URL + '/get-positions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) });
       var data = await res.json();
       var rows = (data.positions || []).filter(function(p){ return parseFloat(p.pos || 0) !== 0; });
-      if (!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">열린 포지션이 없습니다</div>'; return; }
-      el.innerHTML = '<table class="term-table"><thead><tr><th>심볼</th><th>방향</th><th>수량</th><th>진입가</th><th>현재가</th><th>미실현 손익</th><th>ROE</th></tr></thead><tbody>' +
+      if (!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.term.no_positions') + '</div>'; return; }
+      el.innerHTML = '<table class="term-table"><thead><tr><th>' + _t('db.term.symbol') + '</th><th>' + _t('db.term.direction') + '</th><th>' + _t('db.term.qty') + '</th><th>' + _t('db.term.entry_price') + '</th><th>' + _t('db.term.mark_price') + '</th><th>' + _t('db.term.unreal_pnl') + '</th><th>' + _t('db.term.roe') + '</th></tr></thead><tbody>' +
         rows.map(function(p) {
           var side = p.posSide === 'long' ? '<span class="pos-side-long">LONG</span>' : '<span class="pos-side-short">SHORT</span>';
           var roe  = parseFloat(p.upl || 0) / (parseFloat(p.margin || 1)) * 100;
           return '<tr><td>' + (p.instId || '—') + '</td><td>' + side + '</td><td>' + fmtNum(p.pos, 4) + '</td><td>$' + fmtNum(p.avgPx, 2) + '</td><td>$' + fmtNum(p.markPx, 2) + '</td><td>' + fmtPnl(p.upl) + '</td><td><span class="' + (roe >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg') + '">' + (roe >= 0 ? '+' : '') + fmtNum(roe, 2) + '%</span></td></tr>';
         }).join('') + '</tbody></table>';
-    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">불러오기 실패: ' + e.message + '</div>'; }
+    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">' + _t('db.term.load_fail') + ': ' + e.message + '</div>'; }
   }
 
   async function loadTerminalOrders() {
     var el = document.getElementById('term-orders-content');
     if (!el) return;
     var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
-    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">API 키를 연결하면 주문이 표시됩니다</div>'; return; }
-    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">불러오는 중...</div>';
+    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.term.no_api_orders') + '</div>'; return; }
+    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.loading') + '</div>';
     try {
       var res  = await fetch(WORKER_URL + '/get-orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) });
       var data = await res.json();
       var rows = data.orders || [];
-      if (!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">대기 중인 주문이 없습니다</div>'; return; }
-      el.innerHTML = '<table class="term-table"><thead><tr><th>심볼</th><th>방향</th><th>유형</th><th>수량</th><th>가격</th><th>상태</th></tr></thead><tbody>' +
+      if (!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.term.no_orders') + '</div>'; return; }
+      el.innerHTML = '<table class="term-table"><thead><tr><th>' + _t('db.term.symbol') + '</th><th>' + _t('db.term.direction') + '</th><th>' + _t('db.term.ord_type') + '</th><th>' + _t('db.term.qty') + '</th><th>' + _t('db.term.price') + '</th><th>' + _t('db.term.status') + '</th></tr></thead><tbody>' +
         rows.map(function(o) {
           var side = o.side === 'buy' ? '<span class="pos-side-long">BUY</span>' : '<span class="pos-side-short">SELL</span>';
           return '<tr><td>' + (o.instId||'—') + '</td><td>' + side + '</td><td>' + (o.ordType||'—') + '</td><td>' + fmtNum(o.sz,4) + '</td><td>$' + fmtNum(o.px,2) + '</td><td>' + (o.state||'—') + '</td></tr>';
         }).join('') + '</tbody></table>';
-    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">불러오기 실패</div>'; }
+    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">' + _t('db.term.load_fail') + '</div>'; }
   }
 
   async function loadTerminalHistory() {
     var el = document.getElementById('term-history-content');
     if (!el) return;
     var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
-    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">API 키를 연결하면 거래내역이 표시됩니다</div>'; return; }
-    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">불러오는 중...</div>';
+    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.term.no_api_history') + '</div>'; return; }
+    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.loading') + '</div>';
     try {
       var res  = await fetch(WORKER_URL + '/get-history', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) });
       var data = await res.json();
       var rows = data.history || [];
-      if (!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">거래 내역이 없습니다</div>'; return; }
-      el.innerHTML = '<table class="term-table"><thead><tr><th>시간</th><th>심볼</th><th>방향</th><th>수량</th><th>체결가</th><th>수수료</th></tr></thead><tbody>' +
+      if (!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.term.no_history') + '</div>'; return; }
+      el.innerHTML = '<table class="term-table"><thead><tr><th>' + _t('db.term.time') + '</th><th>' + _t('db.term.symbol') + '</th><th>' + _t('db.term.direction') + '</th><th>' + _t('db.term.qty') + '</th><th>' + _t('db.term.entry_price') + '</th><th>' + _t('db.term.fee') + '</th></tr></thead><tbody>' +
         rows.map(function(h) {
           var side = h.side === 'buy' ? '<span class="pos-side-long">BUY</span>' : '<span class="pos-side-short">SELL</span>';
           var ts   = h.ts ? new Date(parseInt(h.ts)).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
           return '<tr><td style="color:var(--gray-400);font-size:11px;">' + ts + '</td><td>' + (h.instId||'—') + '</td><td>' + side + '</td><td>' + fmtNum(h.fillSz,4) + '</td><td>$' + fmtNum(h.fillPx,2) + '</td><td>' + fmtNum(h.fee,6) + '</td></tr>';
         }).join('') + '</tbody></table>';
-    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">불러오기 실패</div>'; }
+    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">' + _t('db.term.load_fail') + '</div>'; }
   }
 
   async function loadTerminalAccount() {
     var el = document.getElementById('term-account-content');
     if (!el) return;
     var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
-    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">API 키를 연결하면 계좌 정보가 표시됩니다</div>'; return; }
-    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">불러오는 중...</div>';
+    if (!apiData.apiKey) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.term.no_api_account') + '</div>'; return; }
+    el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.loading') + '</div>';
     try {
       var res  = await fetch(WORKER_URL + '/get-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) });
       var data = await res.json();
       var b    = data.balance;
-      if (!b) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">계좌 정보를 불러올 수 없습니다</div>'; return; }
+      if (!b) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.term.account_error') + '</div>'; return; }
       var pnlCls = b.unrealPnl >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg';
       el.innerHTML = '<div class="acct-grid">' +
-        '<div class="acct-card"><div class="acct-card-label">총 자산 (USDT)</div><div class="acct-card-value">$' + fmtNum(b.equity, 2) + '</div></div>' +
-        '<div class="acct-card"><div class="acct-card-label">가용 자산</div><div class="acct-card-value">$' + fmtNum(b.available, 2) + '</div></div>' +
-        '<div class="acct-card"><div class="acct-card-label">미실현 손익</div><div class="acct-card-value ' + pnlCls + '">' + (b.unrealPnl >= 0 ? '+' : '') + '$' + fmtNum(b.unrealPnl, 4) + '</div></div>' +
-        '<div class="acct-card"><div class="acct-card-label">마진 비율</div><div class="acct-card-value">' + fmtNum(b.mgnRatio * 100, 2) + '%</div></div>' +
+        '<div class="acct-card"><div class="acct-card-label">' + _t('db.term.total_equity') + '</div><div class="acct-card-value">$' + fmtNum(b.equity, 2) + '</div></div>' +
+        '<div class="acct-card"><div class="acct-card-label">' + _t('db.term.available') + '</div><div class="acct-card-value">$' + fmtNum(b.available, 2) + '</div></div>' +
+        '<div class="acct-card"><div class="acct-card-label">' + _t('db.term.unreal_pnl') + '</div><div class="acct-card-value ' + pnlCls + '">' + (b.unrealPnl >= 0 ? '+' : '') + '$' + fmtNum(b.unrealPnl, 4) + '</div></div>' +
+        '<div class="acct-card"><div class="acct-card-label">' + _t('db.term.margin_ratio') + '</div><div class="acct-card-value">' + fmtNum(b.mgnRatio * 100, 2) + '%</div></div>' +
         '</div>';
-    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">불러오기 실패</div>'; }
+    } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">' + _t('db.term.load_fail') + '</div>'; }
   }
 
   /* ════════════════════════════════════════
@@ -2060,27 +2070,184 @@
   var GUIDE_ARTICLES = [
     {
       id: 1, title: 'AYILON Trading 시작하기', cat: 'tutorial', date: '2025-01-01',
-      desc: 'AYILON 플랫폼 사용법을 처음부터 단계별로 안내합니다. 계정 생성부터 첫 봇 실행까지.'
+      desc: 'AYILON 플랫폼 사용법을 처음부터 단계별로 안내합니다. 계정 생성부터 첫 봇 실행까지.',
+      content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:20px;">AYILON Trading 시작하기</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;">계정 생성부터 첫 번째 매매 봇 실행까지 전체 과정을 단계별로 안내합니다.</p>' +
+        '<div style="display:flex;flex-direction:column;gap:20px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 1</div>' +
+        '<div style="font-weight:600;margin-bottom:8px;">회원가입 및 이메일 인증</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">우측 상단 "시작하기" 버튼을 클릭하여 이메일, 사용자명, 비밀번호로 계정을 생성하세요. 가입 후 이메일로 6자리 인증 코드가 전송됩니다. 코드를 입력하면 계정이 활성화됩니다.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 2</div>' +
+        '<div style="font-weight:600;margin-bottom:8px;">OKX 계정 생성 및 레퍼럴 코드 입력</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">OKX 거래소에 가입할 때 반드시 파트너 코드 <span style="color:#fff;font-weight:600;background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:4px;font-family:monospace;">AYILON</span>을 입력하세요. 이 코드로 가입하면 <strong style="color:#fff;">평생 Elite 플랜 무료</strong> 혜택을 받을 수 있습니다. OKX 가입 후 KYC 인증을 완료해야 API 키 발급이 가능합니다.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 3</div>' +
+        '<div style="font-weight:600;margin-bottom:8px;">OKX API 키 발급 및 연결</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">OKX 웹사이트 → 계정 설정 → API 관리에서 API 키를 생성하세요. 권한: <span style="color:#fff;">거래(Trade)</span>만 체크, 출금 권한은 절대 주지 마세요. 발급받은 API Key, Secret Key, Passphrase를 대시보드 → API 탭에 입력하고 저장하세요.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 4</div>' +
+        '<div style="font-weight:600;margin-bottom:8px;">구독 플랜 선택</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">대시보드 → 구독 탭에서 원하는 플랜을 선택하세요. OKX 파트너 코드 AYILON으로 가입했다면 Elite 플랜을 무료로 받을 수 있습니다. 결제는 USDT TRC-20으로 진행됩니다.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 5</div>' +
+        '<div style="font-weight:600;margin-bottom:8px;">봇 설정 및 시작</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">대시보드 → 봇 탭에서 전략을 선택하세요. 레버리지(추천: 5–10x), 포지션 크기(추천: 10–20%), 리스크(추천: 1–2%)를 설정하고 "봇 시작" 버튼을 누르세요. 봇은 1분마다 자동으로 시장을 분석하고 조건이 맞으면 자동으로 주문합니다.</div>' +
+        '</div>' +
+        '</div>'
     },
     {
       id: 2, title: '공지사항: OKX API 발급 가이드', cat: 'notice', date: '2026-05-31',
-      desc: 'OKX에서 API 키를 발급하는 방법과 AYILON에 연결하는 방법을 안내합니다.'
+      desc: 'OKX에서 API 키를 발급하는 방법과 AYILON에 연결하는 방법을 안내합니다.',
+      content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">OKX API 키 발급 가이드</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">최종 업데이트: 2026-05-31</p>' +
+        '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px;margin-bottom:20px;color:#fbbf24;font-size:13px;">⚠️ API 키에 <strong>출금(Withdraw) 권한은 절대 부여하지 마세요.</strong> 거래(Trade) 권한만 설정해야 안전합니다.</div>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">1. OKX 로그인 후 오른쪽 상단 프로필 아이콘 클릭</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">OKX 웹사이트(okx.com)에 로그인한 후 우측 상단의 프로필 아이콘을 클릭합니다.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">2. 계정 설정 → API 관리 이동</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">"계정 설정(Account Settings)" → "API 관리(API Management)" 메뉴로 이동합니다. "API 키 생성(Create API Key)" 버튼을 클릭합니다.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">3. API 키 설정값</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;margin-bottom:12px;">아래와 같이 설정하세요:</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">API 이름</td><td style="padding:8px 4px;">AYILON (구분하기 쉬운 이름)</td></tr>' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">Passphrase</td><td style="padding:8px 4px;">기억하기 쉬운 비밀번호 설정 (저장 필수)</td></tr>' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">권한</td><td style="padding:8px 4px;color:#22c55e;font-weight:600;">거래(Trade) 만 체크 ✓</td></tr>' +
+        '<tr><td style="padding:8px 4px;color:var(--gray-400);">IP 제한</td><td style="padding:8px 4px;">비워두기 (필요 시 설정)</td></tr>' +
+        '</table>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">4. AYILON에 연결</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">생성된 API Key, Secret Key, Passphrase를 복사하여 AYILON 대시보드 → API 탭에 붙여넣고 저장을 누르면 연결이 완료됩니다. API 키는 생성 시에만 확인 가능하니 반드시 저장해두세요.</div>' +
+        '</div>' +
+        '</div>'
     },
     {
       id: 3, title: '공지사항: OKX 가입 상세 가이드', cat: 'notice', date: '2026-05-31',
-      desc: 'OKX 거래소에 가입하는 방법을 단계별로 상세히 안내합니다. KYC 인증 포함.'
+      desc: 'OKX 거래소에 가입하는 방법을 단계별로 상세히 안내합니다. KYC 인증 포함.',
+      content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">OKX 가입 상세 가이드</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">최종 업데이트: 2026-05-31</p>' +
+        '<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:16px;margin-bottom:20px;font-size:13px;">💡 파트너 코드 <span style="color:#22c55e;font-weight:600;font-family:monospace;">AYILON</span>으로 가입하면 <strong style="color:#fff;">평생 Elite 플랜 무료</strong> 혜택을 받을 수 있습니다.</div>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">1. OKX 공식 사이트 접속</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">okx.com에 접속합니다. 반드시 공식 도메인인지 확인하세요. 피싱 사이트에 주의하세요.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">2. 회원가입 → 파트너 코드 입력</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">"가입하기" 버튼 클릭 → 이메일 또는 전화번호로 계정 생성. 가입 화면에서 "추천 코드(Referral Code)" 입력란에 <span style="color:#fff;font-weight:600;background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:4px;font-family:monospace;">AYILON</span>을 반드시 입력하세요.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">3. 이메일 인증 및 2FA 설정</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">가입 시 입력한 이메일로 인증 코드가 전송됩니다. 코드를 입력하여 이메일 인증을 완료하세요. 보안을 위해 Google OTP 또는 문자 인증(2FA)을 반드시 설정하세요.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">4. KYC 신원 인증 (필수)</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">API 키 발급 및 거래를 하려면 KYC 인증이 필요합니다. 계정 설정 → 인증에서 여권 또는 주민등록증을 업로드하세요. 인증은 보통 수 분~수 시간 이내에 완료됩니다.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">5. AYILON에 파트너 코드 등록</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">OKX에 파트너 코드 AYILON으로 가입한 후, AYILON 대시보드 → 구독 탭 → "파트너 등록" 버튼을 눌러 OKX 계정 이메일을 등록하면 Elite 플랜이 자동 활성화됩니다. (24시간 이내 처리)</div>' +
+        '</div>' +
+        '</div>'
     },
     {
       id: 4, title: 'AYILON 파트너 등록 방법 (OKX)', cat: 'tutorial', date: '2026-05-29',
-      desc: 'OKX 파트너 코드 AYILON을 사용하여 가입하면 평생 Elite 플랜을 무료로 받을 수 있습니다.'
+      desc: 'OKX 파트너 코드 AYILON을 사용하여 가입하면 평생 Elite 플랜을 무료로 받을 수 있습니다.',
+      content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">AYILON 파트너 등록 방법</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">OKX 파트너 코드로 무료 Elite 플랜 받는 방법</p>' +
+        '<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:20px;margin-bottom:24px;">' +
+        '<div style="font-size:15px;font-weight:700;color:#22c55e;margin-bottom:8px;">파트너 혜택</div>' +
+        '<ul style="color:var(--gray-400);font-size:13px;line-height:2;list-style:none;padding:0;">' +
+        '<li>✅ 평생 Elite 플랜 무료 (월 $49 상당)</li>' +
+        '<li>✅ OKX 거래 수수료 최대 20% 할인</li>' +
+        '<li>✅ AYILON 전략 10개 모두 사용 가능</li>' +
+        '<li>✅ 구독 갱신 불필요 — 영구 적용</li>' +
+        '</ul>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">조건</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">OKX에 신규 가입 시 파트너(추천) 코드 <span style="color:#fff;font-weight:700;background:rgba(255,255,255,0.12);padding:3px 10px;border-radius:5px;font-family:monospace;font-size:14px;">AYILON</span>을 입력해야 합니다. 이미 가입된 계정에는 소급 적용이 불가능합니다.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">등록 절차</div>' +
+        '<ol style="color:var(--gray-400);font-size:13px;line-height:2;padding-left:18px;">' +
+        '<li>OKX 가입 시 추천 코드 AYILON 입력</li>' +
+        '<li>KYC 인증 완료</li>' +
+        '<li>AYILON 대시보드 → 구독 탭 접속</li>' +
+        '<li>"파트너 코드로 Elite 받기" 버튼 클릭</li>' +
+        '<li>OKX 가입 이메일 주소 입력 및 제출</li>' +
+        '<li>24시간 이내 Elite 플랜 자동 활성화</li>' +
+        '</ol>' +
+        '</div>' +
+        '</div>'
     },
     {
       id: 5, title: 'USDT 결제 가이드', cat: 'tutorial', date: '2026-05-29',
-      desc: 'USDT TRC-20으로 구독 결제하는 방법을 안내합니다. OKX에서 출금하는 방법 포함.'
+      desc: 'USDT TRC-20으로 구독 결제하는 방법을 안내합니다. OKX에서 출금하는 방법 포함.',
+      content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">USDT 결제 가이드</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">USDT TRC-20으로 구독 결제하는 방법</p>' +
+        '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px;margin-bottom:20px;color:#fbbf24;font-size:13px;">⚠️ 반드시 <strong>TRC-20 네트워크</strong>로 송금하세요. ERC-20이나 BEP-20으로 보내면 영구적으로 분실됩니다.</div>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">1. 결제 금액 확인</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">대시보드 → 구독 탭에서 원하는 플랜의 "업그레이드" 버튼을 클릭하면, <strong style="color:#fff;">고유한 결제 금액</strong>이 표시됩니다. 예: $29.37 USDT. 이 정확한 금액을 보내야만 자동으로 인식됩니다.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">2. OKX에서 USDT 출금</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">OKX → 자산 → 출금 → USDT 선택 → 네트워크: <span style="color:#fff;font-weight:600;">TRC20</span> 선택 → 화면에 표시된 AYILON 주소를 입력 → 정확한 금액 입력 후 출금 신청.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">3. 자동 감지 대기</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">송금 후 1–10분 이내에 시스템이 자동으로 결제를 감지합니다. 결제가 확인되면 즉시 구독이 활성화되고 이메일 알림이 발송됩니다. 10분 이상 지연 시 관리자에게 TXID와 함께 문의하세요.</div>' +
+        '</div>' +
+        '</div>'
     },
     {
       id: 6, title: 'API 키 발급 가이드', cat: 'tutorial', date: '2025-01-02',
-      desc: 'OKX에서 거래 전용 API 키를 발급하고 보안 설정하는 방법을 단계별로 안내합니다.'
+      desc: 'OKX에서 거래 전용 API 키를 발급하고 보안 설정하는 방법을 단계별로 안내합니다.',
+      content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">API 키 발급 및 보안 가이드</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">OKX 거래 전용 API 키 설정 방법</p>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin-bottom:16px;">' +
+        '<div style="font-weight:600;margin-bottom:12px;">API 키 보안 체크리스트</div>' +
+        '<ul style="color:var(--gray-400);font-size:13px;line-height:2;list-style:none;padding:0;">' +
+        '<li>✅ 거래(Trade) 권한만 부여</li>' +
+        '<li>❌ 출금(Withdraw) 권한 절대 금지</li>' +
+        '<li>✅ Passphrase는 별도로 안전하게 보관</li>' +
+        '<li>✅ API 키는 생성 즉시 복사해서 저장</li>' +
+        '<li>✅ 이미 사용하지 않는 API 키는 즉시 삭제</li>' +
+        '</ul>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">OKX → 계정 설정 → API 관리</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">OKX 로그인 → 우측 상단 프로필 → 계정 설정 → 좌측 메뉴에서 "API 관리" 선택 → "API 키 생성" 클릭.</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">필수 설정값</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">목적</td><td style="padding:8px 4px;">거래용 (API Trading)</td></tr>' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">권한</td><td style="padding:8px 4px;color:#22c55e;font-weight:600;">Trade 만 ✓ (Read 선택 가능)</td></tr>' +
+        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">Passphrase</td><td style="padding:8px 4px;">영문+숫자+특수문자 조합 권장</td></tr>' +
+        '<tr><td style="padding:8px 4px;color:var(--gray-400);">IP 화이트리스트</td><td style="padding:8px 4px;">비워두거나 Cloudflare IP 입력</td></tr>' +
+        '</table>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-weight:600;margin-bottom:10px;">AYILON에서 API 연결</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">대시보드 → API 탭 → API Key, Secret Key, Passphrase 입력 → 저장. API 키는 암호화되어 Cloudflare KV에 저장됩니다. 연결 후 터미널 탭에서 계좌 잔고를 확인할 수 있습니다.</div>' +
+        '</div>' +
+        '</div>'
     }
   ];
 
@@ -2093,12 +2260,12 @@
       var matchSrch = !guideSearch || a.title.toLowerCase().indexOf(guideSearch.toLowerCase()) !== -1 || a.desc.toLowerCase().indexOf(guideSearch.toLowerCase()) !== -1;
       return matchCat && matchSrch;
     });
-    var catLabels = { notice: '공지사항', tutorial: '튜토리얼', faq: 'FAQ' };
+    var catLabels = { notice: _t('db.guide.notice'), tutorial: _t('db.guide.tutorial'), faq: 'FAQ' };
     var catCls    = { notice: 'cat-notice', tutorial: 'cat-tutorial', faq: 'cat-faq' };
     var grid = document.getElementById('articlesGrid');
     if (!grid) return;
     if (!filtered.length) {
-      grid.innerHTML = '<div style="color:var(--gray-600);font-size:14px;padding:32px 0;grid-column:1/-1;">검색 결과가 없습니다</div>';
+      grid.innerHTML = '<div style="color:var(--gray-600);font-size:14px;padding:32px 0;grid-column:1/-1;">' + _t('db.guide.no_results') + '</div>';
       return;
     }
     grid.innerHTML = filtered.map(function(a) {
@@ -2126,7 +2293,18 @@
   function openArticle(id) {
     var a = GUIDE_ARTICLES.filter(function(x){ return x.id === id; })[0];
     if (!a) return;
-    alert(a.title + '\n\n' + a.desc + '\n\n날짜: ' + a.date);
+    var modal = document.getElementById('guideArticleModal');
+    var body  = document.getElementById('guideArticleBody');
+    if (!modal || !body) return;
+    body.innerHTML = a.content || ('<h2>' + a.title + '</h2><p>' + a.desc + '</p>');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeGuideArticle() {
+    var modal = document.getElementById('guideArticleModal');
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
   }
 
   /* ════════════════════════════════════════
