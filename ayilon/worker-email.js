@@ -1146,12 +1146,25 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     await env.USERS_KV.put(lockKey, '1', { expirationTtl: 60 });
 
     // ── Place market order ────────────────────────────────────
-    const orderRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
+    // Try hedge mode first, fall back to one-way (net) if account is in one-way mode
+    let orderRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
       instId: tradingPair, tdMode: 'cross',
       side: signal.type === 'long' ? 'buy' : 'sell',
       posSide: signal.type === 'long' ? 'long' : 'short',
-      ordType: 'market', sz, lever: String(safeLeverage)
+      ordType: 'market', sz
     }, demoMode);
+
+    // If hedge mode rejected (position mode mismatch), retry without posSide (one-way mode)
+    if (orderRes?.code !== '0' && !orderRes?.data?.[0]?.ordId) {
+      const sCode = orderRes?.data?.[0]?.sCode || orderRes?.code;
+      if (sCode === '51000' || sCode === '51006' || sCode === 1 || sCode === '1') {
+        orderRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
+          instId: tradingPair, tdMode: 'cross',
+          side: signal.type === 'long' ? 'buy' : 'sell',
+          ordType: 'market', sz
+        }, demoMode);
+      }
+    }
 
     if (orderRes?.data?.[0]?.ordId) {
       const { price: fillPrice, filledSz, confirmed: fillConfirmed } = await queryFillPrice(apiKey, apiSecret, apiPassphrase, tradingPair, orderRes.data[0].ordId, currentPrice, szContracts, demoMode);
@@ -1225,8 +1238,8 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
         `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${fillPrice} USDT${tpStr}`);
     } else {
-      const errCode = orderRes?.code || '?';
-      const errMsg  = orderRes?.msg || orderRes?.data?.[0]?.sMsg || 'unknown';
+      const errCode = orderRes?.data?.[0]?.sCode || orderRes?.code || '?';
+      const errMsg  = orderRes?.data?.[0]?.sMsg || orderRes?.msg || 'unknown';
       await botLog(env, email, `Order FAILED [${errCode}]: ${signal.type.toUpperCase()} @ ${currentPrice} — ${errMsg}`);
     }
 
