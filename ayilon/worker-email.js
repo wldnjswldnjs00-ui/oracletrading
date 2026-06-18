@@ -1143,7 +1143,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       await botLog(env, email, `Skip: entry lock active — concurrent execution prevented`);
       return;
     }
-    await env.USERS_KV.put(lockKey, '1', { expirationTtl: 30 });
+    await env.USERS_KV.put(lockKey, '1', { expirationTtl: 60 });
 
     // ── Place market order ────────────────────────────────────
     const orderRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
