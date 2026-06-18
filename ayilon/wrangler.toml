@@ -9,7 +9,7 @@ id = "048553257c414282bc303773aacabf5f"
 [[d1_databases]]
 binding = "BOT_DB"
 database_name = "ayilon-bot"
-database_id = "PLACEHOLDER"
+database_id = "ebd7c041-063f-4fb2-857e-8a98db9603e4"
 
 [triggers]
 crons = ["*/1 * * * *"]
