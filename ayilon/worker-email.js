@@ -1072,7 +1072,8 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     const tp = signal.type === 'long'
       ? levels.resistances[0]?.price
       : levels.supports[0]?.price;
-    const useTP = tp && (signal.type === 'long' ? tp > currentPrice * 1.01 : tp < currentPrice * 0.99);
+    const tpMinDist = strategy === 'rsi_dca' ? 1.003 : 1.005;
+    const useTP = tp && (signal.type === 'long' ? tp > currentPrice * tpMinDist : tp < currentPrice / tpMinDist);
 
     // ── R:R filter — minimum 1.0:1 required ──────────────────
     const slDistRR = Math.abs(currentPrice - signal.stopLoss) / currentPrice;
