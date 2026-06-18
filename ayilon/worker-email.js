@@ -628,7 +628,8 @@ async function handleBotStatus(request, env) {
 }
 
 async function handleBotControl(request, env) {
-  const body = await request.json();
+  try {
+  const body = await request.json().catch(() => ({}));
   const { action } = body;
   if (!env.USERS_KV) return json({ ok: false });
   if (!['start', 'stop', 'dismiss', 'resume'].includes(action)) {
@@ -668,6 +669,9 @@ async function handleBotControl(request, env) {
   }
   await env.USERS_KV.put(configKey, JSON.stringify(config));
   return json({ ok: true, running: config.running });
+  } catch(e) {
+    return json({ ok: false, error: e.message || 'internal_error' }, 500);
+  }
 }
 
 async function handleGetPositions(request, env) {
