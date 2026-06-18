@@ -6,5 +6,10 @@ compatibility_date = "2024-01-01"
 binding = "USERS_KV"
 id = "048553257c414282bc303773aacabf5f"
 
+[[d1_databases]]
+binding = "BOT_DB"
+database_name = "ayilon-bot"
+database_id = "PLACEHOLDER"
+
 [triggers]
 crons = ["*/1 * * * *"]
