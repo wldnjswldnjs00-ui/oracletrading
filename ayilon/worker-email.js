@@ -667,9 +667,10 @@ async function handleGetPositions(request, env) {
   if (!session) return json({ positions: [], error: 'unauthorized' }, 401);
 
   const config = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
-  const { apiKey, apiSecret, apiPassphrase, tradingPair, mode } = config || {};
+  const { apiKey, apiSecret, tradingPair, mode } = config || {};
+  const apiPassphrase = config?.apiPassphrase || config?.apiPass;
   if (!apiKey || !apiSecret || !apiPassphrase) return json({ positions: [] });
-  const demo = (mode === 'demo');
+  const demo = config?.demoMode === true || mode === 'demo';
 
   try {
     const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instType=SWAP`, demo);
@@ -684,9 +685,10 @@ async function handleGetOrders(request, env) {
   if (!session) return json({ orders: [], error: 'unauthorized' }, 401);
 
   const config = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
-  const { apiKey, apiSecret, apiPassphrase, mode } = config || {};
+  const { apiKey, apiSecret, mode } = config || {};
+  const apiPassphrase = config?.apiPassphrase || config?.apiPass;
   if (!apiKey || !apiSecret || !apiPassphrase) return json({ orders: [] });
-  const demo = (mode === 'demo');
+  const demo = config?.demoMode === true || mode === 'demo';
 
   try {
     const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/trade/orders-pending?instType=SWAP`, demo);
@@ -701,9 +703,10 @@ async function handleGetHistory(request, env) {
   if (!session) return json({ history: [], error: 'unauthorized' }, 401);
 
   const config = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
-  const { apiKey, apiSecret, apiPassphrase, mode } = config || {};
+  const { apiKey, apiSecret, mode } = config || {};
+  const apiPassphrase = config?.apiPassphrase || config?.apiPass;
   if (!apiKey || !apiSecret || !apiPassphrase) return json({ history: [] });
-  const demo = (mode === 'demo');
+  const demo = config?.demoMode === true || mode === 'demo';
 
   try {
     const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/trade/fills?instType=SWAP&limit=50`, demo);
@@ -718,12 +721,14 @@ async function handleGetAccount(request, env) {
   if (!session) return json({ balance: null, error: 'unauthorized' }, 401);
 
   const config = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' });
-  const { apiKey, apiSecret, apiPassphrase, mode } = config || {};
-  if (!apiKey || !apiSecret || !apiPassphrase) return json({ balance: null });
-  const demo = (mode === 'demo');
+  const { apiKey, apiSecret, apiPassphrase, apiPass, mode } = config || {};
+  const resolvedPass = apiPassphrase || apiPass;
+  if (!apiKey || !apiSecret || !resolvedPass) return json({ balance: null });
+  const demo = config?.demoMode === true || mode === 'demo';
 
   try {
-    const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/balance?ccy=USDT`, demo);
+    const data = await okxGet(apiKey, apiSecret, resolvedPass, `/api/v5/account/balance?ccy=USDT`, demo);
+    if (data?.code && data.code !== '0') return json({ balance: null, error: `OKX: ${data.msg || data.code}` });
     const details = data?.data?.[0]?.details || [];
     const usdt = details.find(d => d.ccy === 'USDT') || {};
     return json({

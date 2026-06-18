@@ -1673,7 +1673,16 @@
       }).join('');
 
       if (!botItemsHtml) {
-        botItemsHtml = '<div class="bot-item"><div style="color:var(--gray-400);font-size:13px;">Bot running (no strategy configured)</div><button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot()">' + (window.__t ? window.__t('db.stop') : '중지') + '</button></div>';
+        // Fallback: bot running but strategies not parsed — show generic running state
+        var fbStrat = cfg.strategy ? (STRAT_DISPLAY_NAMES[cfg.strategy] || cfg.strategy) : 'Bot';
+        botItemsHtml = '<div class="bot-item">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<div class="bot-status-dot" style="animation:pulse 2s infinite;box-shadow:0 0 6px var(--green);"></div>' +
+            '<div><div style="font-size:14px;font-weight:600;">' + fbStrat + '</div>' +
+            '<div style="font-size:12px;color:var(--gray-400);">' + pairLabel + ' · ' + modeLabel + ' · Lev ' + levLabel + '</div></div>' +
+          '</div>' +
+          '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot()">' + (window.__t ? window.__t('db.stop') : '중지') + '</button>' +
+        '</div>';
       }
 
       listEl.innerHTML = botItemsHtml;
