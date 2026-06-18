@@ -646,7 +646,15 @@ async function handleBotControl(request, env) {
     }
     config.running = true;
   }
-  if (action === 'stop')  config.running = false;
+  if (action === 'stop') {
+    const { strategy: stopStrat } = body;
+    if (stopStrat && Array.isArray(config.strategies)) {
+      config.strategies = config.strategies.filter(s => s !== stopStrat);
+      if (config.strategies.length === 0) config.running = false;
+    } else {
+      config.running = false;
+    }
+  }
   if (action === 'dismiss') {
     await env.USERS_KV.delete('bot:daily_loss_triggered:' + session.email);
     return json({ ok: true });
