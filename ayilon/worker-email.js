@@ -667,7 +667,19 @@ async function handleBotControl(request, env) {
     await env.USERS_KV.delete('bot:daily_loss:' + session.email + ':' + today);
     await env.USERS_KV.delete('bot:peak_equity:' + session.email);
   }
-  await env.USERS_KV.put(configKey, JSON.stringify(config));
+  // Retry KV put up to 3 times (rate limit can be transient)
+  let putErr;
+  for (let i = 0; i < 3; i++) {
+    try {
+      await env.USERS_KV.put(configKey, JSON.stringify(config));
+      putErr = null;
+      break;
+    } catch(e) {
+      putErr = e;
+      await new Promise(r => setTimeout(r, 300 * (i + 1)));
+    }
+  }
+  if (putErr) return json({ ok: false, error: 'KV write failed after retries: ' + putErr.message }, 500);
   return json({ ok: true, running: config.running });
   } catch(e) {
     return json({ ok: false, error: e.message || 'internal_error' }, 500);
@@ -794,8 +806,20 @@ async function runBot(env) {
       const strategiesToRun = Array.isArray(cfg.strategies) && cfg.strategies.length > 0
         ? cfg.strategies
         : [cfg.strategy || 'sr_bounce'];
+      // Register log buffer — botLog writes here instead of KV during this cron tick
+      const logBuf = [];
+      _logBufs.set(email, logBuf);
       for (const strat of strategiesToRun) {
         await runBotForUser(env, email, cfg, strat).catch(() => {});
+      }
+      _logBufs.delete(email);
+      // Flush all logs in one KV write per user per cron tick
+      if (logBuf.length > 0) {
+        try {
+          const existing = await env.USERS_KV.get('bot:logs:' + email, { type: 'json' }) || [];
+          const merged = [...logBuf, ...existing].slice(0, 100);
+          await env.USERS_KV.put('bot:logs:' + email, JSON.stringify(merged));
+        } catch(e) {}
       }
     }
   } catch(e) {}
@@ -2187,12 +2211,23 @@ async function handleDeleteAccount(request, env) {
 }
 
 // ── BOT LOG & NOTIFY ──────────────────────────────────────────
+// Module-level log buffer map: email → array, active during cron execution
+const _logBufs = new Map();
+
 async function botLog(env, email, msg) {
+  const buf = _logBufs.get(email);
+  if (buf) {
+    buf.unshift({ time: new Date().toISOString(), msg });
+    return;
+  }
+  // Fallback: direct KV write (used outside cron context)
   if (!env.USERS_KV) return;
-  const logs = await env.USERS_KV.get('bot:logs:' + email, { type: 'json' }) || [];
-  logs.unshift({ time: new Date().toISOString(), msg });
-  if (logs.length > 100) logs.splice(100);
-  await env.USERS_KV.put('bot:logs:' + email, JSON.stringify(logs));
+  try {
+    const logs = await env.USERS_KV.get('bot:logs:' + email, { type: 'json' }) || [];
+    logs.unshift({ time: new Date().toISOString(), msg });
+    if (logs.length > 100) logs.splice(100);
+    await env.USERS_KV.put('bot:logs:' + email, JSON.stringify(logs));
+  } catch(e) {}
 }
 
 async function botNotify(env, cfg, msg) {
