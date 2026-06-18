@@ -1029,7 +1029,7 @@
     var user = getUserData();
     var sub  = getSubscription();
     var email = user.email || '';
-    var name  = user.name || user.username || 'User';
+    var name  = user.username || user.name || 'User';
     var initial = (name.charAt(0) || 'A').toUpperCase();
 
     document.getElementById('topbarAvatar').textContent   = initial;
