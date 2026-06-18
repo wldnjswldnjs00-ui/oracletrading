@@ -564,7 +564,7 @@
       <div class="sim-card">
         <div class="sim-card-header">
           <div class="sim-pair-label"><span class="sim-pair-dot"></span>BTC/USDT</div>
-          <span class="sim-logic-label" id="sim-logic-label">진입 로직</span>
+          <span class="sim-logic-label" id="sim-logic-label" data-i18n="strat.chart.entrylogic">ENTRY LOGIC</span>
         </div>
         <div class="sim-canvas-wrap">
           <canvas id="sim-chart"></canvas>
@@ -1073,16 +1073,16 @@
     ────────────────────────────────────────────*/
     (function() {
       var STRATS = [
-        {name:'S/R Bounce',       nameKo:'S/R 반등',          tier:'FREE',  logic:'SR 레벨 반등 진입/청산',  mode:'sr'},
-        {name:'RSI DCA',          nameKo:'RSI DCA',            tier:'FREE',  logic:'RSI 과매도 다단계 진입',  mode:'dca'},
-        {name:'MA Support',       nameKo:'MA 지지',            tier:'FREE',  logic:'MA 지지 반등 매수',       mode:'masup'},
-        {name:'MA Crossover',     nameKo:'MA 골든/데드크로스', tier:'PRO',   logic:'단기/장기 MA 교차 신호',  mode:'macross'},
-        {name:'BB Reversion',     nameKo:'BB 반전',            tier:'PRO',   logic:'볼린저 밴드 이탈 반전',   mode:'bb'},
-        {name:'Breakout+Volume',  nameKo:'돌파+거래량',        tier:'PRO',   logic:'박스권 상단 돌파 진입',   mode:'breakout'},
-        {name:'MA Ribbon',        nameKo:'MA 리본',            tier:'PRO',   logic:'다중 MA 정렬 추세 추종',  mode:'ribbon'},
-        {name:'MACD Divergence',  nameKo:'MACD 다이버전스',    tier:'ELITE', logic:'MACD 다이버전스 반전',    mode:'macd'},
-        {name:'Funding Rate',     nameKo:'펀딩비 역추세',      tier:'ELITE', logic:'펀딩비 극단치 역추세',    mode:'funding'},
-        {name:'ATR Trend',        nameKo:'ATR 추세 추종',      tier:'ELITE', logic:'ATR 기반 추세 추종',      mode:'atr'}
+        {name:'S/R Bounce',       nameKo:'S/R 반등',          tier:'FREE',  logic:'SR 레벨 반등 진입/청산',  logicEn:'S/R Level Bounce Entry/Exit',      mode:'sr'},
+        {name:'RSI DCA',          nameKo:'RSI DCA',            tier:'FREE',  logic:'RSI 과매도 다단계 진입',  logicEn:'RSI Oversold Multi-Entry',          mode:'dca'},
+        {name:'MA Support',       nameKo:'MA 지지',            tier:'FREE',  logic:'MA 지지 반등 매수',       logicEn:'MA Support Bounce Long',            mode:'masup'},
+        {name:'MA Crossover',     nameKo:'MA 골든/데드크로스', tier:'PRO',   logic:'단기/장기 MA 교차 신호',  logicEn:'Short/Long MA Crossover Signal',    mode:'macross'},
+        {name:'BB Reversion',     nameKo:'BB 반전',            tier:'PRO',   logic:'볼린저 밴드 이탈 반전',   logicEn:'Bollinger Band Breakout Reversion', mode:'bb'},
+        {name:'Breakout+Volume',  nameKo:'돌파+거래량',        tier:'PRO',   logic:'박스권 상단 돌파 진입',   logicEn:'Range Top Breakout Entry',          mode:'breakout'},
+        {name:'MA Ribbon',        nameKo:'MA 리본',            tier:'PRO',   logic:'다중 MA 정렬 추세 추종',  logicEn:'Multi-MA Alignment Trend Follow',   mode:'ribbon'},
+        {name:'MACD Divergence',  nameKo:'MACD 다이버전스',    tier:'ELITE', logic:'MACD 다이버전스 반전',    logicEn:'MACD Divergence Reversal',          mode:'macd'},
+        {name:'Funding Rate',     nameKo:'펀딩비 역추세',      tier:'ELITE', logic:'펀딩비 극단치 역추세',    logicEn:'Funding Rate Extreme Contrarian',   mode:'funding'},
+        {name:'ATR Trend',        nameKo:'ATR 추세 추종',      tier:'ELITE', logic:'ATR 기반 추세 추종',      logicEn:'ATR-Based Trend Following',         mode:'atr'}
       ];
 
       var canvas = document.getElementById('sim-chart');
@@ -1091,19 +1091,41 @@
       if (!canvas || !tabsEl) return;
 
       /* Build tabs */
+      function getSimLang() { return localStorage.getItem('ayilon_lang') || 'en'; }
+      function stratLabel(s) { return getSimLang() === 'ko' ? s.nameKo : s.name; }
+      function stratLogic(s) { return getSimLang() === 'ko' ? s.logic : s.logicEn; }
+
       STRATS.forEach(function(s, i) {
         var btn = document.createElement('button');
         btn.className = 'sim-tab' + (i === 0 ? ' active' : '');
-        btn.innerHTML = s.nameKo + ' <span class="sim-tier sim-tier-' + s.tier.toLowerCase() + '">' + s.tier + '</span>';
+        btn.setAttribute('data-sim-idx', i);
+        btn.innerHTML = stratLabel(s) + ' <span class="sim-tier sim-tier-' + s.tier.toLowerCase() + '">' + s.tier + '</span>';
         btn.addEventListener('click', function() {
           document.querySelectorAll('.sim-tab').forEach(function(b) { b.classList.remove('active'); });
           btn.classList.add('active');
           currentIdx = i;
-          if (logicEl) logicEl.textContent = s.logic;
+          if (logicEl) logicEl.textContent = stratLogic(s);
           reset();
         });
         tabsEl.appendChild(btn);
       });
+
+      /* Re-render tab labels on language change */
+      var _origSetLangSim = window.setLanguage;
+      window.setLanguage = function(lang) {
+        if (_origSetLangSim) _origSetLangSim(lang);
+        document.querySelectorAll('.sim-tab').forEach(function(btn) {
+          var idx = parseInt(btn.getAttribute('data-sim-idx'), 10);
+          if (isNaN(idx)) return;
+          var s = STRATS[idx];
+          var tierSpan = btn.querySelector('.sim-tier');
+          var tierHtml = tierSpan ? tierSpan.outerHTML : '';
+          btn.innerHTML = stratLabel(s) + ' ' + tierHtml;
+          if (btn.classList.contains('active') && logicEl) {
+            logicEl.textContent = stratLogic(s);
+          }
+        });
+      };
 
       var dpr = window.devicePixelRatio || 1;
       var ctx = canvas.getContext('2d');
@@ -1132,11 +1154,12 @@
           if (dir < 0 && p <= lo + 150) { dir =  1; signals.push({i:i, type:'long'}); }
           prices.push(p);
         }
+        var isKo = (localStorage.getItem('ayilon_lang') === 'ko');
         return {
           prices: prices, signals: signals,
           indicators: [
-            {type:'hline', y:hi, color:'rgba(249,115,22,0.55)', dash:[5,3], label:'저항'},
-            {type:'hline', y:lo, color:'rgba(34,197,94,0.55)',  dash:[5,3], label:'지지'}
+            {type:'hline', y:hi, color:'rgba(249,115,22,0.55)', dash:[5,3], label: isKo ? '저항' : 'RESISTANCE'},
+            {type:'hline', y:lo, color:'rgba(34,197,94,0.55)',  dash:[5,3], label: isKo ? '지지' : 'SUPPORT'}
           ]
         };
       }
@@ -1156,10 +1179,11 @@
           }
         }
         var ovMA = 60500 + r() * 2000;
+        var isKo2 = (localStorage.getItem('ayilon_lang') === 'ko');
         return {
           prices: prices, signals: signals,
           indicators: [
-            {type:'hline', y:base - 1200, color:'rgba(34,197,94,0.4)', dash:[4,3], label:'과매도 구간'},
+            {type:'hline', y:base - 1200, color:'rgba(34,197,94,0.4)', dash:[4,3], label: isKo2 ? '과매도 구간' : 'OVERSOLD ZONE'},
             {type:'curve', values: calcEMA(prices, 20), color:'rgba(59,130,246,0.6)'}
           ]
         };
@@ -1253,11 +1277,12 @@
           }
           prices.push(p);
         }
+        var isKo3 = (localStorage.getItem('ayilon_lang') === 'ko');
         return {
           prices: prices, signals: signals,
           indicators: [
-            {type:'hline', y:rangeHi, color:'rgba(249,115,22,0.5)', dash:[5,3], label:'저항'},
-            {type:'hline', y:rangeLo, color:'rgba(34,197,94,0.4)',  dash:[5,3], label:'지지'}
+            {type:'hline', y:rangeHi, color:'rgba(249,115,22,0.5)', dash:[5,3], label: isKo3 ? '저항' : 'RESISTANCE'},
+            {type:'hline', y:rangeLo, color:'rgba(34,197,94,0.4)',  dash:[5,3], label: isKo3 ? '지지' : 'SUPPORT'}
           ]
         };
       }
