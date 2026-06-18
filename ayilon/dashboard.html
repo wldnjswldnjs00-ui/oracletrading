@@ -1202,7 +1202,14 @@
       var res  = await fetch(WORKER_URL + '/bot-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token }) });
       var data = await res.json();
       var el   = document.getElementById('dashActiveBots');
-      if (el) el.textContent = data.running ? '1' : '0';
+      if (el) {
+        var stratCount = data.running
+          ? ((data.config && data.config.strategies && data.config.strategies.length)
+              ? data.config.strategies.length
+              : (data.config && data.config.strategy ? 1 : 1))
+          : 0;
+        el.textContent = String(stratCount);
+      }
     } catch(e) {}
   }
 
