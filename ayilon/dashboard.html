@@ -1098,6 +1098,8 @@
     var token = getSessionToken();
     if (!token) {
       localStorage.removeItem('ayilon_logged_in');
+      localStorage.removeItem('ayilon_session_token');
+      localStorage.removeItem('ayilon_user');
       window.location.replace('login.html');
       return;
     }
