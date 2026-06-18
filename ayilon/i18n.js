@@ -626,6 +626,7 @@
       'db.term.total_equity': 'Total Equity (USDT)',
       'db.term.available':    'Available',
       'db.term.margin_ratio': 'Margin Ratio',
+      'db.term.interval':     'Interval',
     },
 
     /* ════════════════════════════════════════
@@ -1210,6 +1211,7 @@
       'db.term.total_equity': '총 자산 (USDT)',
       'db.term.available':    '가용 자산',
       'db.term.margin_ratio': '마진 비율',
+      'db.term.interval':     '봉 단위',
     },
 
     /* ════════════════════════════════════════

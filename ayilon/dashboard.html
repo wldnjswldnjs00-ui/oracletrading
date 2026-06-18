@@ -207,6 +207,9 @@
     .guide-cats { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
     .guide-cat-btn { padding: 7px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 100px; color: var(--gray-400); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
     .guide-cat-btn:hover, .guide-cat-btn.active { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2); }
+    .tv-iv-btn { padding: 4px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; color: var(--gray-400); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .tv-iv-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .tv-iv-btn.active { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.25); }
     .articles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
     .article-card {
       background: #111; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px;
@@ -522,6 +525,16 @@
     <div class="terminal-layout">
       <!-- Left: chart + tabs -->
       <div>
+        <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;">
+          <span style="font-size:11px;color:var(--gray-500);margin-right:4px;" data-i18n="db.term.interval">봉 단위</span>
+          <button class="tv-iv-btn active" onclick="setTvInterval('1')"  id="tviv-1">1m</button>
+          <button class="tv-iv-btn"        onclick="setTvInterval('5')"  id="tviv-5">5m</button>
+          <button class="tv-iv-btn"        onclick="setTvInterval('15')" id="tviv-15">15m</button>
+          <button class="tv-iv-btn"        onclick="setTvInterval('30')" id="tviv-30">30m</button>
+          <button class="tv-iv-btn"        onclick="setTvInterval('60')" id="tviv-60">1h</button>
+          <button class="tv-iv-btn"        onclick="setTvInterval('240')" id="tviv-240">4h</button>
+          <button class="tv-iv-btn"        onclick="setTvInterval('D')"  id="tviv-D">1D</button>
+        </div>
         <div class="tradingview-widget-container" style="height:500px;width:100%;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);margin-bottom:20px;">
           <div id="tradingview_terminal" style="height:100%;"></div>
         </div>
@@ -1333,7 +1346,48 @@
   /* ════════════════════════════════════════
      TERMINAL
   ════════════════════════════════════════ */
-  var _tvWidgetLoaded = false;
+  var _tvScriptLoaded = false;
+
+  function _createTvWidget(interval) {
+    var container = document.getElementById('tradingview_terminal');
+    if (!container) return;
+    container.innerHTML = '';
+    try {
+      new TradingView.widget({
+        symbol: 'BINANCE:BTCUSDT',
+        theme: 'dark',
+        container_id: 'tradingview_terminal',
+        autosize: true,
+        locale: 'en',
+        style: '1',
+        interval: interval,
+        toolbar_bg: '#000000',
+        hide_side_toolbar: false,
+        allow_symbol_change: true,
+        save_image: false,
+        overrides: {
+          'mainSeriesProperties.showPriceLine': false
+        }
+      });
+    } catch(e) {
+      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--gray-600);font-size:14px;">TradingView 위젯을 불러올 수 없습니다</div>';
+    }
+  }
+
+  function setTvInterval(interval) {
+    localStorage.setItem('ayilon_tv_interval', interval);
+    document.querySelectorAll('.tv-iv-btn').forEach(function(b){ b.classList.remove('active'); });
+    var btn = document.getElementById('tviv-' + interval);
+    if (btn) btn.classList.add('active');
+    if (_tvScriptLoaded) _createTvWidget(interval);
+  }
+
+  function _syncTvIntervalButtons() {
+    var iv = localStorage.getItem('ayilon_tv_interval') || '5';
+    document.querySelectorAll('.tv-iv-btn').forEach(function(b){ b.classList.remove('active'); });
+    var btn = document.getElementById('tviv-' + iv);
+    if (btn) btn.classList.add('active');
+  }
 
   function initTerminal() {
     // Show/hide API register button based on connection state
@@ -1349,33 +1403,16 @@
         connWrap.style.display = 'none';
       }
     }
-    if (_tvWidgetLoaded) return;
-    _tvWidgetLoaded = true;
+    _syncTvIntervalButtons();
+    if (_tvScriptLoaded) return;
+    _tvScriptLoaded = true;
+    var iv = localStorage.getItem('ayilon_tv_interval') || '5';
     var script = document.createElement('script');
     script.src = 'https://s3.tradingview.com/tv.js';
-    script.onload = function() {
-      try {
-        new TradingView.widget({
-          symbol: 'BINANCE:BTCUSDT',
-          theme: 'dark',
-          container_id: 'tradingview_terminal',
-          autosize: true,
-          locale: 'en',
-          style: '1',
-          interval: '60',
-          toolbar_bg: '#000',
-          hide_side_toolbar: false,
-          allow_symbol_change: true,
-          save_image: false
-        });
-      } catch(e) {
-        document.getElementById('tradingview_terminal').innerHTML =
-          '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--gray-600);font-size:14px;">TradingView 위젯을 불러올 수 없습니다</div>';
-      }
-    };
+    script.onload = function() { _createTvWidget(iv); };
     script.onerror = function() {
-      document.getElementById('tradingview_terminal').innerHTML =
-        '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--gray-600);font-size:14px;">TradingView 위젯을 불러올 수 없습니다</div>';
+      var c = document.getElementById('tradingview_terminal');
+      if (c) c.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--gray-600);font-size:14px;">TradingView 위젯을 불러올 수 없습니다</div>';
     };
     document.head.appendChild(script);
     // Load tab data
