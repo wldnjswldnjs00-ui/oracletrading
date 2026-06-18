@@ -588,6 +588,16 @@
       'db.cancel':            'Cancel',
       'db.profile.name_ph':   'Enter your name',
       'db.profile.email_ph':  'Enter your email',
+      'db.running':           'Running',
+      'db.loading':           'Loading...',
+      'db.bots.no_bots':      'No bots running',
+      'db.profile.username_ph': 'e.g. ayilon_trader',
+      'db.sub.contact_admin':  'Contact admin for wallet address',
+      'db.upgrade.generating': 'Generating payment address...',
+      'db.upgrade.success_title': 'Payment Confirmed!',
+      'db.sub.no_plan':       'No active subscription',
+      'db.stop':              'Stop',
+      'db.bots.load_error':   'Could not load bot status',
     },
 
     /* ════════════════════════════════════════
@@ -1134,6 +1144,16 @@
       'db.cancel':            '취소',
       'db.profile.name_ph':   '이름을 입력하세요',
       'db.profile.email_ph':  '이메일을 입력하세요',
+      'db.running':           '실행 중',
+      'db.loading':           '불러오는 중...',
+      'db.bots.no_bots':      '실행 중인 봇이 없습니다',
+      'db.profile.username_ph': '예: ayilon_trader',
+      'db.sub.contact_admin':  '관리자에게 문의하여 주소를 받으세요',
+      'db.upgrade.generating': '결제 주소 생성 중...',
+      'db.upgrade.success_title': '결제 확인 완료!',
+      'db.sub.no_plan':       '구독이 활성화되지 않았습니다',
+      'db.stop':              '중지',
+      'db.bots.load_error':   '봇 상태를 불러올 수 없습니다',
     },
 
     /* ════════════════════════════════════════
