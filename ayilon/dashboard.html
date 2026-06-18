@@ -1601,7 +1601,7 @@
         body: JSON.stringify({ sessionToken: token, email: user.email || '', plan: plan, billing: 'monthly', baseAmount: amounts[plan] })
       });
       var data = await res.json();
-      if (!data.uniqueAmount || !data.wallet) throw new Error('no data');
+      if (!data.uniqueAmount || !data.wallet) throw new Error(data.error || 'no data (status:' + res.status + ')');
 
       _upgradeUniqueAmt = String(data.uniqueAmount);
       document.getElementById('upgradeUniqueAmount').textContent = data.uniqueAmount + ' USDT';
@@ -1611,7 +1611,7 @@
       startUpgradePoll();
     } catch(e) {
       document.getElementById('upgradeStep-loading').innerHTML =
-        '<div style="color:#ef4444;font-size:13px;">결제 주소 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.</div>';
+        '<div style="color:#ef4444;font-size:13px;">결제 주소 생성에 실패했습니다.<br><span style="font-size:11px;opacity:0.7;">' + (e.message || '알 수 없는 오류') + '</span></div>';
     }
   }
 
