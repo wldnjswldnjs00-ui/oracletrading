@@ -455,7 +455,7 @@
       <div class="stat-card">
         <div class="stat-card-label" data-i18n="db.ov.activebots">Active Bots</div>
         <div class="stat-card-value" id="dashActiveBots">0</div>
-        <div class="stat-card-sub" id="dashBotSub">실행 중</div>
+        <div class="stat-card-sub" id="dashBotSub" data-i18n="db.running">실행 중</div>
       </div>
     </div>
 
@@ -537,16 +537,16 @@
           </div>
           <div style="padding:16px 20px;">
             <div class="tab-panel active" id="term-tab-positions">
-              <div id="term-positions-content"><div class="empty-state" style="padding:24px 0;">불러오는 중...</div></div>
+              <div id="term-positions-content"><div class="empty-state" style="padding:24px 0;" data-i18n="db.loading">불러오는 중...</div></div>
             </div>
             <div class="tab-panel" id="term-tab-orders">
-              <div id="term-orders-content"><div class="empty-state" style="padding:24px 0;">불러오는 중...</div></div>
+              <div id="term-orders-content"><div class="empty-state" style="padding:24px 0;" data-i18n="db.loading">불러오는 중...</div></div>
             </div>
             <div class="tab-panel" id="term-tab-history">
-              <div id="term-history-content"><div class="empty-state" style="padding:24px 0;">불러오는 중...</div></div>
+              <div id="term-history-content"><div class="empty-state" style="padding:24px 0;" data-i18n="db.loading">불러오는 중...</div></div>
             </div>
             <div class="tab-panel" id="term-tab-account">
-              <div id="term-account-content"><div class="empty-state" style="padding:24px 0;">불러오는 중...</div></div>
+              <div id="term-account-content"><div class="empty-state" style="padding:24px 0;" data-i18n="db.loading">불러오는 중...</div></div>
             </div>
           </div>
         </div>
@@ -690,7 +690,7 @@
         <button class="btn-sm" onclick="loadMyBots()" data-i18n="db.refresh">↻ 새로고침</button>
       </div>
       <div id="myBotsList">
-        <div class="empty-state" style="padding:32px 0;">실행 중인 봇이 없습니다</div>
+        <div class="empty-state" style="padding:32px 0;" data-i18n="db.bots.no_bots">실행 중인 봇이 없습니다</div>
       </div>
     </div>
   </div>
@@ -753,11 +753,11 @@
         </div>
         <div class="plan-price">$1,000<span>/mo</span></div>
         <div class="plan-features">
-          <div class="plan-feature"><span class="plan-feature-check">✓</span>무제한 봇</div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span>Pro 모든 기능</div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span>Elite 전략 (MACD Divergence, Funding Rate, ATR Trend)</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f1">무제한 봇</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f2">Pro 모든 기능</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f3">Elite 전략 (MACD Divergence, Funding Rate, ATR Trend)</span></div>
           <div class="plan-feature"><span class="plan-feature-check">✓</span>API Analytics</div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span>전담 지원</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f4">전담 지원</span></div>
         </div>
         <button class="btn-secondary" style="width:100%;" id="btn-upgrade-elite" onclick="upgradePlan('elite')">Upgrade</button>
       </div>
@@ -765,20 +765,20 @@
 
     <!-- Payment Info -->
     <div class="card">
-      <div class="card-title" style="margin-bottom:16px;">결제 방법</div>
+      <div class="card-title" style="margin-bottom:16px;" data-i18n="db.sub.payment_method">결제 방법</div>
       <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
         <div style="flex:1;min-width:240px;">
-          <div style="font-size:13px;color:var(--gray-400);margin-bottom:12px;line-height:1.6;">
+          <div style="font-size:13px;color:var(--gray-400);margin-bottom:12px;line-height:1.6;" data-i18n-html="db.sub.payment_desc">
             결제는 <strong style="color:#fff;">USDT TRC-20</strong>으로만 받습니다. 아래 주소로 정확한 금액을 전송한 후 관리자에게 연락해 주세요.
           </div>
-          <div style="font-size:12px;color:var(--gray-600);margin-bottom:8px;">USDT TRC-20 입금 주소</div>
+          <div style="font-size:12px;color:var(--gray-600);margin-bottom:8px;" data-i18n="db.sub.deposit_addr">USDT TRC-20 입금 주소</div>
           <div class="wallet-addr" id="subWalletAddr">관리자에게 문의하여 주소를 받으세요</div>
         </div>
         <div style="font-size:12px;color:var(--gray-400);line-height:1.8;">
-          <div>1. 구독 플랜을 선택하세요</div>
-          <div>2. 해당 금액을 TRC-20 주소로 전송하세요</div>
-          <div>3. 트랜잭션 ID를 <a href="mailto:wldnjswldnjs00@gmail.com" style="color:var(--yellow);text-decoration:none;">관리자에게 이메일</a>로 보내세요</div>
-          <div>4. 확인 후 24시간 이내 플랜이 활성화됩니다</div>
+          <div data-i18n="db.sub.pay_step1">1. 구독 플랜을 선택하세요</div>
+          <div data-i18n="db.sub.pay_step2">2. 해당 금액을 TRC-20 주소로 전송하세요</div>
+          <div data-i18n-html="db.sub.pay_step3">3. 트랜잭션 ID를 <a href="mailto:wldnjswldnjs00@gmail.com" style="color:var(--yellow);text-decoration:none;">관리자에게 이메일</a>로 보내세요</div>
+          <div data-i18n="db.sub.pay_step4">4. 확인 후 24시간 이내 플랜이 활성화됩니다</div>
         </div>
       </div>
     </div>
@@ -802,7 +802,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="profile-grid">
         <div class="d-form-group" style="margin-bottom:0;">
           <label class="d-form-label">Full Name</label>
-          <input type="text" class="d-form-input" id="settingsFullName" placeholder="이름을 입력하세요" />
+          <input type="text" class="d-form-input" id="settingsFullName" placeholder="이름을 입력하세요" data-i18n-ph="db.profile.name_ph" />
         </div>
         <div class="d-form-group" style="margin-bottom:0;">
           <label class="d-form-label">Username</label>
@@ -812,7 +812,7 @@
         <div class="d-form-group" style="margin-bottom:0;grid-column:1/-1;">
           <label class="d-form-label">Email</label>
           <div class="input-with-btn">
-            <input type="email" class="d-form-input" id="settingsEmail" placeholder="이메일을 입력하세요" autocomplete="off" />
+            <input type="email" class="d-form-input" id="settingsEmail" placeholder="이메일을 입력하세요" data-i18n-ph="db.profile.email_ph" autocomplete="off" />
             <button type="button" class="inner-btn" id="btnSendEmailCode" data-i18n="db.set.email_verify" onclick="sendEmailVerify()">인증 코드 전송</button>
           </div>
           <div id="emailVerifyWrap" style="display:none;margin-top:10px;">
@@ -832,24 +832,24 @@
     <div class="card settings-section" style="margin-bottom:20px;" id="apiSettingsCard">
       <div class="settings-section-title" data-i18n="db.set.apikey">OKX API 키</div>
       <div id="apiFormWrap">
-        <p style="font-size:13px;color:var(--gray-400);margin-bottom:20px;line-height:1.6;">
+        <p style="font-size:13px;color:var(--gray-400);margin-bottom:20px;line-height:1.6;" data-i18n-html="db.api.desc">
           OKX API 키를 연결하여 실시간 거래를 활성화하세요. <strong style="color:#fff;">거래 전용</strong> 권한으로 키를 생성하고 출금 권한은 절대 활성화하지 마세요.
         </p>
         <div class="d-form-group">
           <label class="d-form-label">API Key</label>
-          <input type="text" class="d-form-input" id="inputApiKey" placeholder="OKX API 키를 붙여넣으세요" autocomplete="off" />
+          <input type="text" class="d-form-input" id="inputApiKey" placeholder="OKX API 키를 붙여넣으세요" data-i18n-ph="db.api.key_ph" autocomplete="off" />
         </div>
         <div class="d-form-group">
           <label class="d-form-label">Secret Key</label>
           <div class="input-with-btn">
-            <input type="password" class="d-form-input" id="inputApiSecret" placeholder="시크릿 키를 붙여넣으세요" autocomplete="off" />
+            <input type="password" class="d-form-input" id="inputApiSecret" placeholder="시크릿 키를 붙여넣으세요" data-i18n-ph="db.api.secret_ph" autocomplete="off" />
             <button type="button" class="inner-btn" onclick="toggleApiPw('inputApiSecret',this)">Show</button>
           </div>
         </div>
         <div class="d-form-group">
           <label class="d-form-label">Passphrase</label>
           <div class="input-with-btn">
-            <input type="password" class="d-form-input" id="inputApiPass" placeholder="API 패스프레이즈" autocomplete="off" />
+            <input type="password" class="d-form-input" id="inputApiPass" placeholder="API 패스프레이즈" data-i18n-ph="db.api.pass_ph" autocomplete="off" />
             <button type="button" class="inner-btn" onclick="toggleApiPw('inputApiPass',this)">Show</button>
           </div>
         </div>
@@ -861,13 +861,13 @@
           <div style="display:flex;align-items:center;gap:12px;">
             <div class="connected-dot"></div>
             <div>
-              <div style="font-size:14px;font-weight:600;">OKX — 연결됨</div>
+              <div style="font-size:14px;font-weight:600;" data-i18n="db.api.connected">OKX — 연결됨</div>
               <div id="apiKeyMasked" style="font-size:12px;color:var(--gray-400);margin-top:2px;">API: ****...****</div>
             </div>
           </div>
           <button onclick="disconnectApi()" style="padding:6px 14px;background:none;border:1px solid rgba(239,68,68,0.25);color:#ef4444;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;" data-i18n="db.set.api_disconnect">연결 해제</button>
         </div>
-        <p style="font-size:12px;color:var(--gray-600);margin-top:8px;line-height:1.6;">API 키는 안전하게 암호화 저장됩니다. 변경하려면 연결 해제 후 새 키를 입력하세요.</p>
+        <p style="font-size:12px;color:var(--gray-600);margin-top:8px;line-height:1.6;" data-i18n="db.api.encrypted_note">API 키는 안전하게 암호화 저장됩니다. 변경하려면 연결 해제 후 새 키를 입력하세요.</p>
       </div>
     </div>
 
@@ -890,7 +890,7 @@
             <span style="font-size:20px;">📧</span>
             <div>
               <div style="font-size:14px;font-weight:500;">Email Code</div>
-              <div style="font-size:12px;color:var(--gray-400);">로그인 시 이메일로 6자리 코드 전송</div>
+              <div style="font-size:12px;color:var(--gray-400);" data-i18n="db.2fa.email_desc">로그인 시 이메일로 6자리 코드 전송</div>
             </div>
           </div>
           <div class="toggle" id="toggle-email-2fa" onclick="toggle2fa('email')"></div>
@@ -910,7 +910,7 @@
         <input type="text" class="d-form-input" id="tgChatId" placeholder="-1001234567890" autocomplete="off" />
       </div>
       <div id="tgMsg" style="font-size:12px;margin-bottom:12px;min-height:16px;"></div>
-      <button class="btn-secondary" onclick="saveTelegramSettings()">저장</button>
+      <button class="btn-secondary" onclick="saveTelegramSettings()" data-i18n="db.save">저장</button>
     </div>
 
     <!-- 5. Email Alerts -->
@@ -918,8 +918,8 @@
       <div class="settings-section-title" data-i18n="db.set.email_alerts">이메일 알림</div>
       <div class="toggle-row">
         <div class="toggle-label">
-          <h3>이메일 알림 수신</h3>
-          <p>거래 실행, 손절, 일일 리포트를 이메일로 받습니다</p>
+          <h3 data-i18n="db.email.alerts_title">이메일 알림 수신</h3>
+          <p data-i18n="db.email.alerts_desc">거래 실행, 손절, 일일 리포트를 이메일로 받습니다</p>
         </div>
         <div class="toggle on" id="emailAlertToggle" onclick="this.classList.toggle('on')"></div>
       </div>
@@ -930,8 +930,8 @@
       <div class="settings-section-title" style="color:#ef4444;border-bottom-color:rgba(239,68,68,0.15);" data-i18n="db.set.danger">위험 영역</div>
       <div class="danger-zone">
         <div class="danger-zone-text">
-          <h3>계정 삭제</h3>
-          <p>계정을 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.</p>
+          <h3 data-i18n="db.del.title">계정 삭제</h3>
+          <p data-i18n="db.del.desc">계정을 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.</p>
         </div>
         <button class="btn-danger" data-i18n="db.set.del_acct" onclick="deleteAccount()">계정 삭제</button>
       </div>
@@ -943,11 +943,11 @@
        PAGE: GUIDE
   ═══════════════════════════════════════════════════ -->
   <div class="page" id="page-guide">
-    <input type="text" class="guide-search" placeholder="가이드 검색..." oninput="searchGuide(this.value)" id="guideSearchInput" />
+    <input type="text" class="guide-search" placeholder="가이드 검색..." data-i18n-ph="db.guide.search_ph" oninput="searchGuide(this.value)" id="guideSearchInput" />
     <div class="guide-cats">
-      <button class="guide-cat-btn active" onclick="filterGuide('all', this)">전체</button>
-      <button class="guide-cat-btn" onclick="filterGuide('notice', this)">공지사항</button>
-      <button class="guide-cat-btn" onclick="filterGuide('tutorial', this)">튜토리얼</button>
+      <button class="guide-cat-btn active" onclick="filterGuide('all', this)" data-i18n="db.guide.all">전체</button>
+      <button class="guide-cat-btn" onclick="filterGuide('notice', this)" data-i18n="db.guide.notice">공지사항</button>
+      <button class="guide-cat-btn" onclick="filterGuide('tutorial', this)" data-i18n="db.guide.tutorial">튜토리얼</button>
       <button class="guide-cat-btn" onclick="filterGuide('faq', this)">FAQ</button>
     </div>
     <div class="articles-grid" id="articlesGrid"></div>
@@ -972,32 +972,32 @@
     <!-- Payment info -->
     <div id="upgradeStep-pay" style="display:none;">
       <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:14px 18px;margin-bottom:20px;">
-        <div style="font-size:12px;color:var(--yellow);font-weight:600;margin-bottom:4px;">⚠️ 소수점까지 정확한 금액을 전송하세요</div>
-        <div style="font-size:12px;color:var(--gray-400);">금액이 다르면 자동 감지가 되지 않습니다.</div>
+        <div style="font-size:12px;color:var(--yellow);font-weight:600;margin-bottom:4px;" data-i18n="db.upgrade.exact_title">⚠️ 소수점까지 정확한 금액을 전송하세요</div>
+        <div style="font-size:12px;color:var(--gray-400);" data-i18n="db.upgrade.exact_desc">금액이 다르면 자동 감지가 되지 않습니다.</div>
       </div>
       <div style="margin-bottom:16px;">
-        <div style="font-size:12px;color:var(--gray-400);margin-bottom:6px;">전송할 금액 (USDT TRC-20)</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-bottom:6px;" data-i18n="db.upgrade.amount_label">전송할 금액 (USDT TRC-20)</div>
         <div style="display:flex;align-items:center;gap:10px;">
           <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;" id="upgradeUniqueAmount">—</div>
-          <button onclick="copyText('upgradeUniqueAmount')" style="padding:4px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;">복사</button>
+          <button onclick="copyText('upgradeUniqueAmount')" style="padding:4px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;" data-i18n="db.copy">복사</button>
         </div>
       </div>
       <div style="margin-bottom:20px;">
-        <div style="font-size:12px;color:var(--gray-400);margin-bottom:6px;">입금 주소 (USDT TRC-20)</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-bottom:6px;" data-i18n="db.upgrade.addr_label">입금 주소 (USDT TRC-20)</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <div class="wallet-addr" id="upgradeWalletAddr" style="flex:1;font-size:11px;word-break:break-all;">—</div>
-          <button onclick="copyText('upgradeWalletAddr')" style="padding:4px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;flex-shrink:0;">복사</button>
+          <button onclick="copyText('upgradeWalletAddr')" style="padding:4px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;flex-shrink:0;" data-i18n="db.copy">복사</button>
         </div>
       </div>
       <div id="upgradeAutoStatus" style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;margin-bottom:16px;">
         <div class="live-dot"></div>
-        <span style="font-size:13px;color:var(--gray-400);">입금 자동 감지 중... (약 1분 소요)</span>
+        <span style="font-size:13px;color:var(--gray-400);" data-i18n="db.upgrade.detecting">입금 자동 감지 중... (약 1분 소요)</span>
       </div>
       <div>
-        <div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;">트랜잭션 ID 직접 입력 (선택)</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;" data-i18n="db.upgrade.txid_label">트랜잭션 ID 직접 입력 (선택)</div>
         <div style="display:flex;gap:8px;">
-          <input type="text" id="upgradeTxid" class="d-form-input" placeholder="TxID / 트랜잭션 해시" style="font-size:12px;flex:1;" />
-          <button onclick="verifyTxid()" class="btn-secondary" style="flex-shrink:0;">확인</button>
+          <input type="text" id="upgradeTxid" class="d-form-input" placeholder="TxID / 트랜잭션 해시" data-i18n-ph="db.upgrade.txid_ph" style="font-size:12px;flex:1;" />
+          <button onclick="verifyTxid()" class="btn-secondary" style="flex-shrink:0;" data-i18n="db.confirm">확인</button>
         </div>
         <div id="upgradeTxidMsg" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
       </div>
@@ -1011,7 +1011,7 @@
     </div>
 
     <div class="modal-actions" style="margin-top:20px;">
-      <button class="btn-cancel" onclick="closeUpgradeModal()">닫기</button>
+      <button class="btn-cancel" onclick="closeUpgradeModal()" data-i18n="db.close">닫기</button>
     </div>
   </div>
 </div>
@@ -1023,14 +1023,14 @@
     <div class="modal-desc" id="twoFaModalDesc">인증 앱을 사용하여 2단계 인증을 설정합니다.</div>
     <div id="twoFaModalContent">
       <div class="d-form-group">
-        <label class="d-form-label">인증 코드</label>
-        <input type="text" class="d-form-input" id="twoFaCode" placeholder="6자리 코드 입력" maxlength="6" />
+        <label class="d-form-label" data-i18n="db.2fa.code_label">인증 코드</label>
+        <input type="text" class="d-form-input" id="twoFaCode" placeholder="6자리 코드 입력" data-i18n-ph="db.set.code_ph" maxlength="6" />
       </div>
     </div>
     <div id="twoFaMsg" style="font-size:12px;min-height:16px;margin-bottom:8px;"></div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('twoFaModal')">취소</button>
-      <button class="btn-primary" onclick="confirm2faSetup()">확인</button>
+      <button class="btn-cancel" onclick="closeModal('twoFaModal')" data-i18n="db.cancel">취소</button>
+      <button class="btn-primary" onclick="confirm2faSetup()" data-i18n="db.confirm">확인</button>
     </div>
   </div>
 </div>
@@ -1524,7 +1524,7 @@
       });
       var data = await res.json();
       if (!data.running) {
-        listEl.innerHTML = '<div class="empty-state" style="padding:32px 0;">실행 중인 봇이 없습니다</div>';
+        listEl.innerHTML = '<div class="empty-state" style="padding:32px 0;" data-i18n="db.bots.no_bots">실행 중인 봇이 없습니다</div>';
         var dashActive = document.getElementById('dashActiveBots');
         if (dashActive) dashActive.textContent = '0';
         return;
