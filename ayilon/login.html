@@ -196,6 +196,11 @@
   </div>
 
   <script>
+    // Clean up inconsistent state: logged_in=true but no valid token
+    if (localStorage.getItem('ayilon_logged_in') === 'true' && !localStorage.getItem('ayilon_session_token')) {
+      localStorage.removeItem('ayilon_logged_in');
+    }
+
     // If already logged in (both flags present), go straight to dashboard
     if (localStorage.getItem('ayilon_logged_in') === 'true' && localStorage.getItem('ayilon_session_token')) {
       window.location.href = 'dashboard.html';
@@ -245,14 +250,10 @@
         localStorage.setItem('ayilon_name',     data.name     || '');
         localStorage.removeItem('ayilon_password'); // remove any old plaintext password
       } catch(e) {
-        // Fallback: if Worker is unreachable, allow login with locally stored credentials
-        var storedEmail = (localStorage.getItem('ayilon_email') || '').toLowerCase();
-        if (email !== storedEmail) {
-          errEl.textContent = 'Login failed. Please check your connection.';
-          errEl.classList.add('show');
-          if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
-          return;
-        }
+        errEl.textContent = 'Login failed. Please check your connection.';
+        errEl.classList.add('show');
+        if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+        return;
       }
 
       if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
