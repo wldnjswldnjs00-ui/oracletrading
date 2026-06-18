@@ -1074,11 +1074,12 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       : levels.supports[0]?.price;
     const useTP = tp && (signal.type === 'long' ? tp > currentPrice * 1.01 : tp < currentPrice * 0.99);
 
-    // ── Fix: R:R filter — minimum 1.5:1 required ─────────────
+    // ── R:R filter — minimum 1.0:1 required ──────────────────
     const slDistRR = Math.abs(currentPrice - signal.stopLoss) / currentPrice;
     const tpDistRR = useTP ? Math.abs(tp - currentPrice) / currentPrice : 0;
-    if (!useTP || tpDistRR / slDistRR < 1.2) {
-      await botLog(env, email, `Skip: R:R ${useTP ? (tpDistRR / slDistRR).toFixed(2) : 'n/a'}:1 < 1.2 | TP:${tp?.toFixed(0) ?? 'none'} SL:${signal.stopLoss.toFixed(0)}`);
+    const minRR = strategy === 'rsi_dca' ? 0.8 : 1.0;
+    if (!useTP || tpDistRR / slDistRR < minRR) {
+      await botLog(env, email, `Skip: R:R ${useTP ? (tpDistRR / slDistRR).toFixed(2) : 'n/a'}:1 < ${minRR} | TP:${tp?.toFixed(0) ?? 'none'} SL:${signal.stopLoss.toFixed(0)}`);
       return;
     }
 
