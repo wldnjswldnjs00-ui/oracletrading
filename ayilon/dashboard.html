@@ -447,9 +447,9 @@
         <div class="stat-card-sub" id="dashDailyPct">+0.00%</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label" data-i18n="db.ov.winrate">Win Rate</div>
-        <div class="stat-card-value" id="dashWinRate">—</div>
-        <div class="stat-card-sub" data-i18n="db.ov.alltime">전체 기간</div>
+        <div class="stat-card-label" data-i18n="db.dash.total_return">전체 수익률</div>
+        <div class="stat-card-value" id="dashTotalReturn">—</div>
+        <div class="stat-card-sub" id="dashTotalReturnSub" data-i18n="db.dash.total_return_sub">봇 시작 이후</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-label" data-i18n="db.ov.activebots">Active Bots</div>
@@ -1096,7 +1096,11 @@
   /* ── Access Check ── */
   function checkAccess() {
     var token = getSessionToken();
-    if (!token) { window.location.href = 'login.html'; return; }
+    if (!token) {
+      localStorage.removeItem('ayilon_logged_in');
+      window.location.replace('login.html');
+      return;
+    }
   }
 
   /* ── Topbar ── */
@@ -1256,6 +1260,29 @@
       // Update portfolio value card
       var pvEl = document.getElementById('dashPortfolioVal');
       if (pvEl && b.equity > 0) pvEl.textContent = '$' + fmtNum(b.equity, 2);
+
+      // Total compound return calculation
+      if (b.equity > 0) {
+        var startKey = 'ayilon_start_equity:' + (getUserData().email || '');
+        var stored = parseFloat(localStorage.getItem(startKey) || '0');
+        if (!stored || stored <= 0) {
+          localStorage.setItem(startKey, String(b.equity));
+          stored = b.equity;
+        }
+        var returnPct = ((b.equity / stored) - 1) * 100;
+        var retEl  = document.getElementById('dashTotalReturn');
+        var retSub = document.getElementById('dashTotalReturnSub');
+        if (retEl) {
+          var sign = returnPct >= 0 ? '+' : '';
+          retEl.textContent = sign + fmtNum(returnPct, 2) + '%';
+          retEl.style.color = returnPct >= 0 ? 'var(--green)' : 'var(--red)';
+        }
+        if (retSub) {
+          var pnlAmt = b.equity - stored;
+          var pnlSign = pnlAmt >= 0 ? '+' : '';
+          retSub.textContent = pnlSign + '$' + fmtNum(pnlAmt, 2);
+        }
+      }
     } catch(e) {
       el.innerHTML = '<div style="color:#ef4444;font-size:13px;padding:12px 0;">' + _t('db.term.load_fail') + '</div>';
     }
