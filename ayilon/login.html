@@ -196,8 +196,8 @@
   </div>
 
   <script>
-    // If already logged in, skip to dashboard
-    if (localStorage.getItem('ayilon_logged_in') === 'true') {
+    // If already logged in (and session token exists), skip to dashboard
+    if (localStorage.getItem('ayilon_logged_in') === 'true' && localStorage.getItem('ayilon_session_token')) {
       window.location.href = 'dashboard.html';
     }
 
