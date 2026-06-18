@@ -61,6 +61,8 @@ export default {
       if (path === '/get-account')       return handleGetAccount(request, env);
       if (path === '/admin-users')       return handleAdminUsers(request, env);
       if (path === '/admin-user-detail') return handleAdminUserDetail(request, env);
+      if (path === '/admin/list-users')  return handleAdminListUsers(request, env);
+      if (path === '/admin/set-plan')    return handleAdminSetPlan(request, env);
       if (path === '/delete-account')    return handleDeleteAccount(request, env);
     }
 
@@ -2306,6 +2308,63 @@ async function handleAdminUserDetail(request, env) {
     botLogs: botLogs || [],
     positions: positions || {}
   });
+}
+
+const ADMIN_EMAIL_CONST = 'wldnjswldnjs00@gmail.com';
+
+async function handleAdminListUsers(request, env) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const session = await requireSession(body, env, request);
+    if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
+
+    const { keys } = await env.USERS_KV.list({ prefix: 'user:' });
+    const users = [];
+    for (const key of keys) {
+      try {
+        const u = await env.USERS_KV.get(key.name, { type: 'json' });
+        if (!u) continue;
+        const email = key.name.slice('user:'.length);
+        const cfg = await env.USERS_KV.get('bot:config:' + email, { type: 'json' });
+        const botState = await getBotState(env, email);
+        const sub = u.subscription || {};
+        users.push({
+          email,
+          plan: sub.plan || 'free',
+          planExpiresAt: sub.expiresAt || null,
+          createdAt: u.createdAt || null,
+          botRunning: cfg?.running === true && botState.running !== 0,
+          verified: u.verified || false,
+        });
+      } catch(e) {}
+    }
+    return json({ ok: true, users });
+  } catch(e) {
+    return json({ ok: false, error: e.message }, 500);
+  }
+}
+
+async function handleAdminSetPlan(request, env) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const session = await requireSession(body, env, request);
+    if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
+
+    const { email, plan } = body;
+    if (!email || !plan) return json({ ok: false, error: 'email and plan required' }, 400);
+    if (!['free', 'starter', 'pro', 'elite'].includes(plan)) return json({ ok: false, error: 'invalid plan' }, 400);
+
+    const userKey = 'user:' + email;
+    const u = await env.USERS_KV.get(userKey, { type: 'json' });
+    if (!u) return json({ ok: false, error: 'user not found' }, 404);
+
+    const expiresAt = plan === 'free' ? null : Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+    u.subscription = { plan, expiresAt, grantedBy: 'admin', grantedAt: Date.now() };
+    await env.USERS_KV.put(userKey, JSON.stringify(u));
+    return json({ ok: true });
+  } catch(e) {
+    return json({ ok: false, error: e.message }, 500);
+  }
 }
 
 async function handleDeleteAccount(request, env) {
