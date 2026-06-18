@@ -1006,14 +1006,23 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       case 'atr_trend':    signal = detectSignalATRTrend(candles1H, c5, currentPrice);              break;
       default:             signal = detectSignal(c5, levels); // 'sr_bounce' or legacy 'daytrading'
     }
-    if (!signal) return;
+    if (!signal) {
+      // Heartbeat: log once per 5 min so user can confirm bot is alive
+      const hbKey = 'bot:hb:' + email + ':' + strategy;
+      const lastHb = parseInt(await env.USERS_KV.get(hbKey) || '0');
+      if (Date.now() - lastHb > 5 * 60 * 1000) {
+        await botLog(env, email, `[${strategy}] Scan: $${currentPrice.toFixed(0)} — no entry signal`);
+        await env.USERS_KV.put(hbKey, String(Date.now()));
+      }
+      return;
+    }
 
     // ── Trend strength + direction filter ────────────────────
     // funding_rate is a contrarian strategy — it trades AGAINST the trend, so skip trend filter
     if (strategy !== 'funding_rate') {
-      if (trend.dir === 'up'   && signal.type === 'short') return;
-      if (trend.dir === 'down' && signal.type === 'long')  return;
-      if (!trend.strong && signal.grade === 'B') return;
+      if (trend.dir === 'up'   && signal.type === 'short') { await botLog(env, email, `[${strategy}] Skip: trend UP but signal is SHORT`); return; }
+      if (trend.dir === 'down' && signal.type === 'long')  { await botLog(env, email, `[${strategy}] Skip: trend DOWN but signal is LONG`); return; }
+      if (!trend.strong && signal.grade === 'B') { await botLog(env, email, `[${strategy}] Skip: weak trend + B-grade signal`); return; }
     }
 
     // ── 1H confirmation for SHORT ─────────────────────────────
