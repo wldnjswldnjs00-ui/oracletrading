@@ -1204,7 +1204,11 @@
       var res  = await fetch(WORKER_URL + '/get-account', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token }) });
       var data = await res.json();
       var b = data.balance;
-      if (!b) { el.innerHTML = '<div class="empty-state"><p>' + _t('db.no_api_account') + '</p></div>'; return; }
+      if (!b) {
+        var errMsg = data.error ? '오류: ' + data.error : _t('db.no_api_account');
+        el.innerHTML = '<div class="empty-state"><p>' + errMsg + '</p></div>';
+        return;
+      }
       var pnlCls = b.unrealPnl >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg';
       el.innerHTML =
         '<div style="display:flex;flex-direction:column;gap:12px;padding:4px 0;">' +
