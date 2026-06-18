@@ -165,7 +165,7 @@
     .sim-tab:hover { border-color: rgba(255,255,255,0.25); color: #fff; }
     .sim-tab.active { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.28); color: #fff; }
     .sim-tier { font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .sim-tier-free  { background: rgba(34,197,94,0.15);  color: #22c55e; }
+    .sim-tier-starter { background: rgba(34,197,94,0.15);  color: #22c55e; }
     .sim-tier-pro   { background: rgba(59,130,246,0.15);  color: #3b82f6; }
     .sim-tier-elite { background: rgba(168,85,247,0.15); color: #a855f7; }
     .sim-chart-outer { }
@@ -1073,9 +1073,9 @@
     ────────────────────────────────────────────*/
     (function() {
       var STRATS = [
-        {name:'S/R Bounce',       nameKo:'S/R 반등',          tier:'FREE',  logic:'SR 레벨 반등 진입/청산',  logicEn:'S/R Level Bounce Entry/Exit',      mode:'sr'},
-        {name:'RSI DCA',          nameKo:'RSI DCA',            tier:'FREE',  logic:'RSI 과매도 다단계 진입',  logicEn:'RSI Oversold Multi-Entry',          mode:'dca'},
-        {name:'MA Support',       nameKo:'MA 지지',            tier:'FREE',  logic:'MA 지지 반등 매수',       logicEn:'MA Support Bounce Long',            mode:'masup'},
+        {name:'S/R Bounce',       nameKo:'S/R 반등',          tier:'STARTER',  logic:'SR 레벨 반등 진입/청산',  logicEn:'S/R Level Bounce Entry/Exit',      mode:'sr'},
+        {name:'RSI DCA',          nameKo:'RSI DCA',            tier:'STARTER',  logic:'RSI 과매도 다단계 진입',  logicEn:'RSI Oversold Multi-Entry',          mode:'dca'},
+        {name:'MA Support',       nameKo:'MA 지지',            tier:'STARTER',  logic:'MA 지지 반등 매수',       logicEn:'MA Support Bounce Long',            mode:'masup'},
         {name:'MA Crossover',     nameKo:'MA 골든/데드크로스', tier:'PRO',   logic:'단기/장기 MA 교차 신호',  logicEn:'Short/Long MA Crossover Signal',    mode:'macross'},
         {name:'BB Reversion',     nameKo:'BB 반전',            tier:'PRO',   logic:'볼린저 밴드 이탈 반전',   logicEn:'Bollinger Band Breakout Reversion', mode:'bb'},
         {name:'Breakout+Volume',  nameKo:'돌파+거래량',        tier:'PRO',   logic:'박스권 상단 돌파 진입',   logicEn:'Range Top Breakout Entry',          mode:'breakout'},

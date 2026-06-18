@@ -1172,17 +1172,22 @@
     if (adminLink) adminLink.style.display = (email === ADMIN_EMAIL) ? '' : 'none';
 
     var badge = document.getElementById('planBadge');
-    var plan  = (sub.plan || 'free').toLowerCase();
+    var plan  = (sub.plan || '').toLowerCase();
+    badge.style.cursor = '';
+    badge.onclick = null;
     if (email === ADMIN_EMAIL) {
       badge.textContent = 'ADMIN'; badge.className = 'plan-badge admin';
+      badge.style.display = '';
+      badge.style.cursor = 'pointer';
+      badge.onclick = function() { showPage('admin', document.getElementById('adminSidebarItem')); };
     } else if (plan === 'elite') {
-      badge.textContent = 'ELITE'; badge.className = 'plan-badge elite';
+      badge.textContent = 'ELITE'; badge.className = 'plan-badge elite'; badge.style.display = '';
     } else if (plan === 'pro') {
-      badge.textContent = 'PRO';   badge.className = 'plan-badge pro';
+      badge.textContent = 'PRO';   badge.className = 'plan-badge pro';   badge.style.display = '';
     } else if (plan === 'starter') {
-      badge.textContent = 'STARTER'; badge.className = 'plan-badge';
+      badge.textContent = 'STARTER'; badge.className = 'plan-badge';     badge.style.display = '';
     } else {
-      badge.textContent = 'FREE'; badge.className = 'plan-badge';
+      badge.style.display = 'none';
     }
   }
 
@@ -1221,15 +1226,14 @@
   }
 
   /* ── Logout ── */
-  async function doLogout() {
+  function doLogout() {
     var token = getSessionToken();
-    try {
-      await fetch(WORKER_URL + '/logout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken: token })
-      });
-    } catch(e){}
+    // fire-and-forget — never await so redirect is instant
+    fetch(WORKER_URL + '/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionToken: token })
+    }).catch(function(){});
     localStorage.removeItem('ayilon_session_token');
     localStorage.removeItem('ayilon_user');
     localStorage.removeItem('ayilon_subscription');
@@ -1592,8 +1596,8 @@
   var termPosRefreshActive = false;
 
   var STRATEGIES = [
-    { id: 'sr-bounce',       name: 'SR Bounce',       tier: 'FREE',  desc: 'Support & Resistance Bounce — 지지/저항 레벨에서 반등 진입 전략' },
-    { id: 'rsi-dca',         name: 'RSI DCA',          tier: 'FREE',  desc: 'RSI 과매도 구간에서 분할 매수하는 DCA 전략' },
+    { id: 'sr-bounce',       name: 'SR Bounce',       tier: 'STARTER', desc: 'Support & Resistance Bounce — 지지/저항 레벨에서 반등 진입 전략' },
+    { id: 'rsi-dca',         name: 'RSI DCA',          tier: 'STARTER', desc: 'RSI 과매도 구간에서 분할 매수하는 DCA 전략' },
     { id: 'ma-crossover',    name: 'MA Crossover',     tier: 'PRO',   desc: '이동평균 골든크로스/데드크로스 기반 추세 추종 전략' },
     { id: 'bb-reversion',    name: 'BB Reversion',     tier: 'PRO',   desc: '볼린저밴드 상/하단 이탈 후 평균회귀 전략' },
     { id: 'breakout',        name: 'Breakout',         tier: 'PRO',   desc: '주요 레벨 돌파 시 모멘텀 추종 전략' },
@@ -1615,10 +1619,10 @@
   }
 
   function tierLevel(tier) {
-    if (tier === 'FREE')  return 0;
-    if (tier === 'PRO')   return 2;
-    if (tier === 'ELITE') return 3;
-    return 0;
+    if (tier === 'STARTER') return 1;
+    if (tier === 'PRO')     return 2;
+    if (tier === 'ELITE')   return 3;
+    return 1;
   }
 
   function renderStrategyList() {
@@ -1629,7 +1633,7 @@
       var isSelected = selectedStrategies.indexOf(s.id) !== -1;
       var activeCls = isSelected ? ' active' : '';
       var lockedCls = locked ? ' locked' : '';
-      var tierCls   = s.tier === 'FREE' ? 'tier-free' : s.tier === 'PRO' ? 'tier-pro' : 'tier-elite';
+      var tierCls   = s.tier === 'STARTER' ? 'tier-free' : s.tier === 'PRO' ? 'tier-pro' : 'tier-elite';
       var lockIcon  = locked ? ' <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : '';
       var checkIcon = isSelected ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#22c55e;flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>' : '<div style="width:14px;height:14px;border:1.5px solid rgba(255,255,255,0.2);border-radius:3px;flex-shrink:0;"></div>';
       var clickFn   = locked
@@ -1895,12 +1899,12 @@
   ════════════════════════════════════════ */
   function initSubscriptionPage() {
     var sub  = getSubscription();
-    var plan = (sub.plan || 'free').toLowerCase();
-    var planNames = { free: 'FREE', starter: 'Starter', pro: 'Pro', elite: 'Elite' };
-    document.getElementById('currentPlanName').textContent   = planNames[plan] || 'FREE';
-    document.getElementById('currentPlanDetail').textContent = plan === 'free'
-      ? (window.__t ? window.__t('db.sub.no_plan') : '구독이 활성화되지 않았습니다')
-      : (window.__t ? window.__t('db.sub.current_plan') + ': ' + planNames[plan] : '현재 ' + planNames[plan] + ' 플랜 이용 중');
+    var plan = (sub.plan || '').toLowerCase();
+    var planNames = { starter: 'Starter', pro: 'Pro', elite: 'Elite' };
+    document.getElementById('currentPlanName').textContent   = planNames[plan] || '—';
+    document.getElementById('currentPlanDetail').textContent = planNames[plan]
+      ? (window.__t ? window.__t('db.sub.current_plan') + ': ' + planNames[plan] : '현재 ' + planNames[plan] + ' 플랜 이용 중')
+      : (window.__t ? window.__t('db.sub.no_plan') : '구독이 활성화되지 않았습니다');
 
     // Mark current plan card
     ['starter','pro','elite'].forEach(function(p) {
