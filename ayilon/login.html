@@ -198,7 +198,7 @@
   <script>
     // If already logged in (both flags present), go straight to dashboard
     if (localStorage.getItem('ayilon_logged_in') === 'true' && localStorage.getItem('ayilon_session_token')) {
-      window.location.replace('dashboard.html');
+      window.location.href = 'dashboard.html';
     }
 
     function togglePassword() {
