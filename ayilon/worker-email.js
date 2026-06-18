@@ -615,8 +615,12 @@ async function handleBotStatus(request, env) {
     }
   }
 
+  // D1 running=0 means stop was triggered via dashboard (D1 overrides KV)
+  const d1Stopped = botStateRow.running === 0;
+  const effectiveRunning = !d1Stopped && _config.running === true;
+
   return json({
-    running: _config.running === true,
+    running: effectiveRunning,
     config: {
       strategy:    _config.strategy    || null,
       strategies:  _config.strategies  || null,
@@ -640,6 +644,36 @@ async function handleBotControl(request, env) {
   const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
 
+  await initDB(env);
+
+  // ── STOP: D1 only — never writes KV (KV daily limit must not be wasted here) ──
+  if (action === 'stop') {
+    const { strategy: stopStrat } = body;
+    if (stopStrat) {
+      const botState = await getBotState(env, session.email);
+      const currentStopped = JSON.parse(botState.stopped_strategies || '[]');
+      if (!currentStopped.includes(stopStrat)) currentStopped.push(stopStrat);
+      const cfg = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' }) || {};
+      const allStrats = Array.isArray(cfg.strategies) && cfg.strategies.length > 0
+        ? cfg.strategies : [cfg.strategy || 'sr_bounce'];
+      const remaining = allStrats.filter(s => !currentStopped.includes(s));
+      if (remaining.length === 0) {
+        await upsertBotState(env, session.email, { running: 0, stopped_strategies: null });
+      } else {
+        await upsertBotState(env, session.email, { stopped_strategies: JSON.stringify(currentStopped) });
+      }
+    } else {
+      await upsertBotState(env, session.email, { running: 0, stopped_strategies: null });
+    }
+    return json({ ok: true, running: false });
+  }
+
+  if (action === 'dismiss') {
+    await upsertBotState(env, session.email, { daily_loss_triggered: null });
+    return json({ ok: true });
+  }
+
+  // ── START / RESUME: write KV + reset D1 running flag ──
   const configKey = 'bot:config:' + session.email;
   const config = await env.USERS_KV.get(configKey, { type: 'json' }) || {};
 
@@ -648,29 +682,19 @@ async function handleBotControl(request, env) {
       return json({ ok: false, error: 'api_keys_required' });
     }
     config.running = true;
-  }
-  if (action === 'stop') {
-    const { strategy: stopStrat } = body;
-    if (stopStrat && Array.isArray(config.strategies)) {
-      config.strategies = config.strategies.filter(s => s !== stopStrat);
-      if (config.strategies.length === 0) config.running = false;
-    } else {
-      config.running = false;
-    }
-  }
-  if (action === 'dismiss') {
-    await upsertBotState(env, session.email, { daily_loss_triggered: null });
-    return json({ ok: true });
+    await upsertBotState(env, session.email, { running: 1, stopped_strategies: null });
   }
   if (action === 'resume') {
     config.running = true;
     await upsertBotState(env, session.email, {
       daily_loss: '{}',
       daily_loss_triggered: null,
-      peak_equity: 0
+      peak_equity: 0,
+      running: 1,
+      stopped_strategies: null
     });
   }
-  // Retry KV put up to 3 times (rate limit can be transient)
+
   let putErr;
   for (let i = 0; i < 3; i++) {
     try {
@@ -682,7 +706,7 @@ async function handleBotControl(request, env) {
       await new Promise(r => setTimeout(r, 300 * (i + 1)));
     }
   }
-  if (putErr) return json({ ok: false, error: 'KV write failed after retries: ' + putErr.message }, 500);
+  if (putErr) return json({ ok: false, error: 'KV write failed: ' + putErr.message }, 500);
   return json({ ok: true, running: config.running });
   } catch(e) {
     return json({ ok: false, error: e.message || 'internal_error' }, 500);
@@ -792,12 +816,17 @@ async function initDB(env) {
       peak_equity REAL DEFAULT 0,
       daily_loss TEXT DEFAULT '{}',
       daily_loss_triggered TEXT DEFAULT NULL,
-      last_scan TEXT DEFAULT ''
+      last_scan TEXT DEFAULT '',
+      running INTEGER DEFAULT 1,
+      stopped_strategies TEXT DEFAULT NULL
     )`).run();
     await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS entry_locks (
       lock_key TEXT PRIMARY KEY,
       expires_at INTEGER NOT NULL
     )`).run();
+    // Add new columns to existing tables (no-op if already present)
+    await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN running INTEGER DEFAULT 1`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN stopped_strategies TEXT DEFAULT NULL`).run().catch(() => {});
   } catch(e) {}
 }
 
@@ -868,9 +897,15 @@ async function runBot(env) {
       const email = key.name.slice('bot:config:'.length);
       const cfg = await env.USERS_KV.get(key.name, { type: 'json' });
       if (!cfg || cfg.running !== true) continue;
-      const strategiesToRun = Array.isArray(cfg.strategies) && cfg.strategies.length > 0
+      // D1 running=0 means stop was requested via dashboard (overrides KV)
+      const botStateCheck = await getBotState(env, email);
+      if (botStateCheck.running === 0) continue;
+      const stoppedViaD1 = JSON.parse(botStateCheck.stopped_strategies || 'null') || [];
+      const allStrategies = Array.isArray(cfg.strategies) && cfg.strategies.length > 0
         ? cfg.strategies
         : [cfg.strategy || 'sr_bounce'];
+      const strategiesToRun = allStrategies.filter(s => !stoppedViaD1.includes(s));
+      if (strategiesToRun.length === 0) continue;
       // Register log buffer — botLog writes here instead of KV during this cron tick
       const logBuf = [];
       _logBufs.set(email, logBuf);
