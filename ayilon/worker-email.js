@@ -806,7 +806,10 @@ async function runBotForUser(env, email, cfg) {
     const balRes = await okxGet(apiKey, apiSecret, apiPassphrase, '/api/v5/account/balance?ccy=USDT', demoMode);
     const details = balRes?.data?.[0]?.details || [];
     const equity = parseFloat(details.find(d => d.ccy === 'USDT')?.eq || '0');
-    if (equity <= 0) return;
+    if (equity <= 0) {
+      await botLog(env, email, `Skip: USDT equity=0 in trading account. ${demoMode ? 'Demo: check OKX demo unified account has funds.' : 'Transfer USDT to trading account on OKX.'}`);
+      return;
+    }
 
     // ── Fix: Max drawdown stop ────────────────────────────────
     // Track peak equity and halt bot if overall drawdown exceeds mddLimit (default 30%)
@@ -1043,11 +1046,12 @@ async function runBotForUser(env, email, cfg) {
     }
     const nEntries  = parseInt(numEntries);
     const slDist    = Math.abs(currentPrice - signal.stopLoss);        // price distance to SL
-    const riskPerCt = slDist * ctVal;                                  // USD risk per contract if SL hit
+    const riskPerCt = slDist * ctVal;                                  // USD loss per contract if SL hit (leverage-independent)
     let totalCts    = riskPerCt > 0 ? Math.floor((equity * riskPct) / riskPerCt) : 0;
-    const capCts    = Math.floor(equity * (posSize / 100) / (currentPrice * ctVal));
+    // Leverage-aware cap: margin required per contract = contractValue / leverage
+    const capCts    = Math.floor(equity * (posSize / 100) * safeLeverage / (currentPrice * ctVal));
     if (capCts < 1) {
-      await botLog(env, email, `Skip: insufficient equity for 1 contract (posSize=${posSize}% = ${(equity * posSize / 100).toFixed(0)} USDT, need ≥${(currentPrice * ctVal).toFixed(0)} USDT/ct)`);
+      await botLog(env, email, `Skip: insufficient equity for 1 contract (equity=${equity.toFixed(0)} USDT, need ≥${(currentPrice * ctVal / safeLeverage).toFixed(0)} USDT margin/ct)`);
       return;
     }
     totalCts        = Math.max(nEntries, Math.min(totalCts, capCts));  // at least 1 per entry, capped by posSize
@@ -1056,7 +1060,7 @@ async function runBotForUser(env, email, cfg) {
     if (entrySizing === 'martingale' && entryNum > 1) {
       const base = Math.max(1, Math.floor(totalCts / nEntries));
       szContracts = base * Math.pow(2, entryNum - 1);
-      szContracts = Math.min(szContracts, Math.floor(equity * 0.40 / (currentPrice * ctVal)));
+      szContracts = Math.min(szContracts, Math.floor(equity * 0.40 * safeLeverage / (currentPrice * ctVal)));
       await botLog(env, email, `⚠️ MARTINGALE #${entryNum}: ${Math.pow(2, entryNum-1)}× size (${szContracts} cts) — high risk`);
     } else if (entrySizing === 'weighted' && nEntries >= 2) {
       const weights = Array.from({ length: nEntries }, (_, i) => i === 0 ? 1 : 2);
