@@ -438,22 +438,22 @@
   <div class="page active" id="page-dashboard">
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-card-label">Portfolio Value</div>
+        <div class="stat-card-label" data-i18n="db.dash.portfolio_val">Portfolio Value</div>
         <div class="stat-card-value" id="dashPortfolioVal">$0.00</div>
         <div class="stat-card-sub" id="dashPortfolioSub">—</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Daily P&amp;L</div>
+        <div class="stat-card-label" data-i18n="db.dash.daily_pnl">Daily P&amp;L</div>
         <div class="stat-card-value" id="dashDailyPnl">$0.00</div>
         <div class="stat-card-sub" id="dashDailyPct">+0.00%</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Win Rate</div>
+        <div class="stat-card-label" data-i18n="db.ov.winrate">Win Rate</div>
         <div class="stat-card-value" id="dashWinRate">—</div>
-        <div class="stat-card-sub">전체 기간</div>
+        <div class="stat-card-sub" data-i18n="db.ov.alltime">전체 기간</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-label">Active Bots</div>
+        <div class="stat-card-label" data-i18n="db.ov.activebots">Active Bots</div>
         <div class="stat-card-value" id="dashActiveBots">0</div>
         <div class="stat-card-sub" id="dashBotSub">실행 중</div>
       </div>
@@ -462,7 +462,7 @@
     <!-- Equity Chart -->
     <div class="card" style="margin-bottom:20px;">
       <div class="card-header">
-        <span class="card-title">포트폴리오 에쿼티</span>
+        <span class="card-title" data-i18n="db.portfolio.equity">포트폴리오 에쿼티</span>
         <div class="time-range" id="dashTimeRange">
           <button class="tr-btn active" onclick="setDashTimeRange('1D',this)">1D</button>
           <button class="tr-btn" onclick="setDashTimeRange('3D',this)">3D</button>
@@ -470,7 +470,7 @@
           <button class="tr-btn" onclick="setDashTimeRange('1M',this)">1M</button>
           <button class="tr-btn" onclick="setDashTimeRange('3M',this)">3M</button>
           <button class="tr-btn" onclick="setDashTimeRange('1Y',this)">1Y</button>
-          <button class="tr-btn" onclick="setDashTimeRange('custom',this)">커스텀</button>
+          <button class="tr-btn" onclick="setDashTimeRange('custom',this)" data-i18n="db.timerange.custom">커스텀</button>
         </div>
       </div>
       <div style="position:relative;height:200px;">
@@ -482,11 +482,11 @@
       <!-- 계정별 보유자산 -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title">계정별 보유자산</span>
+          <span class="card-title" data-i18n="db.portfolio.assets">계정별 보유자산</span>
         </div>
         <div id="dashAssetsContent">
           <div class="empty-state">
-            <p>등록된 API 계정이 없습니다</p>
+            <p data-i18n="db.no_api_account">등록된 API 계정이 없습니다</p>
           </div>
         </div>
       </div>
@@ -494,7 +494,7 @@
       <!-- 포트폴리오 변화 -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title">포트폴리오 변화</span>
+          <span class="card-title" data-i18n="db.portfolio.change">포트폴리오 변화</span>
           <div class="time-range">
             <button class="tr-btn active" onclick="setPortfolioRange('1M',this)">1M</button>
             <button class="tr-btn" onclick="setPortfolioRange('3M',this)">3M</button>
@@ -510,9 +510,9 @@
     <!-- API 계정 없을 때 하단 안내 -->
     <div class="card" id="dashNoApiCard" style="text-align:center;padding:40px 24px;">
       <div style="font-size:32px;margin-bottom:12px;">🔗</div>
-      <div style="font-size:16px;font-weight:600;margin-bottom:8px;">등록된 API 계정이 없습니다</div>
-      <div style="font-size:13px;color:var(--gray-400);margin-bottom:20px;">OKX API 키를 등록하면 실시간 포트폴리오와 봇 거래를 시작할 수 있습니다.</div>
-      <button class="btn-primary" onclick="showPage('settings', document.querySelector('.sidebar-item[onclick*=settings]'))">+ 첫 API 계정 만들기</button>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;" data-i18n="db.no_api_account">등록된 API 계정이 없습니다</div>
+      <div style="font-size:13px;color:var(--gray-400);margin-bottom:20px;" data-i18n="db.no_api_desc">OKX API 키를 등록하면 실시간 포트폴리오와 봇 거래를 시작할 수 있습니다.</div>
+      <button class="btn-primary" onclick="showPage('settings', document.querySelector('.sidebar-item[onclick*=settings]'))" data-i18n="db.add_first_api">+ 첫 API 계정 만들기</button>
     </div>
   </div>
 
@@ -530,10 +530,10 @@
         <!-- Tabs -->
         <div class="card" style="padding:0;">
           <div class="tab-bar" style="padding:0 24px;margin-bottom:0;">
-            <button class="tab-btn active" onclick="switchTerminalTab('positions',this)">포지션</button>
-            <button class="tab-btn" onclick="switchTerminalTab('orders',this)">대기주문</button>
-            <button class="tab-btn" onclick="switchTerminalTab('history',this)">거래내역</button>
-            <button class="tab-btn" onclick="switchTerminalTab('account',this)">계좌</button>
+            <button class="tab-btn active" onclick="switchTerminalTab('positions',this)" data-i18n="db.tab.positions">포지션</button>
+            <button class="tab-btn" onclick="switchTerminalTab('orders',this)" data-i18n="db.tab.orders">대기주문</button>
+            <button class="tab-btn" onclick="switchTerminalTab('history',this)" data-i18n="db.tab.history">거래내역</button>
+            <button class="tab-btn" onclick="switchTerminalTab('account',this)" data-i18n="db.tab.account">계좌</button>
           </div>
           <div style="padding:16px 20px;">
             <div class="tab-panel active" id="term-tab-positions">
@@ -567,22 +567,22 @@
               <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px #22c55e;flex-shrink:0;"></span>
               <span style="font-size:13px;font-weight:600;color:#22c55e;">OKX Connected</span>
             </div>
-            <div style="font-size:12px;color:var(--gray-400);line-height:1.6;">거래 준비 완료. 봇 설정을 시작하세요.</div>
+            <div style="font-size:12px;color:var(--gray-400);line-height:1.6;" data-i18n="db.term.ready">거래 준비 완료. 봇 설정을 시작하세요.</div>
           </div>
         </div>
         <div class="card">
-          <div class="card-title" style="margin-bottom:12px;">빠른 정보</div>
+          <div class="card-title" style="margin-bottom:12px;" data-i18n="db.term.quickinfo">빠른 정보</div>
           <div style="display:flex;flex-direction:column;gap:10px;">
             <div style="display:flex;justify-content:space-between;font-size:13px;">
-              <span style="color:var(--gray-400);">펀딩비</span>
+              <span style="color:var(--gray-400);" data-i18n="db.term.funding">펀딩비</span>
               <span id="termFunding">—</span>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:13px;">
-              <span style="color:var(--gray-400);">24h 거래량</span>
+              <span style="color:var(--gray-400);" data-i18n="db.term.volume">24h 거래량</span>
               <span id="termVolume">—</span>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:13px;">
-              <span style="color:var(--gray-400);">24h 변동</span>
+              <span style="color:var(--gray-400);" data-i18n="db.term.change">24h 변동</span>
               <span id="termChange">—</span>
             </div>
           </div>
@@ -599,7 +599,7 @@
       <!-- Strategy List -->
       <div class="card" style="height:fit-content;">
         <div class="card-header" style="margin-bottom:12px;">
-          <span class="card-title">전략 선택</span>
+          <span class="card-title" data-i18n="db.bots.select_strategy">전략 선택</span>
         </div>
         <div class="strategy-list" id="strategyList"></div>
       </div>
@@ -608,24 +608,24 @@
       <div class="card" id="botConfigPanel">
         <!-- Default: guide steps -->
         <div id="botGuideSteps">
-          <div style="font-size:18px;font-weight:700;font-family:'Space Grotesk',sans-serif;margin-bottom:8px;">시그널 봇 생성</div>
-          <div style="font-size:13px;color:var(--gray-400);margin-bottom:24px;">아래 단계에 따라 첫 번째 시그널 봇을 설정하세요.</div>
+          <div style="font-size:18px;font-weight:700;font-family:'Space Grotesk',sans-serif;margin-bottom:8px;" data-i18n="db.bots.create_bot">시그널 봇 생성</div>
+          <div style="font-size:13px;color:var(--gray-400);margin-bottom:24px;" data-i18n="db.bots.guide_desc">아래 단계에 따라 첫 번째 시그널 봇을 설정하세요.</div>
           <div class="step-guide">
             <div class="step-item">
               <div class="step-num">1</div>
-              <div class="step-text"><strong style="color:#fff;">전략 선택</strong> — 왼쪽 목록에서 원하는 전략을 선택하세요</div>
+              <div class="step-text" data-i18n-html="db.bots.step1"><strong style="color:#fff;">전략 선택</strong> — 왼쪽 목록에서 원하는 전략을 선택하세요</div>
             </div>
             <div class="step-item">
               <div class="step-num">2</div>
-              <div class="step-text"><strong style="color:#fff;">API 계정 선택</strong> — 연결된 OKX 계정을 선택하세요</div>
+              <div class="step-text" data-i18n-html="db.bots.step2"><strong style="color:#fff;">API 계정 선택</strong> — 연결된 OKX 계정을 선택하세요</div>
             </div>
             <div class="step-item">
               <div class="step-num">3</div>
-              <div class="step-text"><strong style="color:#fff;">파라미터 설정</strong> — 레버리지, 포지션 크기, 리스크를 조정하세요</div>
+              <div class="step-text" data-i18n-html="db.bots.step3"><strong style="color:#fff;">파라미터 설정</strong> — 레버리지, 포지션 크기, 리스크를 조정하세요</div>
             </div>
             <div class="step-item">
               <div class="step-num">4</div>
-              <div class="step-text"><strong style="color:#fff;">봇 시작</strong> — 설정을 확인하고 봇을 시작하세요</div>
+              <div class="step-text" data-i18n-html="db.bots.step4"><strong style="color:#fff;">봇 시작</strong> — 설정을 확인하고 봇을 시작하세요</div>
             </div>
           </div>
         </div>
@@ -678,7 +678,7 @@
             </div>
           </div>
           <div id="botConfigMsg" style="font-size:12px;min-height:16px;margin-bottom:12px;"></div>
-          <button class="btn-primary" style="width:100%;padding:12px;" onclick="startBot()">+ 봇 시작하기</button>
+          <button class="btn-primary" style="width:100%;padding:12px;" onclick="startBot()" data-i18n="db.bots.start_btn">+ 봇 시작하기</button>
         </div>
       </div>
     </div>
@@ -686,8 +686,8 @@
     <!-- 내 봇 섹션 -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">내 봇</span>
-        <button class="btn-sm" onclick="loadMyBots()">↻ 새로고침</button>
+        <span class="card-title" data-i18n="db.card.mybots">내 봇</span>
+        <button class="btn-sm" onclick="loadMyBots()" data-i18n="db.refresh">↻ 새로고침</button>
       </div>
       <div id="myBotsList">
         <div class="empty-state" style="padding:32px 0;">실행 중인 봇이 없습니다</div>
@@ -702,7 +702,7 @@
     <!-- Current Plan Banner -->
     <div class="card" style="margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
       <div>
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--gray-400);margin-bottom:6px;">현재 플랜</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--gray-400);margin-bottom:6px;" data-i18n="db.sub.current_plan">현재 플랜</div>
         <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;" id="currentPlanName">FREE</div>
         <div style="font-size:13px;color:var(--gray-400);margin-top:4px;" id="currentPlanDetail">구독이 활성화되지 않았습니다</div>
       </div>
@@ -716,14 +716,14 @@
       <div class="plan-card" id="plan-card-starter">
         <div>
           <div class="plan-name">Starter</div>
-          <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">기본 자동 거래 시작</div>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:4px;" data-i18n="db.sub.starter_desc">기본 자동 거래 시작</div>
         </div>
         <div class="plan-price">$100<span>/mo</span></div>
         <div class="plan-features">
-          <div class="plan-feature"><span class="plan-feature-check">✓</span>시그널 봇 2개</div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span>OKX 연동</div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span>기본 전략 (SR Bounce, RSI DCA)</div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span>이메일 알림</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.starter.f1">시그널 봇 2개</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.starter.f2">OKX 연동</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.starter.f3">기본 전략 (SR Bounce, RSI DCA)</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.starter.f4">이메일 알림</span></div>
         </div>
         <button class="btn-secondary" style="width:100%;" id="btn-upgrade-starter" onclick="upgradePlan('starter')">Upgrade</button>
       </div>
@@ -732,7 +732,7 @@
       <div class="plan-card highlighted" id="plan-card-pro">
         <div>
           <div class="plan-name">Pro</div>
-          <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">전문 트레이더를 위한 플랜</div>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:4px;" data-i18n="db.sub.pro_desc">전문 트레이더를 위한 플랜</div>
         </div>
         <div class="plan-price">$500<span>/mo</span></div>
         <div class="plan-features">
