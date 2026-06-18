@@ -1099,6 +1099,14 @@
     if (!token) { window.location.href = 'login.html'; return; }
   }
 
+  function sessionExpired() {
+    localStorage.removeItem('ayilon_session_token');
+    localStorage.removeItem('ayilon_logged_in');
+    localStorage.removeItem('ayilon_user');
+    localStorage.removeItem('ayilon_subscription');
+    window.location.href = 'login.html';
+  }
+
   /* ── Topbar ── */
   function updateTopbar() {
     var user = getUserData();
@@ -1205,6 +1213,7 @@
     if (!token) return;
     try {
       var res  = await fetch(WORKER_URL + '/bot-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token }) });
+      if (res.status === 401) { sessionExpired(); return; }
       var data = await res.json();
       var el   = document.getElementById('dashActiveBots');
       if (el) {
@@ -1226,6 +1235,7 @@
     el.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:12px 0;">' + _t('db.loading') + '</div>';
     try {
       var res  = await fetch(WORKER_URL + '/get-account', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token }) });
+      if (res.status === 401) { sessionExpired(); return; }
       var data = await res.json();
       var b = data.balance;
       if (!b) {
