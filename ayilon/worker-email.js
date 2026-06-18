@@ -857,13 +857,15 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     // ── Open positions ────────────────────────────────────────
     const posRes = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/account/positions?instId=${tradingPair}`, demoMode);
     const openPos = (posRes?.data || []).filter(p => parseFloat(p.pos) !== 0);
+    // Detect whether account is in one-way mode (posSide='net') vs hedge mode (posSide='long'/'short')
+    const isOneWayMode = openPos.some(p => p.posSide === 'net');
 
     // ── Position state (loaded before checkSL to prevent race condition) ────
     let ps = await env.USERS_KV.get('bot:position_state:' + email, { type: 'json' }) || {};
 
     // ── Stop loss / TP check ─────────────────────────────────
     const hadPosition = !!ps[stateKey]?.direction;
-    await checkSL(env, email, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demoMode, ps, stateKey);
+    await checkSL(env, email, apiKey, apiSecret, apiPassphrase, tradingPair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demoMode, ps, stateKey, isOneWayMode);
     // If loss-limit fired this tick and closed the position, skip new entries until next cron
     if (hadPosition && !ps[stateKey]?.direction) return;
 
@@ -909,10 +911,12 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     // ── Sync position state with OKX ─────────────────────────
     if (ps[stateKey]?.direction) {
       const dir = ps[stateKey].direction;
-      const matchingPos = openPos.find(p =>
-        dir === 'long'  ? (p.posSide === 'long'  && parseFloat(p.pos) > 0) :
-        dir === 'short' ? (p.posSide === 'short' && parseFloat(p.pos) !== 0) : false
-      );
+      const matchingPos = openPos.find(p => {
+        const amt = parseFloat(p.pos);
+        if (dir === 'long')  return amt > 0 && (p.posSide === 'long'  || (p.posSide === 'net' && amt > 0));
+        if (dir === 'short') return amt !== 0 && (p.posSide === 'short' || (p.posSide === 'net' && amt < 0));
+        return false;
+      });
       if (!matchingPos) {
         if (ps[stateKey].tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[stateKey].tpAlgoId, demoMode);
         if (ps[stateKey].slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[stateKey].slAlgoId, demoMode);
@@ -936,7 +940,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
         const trailRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
           instId: tradingPair, tdMode: 'cross',
           side:    state.direction === 'long' ? 'sell' : 'buy',
-          posSide: state.direction === 'long' ? 'long'  : 'short',
+          ...(isOneWayMode ? {} : { posSide: state.direction === 'long' ? 'long' : 'short' }),
           ordType: 'market', sz: String(trailContracts)
         }, demoMode);
 
@@ -1172,7 +1176,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
         await env.USERS_KV.delete(lockKey).catch(() => {});
         await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
           instId: tradingPair, mgnMode: 'cross',
-          posSide: signal.type === 'long' ? 'long' : 'short'
+          posSide: isOneWayMode ? 'net' : (signal.type === 'long' ? 'long' : 'short')
         }, demoMode);
         await botLog(env, email, `Fill unconfirmed — position closed for safety`);
         return;
@@ -1204,13 +1208,13 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
         const tpAlgoRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order-algo', {
           instId: tradingPair, tdMode: 'cross',
           side:    signal.type === 'long' ? 'sell' : 'buy',
-          posSide: signal.type === 'long' ? 'long'  : 'short',
+          ...(isOneWayMode ? {} : { posSide: signal.type === 'long' ? 'long' : 'short' }),
           ordType: 'conditional', sz: accumSz,
           tpTriggerPx: safetyTpPx, tpOrdPx: '-1'
         }, demoMode);
         state.tpAlgoId = tpAlgoRes?.data?.[0]?.algoId ? String(tpAlgoRes.data[0].algoId) : null;
       }
-      const slAlgoRes = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, signal.type, state.stopLoss || signal.stopLoss, accumSz, demoMode);
+      const slAlgoRes = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, signal.type, state.stopLoss || signal.stopLoss, accumSz, demoMode, isOneWayMode);
       state.slAlgoId = slAlgoRes?.data?.[0]?.algoId ? String(slAlgoRes.data[0].algoId) : null;
       if (!state.slAlgoId) await botLog(env, email, '⚠️ Native SL algo failed — SL is software-only this tick');
 
@@ -1224,7 +1228,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
         if (state.slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.slAlgoId, demoMode);
         await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
           instId: tradingPair, mgnMode: 'cross',
-          posSide: signal.type === 'long' ? 'long' : 'short'
+          posSide: isOneWayMode ? 'net' : (signal.type === 'long' ? 'long' : 'short')
         }, demoMode);
         await botLog(env, email, `[${strategy}] KV write failed — position closed to prevent orphan: ${kvErr.message}`);
         return;
@@ -1249,7 +1253,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
 }
 
 // ── STOP LOSS / TP CHECK ──────────────────────────────────────
-async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demo, ps, stateKey) {
+async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, lossLimitEnabled, lossLimitNorm, numEntries, today, demo, ps, stateKey, isOneWayMode = false) {
   const actualKey = stateKey || pair;
   const state = ps[actualKey];
   if (!state?.direction) return;
@@ -1275,7 +1279,7 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
         const tpCloseRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
           instId: pair, tdMode: 'cross',
           side:    state.direction === 'long' ? 'sell' : 'buy',
-          posSide: state.direction === 'long' ? 'long' : 'short',
+          ...(isOneWayMode ? {} : { posSide: state.direction === 'long' ? 'long' : 'short' }),
           ordType: 'market', sz: String(halfContracts)
         }, demo);
         if (!tpCloseRes?.data?.[0]?.ordId) {
@@ -1315,7 +1319,7 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
 
   const closeRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/close-position', {
     instId: pair, mgnMode: 'cross',
-    posSide: state.direction === 'long' ? 'long' : 'short'
+    posSide: isOneWayMode ? 'net' : (state.direction === 'long' ? 'long' : 'short')
   }, demo);
   if (closeRes?.code !== '0') {
     await botLog(env, email, `close-position FAILED [${closeRes?.code}]: ${closeRes?.msg} — retrying next tick`);
@@ -1904,11 +1908,11 @@ function detectVolumeZones(candles, currentPrice) {
 }
 
 // ── NATIVE ALGO ORDERS ────────────────────────────────────────
-async function placeSLAlgo(apiKey, secret, pass, pair, direction, slPrice, sz, demo = false) {
+async function placeSLAlgo(apiKey, secret, pass, pair, direction, slPrice, sz, demo = false, isOneWayMode = false) {
   return okxPost(apiKey, secret, pass, '/api/v5/trade/order-algo', {
     instId: pair, tdMode: 'cross',
     side:         direction === 'long' ? 'sell' : 'buy',
-    posSide:      direction === 'long' ? 'long' : 'short',
+    ...(isOneWayMode ? {} : { posSide: direction === 'long' ? 'long' : 'short' }),
     ordType:      'conditional',
     sz:           String(sz),
     slTriggerPx:  parseFloat(slPrice).toFixed(2),
