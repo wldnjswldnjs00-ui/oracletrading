@@ -1433,13 +1433,30 @@ function calcADX(candles, period = 14) {
 
 function detectSignalRSIDCA(candles1H, levels, currentPrice) {
   const rsi = calcRSI(candles1H, 14);
-  if (!rsi || rsi > 30) return null;
+  if (!rsi) return null;
   const px = currentPrice || parseFloat(candles1H[0][4]);
-  const swingLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
-  const slDist = (px - swingLow) / px;
-  if (slDist < 0.01 || slDist > 0.10) return null;
-  const support = levels.supports[0];
-  return { type: 'long', level: support?.price || px, grade: 'A', stopLoss: swingLow, strategy: 'rsi_dca' };
+
+  // LONG: oversold (RSI < 40)
+  if (rsi < 40) {
+    const swingLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
+    const slDist = (px - swingLow) / px;
+    if (slDist >= 0.005 && slDist <= 0.10) {
+      const support = levels.supports[0];
+      return { type: 'long', level: support?.price || px, grade: rsi < 30 ? 'S' : 'A', stopLoss: swingLow, strategy: 'rsi_dca' };
+    }
+  }
+
+  // SHORT: overbought (RSI > 65)
+  if (rsi > 65) {
+    const swingHigh = Math.max(...candles1H.slice(0, 5).map(c => parseFloat(c[2])));
+    const slDist = (swingHigh - px) / px;
+    if (slDist >= 0.005 && slDist <= 0.10) {
+      const resistance = levels.resistances[0];
+      return { type: 'short', level: resistance?.price || px, grade: rsi > 75 ? 'S' : 'A', stopLoss: swingHigh, strategy: 'rsi_dca' };
+    }
+  }
+
+  return null;
 }
 
 function detectSignalMASupport(candles1H, currentPrice) {
@@ -1798,32 +1815,40 @@ function detectSignal(c5, levels) {
     return { type: 'long', level: s.price, grade: s.grade || 'B', stopLoss: swingLow };
   }
 
+  // ── SHORT: resistance touch → rejection entry ─────────────────
+  for (const r of levels.resistances) {
+    const byWick  = Math.abs(prev1[2] - r.price) / r.price <= TOUCH_TOL;
+    const byClose = Math.abs(prev1[4] - r.price) / r.price <= TOUCH_TOL;
+    if (!byWick && !byClose) continue;
+    if (curPrice > r.price * 1.003) continue;
+    if (curPrice >= cur[1]) continue; // still rising, no rejection
+    const slDist = Math.abs(swingHigh - curPrice) / curPrice;
+    if (slDist < SL_MIN || slDist > SL_MAX) continue;
+    return { type: 'short', level: r.price, grade: r.grade || 'B', stopLoss: swingHigh };
+  }
+
   // ── SHORT: bearish impulse + volume → retracement entry ──────
   for (const bear of [prev1, prev2, prev3]) {
     const bO = bear[1], bC = bear[4], bH = bear[2], bL = bear[3], bV = bear[5];
     const range = bH - bL;
     if (range <= 0) continue;
-    if ((bO - bC) / range < 0.40) continue;
-    if (bV < vol80th) continue;
+    if ((bO - bC) / range < 0.35) continue;  // loosened from 0.40
+    if (bV < vol80th * 0.8) continue;         // loosened from vol80th
 
     const mid50 = bH - range * 0.50;
-
     if (curPrice < mid50 * 0.998) continue;
     if (curPrice > swingHigh * 1.003) continue;
 
     const slDist = Math.abs(swingHigh - curPrice) / curPrice;
     if (slDist < SL_MIN || slDist > SL_MAX) continue;
 
-    const atMid50  = Math.abs(curPrice - mid50) / mid50 <= TOUCH_TOL;
-    const nearRes  = levels.resistances.find(r =>
+    const atMid50 = Math.abs(curPrice - mid50) / mid50 <= TOUCH_TOL * 1.5;
+    const nearRes = levels.resistances.find(r =>
       r.price >= mid50 * 0.998 && r.price <= swingHigh * 1.003 &&
       Math.abs(curPrice - r.price) / r.price <= TOUCH_TOL
     );
-
     if (!atMid50 && !nearRes) continue;
-
-    const grade = nearRes ? nearRes.grade : 'A';
-    return { type: 'short', level: bH, grade, stopLoss: swingHigh };
+    return { type: 'short', level: bH, grade: nearRes ? nearRes.grade : 'A', stopLoss: swingHigh };
   }
 
   return null;
