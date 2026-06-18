@@ -1031,8 +1031,9 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     }
 
     // ── Trend strength + direction filter ────────────────────
-    // funding_rate is a contrarian strategy — it trades AGAINST the trend, so skip trend filter
-    if (strategy !== 'funding_rate') {
+    // funding_rate and rsi_dca are contrarian/mean-reversion — skip trend direction filter
+    const skipTrendFilter = strategy === 'funding_rate' || strategy === 'rsi_dca';
+    if (!skipTrendFilter) {
       if (trend.dir === 'up'   && signal.type === 'short') { await botLog(env, email, `[${strategy}] Skip: trend UP but signal is SHORT`); return; }
       if (trend.dir === 'down' && signal.type === 'long')  { await botLog(env, email, `[${strategy}] Skip: trend DOWN but signal is LONG`); return; }
       if (!trend.strong && signal.grade === 'B') { await botLog(env, email, `[${strategy}] Skip: weak trend + B-grade signal`); return; }
