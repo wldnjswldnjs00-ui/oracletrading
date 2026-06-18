@@ -660,6 +660,13 @@
             <input type="number" class="d-form-input" id="botEntries" value="3" min="2" max="5" />
           </div>
           <div class="d-form-group">
+            <label class="d-form-label">Trading Pair</label>
+            <select class="d-form-input" id="botTradingPair" style="background:#111;color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;">
+              <option value="BTC-USDT-SWAP">BTC-USDT-SWAP</option>
+              <option value="ETH-USDT-SWAP">ETH-USDT-SWAP</option>
+            </select>
+          </div>
+          <div class="d-form-group">
             <label class="d-form-label">API Mode</label>
             <div style="display:flex;gap:8px;">
               <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;" id="bot-mode-live-label">
@@ -1461,6 +1468,7 @@
           posSize: parseFloat(posSize),
           riskPerTrade: parseFloat(risk),
           numEntries: parseInt(entries),
+          tradingPair: (document.getElementById('botTradingPair') || {}).value || 'BTC-USDT-SWAP',
           mode: mode,
           demoMode: mode === 'demo'
         })
@@ -1485,7 +1493,10 @@
         loadMyBots();
       } else {
         msgEl.style.color = 'var(--red)';
-        msgEl.textContent = startData.error || '봇 시작에 실패했습니다';
+        var errMsg = startData.error === 'api_keys_required'
+          ? 'API 키를 먼저 설정해 주세요 (설정 → API 키)'
+          : (startData.error || '봇 시작에 실패했습니다');
+        msgEl.textContent = errMsg;
       }
     } catch(e) {
       msgEl.style.color = 'var(--red)';
@@ -1785,6 +1796,13 @@
         body: JSON.stringify({ sessionToken: token, action: 'stop' })
       });
     } catch(e) {}
+    try {
+      await fetch(WORKER_URL + '/save-bot-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: token, apiKey: '', apiSecret: '', apiPassphrase: '' })
+      });
+    } catch(e) {}
     localStorage.removeItem('ayilon_api');
     loadApiSection();
   }
@@ -1936,7 +1954,7 @@
       await fetch(WORKER_URL + '/save-bot-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken: sessionToken, telegramToken: token, telegramChatId: chatId })
+        body: JSON.stringify({ sessionToken: sessionToken, telegramToken: token, telegramChatId: chatId, notifyTelegram: true })
       });
     } catch(e) {}
     if (msgEl) { msgEl.style.color = 'var(--green)'; msgEl.textContent = '✓ 텔레그램 설정이 저장되었습니다'; }
