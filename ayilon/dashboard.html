@@ -1183,12 +1183,25 @@
   var _dashEquityChart = null;
   var _dashPortfolioChart = null;
 
+  async function loadDashBotStatus() {
+    var token = getSessionToken();
+    if (!token) return;
+    try {
+      var res  = await fetch(WORKER_URL + '/bot-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token }) });
+      var data = await res.json();
+      var el   = document.getElementById('dashActiveBots');
+      if (el) el.textContent = data.running ? '1' : '0';
+    } catch(e) {}
+  }
+
   async function loadDashAssets() {
     var el = document.getElementById('dashAssetsContent');
     if (!el) return;
+    var token = getSessionToken();
+    if (!token) return;
     el.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:12px 0;">' + _t('db.loading') + '</div>';
     try {
-      var res  = await fetch(WORKER_URL + '/get-account', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: getSessionToken() }) });
+      var res  = await fetch(WORKER_URL + '/get-account', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token }) });
       var data = await res.json();
       var b = data.balance;
       if (!b) { el.innerHTML = '<div class="empty-state"><p>' + _t('db.no_api_account') + '</p></div>'; return; }
@@ -1225,7 +1238,8 @@
     var noApiCard = document.getElementById('dashNoApiCard');
     if (noApiCard) noApiCard.style.display = apiData.apiKey ? 'none' : 'block';
 
-    if (apiData.apiKey) loadDashAssets();
+    loadDashAssets();
+    loadDashBotStatus();
 
     if (_dashEquityChart) return;
     var eqCtx = document.getElementById('dashEquityChart');
