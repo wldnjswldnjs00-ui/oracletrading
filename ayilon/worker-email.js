@@ -156,14 +156,13 @@ async function handleVerifyCode(request, env) {
 // ── CREATE PAYMENT (assign unique amount) ────────────────────
 async function handleCreatePayment(request, env) {
   const body = await request.json();
-  // Accept sessionToken auth (preferred) or explicit email
-  let email = body.email;
-  if (!email) {
-    const session = await requireSession(body, env, request);
-    if (session) email = session.email;
-  }
   const { plan, billing, baseAmount } = body;
-  if (!email || !plan || !baseAmount) return json({ error: 'Missing fields' }, 400);
+  if (!plan || !baseAmount) return json({ error: 'Missing fields' }, 400);
+
+  // Get email from session (preferred) or body fallback
+  const session = await requireSession(body, env, request);
+  const email = (session && session.email) ? session.email : (body.email || '');
+  if (!email) return json({ error: 'unauthorized' }, 401);
 
   let uniqueAmount, key;
   if (env.USERS_KV) {
