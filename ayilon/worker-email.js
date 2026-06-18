@@ -412,33 +412,38 @@ async function requireSession(body, env, request = null) {
 }
 
 async function handleLogin(request, env) {
-  const { email, password } = await request.json();
-  if (!email || !password) return json({ ok: false, error: 'missing_fields' }, 400);
-  if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
+  try {
+    const { email, password } = await request.json();
+    if (!email || !password) return json({ ok: false, error: 'missing_fields' }, 400);
+    if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
 
-  const loginRateKey = 'rate:login:' + email.toLowerCase();
-  const loginRate = await env.USERS_KV.get(loginRateKey, { type: 'json' });
-  if ((loginRate?.count || 0) >= 5) return json({ ok: false, error: 'too_many_attempts' }, 429);
+    const loginRateKey = 'rate:login:' + email.toLowerCase();
+    let loginRate = null;
+    try { loginRate = await env.USERS_KV.get(loginRateKey, { type: 'json' }); } catch(e) {}
+    if ((loginRate?.count || 0) >= 5) return json({ ok: false, error: 'too_many_attempts' }, 429);
 
-  const user = await env.USERS_KV.get('user:' + email.toLowerCase(), { type: 'json' });
-  if (!user) {
-    await env.USERS_KV.put(loginRateKey, JSON.stringify({ count: (loginRate?.count || 0) + 1 }), { expirationTtl: 900 });
-    return json({ ok: false, error: 'invalid_credentials' }, 401);
+    const user = await env.USERS_KV.get('user:' + email.toLowerCase(), { type: 'json' });
+    if (!user) {
+      try { await env.USERS_KV.put(loginRateKey, JSON.stringify({ count: (loginRate?.count || 0) + 1 }), { expirationTtl: 900 }); } catch(e) {}
+      return json({ ok: false, error: 'invalid_credentials' }, 401);
+    }
+
+    const hashedPw = await hashPassword(password);
+    if (!user.password || user.password !== hashedPw) {
+      try { await env.USERS_KV.put(loginRateKey, JSON.stringify({ count: (loginRate?.count || 0) + 1 }), { expirationTtl: 900 }); } catch(e) {}
+      return json({ ok: false, error: 'invalid_credentials' }, 401);
+    }
+    try { await env.USERS_KV.delete(loginRateKey); } catch(e) {}
+
+    const sessionToken = crypto.randomUUID();
+    await env.USERS_KV.put('session:' + sessionToken, JSON.stringify({
+      email: user.email, username: user.username, name: user.name
+    }), { expirationTtl: 604800 }); // 7 days
+
+    return json({ ok: true, sessionToken, email: user.email, username: user.username || '', name: user.name || '' });
+  } catch(e) {
+    return json({ ok: false, error: 'server_error', detail: String(e) }, 500);
   }
-
-  const hashedPw = await hashPassword(password);
-  if (!user.password || user.password !== hashedPw) {
-    await env.USERS_KV.put(loginRateKey, JSON.stringify({ count: (loginRate?.count || 0) + 1 }), { expirationTtl: 900 });
-    return json({ ok: false, error: 'invalid_credentials' }, 401);
-  }
-  await env.USERS_KV.delete(loginRateKey);
-
-  const sessionToken = crypto.randomUUID();
-  await env.USERS_KV.put('session:' + sessionToken, JSON.stringify({
-    email: user.email, username: user.username, name: user.name
-  }), { expirationTtl: 604800 }); // 7 days
-
-  return json({ ok: true, sessionToken, email: user.email, username: user.username || '', name: user.name || '' });
 }
 
 async function handleLogout(request, env) {

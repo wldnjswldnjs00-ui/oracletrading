@@ -238,7 +238,13 @@
         });
         var data = await res.json();
         if (!data.ok) {
-          errEl.textContent = 'Incorrect email or password.';
+          if (data.error === 'too_many_attempts') {
+            errEl.textContent = 'Too many attempts. Please try again in 15 minutes.';
+          } else if (data.error === 'server_error' || data.error === 'service_unavailable') {
+            errEl.textContent = 'Server error. Please try again.';
+          } else {
+            errEl.textContent = 'Incorrect email or password.';
+          }
           errEl.classList.add('show');
           if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
           return;
