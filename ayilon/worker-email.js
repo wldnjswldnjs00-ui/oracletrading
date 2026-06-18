@@ -61,6 +61,7 @@ export default {
       if (path === '/get-account')       return handleGetAccount(request, env);
       if (path === '/admin-users')       return handleAdminUsers(request, env);
       if (path === '/admin-user-detail') return handleAdminUserDetail(request, env);
+      if (path === '/delete-account')    return handleDeleteAccount(request, env);
     }
 
     if (request.method === 'GET') {
@@ -615,13 +616,21 @@ async function handleBotControl(request, env) {
   const body = await request.json();
   const { action } = body;
   if (!env.USERS_KV) return json({ ok: false });
+  if (!['start', 'stop', 'dismiss', 'resume'].includes(action)) {
+    return json({ ok: false, error: 'invalid_action' }, 400);
+  }
   const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
 
   const configKey = 'bot:config:' + session.email;
   const config = await env.USERS_KV.get(configKey, { type: 'json' }) || {};
 
-  if (action === 'start') config.running = true;
+  if (action === 'start') {
+    if (!config.apiKey || !config.apiSecret || !config.apiPassphrase) {
+      return json({ ok: false, error: 'api_keys_required' });
+    }
+    config.running = true;
+  }
   if (action === 'stop')  config.running = false;
   if (action === 'dismiss') {
     await env.USERS_KV.delete('bot:daily_loss_triggered:' + session.email);
@@ -801,7 +810,8 @@ async function runBotForUser(env, email, cfg) {
 
     // ── Fix: Max drawdown stop ────────────────────────────────
     // Track peak equity and halt bot if overall drawdown exceeds mddLimit (default 30%)
-    const mddLimit = parseFloat(cfg.mddLimit || 0.30);
+    const mddLimitRaw = parseFloat(cfg.mddLimit || 30);
+    const mddLimit = mddLimitRaw > 1 ? mddLimitRaw / 100 : mddLimitRaw;
     const peakData = await env.USERS_KV.get('bot:peak_equity:' + email, { type: 'json' });
     if (!peakData || equity > peakData.peak) {
       await env.USERS_KV.put('bot:peak_equity:' + email, JSON.stringify({ peak: equity, date: new Date().toISOString() }));
@@ -1928,7 +1938,7 @@ async function handleSendEmailVerify(request, env) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'AYILON <noreply@oracletrading-01o.pages.dev>',
+        from: 'AYILON <onboarding@resend.dev>',
         to: [newEmail],
         subject: 'AYILON — 이메일 변경 인증 코드',
         html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:12px;">
@@ -1963,11 +1973,15 @@ async function handleVerifyEmailChange(request, env) {
   const userData = await env.USERS_KV.get(oldKey, { type: 'json' });
   if (userData) {
     userData.email = newEmail;
-    await Promise.all([
+    const updates = [
       env.USERS_KV.put(newKey, JSON.stringify(userData)),
       env.USERS_KV.delete(oldKey),
       env.USERS_KV.delete('email_change:' + session.email)
-    ]);
+    ];
+    if (userData.username) {
+      updates.push(env.USERS_KV.put('username:' + userData.username.toLowerCase(), newEmail.toLowerCase()));
+    }
+    await Promise.all(updates);
     // Update session to new email
     const sessionKey = 'session:' + (body.sessionToken || request.headers.get('Authorization')?.slice(7)?.trim() || '');
     const sessionData = await env.USERS_KV.get(sessionKey, { type: 'json' });
@@ -2018,6 +2032,30 @@ async function handleAdminUserDetail(request, env) {
     botLogs: botLogs || [],
     positions: positions || {}
   });
+}
+
+async function handleDeleteAccount(request, env) {
+  const body = await request.json();
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  if (!body.confirm) return json({ ok: false, error: 'confirm_required' }, 400);
+  if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
+
+  const email = session.email.toLowerCase();
+  const user = await env.USERS_KV.get('user:' + email, { type: 'json' });
+
+  const dels = [
+    env.USERS_KV.delete('user:' + email),
+    env.USERS_KV.delete('bot:config:' + email),
+    env.USERS_KV.delete('bot:logs:' + email),
+    env.USERS_KV.delete('bot:position_state:' + email),
+    env.USERS_KV.delete('bot:peak_equity:' + email),
+    env.USERS_KV.delete('bot:daily_loss_triggered:' + email),
+  ];
+  if (body.sessionToken) dels.push(env.USERS_KV.delete('session:' + body.sessionToken));
+  if (user?.username)    dels.push(env.USERS_KV.delete('username:' + user.username.toLowerCase()));
+  await Promise.all(dels);
+  return json({ ok: true });
 }
 
 // ── BOT LOG & NOTIFY ──────────────────────────────────────────
