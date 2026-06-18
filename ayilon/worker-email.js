@@ -2352,7 +2352,7 @@ async function handleAdminSetPlan(request, env) {
 
     const { email, plan } = body;
     if (!email || !plan) return json({ ok: false, error: 'email and plan required' }, 400);
-    if (!['free', 'starter', 'pro', 'elite'].includes(plan)) return json({ ok: false, error: 'invalid plan' }, 400);
+    if (!['starter', 'pro', 'elite'].includes(plan)) return json({ ok: false, error: 'invalid plan' }, 400);
 
     const userKey = 'user:' + email;
     const u = await env.USERS_KV.get(userKey, { type: 'json' });
