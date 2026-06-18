@@ -1183,13 +1183,51 @@
   var _dashEquityChart = null;
   var _dashPortfolioChart = null;
 
+  async function loadDashAssets() {
+    var el = document.getElementById('dashAssetsContent');
+    if (!el) return;
+    el.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:12px 0;">' + _t('db.loading') + '</div>';
+    try {
+      var res  = await fetch(WORKER_URL + '/get-account', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: getSessionToken() }) });
+      var data = await res.json();
+      var b = data.balance;
+      if (!b) { el.innerHTML = '<div class="empty-state"><p>' + _t('db.no_api_account') + '</p></div>'; return; }
+      var pnlCls = b.unrealPnl >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg';
+      el.innerHTML =
+        '<div style="display:flex;flex-direction:column;gap:12px;padding:4px 0;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+            '<span style="font-size:13px;color:var(--gray-400);">' + _t('db.term.total_equity') + '</span>' +
+            '<span style="font-size:15px;font-weight:600;">$' + fmtNum(b.equity, 2) + '</span>' +
+          '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+            '<span style="font-size:13px;color:var(--gray-400);">' + _t('db.term.available') + '</span>' +
+            '<span style="font-size:15px;font-weight:600;">$' + fmtNum(b.available, 2) + '</span>' +
+          '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+            '<span style="font-size:13px;color:var(--gray-400);">' + _t('db.term.unreal_pnl') + '</span>' +
+            '<span style="font-size:15px;font-weight:600;" class="' + pnlCls + '">' + (b.unrealPnl >= 0 ? '+' : '') + '$' + fmtNum(b.unrealPnl, 4) + '</span>' +
+          '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;">' +
+            '<span style="font-size:13px;color:var(--gray-400);">' + _t('db.term.margin_ratio') + '</span>' +
+            '<span style="font-size:15px;font-weight:600;">' + fmtNum(b.mgnRatio * 100, 2) + '%</span>' +
+          '</div>' +
+        '</div>';
+      // Update portfolio value card
+      var pvEl = document.getElementById('dashPortfolioVal');
+      if (pvEl && b.equity > 0) pvEl.textContent = '$' + fmtNum(b.equity, 2);
+    } catch(e) {
+      el.innerHTML = '<div style="color:#ef4444;font-size:13px;padding:12px 0;">' + _t('db.term.load_fail') + '</div>';
+    }
+  }
+
   function initDashboard() {
-    // Show/hide "no API" card based on connection state
     var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
     var noApiCard = document.getElementById('dashNoApiCard');
     if (noApiCard) noApiCard.style.display = apiData.apiKey ? 'none' : 'block';
 
-    if (_dashEquityChart) return; // already init
+    if (apiData.apiKey) loadDashAssets();
+
+    if (_dashEquityChart) return;
     var eqCtx = document.getElementById('dashEquityChart');
     var poCtx = document.getElementById('dashPortfolioChart');
     if (!eqCtx || !poCtx) return;
