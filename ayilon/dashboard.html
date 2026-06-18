@@ -1361,6 +1361,7 @@
     (async function loop() {
       while (termPosRefreshActive) {
         await loadTerminalPositions();
+        await new Promise(function(r) { setTimeout(r, 1500); });
       }
     })();
   }
@@ -1453,11 +1454,11 @@
             return '<tr>' +
               '<td>' + escapeHtml(p.instId || '—') + '</td>' +
               '<td>' + side + '</td>' +
-              '<td>' + fmtNum(calc.contracts, 0) + '</td>' +
-              '<td>$' + fmtNum(p.avgPx, 2) + '</td>' +
-              '<td id="pm_' + k + '">$' + fmtNum(p.markPx, 2) + '</td>' +
-              '<td>' + pnlHtml + '</td>' +
-              '<td>' + roeHtml + '</td>' +
+              '<td style="min-width:60px;font-variant-numeric:tabular-nums;">' + fmtNum(calc.contracts, 0) + '</td>' +
+              '<td style="min-width:100px;font-variant-numeric:tabular-nums;">$' + fmtNum(p.avgPx, 2) + '</td>' +
+              '<td id="pm_' + k + '" style="min-width:100px;font-variant-numeric:tabular-nums;">$' + fmtNum(p.markPx, 2) + '</td>' +
+              '<td style="min-width:140px;font-variant-numeric:tabular-nums;">' + pnlHtml + '</td>' +
+              '<td style="min-width:70px;font-variant-numeric:tabular-nums;">' + roeHtml + '</td>' +
               '</tr>';
           }).join('') + '</tbody></table>';
       }
