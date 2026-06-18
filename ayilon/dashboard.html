@@ -1035,7 +1035,13 @@
   /* ── Helpers ── */
   function getSessionToken() { return localStorage.getItem('ayilon_session_token') || ''; }
   function getUserData() {
-    try { return JSON.parse(localStorage.getItem('ayilon_user') || '{}'); } catch(e) { return {}; }
+    try {
+      var d = JSON.parse(localStorage.getItem('ayilon_user') || '{}');
+      if (!d.email)    d.email    = localStorage.getItem('ayilon_email')    || '';
+      if (!d.username) d.username = localStorage.getItem('ayilon_username') || '';
+      if (!d.name)     d.name     = localStorage.getItem('ayilon_name')     || '';
+      return d;
+    } catch(e) { return {}; }
   }
   function getSubscription() {
     try { return JSON.parse(localStorage.getItem('ayilon_subscription') || '{}'); } catch(e) { return {}; }
