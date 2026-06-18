@@ -508,8 +508,10 @@
 
       /* ── DASHBOARD ── */
       'db.ov.alltime':        'All Time',
-      'db.dash.portfolio_val':'Portfolio Value',
-      'db.dash.daily_pnl':    'Daily P&L',
+      'db.dash.portfolio_val':   'Portfolio Value',
+      'db.dash.daily_pnl':       'Daily P&L',
+      'db.dash.total_return':    'Total Return',
+      'db.dash.total_return_sub':'Since bot started',
       'db.portfolio.equity':  'Portfolio Equity',
       'db.timerange.custom':  'Custom',
       'db.portfolio.assets':  'Assets by Account',
@@ -1090,8 +1092,10 @@
 
       /* ── DASHBOARD ── */
       'db.ov.alltime':        '전체 기간',
-      'db.dash.portfolio_val':'포트폴리오 가치',
-      'db.dash.daily_pnl':    '일일 손익',
+      'db.dash.portfolio_val':   '포트폴리오 가치',
+      'db.dash.daily_pnl':       '일일 손익',
+      'db.dash.total_return':    '전체 수익률',
+      'db.dash.total_return_sub':'봇 시작 이후',
       'db.portfolio.equity':  '포트폴리오 에쿼티',
       'db.timerange.custom':  '커스텀',
       'db.portfolio.assets':  '계정별 보유자산',
