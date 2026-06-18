@@ -954,25 +954,57 @@
 
 <!-- Upgrade Modal -->
 <div class="modal-overlay" id="upgradeModal">
-  <div class="modal">
+  <div class="modal" style="max-width:520px;">
     <div class="modal-title" id="upgradeModalTitle">플랜 업그레이드</div>
-    <div class="modal-desc" id="upgradeModalDesc">아래 주소로 결제 후 관리자에게 연락해 주세요.</div>
-    <div style="margin-bottom:16px;">
-      <div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;">결제 금액</div>
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;" id="upgradeModalPrice">$0</div>
+
+    <!-- Loading -->
+    <div id="upgradeStep-loading" style="text-align:center;padding:32px 0;">
+      <div style="color:var(--gray-400);font-size:14px;">결제 주소 생성 중...</div>
     </div>
-    <div style="margin-bottom:16px;">
-      <div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;">USDT TRC-20 입금 주소</div>
-      <div class="wallet-addr" id="upgradeWalletAddr">관리자에게 주소를 문의하세요</div>
+
+    <!-- Payment info -->
+    <div id="upgradeStep-pay" style="display:none;">
+      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:14px 18px;margin-bottom:20px;">
+        <div style="font-size:12px;color:var(--yellow);font-weight:600;margin-bottom:4px;">⚠️ 소수점까지 정확한 금액을 전송하세요</div>
+        <div style="font-size:12px;color:var(--gray-400);">금액이 다르면 자동 감지가 되지 않습니다.</div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:12px;color:var(--gray-400);margin-bottom:6px;">전송할 금액 (USDT TRC-20)</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;" id="upgradeUniqueAmount">—</div>
+          <button onclick="copyText('upgradeUniqueAmount')" style="padding:4px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;">복사</button>
+        </div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <div style="font-size:12px;color:var(--gray-400);margin-bottom:6px;">입금 주소 (USDT TRC-20)</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="wallet-addr" id="upgradeWalletAddr" style="flex:1;font-size:11px;word-break:break-all;">—</div>
+          <button onclick="copyText('upgradeWalletAddr')" style="padding:4px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;flex-shrink:0;">복사</button>
+        </div>
+      </div>
+      <div id="upgradeAutoStatus" style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;margin-bottom:16px;">
+        <div class="live-dot"></div>
+        <span style="font-size:13px;color:var(--gray-400);">입금 자동 감지 중... (약 1분 소요)</span>
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;">트랜잭션 ID 직접 입력 (선택)</div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="upgradeTxid" class="d-form-input" placeholder="TxID / 트랜잭션 해시" style="font-size:12px;flex:1;" />
+          <button onclick="verifyTxid()" class="btn-secondary" style="flex-shrink:0;">확인</button>
+        </div>
+        <div id="upgradeTxidMsg" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
+      </div>
     </div>
-    <div style="font-size:12px;color:var(--gray-400);line-height:1.7;">
-      1. 위 주소로 정확한 금액을 TRC-20으로 전송하세요<br/>
-      2. 트랜잭션 ID(TxID)를 <a href="mailto:wldnjswldnjs00@gmail.com" style="color:var(--yellow);">wldnjswldnjs00@gmail.com</a>으로 보내주세요<br/>
-      3. 확인 후 24시간 이내 플랜이 활성화됩니다
+
+    <!-- Success -->
+    <div id="upgradeStep-success" style="display:none;text-align:center;padding:32px 0;">
+      <div style="font-size:48px;margin-bottom:16px;">✅</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:8px;">결제 확인 완료!</div>
+      <div style="font-size:14px;color:var(--gray-400);" id="upgradeSuccessMsg">플랜이 활성화되었습니다.</div>
     </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('upgradeModal')">닫기</button>
-      <a href="mailto:wldnjswldnjs00@gmail.com" class="btn-primary" style="text-decoration:none;padding:10px 20px;">관리자에게 문의</a>
+
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn-cancel" onclick="closeUpgradeModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -1544,13 +1576,115 @@
     });
   }
 
-  function upgradePlan(plan) {
-    var prices = { starter: '$100', pro: '$500', elite: '$1,000' };
-    var names  = { starter: 'Starter', pro: 'Pro', elite: 'Elite' };
+  var _upgradePollTimer = null;
+  var _upgradeUniqueAmt = null;
+  var _upgradePlanId    = null;
+
+  async function upgradePlan(plan) {
+    var names   = { starter: 'Starter', pro: 'Pro', elite: 'Elite' };
+    var amounts = { starter: 100, pro: 500, elite: 1000 };
+    _upgradePlanId = plan;
+
+    // Reset modal
     document.getElementById('upgradeModalTitle').textContent = names[plan] + ' 플랜 업그레이드';
-    document.getElementById('upgradeModalDesc').textContent  = names[plan] + ' 플랜으로 업그레이드하려면 아래 주소로 결제해 주세요.';
-    document.getElementById('upgradeModalPrice').textContent = prices[plan] + '/mo';
+    document.getElementById('upgradeStep-loading').style.display = 'block';
+    document.getElementById('upgradeStep-pay').style.display     = 'none';
+    document.getElementById('upgradeStep-success').style.display = 'none';
     document.getElementById('upgradeModal').classList.add('show');
+
+    try {
+      var user = getUserData();
+      var res  = await fetch(WORKER_URL + '/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, plan: plan, billing: 'monthly', baseAmount: amounts[plan] })
+      });
+      var data = await res.json();
+      if (!data.uniqueAmount || !data.wallet) throw new Error('no data');
+
+      _upgradeUniqueAmt = String(data.uniqueAmount);
+      document.getElementById('upgradeUniqueAmount').textContent = data.uniqueAmount + ' USDT';
+      document.getElementById('upgradeWalletAddr').textContent   = data.wallet;
+      document.getElementById('upgradeStep-loading').style.display = 'none';
+      document.getElementById('upgradeStep-pay').style.display     = 'block';
+      startUpgradePoll();
+    } catch(e) {
+      document.getElementById('upgradeStep-loading').innerHTML =
+        '<div style="color:#ef4444;font-size:13px;">결제 주소 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.</div>';
+    }
+  }
+
+  function startUpgradePoll() {
+    stopUpgradePoll();
+    _upgradePollTimer = setInterval(async function() {
+      if (!_upgradeUniqueAmt) return;
+      try {
+        var res  = await fetch(WORKER_URL + '/check-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uniqueAmount: _upgradeUniqueAmt })
+        });
+        var data = await res.json();
+        if (data.confirmed) { stopUpgradePoll(); onPaymentConfirmed(_upgradePlanId); }
+      } catch(e) {}
+    }, 15000);
+  }
+
+  function stopUpgradePoll() {
+    if (_upgradePollTimer) { clearInterval(_upgradePollTimer); _upgradePollTimer = null; }
+  }
+
+  function onPaymentConfirmed(plan) {
+    var names = { starter: 'Starter', pro: 'Pro', elite: 'Elite' };
+    var sub   = getSubscription();
+    sub.plan  = plan;
+    sub.activatedAt = new Date().toISOString();
+    localStorage.setItem('ayilon_subscription', JSON.stringify(sub));
+    updateTopbar();
+    initSubscriptionPage();
+    document.getElementById('upgradeStep-loading').style.display = 'none';
+    document.getElementById('upgradeStep-pay').style.display     = 'none';
+    document.getElementById('upgradeStep-success').style.display = 'block';
+    document.getElementById('upgradeSuccessMsg').textContent     = names[plan] + ' 플랜이 활성화되었습니다!';
+  }
+
+  async function verifyTxid() {
+    var txid  = (document.getElementById('upgradeTxid') || {}).value || '';
+    var msgEl = document.getElementById('upgradeTxidMsg');
+    if (!txid.trim()) {
+      if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = '트랜잭션 ID를 입력하세요'; }
+      return;
+    }
+    if (msgEl) { msgEl.style.color = 'var(--gray-400)'; msgEl.textContent = '확인 중...'; }
+    try {
+      var res  = await fetch(WORKER_URL + '/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txid: txid.trim(), uniqueAmount: _upgradeUniqueAmt })
+      });
+      var data = await res.json();
+      if (data.verified) {
+        stopUpgradePoll();
+        onPaymentConfirmed(_upgradePlanId);
+      } else {
+        if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = data.error || '확인 실패. 트랜잭션이 아직 처리 중일 수 있습니다.'; }
+      }
+    } catch(e) {
+      if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = '오류가 발생했습니다. 다시 시도해 주세요.'; }
+    }
+  }
+
+  function copyText(elId) {
+    var text = (document.getElementById(elId) || {}).textContent || '';
+    text = text.replace(' USDT', '').trim();
+    if (navigator.clipboard) navigator.clipboard.writeText(text).catch(function(){});
+  }
+
+  function closeUpgradeModal() {
+    stopUpgradePoll();
+    _upgradeUniqueAmt = null;
+    _upgradePlanId    = null;
+    closeModal('upgradeModal');
   }
 
   /* ════════════════════════════════════════
