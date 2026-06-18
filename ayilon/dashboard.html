@@ -1382,7 +1382,9 @@
       el.innerHTML = '<table class="term-table"><thead><tr><th>' + _t('db.term.symbol') + '</th><th>' + _t('db.term.direction') + '</th><th>' + _t('db.term.qty') + '</th><th>' + _t('db.term.entry_price') + '</th><th>' + _t('db.term.mark_price') + '</th><th>' + _t('db.term.unreal_pnl') + '</th><th>' + _t('db.term.roe') + '</th></tr></thead><tbody>' +
         rows.map(function(p) {
           var side = p.posSide === 'long' ? '<span class="pos-side-long">LONG</span>' : '<span class="pos-side-short">SHORT</span>';
-          var roe  = parseFloat(p.upl || 0) / (parseFloat(p.margin || 1)) * 100;
+          var notional = parseFloat(p.avgPx || 0) * parseFloat(p.pos || 0) * parseFloat(p.ctVal || 0.01);
+          var initMargin = notional / parseFloat(p.lever || 5);
+          var roe  = initMargin > 0 ? parseFloat(p.upl || 0) / initMargin * 100 : 0;
           return '<tr><td>' + escapeHtml(p.instId || '—') + '</td><td>' + side + '</td><td>' + fmtNum(p.pos, 4) + '</td><td>$' + fmtNum(p.avgPx, 2) + '</td><td>$' + fmtNum(p.markPx, 2) + '</td><td>' + fmtPnl(p.upl) + '</td><td><span class="' + (roe >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg') + '">' + (roe >= 0 ? '+' : '') + fmtNum(roe, 2) + '%</span></td></tr>';
         }).join('') + '</tbody></table>';
     } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">' + _t('db.term.load_fail') + ': ' + escapeHtml(e.message || '') + '</div>'; }
