@@ -1593,11 +1593,12 @@
     document.getElementById('upgradeModal').classList.add('show');
 
     try {
-      var user = getUserData();
-      var res  = await fetch(WORKER_URL + '/create-payment', {
+      var user  = getUserData();
+      var token = getSessionToken();
+      var res   = await fetch(WORKER_URL + '/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, plan: plan, billing: 'monthly', baseAmount: amounts[plan] })
+        body: JSON.stringify({ sessionToken: token, email: user.email || '', plan: plan, billing: 'monthly', baseAmount: amounts[plan] })
       });
       var data = await res.json();
       if (!data.uniqueAmount || !data.wallet) throw new Error('no data');
