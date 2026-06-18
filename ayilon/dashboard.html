@@ -1451,7 +1451,7 @@
   /* ════════════════════════════════════════
      BOTS
   ════════════════════════════════════════ */
-  var selectedStrategy = null;
+  var selectedStrategies = [];
 
   var STRATEGIES = [
     { id: 'sr-bounce',       name: 'SR Bounce',       tier: 'FREE',  desc: 'Support & Resistance Bounce — 지지/저항 레벨에서 반등 진입 전략' },
@@ -1488,34 +1488,55 @@
     var html = '';
     STRATEGIES.forEach(function(s) {
       var locked = tierLevel(s.tier) > planLevel;
-      var activeCls = selectedStrategy === s.id ? ' active' : '';
+      var isSelected = selectedStrategies.indexOf(s.id) !== -1;
+      var activeCls = isSelected ? ' active' : '';
       var lockedCls = locked ? ' locked' : '';
       var tierCls   = s.tier === 'FREE' ? 'tier-free' : s.tier === 'PRO' ? 'tier-pro' : 'tier-elite';
       var lockIcon  = locked ? ' <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : '';
+      var checkIcon = isSelected ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#22c55e;flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>' : '<div style="width:14px;height:14px;border:1.5px solid rgba(255,255,255,0.2);border-radius:3px;flex-shrink:0;"></div>';
       var clickFn   = locked
         ? 'showPage(\'subscription\',null)'
-        : 'selectStrategy(\'' + s.id + '\')';
-      html += '<div class="strategy-item' + activeCls + lockedCls + '" onclick="' + clickFn + '">' +
-        '<span class="strategy-item-name">' + s.name + lockIcon + '</span>' +
+        : 'toggleStrategy(\'' + s.id + '\')';
+      html += '<div class="strategy-item' + activeCls + lockedCls + '" onclick="' + clickFn + '" style="gap:10px;">' +
+        checkIcon +
+        '<span class="strategy-item-name" style="flex:1;">' + s.name + lockIcon + '</span>' +
         '<span class="strategy-item-tier ' + tierCls + '">' + s.tier + '</span>' +
         '</div>';
     });
     document.getElementById('strategyList').innerHTML = html;
   }
 
-  function selectStrategy(id) {
-    selectedStrategy = id;
+  function toggleStrategy(id) {
+    var idx = selectedStrategies.indexOf(id);
+    if (idx === -1) {
+      selectedStrategies.push(id);
+    } else {
+      selectedStrategies.splice(idx, 1);
+    }
     renderStrategyList();
-    var strat = STRATEGIES.filter(function(s){ return s.id === id; })[0];
-    if (!strat) return;
-    document.getElementById('botGuideSteps').style.display = 'none';
-    document.getElementById('botStratConfig').style.display = 'block';
-    document.getElementById('configStratName').textContent = strat.name;
-    document.getElementById('configStratDesc').textContent = strat.desc;
+    if (selectedStrategies.length > 0) {
+      var primaryId = selectedStrategies[0];
+      var strat = STRATEGIES.filter(function(s){ return s.id === primaryId; })[0];
+      if (strat) {
+        document.getElementById('botGuideSteps').style.display = 'none';
+        document.getElementById('botStratConfig').style.display = 'block';
+        var namesStr = selectedStrategies.map(function(sid) {
+          var s = STRATEGIES.filter(function(x){ return x.id === sid; })[0];
+          return s ? s.name : sid;
+        }).join(', ');
+        document.getElementById('configStratName').textContent = namesStr;
+        document.getElementById('configStratDesc').textContent = selectedStrategies.length > 1
+          ? selectedStrategies.length + ' strategies selected — will run simultaneously'
+          : (strat.desc || '');
+      }
+    } else {
+      document.getElementById('botGuideSteps').style.display = 'block';
+      document.getElementById('botStratConfig').style.display = 'none';
+    }
   }
 
   function renderBotConfig() {
-    if (!selectedStrategy) {
+    if (!selectedStrategies.length) {
       document.getElementById('botGuideSteps').style.display = 'block';
       document.getElementById('botStratConfig').style.display = 'none';
     }
@@ -1533,7 +1554,7 @@
   }
 
   async function startBot() {
-    if (!selectedStrategy) return;
+    if (!selectedStrategies.length) return;
     var token    = getSessionToken();
     var leverage = document.getElementById('botLeverage').value;
     var posSize  = document.getElementById('botPosSize').value;
@@ -1541,7 +1562,8 @@
     var entries  = document.getElementById('botEntries').value;
     var mode     = document.querySelector('input[name=botMode]:checked').value;
     var msgEl    = document.getElementById('botConfigMsg');
-    var strategyName = stratIdToWorkerName(selectedStrategy);
+    var strategyNames = selectedStrategies.map(stratIdToWorkerName);
+    var primaryStrategy = strategyNames[0];
     msgEl.style.color = 'var(--gray-400)';
     msgEl.textContent = '설정 저장 중...';
     try {
@@ -1551,7 +1573,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionToken: token,
-          strategy: strategyName,
+          strategy: primaryStrategy,
+          strategies: strategyNames,
           leverage: parseInt(leverage),
           posSize: parseFloat(posSize),
           riskPerTrade: parseFloat(risk),
@@ -1619,23 +1642,43 @@
         return;
       }
       var cfg        = data.config || {};
-      var stratName  = STRAT_DISPLAY_NAMES[cfg.strategy] || cfg.strategy || '—';
       var modeLabel  = cfg.mode === 'demo' ? 'Demo' : 'Live';
       var pairLabel  = cfg.tradingPair || 'BTC-USDT-SWAP';
       var levLabel   = (cfg.leverage || 20) + 'x';
-      listEl.innerHTML =
-        '<div class="bot-item">' +
+
+      // Determine strategies list
+      var runningStrats = [];
+      if (Array.isArray(cfg.strategies) && cfg.strategies.length > 0) {
+        runningStrats = cfg.strategies;
+      } else if (cfg.strategy) {
+        runningStrats = [cfg.strategy];
+      }
+
+      var posSum = data.positionSummary || {};
+      var botItemsHtml = runningStrats.map(function(strat) {
+        var stratName = STRAT_DISPLAY_NAMES[strat] || strat;
+        var posKey = pairLabel + ':' + strat;
+        var posInfo = posSum[posKey];
+        var posLabel = posInfo ? (' · <span style="color:#22c55e;">' + posInfo.direction.toUpperCase() + ' (' + posInfo.entries + ' entries)</span>') : '';
+        return '<div class="bot-item">' +
           '<div style="display:flex;align-items:center;gap:10px;">' +
             '<div class="bot-status-dot" style="animation:pulse 2s infinite;box-shadow:0 0 6px var(--green);"></div>' +
             '<div>' +
               '<div style="font-size:14px;font-weight:600;">' + stratName + '</div>' +
-              '<div style="font-size:12px;color:var(--gray-400);">' + pairLabel + ' · ' + modeLabel + ' · Lev ' + levLabel + '</div>' +
+              '<div style="font-size:12px;color:var(--gray-400);">' + pairLabel + ' · ' + modeLabel + ' · Lev ' + levLabel + posLabel + '</div>' +
             '</div>' +
           '</div>' +
           '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot()">' + (window.__t ? window.__t('db.stop') : '중지') + '</button>' +
         '</div>';
+      }).join('');
+
+      if (!botItemsHtml) {
+        botItemsHtml = '<div class="bot-item"><div style="color:var(--gray-400);font-size:13px;">Bot running (no strategy configured)</div><button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot()">' + (window.__t ? window.__t('db.stop') : '중지') + '</button></div>';
+      }
+
+      listEl.innerHTML = botItemsHtml;
       var dashActive = document.getElementById('dashActiveBots');
-      if (dashActive) dashActive.textContent = '1';
+      if (dashActive) dashActive.textContent = String(runningStrats.length || 1);
 
       // Render logs
       renderBotLogs(data.logs || [], data.lastScan);
