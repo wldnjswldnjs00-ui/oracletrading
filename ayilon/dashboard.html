@@ -1745,7 +1745,7 @@
               '<div style="font-size:12px;color:var(--gray-400);">' + pairLabel + ' · ' + modeLabel + ' · Lev ' + levLabel + posLabel + '</div>' +
             '</div>' +
           '</div>' +
-          '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot()">' + (window.__t ? window.__t('db.stop') : '중지') + '</button>' +
+          '<button class="btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.2);" onclick="stopBot(\'' + strat + '\')">' + (window.__t ? window.__t('db.stop') : '중지') + '</button>' +
         '</div>';
       }).join('');
 
@@ -1799,13 +1799,15 @@
     }).join('');
   }
 
-  async function stopBot() {
+  async function stopBot(strategy) {
     var token = getSessionToken();
     try {
+      var payload = { sessionToken: token, action: 'stop' };
+      if (strategy) payload.strategy = strategy;
       var res = await fetch(WORKER_URL + '/bot-control', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken: token, action: 'stop' })
+        body: JSON.stringify(payload)
       });
       var data = await res.json();
       if (data.ok) loadMyBots();
