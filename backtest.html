@@ -56,7 +56,7 @@ tr:last-child td{border-bottom:none;}
       <span style="font-size:11px;color:rgba(255,255,255,0.3);">실제 봇 포지션 = min(리스크%/SL거리, 포지션크기%×레버리지) × 자산 — SL거리 넓을수록 계약수 감소</span>
     </div>
   </div>
-  <button class="btn" id="btStartBtn" onclick="startBacktest()">백테스팅 시작 (4개 전략 · 약 30초 소요)</button>
+  <button class="btn" id="btStartBtn" onclick="startBacktest()">백테스팅 시작 (20개 전략 · 약 3분 소요)</button>
   <div class="progress-wrap" id="btProg">
     <div class="progress-msg" id="btMsg">준비 중...</div>
     <div class="progress-bg"><div class="progress-bar" id="btBar"></div></div>
@@ -99,9 +99,10 @@ function _sma(closes, period) {
 
 function _ema(closes, period) {
   if (closes.length < period) return null;
+  var rev = closes.slice().reverse(); // oldest-first
   var k = 2 / (period + 1);
-  var e = closes.slice(0, period).reduce(function(s,v){return s+v;}, 0) / period;
-  for (var i = period; i < closes.length; i++) e = closes[i] * k + e * (1 - k);
+  var e = rev.slice(0, period).reduce(function(s,v){return s+v;}, 0) / period;
+  for (var i = period; i < rev.length; i++) e = rev[i] * k + e * (1 - k);
   return e;
 }
 
@@ -174,6 +175,221 @@ function calcStochRSI(closes, rsiLen, stochLen, kSmooth, dSmooth) {
   var dSeries=[];
   for (var i=dSmooth-1; i<kSeries.length; i++) dSeries.push(kSeries.slice(i-dSmooth+1,i+1).reduce(function(s,v){return s+v;},0)/dSmooth);
   return { k:kSeries[kSeries.length-1], kPrev:kSeries[kSeries.length-2], d:dSeries[dSeries.length-1], dPrev:dSeries[dSeries.length-2] };
+}
+
+// ATR — candles newest-first
+function calcATR(candles, period) {
+  period = period || 14;
+  if (candles.length < period + 2) return null;
+  var rev = candles.slice().reverse();
+  var trs = [];
+  for (var i = 1; i < rev.length; i++) {
+    var h=parseFloat(rev[i][2]),l=parseFloat(rev[i][3]),pc=parseFloat(rev[i-1][4]);
+    trs.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));
+  }
+  if (trs.length < period) return null;
+  var atr = trs.slice(0,period).reduce(function(s,v){return s+v;},0)/period;
+  for (var i=period;i<trs.length;i++) atr=(atr*(period-1)+trs[i])/period;
+  return atr;
+}
+
+// MACD — closes newest-first, returns {macd,signal,hist,macdPrev,sigPrev,histPrev}
+function calcMACDFull(closes, fast, slow, sig) {
+  fast=fast||12; slow=slow||26; sig=sig||9;
+  if (closes.length < slow+sig+10) return null;
+  var rev=closes.slice().reverse();
+  var kF=2/(fast+1),kS=2/(slow+1),kSig=2/(sig+1);
+  var emaF=rev.slice(0,fast).reduce(function(s,v){return s+v;},0)/fast;
+  var emaS=rev.slice(0,slow).reduce(function(s,v){return s+v;},0)/slow;
+  for(var i=fast;i<slow;i++) emaF=rev[i]*kF+emaF*(1-kF);
+  var macdArr=[];
+  for(var i=slow;i<rev.length;i++){
+    emaF=rev[i]*kF+emaF*(1-kF); emaS=rev[i]*kS+emaS*(1-kS);
+    macdArr.push(emaF-emaS);
+  }
+  if(macdArr.length<sig+2) return null;
+  var sigL=macdArr.slice(0,sig).reduce(function(s,v){return s+v;},0)/sig;
+  var out=[];
+  for(var i=sig;i<macdArr.length;i++){sigL=macdArr[i]*kSig+sigL*(1-kSig);out.push({m:macdArr[i],s:sigL});}
+  if(out.length<2) return null;
+  var c=out[out.length-1],p=out[out.length-2];
+  return {macd:c.m,signal:c.s,hist:c.m-c.s,macdPrev:p.m,sigPrev:p.s,histPrev:p.m-p.s};
+}
+
+// Bollinger Bands — closes newest-first
+function calcBB(closes, period, mult) {
+  period=period||20; mult=mult||2;
+  if(closes.length<period+1) return null;
+  function bb(arr) {
+    var sl=arr.slice(0,period);
+    var mid=sl.reduce(function(s,v){return s+v;},0)/period;
+    var std=Math.sqrt(sl.reduce(function(s,v){return s+Math.pow(v-mid,2);},0)/period);
+    return {upper:mid+mult*std,mid:mid,lower:mid-mult*std,std:std,width:2*mult*std/mid};
+  }
+  var cur=bb(closes),prv=bb(closes.slice(1));
+  return {upper:cur.upper,mid:cur.mid,lower:cur.lower,std:cur.std,width:cur.width,
+          upperPrev:prv.upper,midPrev:prv.mid,lowerPrev:prv.lower,widthPrev:prv.width};
+}
+
+// SuperTrend — candles newest-first, returns {trend,trendPrev,sl}
+function calcSupertrend(candles, period, mult) {
+  period=period||10; mult=mult||3;
+  if(candles.length<period+20) return null;
+  var rev=candles.slice().reverse();
+  var trs=[];
+  for(var i=1;i<rev.length;i++){
+    var h=parseFloat(rev[i][2]),l=parseFloat(rev[i][3]),pc=parseFloat(rev[i-1][4]);
+    trs.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));
+  }
+  var atrS=[];
+  var a=trs.slice(0,period).reduce(function(s,v){return s+v;},0)/period;
+  for(var i=0;i<period;i++) atrS.push(null);
+  atrS.push(a);
+  for(var i=period;i<trs.length;i++){a=(a*(period-1)+trs[i])/period;atrS.push(a);}
+  var dirs=[],ups=[],lows=[];
+  for(var i=period;i<rev.length-1;i++){
+    if(!atrS[i]) continue;
+    var hi=parseFloat(rev[i][2]),lo=parseFloat(rev[i][3]),cl=parseFloat(rev[i][4]);
+    var mid=(hi+lo)/2;
+    var rawU=mid+mult*atrS[i],rawL=mid-mult*atrS[i];
+    var pU=ups.length>0?ups[ups.length-1]:rawU;
+    var pL=lows.length>0?lows[lows.length-1]:rawL;
+    var pCl=parseFloat(rev[i-1][4]);
+    var fU=rawU<pU||pCl>pU?rawU:pU;
+    var fL=rawL>pL||pCl<pL?rawL:pL;
+    ups.push(fU); lows.push(fL);
+    var pd=dirs.length>0?dirs[dirs.length-1]:1;
+    var d=pd===1?(cl<fL?-1:1):(cl>fU?1:-1);
+    dirs.push(d);
+  }
+  if(dirs.length<2) return null;
+  var last=dirs.length-1;
+  return {trend:dirs[last],trendPrev:dirs[last-1],
+          sl:dirs[last]===1?lows[last]:ups[last]};
+}
+
+// ADX + DI — candles newest-first
+function calcADX(candles, period) {
+  period=period||14;
+  if(candles.length<period*3) return null;
+  var rev=candles.slice().reverse();
+  var trs=[],pdms=[],ndms=[];
+  for(var i=1;i<rev.length;i++){
+    var h=parseFloat(rev[i][2]),l=parseFloat(rev[i][3]),pc=parseFloat(rev[i-1][4]);
+    var ph=parseFloat(rev[i-1][2]),pl=parseFloat(rev[i-1][3]);
+    trs.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));
+    var up=h-ph,dn=pl-l;
+    pdms.push(up>dn&&up>0?up:0); ndms.push(dn>up&&dn>0?dn:0);
+  }
+  if(trs.length<period*2) return null;
+  var smT=trs.slice(0,period).reduce(function(s,v){return s+v;},0);
+  var smP=pdms.slice(0,period).reduce(function(s,v){return s+v;},0);
+  var smN=ndms.slice(0,period).reduce(function(s,v){return s+v;},0);
+  var dxArr=[];
+  for(var i=period;i<trs.length;i++){
+    smT=smT-smT/period+trs[i]; smP=smP-smP/period+pdms[i]; smN=smN-smN/period+ndms[i];
+    var pdi=smT>0?100*smP/smT:0,ndi=smT>0?100*smN/smT:0;
+    dxArr.push({dx:(pdi+ndi)>0?100*Math.abs(pdi-ndi)/(pdi+ndi):0,pdi:pdi,ndi:ndi});
+  }
+  if(dxArr.length<period+1) return null;
+  var adx=dxArr.slice(0,period).reduce(function(s,v){return s+v.dx;},0)/period;
+  for(var i=period;i<dxArr.length;i++) adx=(adx*(period-1)+dxArr[i].dx)/period;
+  var c=dxArr[dxArr.length-1],p=dxArr[dxArr.length-2];
+  return {adx:adx,pdi:c.pdi,ndi:c.ndi,pdiPrev:p.pdi,ndiPrev:p.ndi};
+}
+
+// Ichimoku — candles newest-first
+function calcIchimoku(candles) {
+  if(candles.length<80) return null;
+  function HL(arr,s,n){
+    var sl=arr.slice(s,s+n);
+    return{h:Math.max.apply(null,sl.map(function(c){return parseFloat(c[2]);})),
+           l:Math.min.apply(null,sl.map(function(c){return parseFloat(c[3]);}))};
+  }
+  var tk=HL(candles,0,9),kj=HL(candles,0,26);
+  var tenkan=(tk.h+tk.l)/2,kijun=(kj.h+kj.l)/2;
+  var tkP=HL(candles,1,9),kjP=HL(candles,1,26);
+  var tenkanPrev=(tkP.h+tkP.l)/2,kijunPrev=(kjP.h+kjP.l)/2;
+  var sa26=HL(candles,26,9),sk26=HL(candles,26,26),sb26=HL(candles,26,52);
+  var spA=((sa26.h+sa26.l)/2+(sk26.h+sk26.l)/2)/2;
+  var spB=(sb26.h+sb26.l)/2;
+  var cloudTop=Math.max(spA,spB),cloudBot=Math.min(spA,spB);
+  var price=parseFloat(candles[0][4]);
+  return{tenkan:tenkan,kijun:kijun,tenkanPrev:tenkanPrev,kijunPrev:kijunPrev,cloudTop:cloudTop,cloudBot:cloudBot,
+         aboveCloud:price>cloudTop,belowCloud:price<cloudBot};
+}
+
+// WMA helper
+function _wma(arr,period){
+  if(arr.length<period) return null;
+  var sum=0,w=0;
+  for(var i=0;i<period;i++){sum+=arr[i]*(period-i);w+=period-i;}
+  return sum/w;
+}
+
+// Hull MA — closes newest-first
+function calcHullMA(closes, period) {
+  period=period||9;
+  var sp=Math.round(Math.sqrt(period)),hp=Math.floor(period/2);
+  if(closes.length<period+sp+5) return null;
+  function hma(arr,offset){
+    var raw=[];
+    for(var j=0;j<=sp;j++){
+      var a=_wma(arr.slice(offset+j),hp),b=_wma(arr.slice(offset+j),period);
+      if(!a||!b) return null;
+      raw.push(2*a-b);
+    }
+    return _wma(raw,sp);
+  }
+  var cur=hma(closes,0),prev=hma(closes,1);
+  if(cur==null||prev==null) return null;
+  return{value:cur,prev:prev};
+}
+
+// CCI — candles newest-first
+function calcCCI(candles, period) {
+  period=period||20;
+  if(candles.length<period+1) return null;
+  function cci(arr){
+    var tps=arr.slice(0,period).map(function(c){return(parseFloat(c[2])+parseFloat(c[3])+parseFloat(c[4]))/3;});
+    var sma=tps.reduce(function(s,v){return s+v;},0)/period;
+    var md=tps.reduce(function(s,v){return s+Math.abs(v-sma);},0)/period;
+    return md>0?(tps[0]-sma)/(0.015*md):0;
+  }
+  return{value:cci(candles),prev:cci(candles.slice(1))};
+}
+
+// Fisher Transform — candles newest-first
+function calcFisher(candles, period) {
+  period=period||9;
+  if(candles.length<period+2) return null;
+  function fish(arr,offset){
+    var h=Math.max.apply(null,arr.slice(offset,offset+period).map(function(c){return parseFloat(c[2]);}));
+    var l=Math.min.apply(null,arr.slice(offset,offset+period).map(function(c){return parseFloat(c[3]);}));
+    var cl=parseFloat(arr[offset][4]);
+    var r=(h-l)>0?(2*(cl-l)/(h-l))-1:0;
+    r=Math.max(-0.999,Math.min(0.999,r));
+    return 0.5*Math.log((1+r)/(1-r));
+  }
+  return{value:fish(candles,0),prev:fish(candles,1)};
+}
+
+// Chandelier Exit — candles newest-first
+function calcChandelier(candles, period, mult) {
+  period=period||22; mult=mult||3;
+  if(candles.length<period+15) return null;
+  var atr=calcATR(candles,period),atrP=calcATR(candles.slice(1),period);
+  if(!atr||!atrP) return null;
+  function chanStops(arr,offset,a){
+    var hh=Math.max.apply(null,arr.slice(offset,offset+period).map(function(c){return parseFloat(c[2]);}));
+    var ll=Math.min.apply(null,arr.slice(offset,offset+period).map(function(c){return parseFloat(c[3]);}));
+    return{longStop:hh-mult*a,shortStop:ll+mult*a};
+  }
+  var s=chanStops(candles,0,atr),sP=chanStops(candles,1,atrP);
+  var price=parseFloat(candles[0][4]),pricePrev=parseFloat(candles[1][4]);
+  var dir=price>s.longStop?1:price<s.shortStop?-1:0;
+  var dirPrev=pricePrev>sP.longStop?1:pricePrev<sP.shortStop?-1:0;
+  return{dir:dir,dirPrev:dirPrev,longStop:s.longStop,shortStop:s.shortStop};
 }
 
 // ════════════════════════════════════════════════════════════
@@ -288,6 +504,192 @@ function detectSignalICTFibOTE(candles1H, currentPrice) {
   return null;
 }
 
+// 5. EMA 9/21 Cross (SCALP)
+function detectSignalEMA921(candles, price) {
+  if(candles.length<30) return null;
+  var cl=candles.map(function(c){return parseFloat(c[4]);});
+  var e9=_ema(cl,9),e21=_ema(cl,21);
+  var e9p=_ema(cl.slice(1),9),e21p=_ema(cl.slice(1),21);
+  if(!e9||!e21||!e9p||!e21p) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  var rsi=calcRSI(candles,14); if(!rsi) return null;
+  if(e9p<=e21p&&e9>e21&&rsi<70) return{type:'long',stopLoss:price-atr*1.5};
+  if(e9p>=e21p&&e9<e21&&rsi>30) return{type:'short',stopLoss:price+atr*1.5};
+  return null;
+}
+
+// 6. EMA 21/55 Cross (SWING)
+function detectSignalEMA2155(candles, price) {
+  if(candles.length<65) return null;
+  var cl=candles.map(function(c){return parseFloat(c[4]);});
+  var e21=_ema(cl,21),e55=_ema(cl,55);
+  var e21p=_ema(cl.slice(1),21),e55p=_ema(cl.slice(1),55);
+  if(!e21||!e55||!e21p||!e55p) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  var ema200=calcEMA200(cl);
+  if(e21p<=e55p&&e21>e55&&(!ema200||price>ema200)) return{type:'long',stopLoss:price-atr*2.0};
+  if(e21p>=e55p&&e21<e55&&(!ema200||price<ema200)) return{type:'short',stopLoss:price+atr*2.0};
+  return null;
+}
+
+// 7. MACD Signal Cross (SWING)
+function detectSignalMACDSignal(candles, price) {
+  if(candles.length<55) return null;
+  var cl=candles.map(function(c){return parseFloat(c[4]);});
+  var m=calcMACDFull(cl); if(!m) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  if(m.macdPrev<=m.sigPrev&&m.macd>m.signal&&m.macd<0) return{type:'long',stopLoss:price-atr*2.0};
+  if(m.macdPrev>=m.sigPrev&&m.macd<m.signal&&m.macd>0) return{type:'short',stopLoss:price+atr*2.0};
+  return null;
+}
+
+// 8. MACD Zero Cross (SWING)
+function detectSignalMACDZero(candles, price) {
+  if(candles.length<55) return null;
+  var cl=candles.map(function(c){return parseFloat(c[4]);});
+  var m=calcMACDFull(cl); if(!m) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  if(m.macdPrev<=0&&m.macd>0) return{type:'long',stopLoss:price-atr*2.0};
+  if(m.macdPrev>=0&&m.macd<0) return{type:'short',stopLoss:price+atr*2.0};
+  return null;
+}
+
+// 9. SuperTrend Flip (SWING)
+function detectSignalSupertrend(candles, price) {
+  if(candles.length<50) return null;
+  var st=calcSupertrend(candles,10,3); if(!st) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  if(st.trendPrev===-1&&st.trend===1) return{type:'long',stopLoss:st.sl||price-atr*2.0};
+  if(st.trendPrev===1&&st.trend===-1) return{type:'short',stopLoss:st.sl||price+atr*2.0};
+  return null;
+}
+
+// 10. Bollinger Band Bounce (SCALP)
+function detectSignalBBBounce(candles, price) {
+  if(candles.length<25) return null;
+  var cl=candles.map(function(c){return parseFloat(c[4]);});
+  var bb=calcBB(cl,20,2); if(!bb) return null;
+  var rsi=calcRSI(candles,14); if(!rsi) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  var prevCl=parseFloat(candles[1][4]);
+  if(prevCl<bb.lowerPrev&&price>=bb.lower&&rsi<55) return{type:'long',stopLoss:price-atr*1.0};
+  if(prevCl>bb.upperPrev&&price<=bb.upper&&rsi>45) return{type:'short',stopLoss:price+atr*1.0};
+  return null;
+}
+
+// 11. Bollinger Breakout (SWING)
+function detectSignalBBBreakout(candles, price) {
+  if(candles.length<25) return null;
+  var cl=candles.map(function(c){return parseFloat(c[4]);});
+  var bb=calcBB(cl,20,2); if(!bb) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  var prevCl=parseFloat(candles[1][4]);
+  if(prevCl<=bb.upperPrev&&price>bb.upper) return{type:'long',stopLoss:price-atr*1.5};
+  if(prevCl>=bb.lowerPrev&&price<bb.lower) return{type:'short',stopLoss:price+atr*1.5};
+  return null;
+}
+
+// 12. RSI 50 Cross + EMA200 (SWING)
+function detectSignalRSITrend(candles, price) {
+  if(candles.length<220) return null;
+  var cl=candles.map(function(c){return parseFloat(c[4]);});
+  var ema200=calcEMA200(cl); if(!ema200) return null;
+  var rsi=calcRSI(candles,14),rsiP=calcRSI(candles.slice(1),14);
+  if(!rsi||!rsiP) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  if(price>ema200&&rsiP<50&&rsi>=50&&rsi<70) return{type:'long',stopLoss:price-atr*2.0};
+  if(price<ema200&&rsiP>50&&rsi<=50&&rsi>30) return{type:'short',stopLoss:price+atr*2.0};
+  return null;
+}
+
+// 13. ADX + DI Cross (SWING)
+function detectSignalADXDI(candles, price) {
+  if(candles.length<55) return null;
+  var adx=calcADX(candles,14); if(!adx) return null;
+  if(adx.adx<20) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  if(adx.pdiPrev<=adx.ndiPrev&&adx.pdi>adx.ndi) return{type:'long',stopLoss:price-atr*2.0};
+  if(adx.pdiPrev>=adx.ndiPrev&&adx.pdi<adx.ndi) return{type:'short',stopLoss:price+atr*2.0};
+  return null;
+}
+
+// 14. Ichimoku TK Cross + Cloud (SWING)
+function detectSignalIchimoku(candles, price) {
+  if(candles.length<85) return null;
+  var ich=calcIchimoku(candles); if(!ich) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  if(ich.tenkanPrev<=ich.kijunPrev&&ich.tenkan>ich.kijun&&ich.aboveCloud) return{type:'long',stopLoss:price-atr*2.0};
+  if(ich.tenkanPrev>=ich.kijunPrev&&ich.tenkan<ich.kijun&&ich.belowCloud) return{type:'short',stopLoss:price+atr*2.0};
+  return null;
+}
+
+// 15. Hull MA Cross (SWING)
+function detectSignalHullCross(candles, price) {
+  if(candles.length<45) return null;
+  var cl=candles.map(function(c){return parseFloat(c[4]);});
+  var h9=calcHullMA(cl,9),h21=calcHullMA(cl,21);
+  if(!h9||!h21) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  var rsi=calcRSI(candles,14); if(!rsi) return null;
+  if(h9.prev<=h21.prev&&h9.value>h21.value&&rsi<70) return{type:'long',stopLoss:price-atr*2.0};
+  if(h9.prev>=h21.prev&&h9.value<h21.value&&rsi>30) return{type:'short',stopLoss:price+atr*2.0};
+  return null;
+}
+
+// 16. Chandelier Exit Flip (SWING)
+function detectSignalChandelier(candles, price) {
+  if(candles.length<45) return null;
+  var ch=calcChandelier(candles,22,3); if(!ch) return null;
+  if(ch.dirPrev===-1&&ch.dir===1) return{type:'long',stopLoss:ch.longStop};
+  if(ch.dirPrev===1&&ch.dir===-1) return{type:'short',stopLoss:ch.shortStop};
+  return null;
+}
+
+// 17. Fisher Transform Cross Zero (SCALP)
+function detectSignalFisher(candles, price) {
+  if(candles.length<20) return null;
+  var f=calcFisher(candles,9); if(!f) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  var rsi=calcRSI(candles,14); if(!rsi) return null;
+  if(f.prev<=0&&f.value>0&&rsi<70) return{type:'long',stopLoss:price-atr*1.5};
+  if(f.prev>=0&&f.value<0&&rsi>30) return{type:'short',stopLoss:price+atr*1.5};
+  return null;
+}
+
+// 18. CCI ±100 (SCALP)
+function detectSignalCCI100(candles, price) {
+  if(candles.length<25) return null;
+  var cci=calcCCI(candles,20); if(!cci) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  if(cci.prev<=-100&&cci.value>-100) return{type:'long',stopLoss:price-atr*1.0};
+  if(cci.prev>=100&&cci.value<100) return{type:'short',stopLoss:price+atr*1.0};
+  return null;
+}
+
+// 19. HA + SuperTrend (SWING)
+function detectSignalHASupertrend(candles, price) {
+  if(candles.length<55) return null;
+  var st=calcSupertrend(candles,10,3); if(!st) return null;
+  var ha=calcHACandles(candles); if(ha.length<3) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  var haBull=ha[0][4]>ha[0][1],haPrevBull=ha[1][4]>ha[1][1];
+  if(st.trend===1&&!haPrevBull&&haBull) return{type:'long',stopLoss:st.sl||price-atr*2.0};
+  if(st.trend===-1&&haPrevBull&&!haBull) return{type:'short',stopLoss:st.sl||price+atr*2.0};
+  return null;
+}
+
+// 20. RSI + Bollinger Combo (SCALP)
+function detectSignalRSIBB(candles, price) {
+  if(candles.length<25) return null;
+  var cl=candles.map(function(c){return parseFloat(c[4]);});
+  var bb=calcBB(cl,20,2); if(!bb) return null;
+  var rsi=calcRSI(candles,14); if(!rsi) return null;
+  var atr=calcATR(candles,14); if(!atr) return null;
+  if(rsi<35&&price<=bb.lower*1.005) return{type:'long',stopLoss:price-atr*1.0};
+  if(rsi>65&&price>=bb.upper*0.995) return{type:'short',stopLoss:price+atr*1.0};
+  return null;
+}
+
 // ════════════════════════════════════════════════════════════
 // DATA HELPERS
 // ════════════════════════════════════════════════════════════
@@ -317,7 +719,7 @@ function aggregate1H(c5_of) {
 //      where notionalFrac = min(riskFrac/slDist, posSize%/100×leverage)
 //      → fee scales with leverage automatically via notionalFrac
 
-var SCALP_STRATS = { ma50_bounce: 1 };
+var SCALP_STRATS = { ma50_bounce:1, ema_9_21:1, bb_bounce:1, fisher:1, cci_100:1, rsi_bb:1 };
 
 // Position-based win rate: a position is a WIN only if it reached the first TP.
 // SCALP: win = TP hit. SWING: win = TP50 hit (regardless of trailing outcome).
@@ -401,15 +803,26 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
       var c1h_nf = h1Done > 0 ? c1h_of.slice(0, h1Done).reverse() : [];
       var sig = null;
 
-      if (strategy==='ha_ema_srsi' && c1h_nf.length>=210) {
-        sig = detectSignalHAEmaSRSI(c1h_nf, cl5);
-      } else if (strategy==='ma_ribbon' && c1h_nf.length>=105) {
-        sig = detectSignalMARibbon(c1h_nf, cl5);
-      } else if (strategy==='ma50_bounce' && c1h_nf.length>=210) {
-        sig = detectSignalMA50Bounce(c1h_nf, cl5);
-      } else if (strategy==='ict_fib_ote' && c1h_nf.length>=60) {
-        sig = detectSignalICTFibOTE(c1h_nf, cl5);
-      }
+      if      (strategy==='ha_ema_srsi'   && c1h_nf.length>=210) sig=detectSignalHAEmaSRSI(c1h_nf,cl5);
+      else if (strategy==='ma_ribbon'     && c1h_nf.length>=105) sig=detectSignalMARibbon(c1h_nf,cl5);
+      else if (strategy==='ma50_bounce'   && c1h_nf.length>=210) sig=detectSignalMA50Bounce(c1h_nf,cl5);
+      else if (strategy==='ict_fib_ote'   && c1h_nf.length>=60)  sig=detectSignalICTFibOTE(c1h_nf,cl5);
+      else if (strategy==='ema_9_21'      && c1h_nf.length>=30)  sig=detectSignalEMA921(c1h_nf,cl5);
+      else if (strategy==='ema_21_55'     && c1h_nf.length>=65)  sig=detectSignalEMA2155(c1h_nf,cl5);
+      else if (strategy==='macd_signal'   && c1h_nf.length>=55)  sig=detectSignalMACDSignal(c1h_nf,cl5);
+      else if (strategy==='macd_zero'     && c1h_nf.length>=55)  sig=detectSignalMACDZero(c1h_nf,cl5);
+      else if (strategy==='supertrend'    && c1h_nf.length>=50)  sig=detectSignalSupertrend(c1h_nf,cl5);
+      else if (strategy==='bb_bounce'     && c1h_nf.length>=25)  sig=detectSignalBBBounce(c1h_nf,cl5);
+      else if (strategy==='bb_breakout'   && c1h_nf.length>=25)  sig=detectSignalBBBreakout(c1h_nf,cl5);
+      else if (strategy==='rsi_trend'     && c1h_nf.length>=220) sig=detectSignalRSITrend(c1h_nf,cl5);
+      else if (strategy==='adx_di'        && c1h_nf.length>=55)  sig=detectSignalADXDI(c1h_nf,cl5);
+      else if (strategy==='ichimoku'      && c1h_nf.length>=85)  sig=detectSignalIchimoku(c1h_nf,cl5);
+      else if (strategy==='hull_cross'    && c1h_nf.length>=45)  sig=detectSignalHullCross(c1h_nf,cl5);
+      else if (strategy==='chandelier'    && c1h_nf.length>=45)  sig=detectSignalChandelier(c1h_nf,cl5);
+      else if (strategy==='fisher'        && c1h_nf.length>=20)  sig=detectSignalFisher(c1h_nf,cl5);
+      else if (strategy==='cci_100'       && c1h_nf.length>=25)  sig=detectSignalCCI100(c1h_nf,cl5);
+      else if (strategy==='ha_supertrend' && c1h_nf.length>=55)  sig=detectSignalHASupertrend(c1h_nf,cl5);
+      else if (strategy==='rsi_bb'        && c1h_nf.length>=25)  sig=detectSignalRSIBB(c1h_nf,cl5);
 
       if (sig && sig.stopLoss) {
         var slDist = Math.abs(cl5 - sig.stopLoss) / cl5;
@@ -467,10 +880,26 @@ async function fetchCandles5m(pair, onProgress) {
 // ════════════════════════════════════════════════════════════
 
 var BT_STRATS = [
-  {id:'ha_ema_srsi', name:'HA+EMA+StochRSI', type:'SWING'},
-  {id:'ma_ribbon',   name:'MA Ribbon',        type:'SWING'},
-  {id:'ma50_bounce', name:'MA50 Bounce',       type:'SCALP'},
-  {id:'ict_fib_ote', name:'ICT Fibonacci OTE', type:'SWING'}
+  {id:'ha_ema_srsi',   name:'HA+EMA+StochRSI',   type:'SWING'},
+  {id:'ma_ribbon',     name:'MA Ribbon',           type:'SWING'},
+  {id:'ma50_bounce',   name:'MA50 Bounce',         type:'SCALP'},
+  {id:'ict_fib_ote',   name:'ICT Fibonacci OTE',   type:'SWING'},
+  {id:'ema_9_21',      name:'EMA Cross 9/21',      type:'SCALP'},
+  {id:'ema_21_55',     name:'EMA Cross 21/55',     type:'SWING'},
+  {id:'macd_signal',   name:'MACD Signal Cross',   type:'SWING'},
+  {id:'macd_zero',     name:'MACD Zero Cross',     type:'SWING'},
+  {id:'supertrend',    name:'SuperTrend(10,3)',     type:'SWING'},
+  {id:'bb_bounce',     name:'BB Bounce',           type:'SCALP'},
+  {id:'bb_breakout',   name:'BB Breakout',         type:'SWING'},
+  {id:'rsi_trend',     name:'RSI+EMA200 Trend',    type:'SWING'},
+  {id:'adx_di',        name:'ADX+DI Cross',        type:'SWING'},
+  {id:'ichimoku',      name:'Ichimoku TK+Cloud',   type:'SWING'},
+  {id:'hull_cross',    name:'Hull MA Cross',        type:'SWING'},
+  {id:'chandelier',    name:'Chandelier Exit',      type:'SWING'},
+  {id:'fisher',        name:'Fisher Transform',     type:'SCALP'},
+  {id:'cci_100',       name:'CCI ±100',       type:'SCALP'},
+  {id:'ha_supertrend', name:'HA+SuperTrend',        type:'SWING'},
+  {id:'rsi_bb',        name:'RSI+BB Combo',        type:'SCALP'}
 ];
 
 var _c5of = null, _c1hof = null, _results = {}, _chart = null, _loadedPair = '';
@@ -478,7 +907,7 @@ var _c5of = null, _c1hof = null, _results = {}, _chart = null, _loadedPair = '';
 function onPairChange() {
   var p = (document.getElementById('btPair').value||'').toUpperCase().trim();
   document.getElementById('btStartBtn').textContent =
-    p !== _loadedPair ? '백테스팅 시작 (4개 전략 · 약 30초 소요)' : '다시 실행 (캐시 재사용)';
+    p !== _loadedPair ? '백테스팅 시작 (20개 전략 · 약 3분 소요)' : '다시 실행 (캐시 재사용)';
 }
 
 function pct(v,d){d=d==null?2:d; return (v>=0?'+':'')+(v*100).toFixed(d)+'%';}
@@ -515,7 +944,7 @@ async function startBacktest() {
       _loadedPair = pair;
     } catch(e) {
       msg.textContent='데이터 수집 실패: '+(e.message||e);
-      btn.disabled=false; btn.textContent='백테스팅 시작 (4개 전략 · 약 30초 소요)';
+      btn.disabled=false; btn.textContent='백테스팅 시작 (20개 전략 · 약 3분 소요)';
       return;
     }
   }
