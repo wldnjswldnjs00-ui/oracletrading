@@ -617,6 +617,12 @@
           <span class="card-title" data-i18n="db.bots.select_strategy">전략 선택</span>
         </div>
         <div class="strategy-list" id="strategyList"></div>
+        <div style="margin-top:14px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;color:rgba(255,255,255,0.4);line-height:1.6;">
+          <span style="color:rgba(255,255,255,0.6);font-weight:600;">ⓘ 공통 손익 구조</span><br>
+          모든 전략의 <span style="color:#ef4444;">손절</span>은 OKX 알고 주문으로 자동 집행됩니다.<br>
+          <span style="color:#22c55e;">익절</span>은 목표가 도달 시 <strong style="color:rgba(255,255,255,0.6);">50% 먼저 청산</strong> → 나머지는 10% 단위 트레일링 스탑.<br>
+          ⓘ 버튼을 눌러 각 전략의 상세 설명을 확인하세요.
+        </div>
       </div>
 
       <!-- Config Panel -->
@@ -1878,6 +1884,177 @@
     return 1;
   }
 
+  var STRAT_INFO = {
+    'ha-ema-srsi': {
+      chart: '1시간봉',
+      reliability: 'high',
+      simple: '헤이킨 아시 캔들은 일반 캔들의 노이즈를 줄여서 추세를 더 명확하게 보여줍니다. 200 이동평균선 위에서만 롱, 아래서만 숏을 잡고, 스토캐스틱 RSI가 과매도/과매수 구간에서 반전 신호를 보낼 때 진입합니다.',
+      long: 'RSI가 30 이하(과매도)에서 K선이 D선을 위로 돌파 + 200 EMA 위에서 강한 양봉 HA 캔들',
+      short: 'RSI가 70 이상(과매수)에서 K선이 D선을 아래로 돌파 + 200 EMA 아래서 강한 음봉 HA 캔들',
+      sl: '직전 7개봉 중 최저가(롱) / 최고가(숏)에 OKX 알고 주문 자동 설정',
+      tp: '다음 지지/저항 레벨 도달 시 50% 먼저 청산 → 나머지는 10% 단위 트레일링',
+      close: '① 손절 알고 주문 자동 체결 ② TP 목표가 도달 (50% 청산) ③ 일일 손실 한도 초과 시 강제 청산',
+      note: '추세가 강한 구간에서 승률이 높습니다. 횡보 구간에서는 신호가 잘 발생하지 않습니다.'
+    },
+    'ny-open-fvg': {
+      chart: '5분봉',
+      reliability: 'high',
+      simple: '미국 뉴욕 주식시장이 열리는 오전 9:30(EST, 한국시간 밤 10:30 또는 11:30)에 처음 15분간의 고점·저점을 기준선으로 삼습니다. 이 기준을 돌파한 후 가격이 "빈 공간(FVG, 공정가치갭)"으로 되돌아올 때 진입합니다.',
+      long: '뉴욕 오픈 15분 기준 고점 위로 돌파 확인 → 5분봉 3개 구조에서 비어있는 공간(c1 고점 ~ c3 저점)에 가격이 재진입할 때',
+      short: '기준 저점 아래로 돌파 확인 → 5분봉 FVG(c1 저점 ~ c3 고점) 구간에 가격이 재진입할 때',
+      sl: '직전 5분봉 저가(롱) / 고가(숏)',
+      tp: '다음 지지/저항 레벨 도달 시 50% 청산 → 나머지 트레일링',
+      close: '① 손절 자동 체결 ② TP 도달 ③ 일일 손실 한도',
+      note: '뉴욕 오픈 시간대(한국 밤 10:30~12:00) 에만 신호가 발생합니다. 그 외 시간엔 스캔만 합니다.'
+    },
+    'ma-rsi-scalp': {
+      chart: '5분봉',
+      reliability: 'high',
+      simple: '이동평균선(MA) 2개가 교차하는 순간을 포착합니다. 빠른 MA(10봉)가 느린 MA(34봉)를 위로 뚫으면 상승 신호, 아래로 뚫으면 하락 신호입니다. 단, RSI 필터로 가짜 신호를 걸러냅니다.',
+      long: 'MA10이 MA34를 위로 교차(골든크로스) + RSI 14 > 55 → 롱 진입',
+      short: 'MA10이 MA34를 아래로 교차(데드크로스) + RSI 14 < 45 → 숏 진입',
+      sl: '직전 캔들의 저가(롱) / 고가(숏)',
+      tp: '다음 지지/저항 레벨 도달 시 50% 청산 → 나머지 트레일링',
+      close: '① 손절 자동 체결 ② TP 도달 ③ 진입 후 2시간 경과 시 강제 시장가 청산 ④ 일일 손실 한도',
+      note: '2시간 강제 청산이 있어서 포지션이 오래 물리지 않습니다. 단기 스캘핑에 적합합니다.'
+    },
+    'rsi-dca': {
+      chart: '1시간봉',
+      reliability: 'medium',
+      simple: 'RSI는 0~100 사이 숫자로 "얼마나 많이 올랐거나 내렸는지"를 나타냅니다. 40 이하면 많이 내린 상태(과매도)라 반등 가능성이 높고, 65 이상이면 많이 오른 상태(과매수)라 조정 가능성이 높습니다. 이 구간에서 역추세 진입합니다.',
+      long: 'RSI < 40 + 최근 5개봉 저가에서 손절 거리 0.5~10% 내 → 롱 (RSI < 30이면 S등급)',
+      short: 'RSI > 65 + 최근 5개봉 고가에서 손절 거리 내 → 숏',
+      sl: '최근 5개봉 중 최저가(롱) / 최고가(숏)',
+      tp: '다음 저항/지지 레벨 (또는 고정 1.5% 목표 중 더 유리한 값)',
+      close: '① 손절 자동 체결 ② TP 도달 ③ 일일 손실 한도',
+      note: '⚠️ 강한 하락 추세 중에는 RSI가 40 미만에서도 계속 떨어질 수 있어 손절 발생 가능. 횡보 구간에서 가장 효과적입니다. (이 전략만 추세 방향 필터가 적용되지 않습니다)'
+    },
+    'ma-crossover': {
+      chart: '1시간봉',
+      reliability: 'high',
+      simple: '지수이동평균(EMA)은 최근 가격에 더 큰 비중을 주는 이동평균선입니다. MA Crossover는 RSI 필터까지 추가해서 추세가 완전히 형성된 후에만 진입합니다. MA Cross + RSI 전략과 비슷하지만 1시간봉 기준으로 더 큰 추세를 잡습니다.',
+      long: '1H EMA10이 EMA34를 위로 교차 + RSI 50~70 구간 → 롱',
+      short: '1H EMA10이 EMA34를 아래로 교차 + RSI 30~50 구간 → 숏',
+      sl: '최근 5분봉 4개 중 최저가(롱) / 최고가(숏)',
+      tp: '다음 지지/저항 레벨 도달 시 50% 청산 → 나머지 트레일링',
+      close: '① 손절 자동 체결 ② TP 도달 ③ 일일 손실 한도',
+      note: '1시간봉 기준이라 신호가 하루에 1~3개 정도 발생합니다. PRO 플랜 이상 사용 가능.'
+    },
+    'bb-reversion': {
+      chart: '5분봉',
+      reliability: 'medium',
+      simple: '볼린저 밴드는 가격의 상한선과 하한선을 통계적으로 계산한 선입니다. 가격이 하한선을 뚫고 나갔다가 다시 안으로 들어오는 순간 반등을 노립니다. "너무 많이 벗어났으니 중심으로 돌아온다"는 원리입니다.',
+      long: '직전 5분봉이 BB 하단 이탈 → 현재봉이 BB 하단 위로 복귀 + 일봉 하락 추세가 아닌 경우',
+      short: '직전 5분봉이 BB 상단 이탈 → 현재봉이 BB 상단 아래로 복귀 + 일봉 상승 추세가 아닌 경우',
+      sl: '최근 5분봉 4개 중 최저가(롱) / 최고가(숏)',
+      tp: '다음 지지/저항 레벨 도달 시 50% 청산 → 나머지 트레일링',
+      close: '① 손절 자동 체결 ② TP 도달 ③ 일일 손실 한도',
+      note: '⚠️ 강한 추세 중에는 밴드를 계속 타고 이탈할 수 있어 위험합니다. 횡보/박스권 시장에서 효과적입니다. PRO 플랜 이상 사용 가능.'
+    },
+    'breakout': {
+      chart: '1시간봉 + 5분봉',
+      reliability: 'high',
+      simple: '최근 20개 1시간봉의 최고가(또는 최저가)를 박스권의 경계로 봅니다. 5분봉이 거래량을 평균의 1.5배 이상 동반하며 이 경계를 돌파하면 강한 추세가 시작된다고 판단하고 진입합니다.',
+      long: '현재가 > 1H 20봉 최고가 × 1.001 + 현재 5분봉 거래량 ≥ 평균 거래량 × 1.5',
+      short: '현재가 < 1H 20봉 최저가 × 0.999 + 거래량 조건 동일',
+      sl: '직전 5분봉 저가(롱) / 직전 5분봉 고가(숏)',
+      tp: '다음 지지/저항 레벨 도달 시 50% 청산 → 나머지 트레일링',
+      close: '① 손절 자동 체결 ② TP 도달 ③ 일일 손실 한도',
+      note: '신호가 발생하면 S등급으로 분류됩니다. 거짓 돌파(페이크아웃)를 거래량 조건으로 필터링합니다. PRO 플랜 이상 사용 가능.'
+    },
+    'ma-ribbon': {
+      chart: '1시간봉',
+      reliability: 'high',
+      simple: 'MA 10, 20, 50, 100 네 개의 이동평균선이 모두 한 방향으로 줄 세워졌을 때만 진입합니다. 이렇게 되면 단기·중기·장기 추세가 모두 일치한다는 뜻이라 신뢰도가 높습니다. 그 상태에서 MA10에 가격이 살짝 눌릴 때(되돌림) 진입합니다.',
+      long: 'MA10 > MA20 > MA50 > MA100 모두 정렬 + 현재가가 MA10에서 1% 이내',
+      short: 'MA10 < MA20 < MA50 < MA100 모두 정렬 + 현재가가 MA10에서 1% 이내',
+      sl: '최근 5개봉 최저가(롱) / 최고가(숏)',
+      tp: '다음 지지/저항 레벨 도달 시 50% 청산 → 나머지 트레일링',
+      close: '① 손절 자동 체결 ② TP 도달 ③ 일일 손실 한도',
+      note: '4개 MA가 모두 정렬되는 조건이라 신호가 드물지만 정확도가 높습니다. PRO 플랜 이상 사용 가능.'
+    },
+    'macd-divergence': {
+      chart: '1시간봉',
+      reliability: 'medium',
+      simple: 'MACD는 두 이동평균선의 차이를 막대그래프(히스토그램)로 표현한 지표입니다. 가격이 저점 근처에 있는데 MACD 히스토그램이 늘어나고 있으면, "가격은 떨어지고 있지만 추진력은 회복 중"이라 반등 가능성이 높습니다.',
+      long: '현재가가 최근 10봉 저점 2% 내 + MACD 히스토그램 증가 중 + RSI > 40',
+      short: '현재가가 최근 10봉 고점 2% 내 + MACD 히스토그램 감소 중 + RSI < 60',
+      sl: '최근 5분봉 4개 중 최저가(롱) / 최고가(숏)',
+      tp: '다음 지지/저항 레벨 도달 시 50% 청산 → 나머지 트레일링',
+      close: '① 손절 자동 체결 ② TP 도달 ③ 일일 손실 한도',
+      note: '⚠️ 실제 MACD 다이버전스(가격과 지표의 역방향)보다는 히스토그램 방향 변화를 보는 단순화된 로직입니다. ELITE 플랜 이상 사용 가능.'
+    },
+    'atr-trend': {
+      chart: '1시간봉',
+      reliability: 'high',
+      simple: 'ATR은 최근 가격의 평균 변동 폭(하루에 얼마나 움직이는지)입니다. ADX는 추세의 강도(방향성 없이 얼마나 강한 추세인지)를 나타냅니다. ADX가 25 이상으로 추세가 강할 때, ATR로 적절한 되돌림 깊이를 측정해 진입하는 가장 체계적인 전략입니다.',
+      long: 'ADX > 25 + 현재가 > SMA50 + 최근 고점에서 ATR의 0.5~2배 사이 되돌림 + +DI > -DI',
+      short: 'ADX > 25 + 현재가 < SMA50 + 최근 저점에서 ATR 0.5~2배 반등 + -DI > +DI',
+      sl: '현재가에서 ATR × 1.5 거리에 동적으로 설정 (시장 변동성에 맞게 자동 조정)',
+      tp: '다음 지지/저항 레벨 도달 시 50% 청산 → 나머지 트레일링',
+      close: '① 손절 자동 체결 ② TP 도달 ③ 일일 손실 한도',
+      note: '손절이 시장 변동성에 맞게 자동 조정되는 가장 정교한 전략입니다. 강한 추세 구간에서만 신호가 발생합니다. ELITE 플랜 이상 사용 가능.'
+    }
+  };
+
+  function openStratInfo(id, event) {
+    if (event) event.stopPropagation();
+    var info = STRAT_INFO[id];
+    var strat = STRATEGIES.filter(function(s){ return s.id === id; })[0];
+    if (!info || !strat) return;
+    var tierCls = strat.tier === 'STARTER' ? 'tier-free' : strat.tier === 'PRO' ? 'tier-pro' : 'tier-elite';
+    var relColor = info.reliability === 'high' ? '#22c55e' : '#f59e0b';
+    var relText  = info.reliability === 'high' ? '✅ 봇 로직 정상 작동' : '⚠️ 부분 작동 (단순화된 로직)';
+    var html = '<div style="margin-bottom:20px;">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">' +
+        '<span style="font-family:\'Space Grotesk\',sans-serif;font-size:20px;font-weight:700;">' + strat.name + '</span>' +
+        '<span class="strategy-item-tier ' + tierCls + '">' + strat.tier + '</span>' +
+      '</div>' +
+      '<div style="font-size:12px;color:' + relColor + ';font-weight:600;">' + relText + '</div>' +
+      '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">차트 기준: ' + info.chart + '</div>' +
+    '</div>' +
+    '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;margin-bottom:16px;">' +
+      '<div style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:rgba(255,255,255,0.45);margin-bottom:8px;">이 전략이 뭔가요?</div>' +
+      '<div style="font-size:13px;line-height:1.7;color:rgba(255,255,255,0.85);">' + info.simple + '</div>' +
+    '</div>' +
+    '<div style="display:grid;gap:10px;margin-bottom:16px;">' +
+      '<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;padding:12px;">' +
+        '<div style="font-size:11px;font-weight:700;color:#22c55e;margin-bottom:6px;">📈 롱(매수) 진입 조건</div>' +
+        '<div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.8);">' + info.long + '</div>' +
+      '</div>' +
+      '<div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;padding:12px;">' +
+        '<div style="font-size:11px;font-weight:700;color:#ef4444;margin-bottom:6px;">📉 숏(매도) 진입 조건</div>' +
+        '<div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.8);">' + info.short + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">' +
+      '<div style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.12);border-radius:8px;padding:12px;">' +
+        '<div style="font-size:11px;font-weight:700;color:#ef4444;margin-bottom:6px;">🛑 손절 방식</div>' +
+        '<div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.75);">' + info.sl + '</div>' +
+      '</div>' +
+      '<div style="background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.12);border-radius:8px;padding:12px;">' +
+        '<div style="font-size:11px;font-weight:700;color:#22c55e;margin-bottom:6px;">🎯 익절 방식</div>' +
+        '<div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.75);">' + info.tp + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:12px;margin-bottom:14px;">' +
+      '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);margin-bottom:6px;">🔄 청산 시나리오</div>' +
+      '<div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.7);">' + info.close + '</div>' +
+    '</div>' +
+    '<div style="background:rgba(250,204,21,0.06);border:1px solid rgba(250,204,21,0.15);border-radius:8px;padding:12px;">' +
+      '<div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:6px;">💡 참고사항</div>' +
+      '<div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.75);">' + info.note + '</div>' +
+    '</div>';
+    document.getElementById('stratInfoContent').innerHTML = html;
+    var modal = document.getElementById('stratInfoModal');
+    modal.style.display = 'flex';
+  }
+
+  function closeStratInfo() {
+    var modal = document.getElementById('stratInfoModal');
+    modal.style.display = 'none';
+  }
+
   function updatePosSizeDisplay(val) {
     document.getElementById('botPosSizeVal').textContent = val + '%';
     var warnEl = document.getElementById('botPosSizeWarn');
@@ -1898,10 +2075,15 @@
       var clickFn   = locked
         ? 'showPage(\'subscription\',null)'
         : 'toggleStrategy(\'' + s.id + '\')';
+      var hasInfo = !!STRAT_INFO[s.id];
+      var infoBtn = hasInfo
+        ? '<button onclick="openStratInfo(\'' + s.id + '\',event)" style="flex-shrink:0;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:22px;height:22px;border-radius:5px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;padding:0;" title="전략 상세 보기">ⓘ</button>'
+        : '';
       html += '<div class="strategy-item' + activeCls + lockedCls + '" onclick="' + clickFn + '" style="gap:10px;">' +
         checkIcon +
         '<span class="strategy-item-name" style="flex:1;">' + s.name + lockIcon + '</span>' +
         '<span class="strategy-item-tier ' + tierCls + '">' + s.tier + '</span>' +
+        infoBtn +
         '</div>';
     });
     document.getElementById('strategyList').innerHTML = html;
@@ -3428,5 +3610,13 @@
   }
 
 </script>
+
+<!-- Strategy Info Modal -->
+<div class="modal-overlay" id="stratInfoModal" style="display:none;align-items:center;" onclick="if(event.target===this)closeStratInfo()">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto;position:relative;padding:28px;">
+    <button onclick="closeStratInfo()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;line-height:1;">×</button>
+    <div id="stratInfoContent"></div>
+  </div>
+</div>
 </body>
 </html>
