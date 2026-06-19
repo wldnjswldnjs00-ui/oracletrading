@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AYILON — 전략 백테스팅</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',system-ui,sans-serif;background:#000;color:#fff;min-height:100vh;padding:32px;}
+h1{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;}
+.sub{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:28px;}
+.card{background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:24px;margin-bottom:20px;}
+.card-title{font-size:14px;font-weight:600;margin-bottom:16px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;}
+label{display:block;font-size:11px;color:rgba(255,255,255,0.45);font-weight:500;margin-bottom:6px;}
+input{width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit;}
+input:focus{outline:none;border-color:rgba(255,255,255,0.25);}
+.btn{display:block;width:100%;padding:13px;background:#fff;color:#000;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s;}
+.btn:hover{opacity:0.85;}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.progress-wrap{display:none;margin-top:14px;}
+.progress-msg{font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:6px;}
+.progress-bar-bg{background:rgba(255,255,255,0.07);border-radius:4px;height:4px;overflow:hidden;}
+.progress-bar{height:100%;background:#22c55e;width:0%;transition:width 0.3s;border-radius:4px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{border-bottom:1px solid rgba(255,255,255,0.07);}
+th{text-align:right;padding:10px 14px;color:rgba(255,255,255,0.4);font-weight:500;font-size:12px;}
+th:first-child{text-align:left;}
+td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:right;}
+td:first-child{text-align:left;font-weight:500;}
+tr:last-child td{border-bottom:none;}
+.up{color:#22c55e;}
+.dn{color:#ef4444;}
+.chart-wrap{position:relative;height:280px;}
+.hidden{display:none;}
+.strat-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+.strat-tab{padding:6px 14px;border-radius:100px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.5);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.15s;}
+.strat-tab:hover{border-color:rgba(255,255,255,0.3);color:#fff;}
+.strat-tab.active{background:#fff;color:#000;border-color:#fff;}
+</style>
+</head>
+<body>
+<h1>AYILON 전략 백테스팅</h1>
+<p class="sub">최근 1년 · 1시간봉 · OKX 실거래 데이터 · 시작자산 $10,000 (슬리피지 미포함)</p>
+
+<!-- Config -->
+<div class="card">
+  <div class="card-title">백테스팅 설정</div>
+  <div class="grid3">
+    <div>
+      <label>Trading Pair</label>
+      <input id="btPair" value="BTC-USDT-SWAP" placeholder="BTC-USDT-SWAP">
+    </div>
+    <div>
+      <label>레버리지</label>
+      <input id="btLev" type="number" value="10" min="1" max="20">
+    </div>
+    <div>
+      <label>포지션 크기 (%)</label>
+      <input id="btPos" type="number" value="10" min="1" max="40">
+    </div>
+  </div>
+  <button class="btn" id="btStartBtn" onclick="startAllBacktests()">전체 전략 백테스팅 시작 (9개 전략)</button>
+  <div class="progress-wrap" id="btProgress">
+    <div class="progress-msg" id="btMsg">데이터 불러오는 중...</div>
+    <div class="progress-bar-bg"><div class="progress-bar" id="btBar"></div></div>
+  </div>
+</div>
+
+<!-- Results table -->
+<div class="card hidden" id="btSummaryCard">
+  <div class="card-title">전략별 성과 비교</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:left;">전략</th>
+          <th>총 거래</th>
+          <th>승률</th>
+          <th>일 평균</th>
+          <th>월 평균</th>
+          <th>연 복리</th>
+          <th>최대낙폭</th>
+          <th style="text-align:center;">차트</th>
+        </tr>
+      </thead>
+      <tbody id="btResultBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Chart -->
+<div class="card hidden" id="btChartCard">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    <div class="card-title" id="btChartTitle" style="margin:0;">자산 곡선</div>
+    <div class="strat-tabs" id="btStratTabs"></div>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="btEquityChart"></canvas>
+  </div>
+</div>
+
+<script>
+// ── Indicator helpers ─────────────────────────────────────────
+// candles: newest-first [ts,open,high,low,close,vol]
+
+function bti_sma_nf(arr, n) {
+  if (arr.length < n) return null;
+  return arr.slice(0, n).reduce(function(s,v){return s+v;}, 0) / n;
+}
+function bti_sma_of(arr, n) { // oldest-first
+  if (arr.length < n) return null;
+  return arr.slice(arr.length-n).reduce(function(s,v){return s+v;}, 0) / n;
+}
+function bti_ema(closes_of, n) {
+  if (closes_of.length < n) return null;
+  var k = 2/(n+1), ema = closes_of.slice(0,n).reduce(function(s,v){return s+v;},0)/n;
+  for (var i=n; i<closes_of.length; i++) ema = closes_of[i]*k + ema*(1-k);
+  return ema;
+}
+function bti_rsi(closes_of, n) {
+  if (closes_of.length < n+1) return null;
+  var gains=0, losses=0;
+  for (var i=1; i<=n; i++) { var d=closes_of[i]-closes_of[i-1]; if(d>0)gains+=d; else losses-=d; }
+  var ag=gains/n, al=losses/n;
+  for (var i=n+1; i<closes_of.length; i++) {
+    var d=closes_of[i]-closes_of[i-1];
+    ag = (ag*(n-1)+(d>0?d:0))/n;
+    al = (al*(n-1)+(d<0?-d:0))/n;
+  }
+  return al===0 ? 100 : 100 - 100/(1+ag/al);
+}
+function bti_stochrsi(closes_nf, rsiLen, stochLen, kSm) {
+  var needed = rsiLen + stochLen + kSm + 5;
+  if (closes_nf.length < needed) return null;
+  var rsiSeries = [];
+  for (var offset=0; offset<stochLen+kSm+2; offset++) {
+    var slice = closes_nf.slice(offset, offset+rsiLen+2).reverse();
+    var r = bti_rsi(slice, rsiLen);
+    if (r===null) return null;
+    rsiSeries.push(r);
+  }
+  var kSeries = [];
+  for (var i=0; i<=kSm; i++) {
+    var win = rsiSeries.slice(i, i+stochLen);
+    var mn = Math.min.apply(null,win), mx = Math.max.apply(null,win);
+    kSeries.push(mx===mn ? 50 : (rsiSeries[i]-mn)/(mx-mn)*100);
+  }
+  var K = kSeries.slice(0,kSm).reduce(function(s,v){return s+v;},0)/kSm;
+  var D = kSeries.slice(0,kSm+1).reduce(function(s,v){return s+v;},0)/(kSm+1);
+  return {K:K, D:D};
+}
+function bti_ha(candles_nf) {
+  if (candles_nf.length < 2) return null;
+  var c=candles_nf[0], p=candles_nf[1];
+  var po=parseFloat(p[1]),ph=parseFloat(p[2]),pl=parseFloat(p[3]),pc=parseFloat(p[4]);
+  var haClosePrev=(po+ph+pl+pc)/4;
+  var haOpenPrev=(po+pc)/2;
+  var o=parseFloat(c[1]),h=parseFloat(c[2]),l=parseFloat(c[3]),cl=parseFloat(c[4]);
+  var haClose=(o+h+l+cl)/4;
+  var haOpen=(haOpenPrev+haClosePrev)/2;
+  return {open:haOpen,close:haClose,high:Math.max(h,haOpen,haClose),low:Math.min(l,haOpen,haClose),bullish:haClose>haOpen};
+}
+function bti_ema200(closes_nf) {
+  if (closes_nf.length < 200) return null;
+  return bti_ema(closes_nf.slice().reverse(), 200);
+}
+function bti_atr(candles_nf, n) {
+  if (candles_nf.length < n+1) return null;
+  var trs = [];
+  for (var i=0; i<n; i++) {
+    var h=parseFloat(candles_nf[i][2]),l=parseFloat(candles_nf[i][3]),pc=parseFloat(candles_nf[i+1][4]);
+    trs.push(Math.max(h-l, Math.abs(h-pc), Math.abs(l-pc)));
+  }
+  return trs.reduce(function(s,v){return s+v;},0)/n;
+}
+
+// ── Signal detectors (candles_nf = newest-first) ──────────────
+// Each returns {direction:'long'|'short', sl:number} or null
+
+function bt_sig_ha_ema_srsi(cn) {
+  if (cn.length < 215) return null;
+  var closes = cn.map(function(c){return parseFloat(c[4]);});
+  var price=closes[0], ema200=bti_ema200(closes);
+  if (!ema200) return null;
+  var srsi=bti_stochrsi(closes,14,14,3);
+  if (!srsi) return null;
+  var ha=bti_ha(cn);
+  if (!ha) return null;
+  if (price>ema200 && srsi.K<20 && srsi.D<20 && ha.bullish) {
+    var sl=parseFloat(cn[0][3]);
+    return {direction:'long', sl:sl};
+  }
+  if (price<ema200 && srsi.K>80 && srsi.D>80 && !ha.bullish) {
+    var sl=parseFloat(cn[0][2]);
+    return {direction:'short', sl:sl};
+  }
+  return null;
+}
+
+function bt_sig_rsi_dca(cn) {
+  if (cn.length < 30) return null;
+  var closes = cn.slice(0,30).map(function(c){return parseFloat(c[4]);}).reverse();
+  var price=parseFloat(cn[0][4]), rsi=bti_rsi(closes,14);
+  if (!rsi) return null;
+  if (rsi<25) {
+    var sl=parseFloat(cn[0][3]);
+    return {direction:'long', sl:sl};
+  }
+  if (rsi>75) {
+    var sl=parseFloat(cn[0][2]);
+    return {direction:'short', sl:sl};
+  }
+  return null;
+}
+
+function bt_sig_ma_crossover(cn) {
+  if (cn.length < 55) return null;
+  var closes = cn.slice(0,55).map(function(c){return parseFloat(c[4]);}).reverse();
+  var e10c=bti_ema(closes,10), e34c=bti_ema(closes,34);
+  var e10p=bti_ema(closes.slice(0,closes.length-1),10), e34p=bti_ema(closes.slice(0,closes.length-1),34);
+  if (!e10c||!e34c||!e10p||!e34p) return null;
+  var rsi=bti_rsi(closes,14); if(!rsi) return null;
+  if (e10p<=e34p && e10c>e34c && rsi>50) {
+    var sl=parseFloat(cn[1][3]);
+    return {direction:'long', sl:sl};
+  }
+  if (e10p>=e34p && e10c<e34c && rsi<50) {
+    var sl=parseFloat(cn[1][2]);
+    return {direction:'short', sl:sl};
+  }
+  return null;
+}
+
+function bt_sig_bb_reversion(cn) {
+  if (cn.length < 25) return null;
+  var closes = cn.slice(0,20).map(function(c){return parseFloat(c[4]);}).reverse();
+  var sma = bti_sma_of(closes, 20);
+  if (!sma) return null;
+  var sd = Math.sqrt(closes.reduce(function(s,v){return s+(v-sma)*(v-sma);},0)/20);
+  var upper=sma+2*sd, lower=sma-2*sd;
+  var price=parseFloat(cn[0][4]);
+  var rsi=bti_rsi(closes,14);
+  if (!rsi) return null;
+  if (price<lower && rsi<30) {
+    var sl=parseFloat(cn[0][3]);
+    return {direction:'long', sl:sl};
+  }
+  if (price>upper && rsi>70) {
+    var sl=parseFloat(cn[0][2]);
+    return {direction:'short', sl:sl};
+  }
+  return null;
+}
+
+function bt_sig_breakout(cn) {
+  if (cn.length < 25) return null;
+  var highs = cn.slice(1,21).map(function(c){return parseFloat(c[2]);});
+  var lows  = cn.slice(1,21).map(function(c){return parseFloat(c[3]);});
+  var rng20h=Math.max.apply(null,highs), rng20l=Math.min.apply(null,lows);
+  var price=parseFloat(cn[0][4]);
+  var vol0=parseFloat(cn[0][5]), volAvg=cn.slice(1,21).reduce(function(s,c){return s+parseFloat(c[5]);},0)/20;
+  if (price>rng20h && vol0>volAvg*1.3) {
+    var sl=rng20l;
+    return {direction:'long', sl:sl};
+  }
+  if (price<rng20l && vol0>volAvg*1.3) {
+    var sl=rng20h;
+    return {direction:'short', sl:sl};
+  }
+  return null;
+}
+
+function bt_sig_ma_ribbon(cn) {
+  if (cn.length < 115) return null;
+  var closes = cn.slice(0,115).map(function(c){return parseFloat(c[4]);}).reverse();
+  var mas=[10,20,50,100].map(function(p){return {p:p,v:bti_sma_of(closes,p)};}).filter(function(m){return m.v;});
+  if (mas.length<4) return null;
+  var sorted=mas.slice().sort(function(a,b){return a.v-b.v;});
+  var allBull=sorted.every(function(m,i){return i===0||sorted[i].v>sorted[i-1].v;});
+  var allBear=sorted.every(function(m,i){return i===0||sorted[i].v<sorted[i-1].v;});
+  if (allBull) return {direction:'long',  sl:parseFloat(cn[1][3])};
+  if (allBear) return {direction:'short', sl:parseFloat(cn[1][2])};
+  return null;
+}
+
+function bt_sig_macd_div(cn) {
+  if (cn.length < 45) return null;
+  var closes_of = cn.slice(0,45).map(function(c){return parseFloat(c[4]);}).reverse();
+  var fast=bti_ema(closes_of,12), slow=bti_ema(closes_of,26);
+  if (!fast||!slow) return null;
+  var macdLine=fast-slow;
+  var closes_of2=closes_of.slice(0,closes_of.length-1);
+  var fast2=bti_ema(closes_of2,12), slow2=bti_ema(closes_of2,26);
+  if (!fast2||!slow2) return null;
+  var macdPrev=fast2-slow2;
+  var rsi=bti_rsi(closes_of,14); if(!rsi) return null;
+  if (macdLine>0 && macdPrev<=0 && rsi>50) return {direction:'long',  sl:parseFloat(cn[1][3])};
+  if (macdLine<0 && macdPrev>=0 && rsi<50) return {direction:'short', sl:parseFloat(cn[1][2])};
+  return null;
+}
+
+function bt_sig_atr_trend(cn) {
+  if (cn.length < 55) return null;
+  var closes = cn.slice(0,55).map(function(c){return parseFloat(c[4]);});
+  var sma50=bti_sma_nf(closes,50); if(!sma50) return null;
+  var atr=bti_atr(cn,14); if(!atr) return null;
+  var price=closes[0];
+  if (price>sma50+atr*0.5) return {direction:'long',  sl:price-atr*2};
+  if (price<sma50-atr*0.5) return {direction:'short', sl:price+atr*2};
+  return null;
+}
+
+function bt_sig_ma_rsi_scalp(cn) {
+  if (cn.length < 36) return null;
+  var closes = cn.slice(0,36).map(function(c){return parseFloat(c[4]);});
+  var ma10c=bti_sma_nf(closes,10), ma10p=closes.slice(1,11).reduce(function(s,v){return s+v;},0)/10;
+  var ma34c=bti_sma_nf(closes,34), ma34p=closes.slice(1,35).reduce(function(s,v){return s+v;},0)/34;
+  var rsi=bti_rsi(closes.slice(0,30).reverse(),14); if(!rsi) return null;
+  if (!ma10c||!ma34c) return null;
+  if (ma10p<=ma34p && ma10c>ma34c && rsi>55) {
+    var sl=parseFloat(cn[1][3]);
+    if (sl>=closes[0]) return null;
+    return {direction:'long', sl:sl};
+  }
+  if (ma10p>=ma34p && ma10c<ma34c && rsi<45) {
+    var sl=parseFloat(cn[1][2]);
+    if (sl<=closes[0]) return null;
+    return {direction:'short', sl:sl};
+  }
+  return null;
+}
+
+function bt_detect(strategy, cn) {
+  if (strategy==='ha_ema_srsi')  return bt_sig_ha_ema_srsi(cn);
+  if (strategy==='rsi_dca')      return bt_sig_rsi_dca(cn);
+  if (strategy==='ma_crossover') return bt_sig_ma_crossover(cn);
+  if (strategy==='bb_reversion') return bt_sig_bb_reversion(cn);
+  if (strategy==='breakout')     return bt_sig_breakout(cn);
+  if (strategy==='ma_ribbon')    return bt_sig_ma_ribbon(cn);
+  if (strategy==='macd_div')     return bt_sig_macd_div(cn);
+  if (strategy==='atr_trend')    return bt_sig_atr_trend(cn);
+  if (strategy==='ma_rsi_scalp') return bt_sig_ma_rsi_scalp(cn);
+  return null;
+}
+
+// ── Core backtest engine ──────────────────────────────────────
+function runBacktest(candles_of, strategy, leverage, posSize) {
+  var SCALP = {ma_rsi_scalp:1, ny_open_fvg:1, bb_reversion:1, rsi_dca:1};
+  var isScalp = !!SCALP[strategy];
+  var LOOK = 215, RR = 1.5;
+  var equity = 10000, pos = null;
+  var trades = [], curve = [];
+  var lastDay = -1;
+
+  for (var i = LOOK; i < candles_of.length; i++) {
+    var c = candles_of[i];
+    var ts=parseInt(c[0]), open=parseFloat(c[1]), high=parseFloat(c[2]), low=parseFloat(c[3]), close=parseFloat(c[4]);
+    var day = Math.floor(ts/86400000);
+    if (day !== lastDay) { curve.push({ts:ts, equity:equity}); lastDay=day; }
+
+    if (pos) {
+      var timeout = strategy==='ma_rsi_scalp' && (i-pos.idx)>=2;
+      var slHit = pos.dir==='long' ? low<=pos.sl  : high>=pos.sl;
+      var tpHit = pos.dir==='long' ? high>=pos.tp : low<=pos.tp;
+      var closePct = posSize/100;
+
+      if (timeout) {
+        var ret=(pos.dir==='long'?(close-pos.entry):(pos.entry-close))/pos.entry;
+        var pnl=equity*closePct*leverage*ret*(pos.halfClosed?0.5:1);
+        equity=Math.max(100,equity+pnl);
+        trades.push({ts:ts,type:'TIMEOUT',dir:pos.dir,pnl:pnl,eq:equity});
+        pos=null;
+      } else if (slHit && !tpHit) {
+        var exitPx=pos.sl;
+        var ret=(pos.dir==='long'?(exitPx-pos.entry):(pos.entry-exitPx))/pos.entry;
+        var pnl=equity*closePct*leverage*ret*(pos.halfClosed?0.5:1);
+        equity=Math.max(100,equity+pnl);
+        trades.push({ts:ts,type:'SL',dir:pos.dir,pnl:pnl,eq:equity});
+        pos=null;
+      } else if (tpHit) {
+        if (isScalp || pos.halfClosed) {
+          var exitPx=pos.tp;
+          var ret=(pos.dir==='long'?(exitPx-pos.entry):(pos.entry-exitPx))/pos.entry;
+          var pnl=equity*closePct*leverage*ret*(pos.halfClosed?0.5:1);
+          equity=Math.max(100,equity+pnl);
+          trades.push({ts:ts,type:'TP',dir:pos.dir,pnl:pnl,eq:equity});
+          pos=null;
+        } else {
+          var exitPx=pos.tp;
+          var ret=(pos.dir==='long'?(exitPx-pos.entry):(pos.entry-exitPx))/pos.entry;
+          var hPnl=equity*closePct*leverage*ret*0.5;
+          equity=Math.max(100,equity+hPnl);
+          pos.halfClosed=true;
+          pos.sl=pos.entry;
+          var dist=Math.abs(pos.tp-pos.entry);
+          pos.tp=pos.dir==='long'?pos.tp+dist:pos.tp-dist;
+        }
+      }
+    }
+
+    if (!pos) {
+      var lb = candles_of.slice(i-LOOK+1, i+1).reverse();
+      var sig = bt_detect(strategy, lb);
+      if (sig && sig.sl) {
+        var price=parseFloat(candles_of[i][4]);
+        var slDist=Math.abs(price-sig.sl)/price;
+        if (slDist>=0.002 && slDist<=0.15) {
+          var tpDist=slDist*RR;
+          var tp=sig.direction==='long'?price*(1+tpDist):price*(1-tpDist);
+          pos={dir:sig.direction,entry:price,sl:sig.sl,tp:tp,halfClosed:false,idx:i};
+        }
+      }
+    }
+  }
+
+  var wins=trades.filter(function(t){return t.pnl>0;});
+  var actualDays=curve.length||365;
+  var totalRet=(equity-10000)/10000;
+  var annRet=Math.pow(1+totalRet,365/actualDays)-1;
+  var monRet=Math.pow(1+annRet,1/12)-1;
+  var dayRet=Math.pow(1+annRet,1/365)-1;
+  var peak=0, maxDD=0;
+  curve.forEach(function(p){if(p.equity>peak)peak=p.equity;var dd=(peak-p.equity)/peak;if(dd>maxDD)maxDD=dd;});
+
+  return {equity:equity,totalRet:totalRet,annRet:annRet,monRet:monRet,dayRet:dayRet,
+    totalTrades:trades.length,winRate:trades.length?wins.length/trades.length:0,
+    maxDD:maxDD,curve:curve,trades:trades};
+}
+
+// ── OKX data fetch ────────────────────────────────────────────
+async function btFetchCandles(pair, onProgress) {
+  var ONE_YEAR_AGO = Date.now() - 365*24*3600*1000;
+  var all = [], after = '';
+  for (var iter=0; iter<130; iter++) {
+    var qs='instId='+encodeURIComponent(pair)+'&bar=1H&limit=100'+(after?'&after='+after:'');
+    try {
+      var res = await fetch('https://www.okx.com/api/v5/market/history-candles?'+qs);
+      var j = await res.json();
+      var batch = j.data||[];
+      if (!batch.length) break;
+      all.push.apply(all, batch);
+      after = batch[batch.length-1][0];
+      if (onProgress) onProgress(all.length);
+      if (parseInt(batch[batch.length-1][0]) <= ONE_YEAR_AGO) break;
+      await new Promise(function(r){setTimeout(r,40);});
+    } catch(e) { break; }
+  }
+  return all.filter(function(c){return parseInt(c[0])>=ONE_YEAR_AGO;}).reverse(); // oldest-first
+}
+
+// ── UI ────────────────────────────────────────────────────────
+var BT_STRATEGIES = [
+  {id:'ha_ema_srsi',  name:'HA+EMA+StochRSI'},
+  {id:'ma_rsi_scalp', name:'MA Cross+RSI'},
+  {id:'rsi_dca',      name:'RSI DCA'},
+  {id:'ma_crossover', name:'MA Crossover'},
+  {id:'bb_reversion', name:'BB Reversion'},
+  {id:'breakout',     name:'Breakout'},
+  {id:'ma_ribbon',    name:'MA Ribbon'},
+  {id:'macd_div',     name:'MACD Divergence'},
+  {id:'atr_trend',    name:'ATR Trend'}
+];
+
+var _btCandles=null, _btResults={}, _btChart=null, _btActiveId=null;
+
+function pct(v,d){d=d||2;return (v>=0?'+':'')+(v*100).toFixed(d)+'%';}
+function clr(v){return v>=0?'#22c55e':'#ef4444';}
+
+async function startAllBacktests() {
+  var pair=(document.getElementById('btPair').value||'BTC-USDT-SWAP').trim().toUpperCase();
+  var lev=parseFloat(document.getElementById('btLev').value)||10;
+  var pos=parseFloat(document.getElementById('btPos').value)||10;
+
+  var btn=document.getElementById('btStartBtn');
+  var prog=document.getElementById('btProgress');
+  var bar=document.getElementById('btBar');
+  var msg=document.getElementById('btMsg');
+
+  btn.disabled=true; btn.textContent='실행 중...';
+  prog.style.display='block';
+  msg.textContent='OKX에서 1년치 1H 데이터 수집 중...';
+  bar.style.width='0%';
+
+  // Fetch candles
+  var candles;
+  try {
+    candles = await btFetchCandles(pair, function(n){
+      bar.style.width=Math.min(50,n/88)+'%';
+      msg.textContent='캔들 수집 중: '+n+'개...';
+    });
+  } catch(e) {
+    msg.textContent='데이터 수집 실패: '+e.message;
+    btn.disabled=false; btn.textContent='전체 전략 백테스팅 시작 (9개 전략)';
+    return;
+  }
+  _btCandles=candles;
+  msg.textContent='총 '+candles.length+'개 캔들 로드 완료. 백테스팅 실행 중...';
+
+  // Run all strategies
+  _btResults={};
+  for (var si=0;si<BT_STRATEGIES.length;si++) {
+    var s=BT_STRATEGIES[si];
+    msg.textContent='백테스팅: '+s.name+' ('+(si+1)+'/'+BT_STRATEGIES.length+')';
+    bar.style.width=(50+si/BT_STRATEGIES.length*50)+'%';
+    await new Promise(function(r){setTimeout(r,0);});
+    _btResults[s.id]=runBacktest(candles,s.id,lev,pos);
+  }
+
+  bar.style.width='100%';
+  msg.textContent='완료!';
+  btn.disabled=false; btn.textContent='다시 실행';
+
+  renderBtTable();
+  renderBtChartTabs();
+  showBtChart(BT_STRATEGIES[0].id);
+}
+
+function renderBtTable() {
+  var tbody=document.getElementById('btResultBody');
+  var rows='';
+  BT_STRATEGIES.forEach(function(s){
+    var r=_btResults[s.id];
+    if(!r) return;
+    var dc=clr(r.dayRet), mc=clr(r.monRet), ac=clr(r.annRet);
+    rows+='<tr>'+
+      '<td>'+s.name+'</td>'+
+      '<td>'+r.totalTrades+'</td>'+
+      '<td style="color:'+clr(r.winRate-0.5)+'">'+(r.winRate*100).toFixed(0)+'%</td>'+
+      '<td style="color:'+dc+'">'+pct(r.dayRet)+'</td>'+
+      '<td style="color:'+mc+'">'+pct(r.monRet)+'</td>'+
+      '<td style="color:'+ac+'">'+pct(r.annRet,1)+'</td>'+
+      '<td style="color:#ef4444">-'+pct(r.maxDD,1).replace('+','')+'</td>'+
+      '<td style="text-align:center;"><button onclick="showBtChart(\''+s.id+'\')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">차트</button></td>'+
+    '</tr>';
+  });
+  tbody.innerHTML=rows;
+  document.getElementById('btSummaryCard').classList.remove('hidden');
+}
+
+function renderBtChartTabs() {
+  var tabs=document.getElementById('btStratTabs');
+  var html='';
+  BT_STRATEGIES.forEach(function(s){
+    html+='<button class="strat-tab" id="tab_'+s.id+'" onclick="showBtChart(\''+s.id+'\')">'+s.name+'</button>';
+  });
+  tabs.innerHTML=html;
+}
+
+function showBtChart(id) {
+  var s=BT_STRATEGIES.find(function(x){return x.id===id;});
+  if (!s||!_btResults[id]) return;
+  _btActiveId=id;
+
+  // Update tab active state
+  BT_STRATEGIES.forEach(function(x){
+    var t=document.getElementById('tab_'+x.id);
+    if(t) t.classList.toggle('active', x.id===id);
+  });
+
+  var r=_btResults[id];
+  var title='자산 곡선 — '+s.name;
+  title+=' | 연 복리: '+pct(r.annRet,1);
+  title+=' | 승률: '+(r.winRate*100).toFixed(0)+'%';
+  title+=' | 거래: '+r.totalTrades+'건';
+  document.getElementById('btChartTitle').textContent=title;
+
+  var ctx=document.getElementById('btEquityChart').getContext('2d');
+  if (_btChart) _btChart.destroy();
+
+  var labels=r.curve.map(function(p){return new Date(p.ts).toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'});});
+  var data=r.curve.map(function(p){return p.equity;});
+  var isPos=r.annRet>=0;
+  var color=isPos?'#22c55e':'#ef4444';
+
+  _btChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:labels,
+      datasets:[{
+        label:'자산 ($)',
+        data:data,
+        borderColor:color,
+        borderWidth:1.5,
+        pointRadius:0,
+        fill:true,
+        backgroundColor:(function(){
+          var g=ctx.createLinearGradient(0,0,0,280);
+          g.addColorStop(0,isPos?'rgba(34,197,94,0.25)':'rgba(239,68,68,0.25)');
+          g.addColorStop(1,'rgba(0,0,0,0)');
+          return g;
+        })(),
+        tension:0.3
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:function(c){return '$'+c.parsed.y.toFixed(0);}}}
+      },
+      scales:{
+        x:{ticks:{color:'rgba(255,255,255,0.3)',maxTicksLimit:12,font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:10},callback:function(v){return '$'+v.toFixed(0);}},grid:{color:'rgba(255,255,255,0.06)'}}
+      }
+    }
+  });
+
+  document.getElementById('btChartCard').classList.remove('hidden');
+  document.getElementById('btChartCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+</script>
+</body>
+</html>
