@@ -1746,7 +1746,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       state.entries.push({ price: fillPrice, sz: actualSz, time: Date.now(), entry: entryNum });
       state.direction = signal.type;
       if (useTP) state.takeProfit = tp;
-      if (entryNum === 1) state.stopLoss = signal.stopLoss;
+      if (entryNum === 1) { state.stopLoss = signal.stopLoss; state.strategy = strategy; }
 
       if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
       if (state.slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.slAlgoId, demoMode);
@@ -1832,9 +1832,33 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
     if (price > 0) {
       const tpHit = state.direction === 'long' ? price >= state.takeProfit : price <= state.takeProfit;
       if (tpHit) {
-        const totalSz       = state.entries.reduce((sum, e) => sum + parseInt(e.sz), 0);
-        const halfContracts = Math.max(1, Math.floor(totalSz / 2));
+        const totalSz = state.entries.reduce((sum, e) => sum + parseInt(e.sz), 0);
 
+        // Scalping/mean-reversion strategies: close 100% at TP, no trailing
+        const SCALP_STRATS = ['ma_rsi_scalp', 'ny_open_fvg', 'bb_reversion', 'rsi_dca'];
+        const isScalp = SCALP_STRATS.includes(state.strategy);
+
+        if (isScalp) {
+          const fullCloseRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
+            instId: pair, tdMode: 'cross',
+            side:    state.direction === 'long' ? 'sell' : 'buy',
+            ...(isOneWayMode ? {} : { posSide: state.direction === 'long' ? 'long' : 'short' }),
+            ordType: 'market', sz: String(totalSz)
+          }, demo);
+          if (!fullCloseRes?.data?.[0]?.ordId) {
+            await botLog(env, email, `[${state.strategy}] TP full-close FAILED [${fullCloseRes?.code}]: ${fullCloseRes?.msg} — algos preserved`);
+            return;
+          }
+          if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
+          if (state.slAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.slAlgoId, demo);
+          delete ps[actualKey];
+          psModifiedRef.modified = true;
+          await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 100% closed ✓ WIN`);
+          return;
+        }
+
+        // Swing/trend strategies: close 50%, place break-even SL, start trailing
+        const halfContracts = Math.max(1, Math.floor(totalSz / 2));
         const tpCloseRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
           instId: pair, tdMode: 'cross',
           side:    state.direction === 'long' ? 'sell' : 'buy',
@@ -1862,17 +1886,17 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
         state.tpAlgoId           = null;
         state.slAlgoId           = null;
 
-        // Place break-even SL for the remaining contracts — prevents winner turning into loser
+        // Place break-even SL for remaining contracts — prevents winner turning into loser
         if (remContracts > 0 && avgEntry > 0) {
           const beSlRes = await placeSLAlgo(apiKey, secret, pass, pair, state.direction, avgEntry, String(remContracts), demo, isOneWayMode);
           state.slAlgoId = beSlRes?.data?.[0]?.algoId ? String(beSlRes.data[0].algoId) : null;
           if (state.slAlgoId) {
-            await botLog(env, email, `TP hit @ ${price} — 50% closed | break-even SL @ ${avgEntry.toFixed(2)} | trailing active`);
+            await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 50% closed | break-even SL @ ${avgEntry.toFixed(2)} | trailing active`);
           } else {
-            await botLog(env, email, `TP hit @ ${price} — 50% closed | ⚠️ break-even SL algo failed — trailing active (no SL protection)`);
+            await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 50% closed | ⚠️ break-even SL failed | trailing active (no SL protection)`);
           }
         } else {
-          await botLog(env, email, `TP hit @ ${price} — 50% closed | trailing 10% active`);
+          await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 50% closed | trailing active`);
         }
 
         ps[actualKey] = state;

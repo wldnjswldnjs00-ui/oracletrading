@@ -2073,6 +2073,7 @@
 
   var _botIsRunning = false;
   var _botHasOpenPosition = false;
+  var _runningStrategies = []; // worker-name strings of the currently running bot
   var _pairsCache = {};
 
   function updateLeverageDisplay(val) {
@@ -2161,7 +2162,15 @@
     var btn = document.getElementById('botActionBtn');
     var posWarn = document.getElementById('botPositionWarn');
     if (!btn) return;
-    if (_botIsRunning) {
+    // "설정 업데이트" only when bot is running AND selected strategies exactly match running ones
+    var isSameConfig = false;
+    if (_botIsRunning && selectedStrategies.length > 0 && _runningStrategies.length > 0) {
+      var selectedWorker = selectedStrategies.map(stratIdToWorkerName).sort();
+      var runningWorker  = _runningStrategies.slice().sort();
+      isSameConfig = selectedWorker.length === runningWorker.length &&
+        selectedWorker.every(function(s, i) { return s === runningWorker[i]; });
+    }
+    if (isSameConfig) {
       btn.textContent = '✓ 설정 업데이트';
       btn.onclick = updateBotSettings;
       if (posWarn) posWarn.style.display = _botHasOpenPosition ? 'block' : 'none';
@@ -2272,6 +2281,7 @@
       document.getElementById('botGuideSteps').style.display = 'block';
       document.getElementById('botStratConfig').style.display = 'none';
     }
+    updateBotBtn();
   }
 
   function renderBotConfig() {
@@ -2383,6 +2393,8 @@
       // Track running state & pre-fill config form
       _botIsRunning = true;
       _botHasOpenPosition = Object.keys(data.positionSummary || {}).length > 0;
+      var workerStratsRaw = (Array.isArray(cfg.strategies) && cfg.strategies.length) ? cfg.strategies : (cfg.strategy ? [cfg.strategy] : []);
+      _runningStrategies = workerStratsRaw;
       updateBotBtn();
       // Pre-fill form with current config
       var cfgLev = cfg.leverage || 10;
