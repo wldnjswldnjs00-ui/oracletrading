@@ -27,6 +27,10 @@ export default {
       if (path === '/logout')            return handleLogout(request, env);
       if (path === '/me')                return handleMe(request, env);
       if (path === '/change-password')   return handleChangePassword(request, env);
+      if (path === '/verify-2fa-login')  return handleVerify2FALogin(request, env);
+      if (path === '/initiate-2fa')      return handleInitiate2FA(request, env);
+      if (path === '/confirm-2fa')       return handleConfirm2FA(request, env);
+      if (path === '/2fa-status')        return handle2FAStatus(request, env);
       if (path === '/reset-password')    return handleResetPassword(request, env);
       if (path === '/update-profile')    return handleUpdateProfile(request, env);
       if (path === '/save-bot-settings') return handleSaveBotSettings(request, env);
@@ -380,6 +384,51 @@ async function _hashPasswordLegacy(password) {
 }
 
 // ════════════════════════════════════════════════════════════
+// TOTP (RFC 6238)
+// ════════════════════════════════════════════════════════════
+const _B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function base32Encode(bytes) {
+  let bits = 0, val = 0, out = '';
+  for (let i = 0; i < bytes.length; i++) {
+    val = (val << 8) | bytes[i]; bits += 8;
+    while (bits >= 5) { out += _B32[(val >>> (bits - 5)) & 31]; bits -= 5; }
+  }
+  if (bits > 0) out += _B32[(val << (5 - bits)) & 31];
+  return out;
+}
+function base32Decode(str) {
+  str = str.toUpperCase().replace(/=+$/, '');
+  let bits = 0, val = 0;
+  const out = [];
+  for (const c of str) {
+    const idx = _B32.indexOf(c);
+    if (idx < 0) continue;
+    val = (val << 5) | idx; bits += 5;
+    if (bits >= 8) { out.push((val >>> (bits - 8)) & 0xff); bits -= 8; }
+  }
+  return new Uint8Array(out);
+}
+function generateTOTPSecret() {
+  return base32Encode(crypto.getRandomValues(new Uint8Array(20)));
+}
+async function verifyTOTP(secret, code, window = 1) {
+  const step = Math.floor(Date.now() / 1000 / 30);
+  for (let i = -window; i <= window; i++) {
+    const counter = step + i;
+    const key = await crypto.subtle.importKey('raw', base32Decode(secret),
+      { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+    const buf = new Uint8Array(8);
+    let c = counter;
+    for (let j = 7; j >= 0; j--) { buf[j] = c & 0xff; c = Math.floor(c / 256); }
+    const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, buf));
+    const off = sig[19] & 0xf;
+    const otp = (((sig[off] & 0x7f) << 24) | (sig[off+1] << 16) | (sig[off+2] << 8) | sig[off+3]) % 1000000;
+    if (String(otp).padStart(6, '0') === String(code).trim()) return true;
+  }
+  return false;
+}
+
+// ════════════════════════════════════════════════════════════
 // SESSION AUTH
 // ════════════════════════════════════════════════════════════
 
@@ -451,6 +500,36 @@ async function handleLogin(request, env) {
     }
     try { await env.USERS_KV.delete(loginRateKey); } catch(e) {}
 
+    // Check if user has 2FA enabled
+    const tf = user.twoFactor || {};
+    const tfMethods = [];
+    if (tf.email)  tfMethods.push('email');
+    if (tf.totp)   tfMethods.push('totp');
+    if (tfMethods.length > 0) {
+      await ensureDB(env);
+      const challengeToken = crypto.randomUUID();
+      let emailCode = null;
+      if (tf.email) {
+        emailCode = String(Math.floor(100000 + Math.random() * 900000));
+        // Send email with code
+        try {
+          await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: 'AYILON <onboarding@resend.dev>', to: [user.email],
+              subject: 'AYILON Login Verification Code',
+              html: `<div style="font-family:sans-serif;padding:24px;"><h2>Login Code</h2><p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#111;">${emailCode}</p><p style="color:#666;">This code expires in 10 minutes.</p></div>`
+            })
+          });
+        } catch(e) {}
+      }
+      await env.BOT_DB.prepare('INSERT OR REPLACE INTO challenges VALUES (?,?,?,?,?)').bind(
+        challengeToken, user.email.toLowerCase(), 'login', emailCode, Date.now() + 600000
+      ).run();
+      return json({ ok: true, requires2FA: true, methods: tfMethods, challengeToken });
+    }
+
     const sessionToken = crypto.randomUUID();
     const expiresAt = Date.now() + 604800 * 1000; // 7 days
 
@@ -479,11 +558,151 @@ async function handleLogout(request, env) {
   return json({ ok: true });
 }
 
+async function handleVerify2FALogin(request, env) {
+  try {
+    const { challengeToken, emailCode, totpCode } = await request.json().catch(() => ({}));
+    if (!challengeToken) return json({ ok: false, error: 'missing_token' }, 400);
+    await ensureDB(env);
+    const challenge = await env.BOT_DB.prepare(
+      'SELECT * FROM challenges WHERE token=? AND type=?'
+    ).bind(challengeToken, 'login').first();
+    if (!challenge || challenge.expires_at < Date.now())
+      return json({ ok: false, error: 'challenge_expired' }, 400);
+
+    const user = await env.USERS_KV.get('user:' + challenge.email, { type: 'json' });
+    if (!user) return json({ ok: false, error: 'user_not_found' }, 404);
+    const tf = user.twoFactor || {};
+
+    if (tf.email) {
+      if (!emailCode || String(emailCode).trim() !== String(challenge.code)) {
+        return json({ ok: false, error: 'invalid_email_code' }, 401);
+      }
+    }
+    if (tf.totp) {
+      if (!totpCode) return json({ ok: false, error: 'missing_totp_code' }, 400);
+      const valid = await verifyTOTP(tf.totpSecret, totpCode);
+      if (!valid) return json({ ok: false, error: 'invalid_totp_code' }, 401);
+    }
+
+    await env.BOT_DB.prepare('DELETE FROM challenges WHERE token=?').bind(challengeToken).run();
+
+    const sessionToken = crypto.randomUUID();
+    const expiresAt = Date.now() + 604800 * 1000;
+    await env.BOT_DB.prepare(
+      'INSERT OR REPLACE INTO sessions (token, email, username, name, expires_at) VALUES (?,?,?,?,?)'
+    ).bind(sessionToken, user.email, user.username || '', user.name || '', expiresAt).run();
+
+    return json({ ok: true, sessionToken, email: user.email, username: user.username || '', name: user.name || '' });
+  } catch(e) { return json({ ok: false, error: 'server_error' }, 500); }
+}
+
+async function handleInitiate2FA(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  const { method, action } = body; // action: 'enable' or 'disable'
+  if (!method || !action) return json({ ok: false, error: 'missing_fields' }, 400);
+
+  await ensureDB(env);
+  const challengeToken = crypto.randomUUID();
+
+  if (method === 'email') {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    await env.BOT_DB.prepare('INSERT OR REPLACE INTO challenges VALUES (?,?,?,?,?)').bind(
+      challengeToken, session.email.toLowerCase(), action === 'enable' ? 'setup_email' : 'disable_email',
+      code, Date.now() + 600000
+    ).run();
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: 'AYILON <onboarding@resend.dev>', to: [session.email],
+          subject: 'AYILON 2FA Verification Code',
+          html: `<div style="font-family:sans-serif;padding:24px;"><h2>${action === 'enable' ? 'Enable' : 'Disable'} Email 2FA</h2><p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#111;">${code}</p><p style="color:#666;">This code expires in 10 minutes.</p></div>`
+        })
+      });
+    } catch(e) {}
+    return json({ ok: true, challengeToken });
+  }
+
+  if (method === 'totp') {
+    if (action === 'enable') {
+      const secret = generateTOTPSecret();
+      await env.BOT_DB.prepare('INSERT OR REPLACE INTO challenges VALUES (?,?,?,?,?)').bind(
+        challengeToken, session.email.toLowerCase(), 'setup_totp', secret, Date.now() + 600000
+      ).run();
+      const otpAuthUrl = `otpauth://totp/AYILON:${encodeURIComponent(session.email)}?secret=${secret}&issuer=AYILON`;
+      return json({ ok: true, challengeToken, secret, otpAuthUrl });
+    } else {
+      // Disable: just verify current TOTP, no challenge needed
+      const challengeToken2 = crypto.randomUUID();
+      await env.BOT_DB.prepare('INSERT OR REPLACE INTO challenges VALUES (?,?,?,?,?)').bind(
+        challengeToken2, session.email.toLowerCase(), 'disable_totp', null, Date.now() + 300000
+      ).run();
+      return json({ ok: true, challengeToken: challengeToken2 });
+    }
+  }
+  return json({ ok: false, error: 'invalid_method' }, 400);
+}
+
+async function handleConfirm2FA(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  const { challengeToken, code } = body;
+  if (!challengeToken || !code) return json({ ok: false, error: 'missing_fields' }, 400);
+
+  await ensureDB(env);
+  const challenge = await env.BOT_DB.prepare(
+    'SELECT * FROM challenges WHERE token=? AND email=?'
+  ).bind(challengeToken, session.email.toLowerCase()).first();
+  if (!challenge || challenge.expires_at < Date.now())
+    return json({ ok: false, error: 'challenge_expired' }, 400);
+
+  const user = await env.USERS_KV.get('user:' + session.email.toLowerCase(), { type: 'json' });
+  if (!user) return json({ ok: false, error: 'user_not_found' }, 404);
+
+  const tf = { ...(user.twoFactor || {}) };
+
+  if (challenge.type === 'setup_email') {
+    if (String(code).trim() !== String(challenge.code)) return json({ ok: false, error: 'invalid_code' }, 401);
+    tf.email = true;
+  } else if (challenge.type === 'disable_email') {
+    if (String(code).trim() !== String(challenge.code)) return json({ ok: false, error: 'invalid_code' }, 401);
+    tf.email = false;
+  } else if (challenge.type === 'setup_totp') {
+    const valid = await verifyTOTP(challenge.code, code);
+    if (!valid) return json({ ok: false, error: 'invalid_code' }, 401);
+    tf.totp = true; tf.totpSecret = challenge.code;
+  } else if (challenge.type === 'disable_totp') {
+    const valid = await verifyTOTP(tf.totpSecret || '', code);
+    if (!valid) return json({ ok: false, error: 'invalid_code' }, 401);
+    tf.totp = false; tf.totpSecret = null;
+  }
+
+  user.twoFactor = tf;
+  await env.USERS_KV.put('user:' + session.email.toLowerCase(), JSON.stringify(user));
+  await env.BOT_DB.prepare('DELETE FROM challenges WHERE token=?').bind(challengeToken).run();
+  return json({ ok: true, twoFactor: { email: !!tf.email, totp: !!tf.totp } });
+}
+
+async function handle2FAStatus(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  const user = await env.USERS_KV.get('user:' + session.email.toLowerCase(), { type: 'json' });
+  const tf = user?.twoFactor || {};
+  return json({ ok: true, twoFactor: { email: !!tf.email, totp: !!tf.totp } });
+}
+
 async function handleMe(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
   if (!session) return json({ authenticated: false }, 401);
-  return json({ authenticated: true, email: session.email, username: session.username, name: session.name });
+  const meUser = await env.USERS_KV.get('user:' + session.email.toLowerCase(), { type: 'json' }).catch(() => null);
+  const meTF = meUser?.twoFactor || {};
+  return json({ authenticated: true, email: session.email, username: session.username, name: session.name, twoFactor: { email: !!meTF.email, totp: !!meTF.totp } });
 }
 
 async function handleChangePassword(request, env) {
@@ -885,6 +1104,13 @@ async function initDB(env) {
       email TEXT NOT NULL,
       username TEXT DEFAULT '',
       name TEXT DEFAULT '',
+      expires_at INTEGER NOT NULL
+    )`).run();
+    await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS challenges (
+      token TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      type TEXT NOT NULL,
+      code TEXT,
       expires_at INTEGER NOT NULL
     )`).run();
     // Add new columns to existing tables (no-op if already present)

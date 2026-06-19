@@ -196,6 +196,7 @@
   </div>
 
   <script>
+    function _t(k) { return (window.__t ? window.__t(k) : k); }
     // Clean up inconsistent state: logged_in=true but no valid token
     if (localStorage.getItem('ayilon_logged_in') === 'true' && !localStorage.getItem('ayilon_session_token')) {
       localStorage.removeItem('ayilon_logged_in');
@@ -249,47 +250,55 @@
           if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
           return;
         }
-        // Store session token — never store password
+        if (data.requires2FA) {
+          _2faChallengeToken = data.challengeToken;
+          _2faMethods = data.methods || [];
+          if (btn) { btn.textContent = _t('login.submit'); btn.disabled = false; }
+          if (_2faMethods.length === 1) {
+            selectMethod(_2faMethods[0]);
+          } else {
+            var methodInfo = {
+              email:         { icon: '&#128231;', title: _t('login.2fa.email.title'), desc: _t('login.2fa.email.desc') },
+              authenticator: { icon: '&#128272;', title: _t('login.2fa.app.title'),   desc: _t('login.2fa.app.desc') }
+            };
+            document.getElementById('twofaOptions').innerHTML = _2faMethods.map(function(m) {
+              var info = methodInfo[m] || { icon: '&#128272;', title: m, desc: '' };
+              return '<button class="twofa-btn" onclick="selectMethod(\'' + m + '\')">'
+                + '<span class="twofa-icon">' + info.icon + '</span>'
+                + '<div class="twofa-info"><h3>' + info.title + '</h3><p>' + info.desc + '</p></div>'
+                + '</button>';
+            }).join('');
+            showStep(2);
+          }
+          return;
+        }
+        // No 2FA — store session and proceed
         localStorage.setItem('ayilon_session_token', data.sessionToken);
         localStorage.setItem('ayilon_email',    data.email    || email);
         localStorage.setItem('ayilon_username', data.username || '');
         localStorage.setItem('ayilon_name',     data.name     || '');
         localStorage.removeItem('ayilon_password'); // remove any old plaintext password
+        if (btn) { btn.textContent = _t('login.submit'); btn.disabled = false; }
+        finishLogin();
       } catch(e) {
         errEl.textContent = 'Login failed. Please check your connection.';
         errEl.classList.add('show');
         if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
         return;
       }
-
-      if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
-
-      var methods = JSON.parse(localStorage.getItem('ayilon_2fa_methods') || '[]');
-      if (methods.length === 0) { finishLogin(); return; }
-      if (methods.length === 1) { selectMethod(methods[0]); return; }
-
-      var methodInfo = {
-        email:         { icon: '&#128231;', title: 'Email Code',        desc: 'Send a 6-digit code to your email address' },
-        authenticator: { icon: '&#128272;', title: 'Authenticator App', desc: 'Enter the code from Google or Microsoft Authenticator' }
-      };
-      document.getElementById('twofaOptions').innerHTML = methods.map(function(m) {
-        var info = methodInfo[m];
-        return '<button class="twofa-btn" onclick="selectMethod(\'' + m + '\')">'
-          + '<span class="twofa-icon">' + info.icon + '</span>'
-          + '<div class="twofa-info"><h3>' + info.title + '</h3><p>' + info.desc + '</p></div>'
-          + '</button>';
-      }).join('');
-      showStep(2);
     }
 
     function selectMethod(method) {
-      var titles = { email: 'Email Code', authenticator: 'Authenticator App' };
+      _2faCurrentMethod = method;
+      var titles = { email: _t('login.2fa.email.title'), authenticator: _t('login.2fa.app.title') };
       var descs  = {
-        email:         'Enter the 6-digit code sent to your email address.',
-        authenticator: 'Enter the 6-digit code shown in your Authenticator app.'
+        email:         _t('login.2fa.email.desc'),
+        authenticator: _t('login.2fa.app.desc')
       };
       document.getElementById('otpTitle').textContent = titles[method] || 'Verify';
       document.getElementById('otpDesc').textContent  = descs[method]  || '';
+      // Clear previous inputs
+      document.querySelectorAll('.otp-digit').forEach(function(d) { d.value = ''; });
       showStep(3);
       setTimeout(function() { document.querySelectorAll('.otp-digit')[0].focus(); }, 100);
     }
@@ -306,10 +315,43 @@
       if (el.value && idx < 5) document.querySelectorAll('.otp-digit')[idx + 1].focus();
     }
 
-    function verifyOTP() {
+    async function verifyOTP() {
       var digits = document.querySelectorAll('.otp-digit');
       var code = Array.from(digits).map(function(d) { return d.value; }).join('');
-      if (code.length === 6) finishLogin();
+      if (code.length !== 6) return;
+
+      var btn = document.querySelector('#step3 .btn-submit');
+      if (btn) { btn.textContent = 'Verifying...'; btn.disabled = true; }
+
+      try {
+        var body = { challengeToken: _2faChallengeToken };
+        if (_2faCurrentMethod === 'email')         body.emailCode = code;
+        if (_2faCurrentMethod === 'authenticator') body.totpCode  = code;
+        if (_2faCurrentMethod === 'totp')          body.totpCode  = code;
+
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/verify-2fa-login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        var data = await res.json();
+        if (!data.ok) {
+          Array.from(digits).forEach(function(d) { d.style.borderColor = '#ef4444'; d.value = ''; });
+          setTimeout(function() {
+            Array.from(digits).forEach(function(d) { d.style.borderColor = ''; });
+            digits[0].focus();
+          }, 800);
+          if (btn) { btn.textContent = _t('login.otp.verify') || 'Verify & Sign In'; btn.disabled = false; }
+          return;
+        }
+        localStorage.setItem('ayilon_session_token', data.sessionToken);
+        localStorage.setItem('ayilon_email',    data.email    || '');
+        localStorage.setItem('ayilon_username', data.username || '');
+        localStorage.setItem('ayilon_name',     data.name     || '');
+        localStorage.removeItem('ayilon_password');
+        finishLogin();
+      } catch(e) {
+        if (btn) { btn.textContent = _t('login.otp.verify') || 'Verify & Sign In'; btn.disabled = false; }
+      }
     }
 
     function finishLogin() {
@@ -317,11 +359,20 @@
       window.location.href = 'dashboard.html';
     }
 
-    function resendCode() { alert('A new code has been sent.'); }
+    async function resendCode() {
+      if (!_2faChallengeToken || _2faCurrentMethod !== 'email') return;
+      try {
+        // Re-initiate with same email (need to re-login) — just show a note
+        alert('Please go back and log in again to receive a new code.');
+      } catch(e) {}
+    }
 
     // ── FORGOT PASSWORD ──────────────────────────────────────────
     var forgotEmailForVerify = null;
     var forgotVerifiedCode   = null;
+    var _2faChallengeToken = null;
+    var _2faMethods = [];
+    var _2faCurrentMethod = null;
 
     function startForgot() { showStep(4); }
 

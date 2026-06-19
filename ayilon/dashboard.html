@@ -890,29 +890,82 @@
     </div>
 
     <!-- 3. Security -->
-    <div class="card settings-section" style="margin-bottom:20px;">
+    <div class="card settings-section" style="margin-bottom:20px;" id="securityCard">
       <div class="settings-section-title" data-i18n="db.set.security">보안 (2FA)</div>
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <span style="font-size:20px;">🔐</span>
-            <div>
-              <div style="font-size:14px;font-weight:500;">Authenticator App</div>
-              <div style="font-size:12px;color:var(--gray-400);">Google / Microsoft Authenticator</div>
+      <div style="display:flex;flex-direction:column;gap:12px;" id="twoFAMethods">
+        <!-- Authenticator (TOTP) -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:16px 20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;" id="twoFA-totp-row">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-size:20px;">🔐</span>
+              <div>
+                <div style="font-size:14px;font-weight:500;">Authenticator App</div>
+                <div style="font-size:12px;color:var(--gray-400);" id="totp2FAStatus">Google / Microsoft Authenticator</div>
+              </div>
             </div>
+            <button class="btn-sm" id="totp2FABtn" onclick="initiate2FA('totp')" style="min-width:80px;" data-i18n="db.2fa.enable">활성화</button>
           </div>
-          <div class="toggle" id="toggle-authenticator" onclick="toggle2fa('authenticator')"></div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <span style="font-size:20px;">📧</span>
-            <div>
-              <div style="font-size:14px;font-weight:500;">Email Code</div>
-              <div style="font-size:12px;color:var(--gray-400);" data-i18n="db.2fa.email_desc">로그인 시 이메일로 6자리 코드 전송</div>
+          <!-- TOTP setup panel -->
+          <div id="totpSetupPanel" style="display:none;margin-top:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:16px;">
+            <div id="totpQRWrap" style="text-align:center;margin-bottom:12px;"></div>
+            <div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;" data-i18n="db.2fa.totp_secret_label">또는 아래 코드를 앱에 직접 입력:</div>
+            <div id="totpSecretDisplay" style="font-family:monospace;font-size:13px;background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:6px;word-break:break-all;margin-bottom:12px;"></div>
+            <div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;" data-i18n="db.2fa.enter_code_confirm">앱에 표시된 6자리 코드를 입력하세요:</div>
+            <div style="display:flex;gap:8px;">
+              <input type="text" class="d-form-input" id="totpSetupCode" maxlength="6" placeholder="000000" style="letter-spacing:0.2em;max-width:140px;font-family:monospace;" />
+              <button class="btn-primary" onclick="confirm2FA('totp')" data-i18n="db.2fa.verify_enable">인증 및 활성화</button>
+              <button class="btn-secondary" onclick="cancel2FASetup('totp')" data-i18n="db.cancel">취소</button>
             </div>
+            <div id="totpSetupMsg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
           </div>
-          <div class="toggle" id="toggle-email-2fa" onclick="toggle2fa('email')"></div>
+          <!-- TOTP disable panel -->
+          <div id="totpDisablePanel" style="display:none;margin-top:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:16px;">
+            <div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;" data-i18n="db.2fa.enter_code_disable">Authenticator 앱의 현재 코드를 입력하세요:</div>
+            <div style="display:flex;gap:8px;">
+              <input type="text" class="d-form-input" id="totpDisableCode" maxlength="6" placeholder="000000" style="letter-spacing:0.2em;max-width:140px;font-family:monospace;" />
+              <button class="btn-primary" onclick="confirm2FADisable('totp')" style="background:#ef4444;" data-i18n="db.2fa.confirm_disable">비활성화</button>
+              <button class="btn-secondary" onclick="cancel2FASetup('totp')" data-i18n="db.cancel">취소</button>
+            </div>
+            <div id="totpDisableMsg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+          </div>
         </div>
+        <!-- Email 2FA -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:16px 20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;" id="twoFA-email-row">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-size:20px;">📧</span>
+              <div>
+                <div style="font-size:14px;font-weight:500;">Email Code</div>
+                <div style="font-size:12px;color:var(--gray-400);" id="email2FAStatus" data-i18n="db.2fa.email_desc">로그인 시 이메일로 6자리 코드 전송</div>
+              </div>
+            </div>
+            <button class="btn-sm" id="email2FABtn" onclick="initiate2FA('email')" style="min-width:80px;" data-i18n="db.2fa.enable">활성화</button>
+          </div>
+          <!-- Email setup panel -->
+          <div id="emailSetupPanel" style="display:none;margin-top:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:16px;">
+            <div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;" data-i18n="db.2fa.email_code_sent">이메일로 전송된 6자리 코드를 입력하세요:</div>
+            <div style="display:flex;gap:8px;">
+              <input type="text" class="d-form-input" id="emailSetupCode" maxlength="6" placeholder="000000" style="letter-spacing:0.2em;max-width:140px;font-family:monospace;" />
+              <button class="btn-primary" onclick="confirm2FA('email')" data-i18n="db.2fa.verify_enable">인증 및 활성화</button>
+              <button class="btn-secondary" onclick="cancel2FASetup('email')" data-i18n="db.cancel">취소</button>
+            </div>
+            <div id="emailSetupMsg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+          </div>
+          <!-- Email disable panel -->
+          <div id="emailDisablePanel" style="display:none;margin-top:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:16px;">
+            <div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;" data-i18n="db.2fa.email_code_sent">이메일로 전송된 인증 코드를 입력하세요:</div>
+            <div style="display:flex;gap:8px;">
+              <input type="text" class="d-form-input" id="emailDisableCode" maxlength="6" placeholder="000000" style="letter-spacing:0.2em;max-width:140px;font-family:monospace;" />
+              <button class="btn-primary" onclick="confirm2FADisable('email')" style="background:#ef4444;" data-i18n="db.2fa.confirm_disable">비활성화</button>
+              <button class="btn-secondary" onclick="cancel2FASetup('email')" data-i18n="db.cancel">취소</button>
+            </div>
+            <div id="emailDisableMsg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Security tip when both enabled -->
+      <div id="twoFABothTip" style="display:none;margin-top:12px;padding:12px 16px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;font-size:12px;color:#22c55e;" data-i18n="db.2fa.both_tip">
+        ✓ 이메일과 Authenticator 두 가지 모두 활성화되어 보안 위험이 크게 감소했습니다.
       </div>
     </div>
 
@@ -2427,6 +2480,135 @@
       if (msgEl) { msgEl.style.color = 'var(--red)'; msgEl.textContent = _t('db.set.error'); }
     }
     if (btn) { btn.disabled = false; btn.textContent = _t('db.set.change_pass_btn'); }
+  }
+
+  var _2faSetupChallengeToken = null;
+  var _2faSetupMethod = null;
+  var _2faSetupAction = null;
+
+  async function load2FAStatus() {
+    try {
+      var res  = await fetch(WORKER_URL + '/2fa-status', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: getSessionToken() }) });
+      var data = await res.json();
+      if (!data.ok) return;
+      var tf = data.twoFactor || {};
+      // Update email button/status
+      var emailBtn    = document.getElementById('email2FABtn');
+      var emailStatus = document.getElementById('email2FAStatus');
+      if (emailBtn) {
+        emailBtn.textContent = tf.email ? _t('db.2fa.disable') : _t('db.2fa.enable');
+        emailBtn.style.background = tf.email ? 'rgba(239,68,68,0.15)' : '';
+        emailBtn.style.borderColor = tf.email ? 'rgba(239,68,68,0.3)' : '';
+        emailBtn.style.color = tf.email ? '#ef4444' : '';
+      }
+      if (emailStatus) emailStatus.textContent = tf.email ? _t('db.2fa.enabled') : _t('db.2fa.email_desc');
+      // Update TOTP button/status
+      var totpBtn    = document.getElementById('totp2FABtn');
+      var totpStatus = document.getElementById('totp2FAStatus');
+      if (totpBtn) {
+        totpBtn.textContent = tf.totp ? _t('db.2fa.disable') : _t('db.2fa.enable');
+        totpBtn.style.background = tf.totp ? 'rgba(239,68,68,0.15)' : '';
+        totpBtn.style.borderColor = tf.totp ? 'rgba(239,68,68,0.3)' : '';
+        totpBtn.style.color = tf.totp ? '#ef4444' : '';
+      }
+      if (totpStatus) totpStatus.textContent = tf.totp ? _t('db.2fa.enabled') : 'Google / Microsoft Authenticator';
+      // Security tip
+      var tip = document.getElementById('twoFABothTip');
+      if (tip) tip.style.display = (tf.email && tf.totp) ? 'block' : 'none';
+    } catch(e) {}
+  }
+
+  async function initiate2FA(method) {
+    var emailBtn = document.getElementById('email2FABtn');
+    var totpBtn  = document.getElementById('totp2FABtn');
+    var isEnabled = (method === 'email')
+      ? (emailBtn && emailBtn.textContent.trim() === _t('db.2fa.disable'))
+      : (totpBtn  && totpBtn.textContent.trim()  === _t('db.2fa.disable'));
+    var action = isEnabled ? 'disable' : 'enable';
+    _2faSetupMethod = method; _2faSetupAction = action;
+
+    // Hide all panels first
+    ['totpSetupPanel','totpDisablePanel','emailSetupPanel','emailDisablePanel'].forEach(function(id){
+      var el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+
+    try {
+      var res  = await fetch(WORKER_URL + '/initiate-2fa', { method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ sessionToken: getSessionToken(), method: method, action: action }) });
+      var data = await res.json();
+      if (!data.ok) { alert(data.error || 'Failed'); return; }
+      _2faSetupChallengeToken = data.challengeToken;
+
+      if (method === 'totp' && action === 'enable') {
+        // Show QR
+        var qrWrap = document.getElementById('totpQRWrap');
+        if (qrWrap && data.otpAuthUrl) {
+          var img = document.createElement('img');
+          img.src = 'https://api.qrserver.com/v1/create-qr-code/?data=' + encodeURIComponent(data.otpAuthUrl) + '&size=160x160&bgcolor=111111&color=ffffff&margin=2';
+          img.alt = 'QR Code'; img.style.cssText = 'width:160px;height:160px;border-radius:8px;';
+          qrWrap.innerHTML = ''; qrWrap.appendChild(img);
+        }
+        var sec = document.getElementById('totpSecretDisplay');
+        if (sec) sec.textContent = data.secret || '';
+        var panel = document.getElementById('totpSetupPanel');
+        if (panel) panel.style.display = 'block';
+      } else if (method === 'totp' && action === 'disable') {
+        var panel = document.getElementById('totpDisablePanel');
+        if (panel) panel.style.display = 'block';
+        setTimeout(function(){ var el = document.getElementById('totpDisableCode'); if(el) el.focus(); }, 100);
+      } else if (method === 'email' && action === 'enable') {
+        var panel = document.getElementById('emailSetupPanel');
+        if (panel) panel.style.display = 'block';
+        setTimeout(function(){ var el = document.getElementById('emailSetupCode'); if(el) el.focus(); }, 100);
+      } else if (method === 'email' && action === 'disable') {
+        var panel = document.getElementById('emailDisablePanel');
+        if (panel) panel.style.display = 'block';
+        setTimeout(function(){ var el = document.getElementById('emailDisableCode'); if(el) el.focus(); }, 100);
+      }
+    } catch(e) { alert('Network error'); }
+  }
+
+  async function confirm2FA(method) {
+    var codeEl = document.getElementById(method === 'totp' ? 'totpSetupCode' : 'emailSetupCode');
+    var msgEl  = document.getElementById(method === 'totp' ? 'totpSetupMsg' : 'emailSetupMsg');
+    var code = codeEl ? codeEl.value.trim() : '';
+    if (code.length !== 6) { if (msgEl) { msgEl.style.color='#ef4444'; msgEl.textContent=_t('db.2fa.enter_6_digits'); } return; }
+    try {
+      var res  = await fetch(WORKER_URL + '/confirm-2fa', { method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ sessionToken: getSessionToken(), challengeToken: _2faSetupChallengeToken, code: code }) });
+      var data = await res.json();
+      if (!data.ok) {
+        if (msgEl) { msgEl.style.color='#ef4444'; msgEl.textContent = data.error === 'invalid_code' ? _t('db.2fa.invalid_code') : (data.error || 'Error'); }
+        return;
+      }
+      if (msgEl) { msgEl.style.color='var(--green)'; msgEl.textContent=_t('db.2fa.enabled_success'); }
+      setTimeout(function(){ cancel2FASetup(method); load2FAStatus(); }, 1000);
+    } catch(e) { if (msgEl) { msgEl.style.color='#ef4444'; msgEl.textContent='Network error'; } }
+  }
+
+  async function confirm2FADisable(method) {
+    var codeEl = document.getElementById(method === 'totp' ? 'totpDisableCode' : 'emailDisableCode');
+    var msgEl  = document.getElementById(method === 'totp' ? 'totpDisableMsg' : 'emailDisableMsg');
+    var code = codeEl ? codeEl.value.trim() : '';
+    if (code.length !== 6) { if (msgEl) { msgEl.style.color='#ef4444'; msgEl.textContent=_t('db.2fa.enter_6_digits'); } return; }
+    try {
+      var res  = await fetch(WORKER_URL + '/confirm-2fa', { method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ sessionToken: getSessionToken(), challengeToken: _2faSetupChallengeToken, code: code }) });
+      var data = await res.json();
+      if (!data.ok) {
+        if (msgEl) { msgEl.style.color='#ef4444'; msgEl.textContent = data.error === 'invalid_code' ? _t('db.2fa.invalid_code') : (data.error || 'Error'); }
+        return;
+      }
+      if (msgEl) { msgEl.style.color='var(--green)'; msgEl.textContent=_t('db.2fa.disabled_success'); }
+      setTimeout(function(){ cancel2FASetup(method); load2FAStatus(); }, 1000);
+    } catch(e) { if (msgEl) { msgEl.style.color='#ef4444'; msgEl.textContent='Network error'; } }
+  }
+
+  function cancel2FASetup(method) {
+    ['totpSetupPanel','totpDisablePanel','emailSetupPanel','emailDisablePanel'].forEach(function(id){
+      var el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    _2faSetupChallengeToken = null; _2faSetupMethod = null; _2faSetupAction = null;
   }
 
   async function saveTelegramSettings() {
