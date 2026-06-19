@@ -1510,8 +1510,13 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
           const prevRemaining = state.remainingContracts ?? Math.max(1, Math.floor(totalSz / 2));
           const newRemaining  = Math.max(0, prevRemaining - trailContracts);
           const newRemFrac    = newRemaining / totalSz;
+          const prevTPLevel   = state.lastTPLevel; // SL will lock in at previous close level
 
           if (state.tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.tpAlgoId, demoMode);
+          // Cancel old break-even/trail SL and replace with SL locked at prevTPLevel
+          if (state.slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.slAlgoId, demoMode);
+          state.slAlgoId = null;
+
           state.lastTPLevel        = nextLv.price;
           state.remainingContracts = newRemaining;
           state.remainingFrac      = newRemFrac;
@@ -1522,9 +1527,15 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
             await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
             await botLog(env, email, `[${strategy}] TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} — position fully closed`);
           } else {
+            // Place trailing SL at prevTPLevel — locks in profits from last close point
+            if (prevTPLevel) {
+              const trailSlRes = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.direction, prevTPLevel, String(newRemaining), demoMode, isOneWayMode);
+              state.slAlgoId = trailSlRes?.data?.[0]?.algoId ? String(trailSlRes.data[0].algoId) : null;
+              if (!state.slAlgoId) await botLog(env, email, `⚠️ Trail SL algo failed — ${newRemaining}cts unprotected`);
+            }
             ps[stateKey] = state;
             await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
-            await botLog(env, email, `[${strategy}] TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | Rem:${newRemaining}cts`);
+            await botLog(env, email, `[${strategy}] TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL locked @ ${prevTPLevel?.toFixed(2) ?? 'n/a'} | Rem:${newRemaining}cts`);
           }
         } else {
           await botLog(env, email, `Trail order FAILED @ ${nextLv.price.toFixed(2)}: ${trailRes?.msg || 'unknown'}`);
@@ -1839,6 +1850,10 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
         if (state.slAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.slAlgoId, demo);
         const remContracts = Math.max(0, totalSz - halfContracts);
 
+        // Compute break-even (average entry price) for the remaining position's SL
+        const avgEntry = state.entries.reduce((s, e) => s + parseFloat(e.price) * parseInt(e.sz), 0) /
+                         state.entries.reduce((s, e) => s + parseInt(e.sz), 0);
+
         state.halfClosed         = true;
         state.takeProfit         = null;
         state.lastTPLevel        = price;
@@ -1846,9 +1861,22 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
         state.remainingFrac      = remContracts > 0 ? remContracts / totalSz : 0;
         state.tpAlgoId           = null;
         state.slAlgoId           = null;
+
+        // Place break-even SL for the remaining contracts — prevents winner turning into loser
+        if (remContracts > 0 && avgEntry > 0) {
+          const beSlRes = await placeSLAlgo(apiKey, secret, pass, pair, state.direction, avgEntry, String(remContracts), demo, isOneWayMode);
+          state.slAlgoId = beSlRes?.data?.[0]?.algoId ? String(beSlRes.data[0].algoId) : null;
+          if (state.slAlgoId) {
+            await botLog(env, email, `TP hit @ ${price} — 50% closed | break-even SL @ ${avgEntry.toFixed(2)} | trailing active`);
+          } else {
+            await botLog(env, email, `TP hit @ ${price} — 50% closed | ⚠️ break-even SL algo failed — trailing active (no SL protection)`);
+          }
+        } else {
+          await botLog(env, email, `TP hit @ ${price} — 50% closed | trailing 10% active`);
+        }
+
         ps[actualKey] = state;
         psModifiedRef.modified = true;
-        await botLog(env, email, `TP hit @ ${price} — 50% closed | trailing 10% active`);
         return;
       }
     }
