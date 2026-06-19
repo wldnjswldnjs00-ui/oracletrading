@@ -56,7 +56,7 @@ tr:last-child td{border-bottom:none;}
       <span style="font-size:11px;color:rgba(255,255,255,0.3);">실제 봇 포지션 = min(리스크%/SL거리, 포지션크기%×레버리지) × 자산 — SL거리 넓을수록 계약수 감소</span>
     </div>
   </div>
-  <button class="btn" id="btStartBtn" onclick="startBacktest()">백테스팅 시작 (14개 전략 · 약 2분 소요)</button>
+  <button class="btn" id="btStartBtn" onclick="startBacktest()">백테스팅 최적화 시작 (14개 전략 × 8 ADX 임계값 · 약 5분 소요)</button>
   <div class="progress-wrap" id="btProg">
     <div class="progress-msg" id="btMsg">준비 중...</div>
     <div class="progress-bg"><div class="progress-bar" id="btBar"></div></div>
@@ -713,11 +713,10 @@ function aggregate1H(c5_of) {
 // ════════════════════════════════════════════════════════════
 // BACKTEST ENGINE
 // ════════════════════════════════════════════════════════════
-// TP 없음 — 진입 SL 거리를 step으로 계단식 트레일링 SL
-// 가격이 step(=SL거리) 만큼 유리하게 움직일 때마다 SL을 step씩 올림(롱) / 내림(숏)
-// step 1회: SL → 본전 / step 2회: SL → +1R 잠금 / step N회: SL → +(N-1)R 잠금
-// Fee: OKX 시장가 taker 0.05%/side on notional
-function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
+// TP 없음 — 계단식 트레일링 SL, WIN = 최소 +1R 보장
+// adxMin: ADX 최소 임계값 (0 = 필터 없음)
+function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct, adxMin) {
+  adxMin = adxMin !== undefined ? adxMin : 20;
   var maxNotionalFrac = (posSizePct / 100) * leverage;
 
   var equity = 10000, pos = null, pending = null;
@@ -813,7 +812,7 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
         var adxf     = c1h_nf.length >= 45  ? calcADX(c1h_nf, 14) : null;
         if (ema200f && sig.type === 'long'  && cl5 < ema200f) sig = null;
         if (ema200f && sig && sig.type === 'short' && cl5 > ema200f) sig = null;
-        if (sig && adxf && adxf.adx < 20) sig = null;
+        if (sig && adxf && adxf.adx < adxMin) sig = null;
       }
       if (sig && sig.stopLoss) {
         var slDist = Math.abs(cl5 - sig.stopLoss) / cl5;
@@ -931,7 +930,7 @@ async function startBacktest() {
       _loadedPair = pair;
     } catch(e) {
       msg.textContent='데이터 수집 실패: '+(e.message||e);
-      btn.disabled=false; btn.textContent='백테스팅 시작 (14개 전략 · 약 2분 소요)';
+      btn.disabled=false; btn.textContent='백테스팅 최적화 시작 (14개 전략 × 8 ADX 임계값 · 약 5분 소요)';
       return;
     }
   }
@@ -943,18 +942,30 @@ async function startBacktest() {
 
   msg.textContent='5분봉 '+_c5of.length.toLocaleString()+'개 / 1H '+_c1hof.length.toLocaleString()+'개 → 백테스팅 실행 중';
 
+  var ADX_THRESHOLDS = [0, 15, 18, 20, 22, 25, 28, 30];
   _results = {};
+  var totalSteps = BT_STRATS.length * ADX_THRESHOLDS.length;
+  var stepsDone = 0;
   for (var si = 0; si < BT_STRATS.length; si++) {
     var s = BT_STRATS[si];
-    bar.style.width=(42 + si/BT_STRATS.length*56)+'%';
-    msg.textContent='['+(si+1)+'/'+BT_STRATS.length+'] '+s.name+' 백테스팅 중...';
-    await new Promise(function(r){setTimeout(r,0);});
-    _results[s.id] = runBacktest(_c5of, _c1hof, s.id, riskPct / 100, lev, posSz);
+    var bestResult = null, bestAdx = 20;
+    for (var ai = 0; ai < ADX_THRESHOLDS.length; ai++) {
+      var adxThr = ADX_THRESHOLDS[ai];
+      bar.style.width=(42 + stepsDone/totalSteps*56)+'%';
+      msg.textContent='['+(si+1)+'/'+BT_STRATS.length+'] '+s.name+' ADX≥'+adxThr+' 최적화 중...';
+      await new Promise(function(r){setTimeout(r,0);});
+      var r = runBacktest(_c5of, _c1hof, s.id, riskPct / 100, lev, posSz, adxThr);
+      if (!bestResult || r.annRet > bestResult.annRet) {
+        bestResult = r; bestAdx = adxThr;
+      }
+      stepsDone++;
+    }
+    _results[s.id] = Object.assign({}, bestResult, { optimalAdx: bestAdx });
   }
 
   bar.style.width='100%';
-  msg.textContent='완료! 5분봉 '+_c5of.length.toLocaleString()+'개 · 1H '+_c1hof.length.toLocaleString()+'개 사용 (캐시 보존)';
-  btn.disabled=false; btn.textContent='다시 실행 (캐시 재사용)';
+  msg.textContent='최적화 완료! 5분봉 '+_c5of.length.toLocaleString()+'개 · 1H '+_c1hof.length.toLocaleString()+'개 (캐시 보존)';
+  btn.disabled=false; btn.textContent='다시 최적화 (캐시 재사용)';
 
   renderTable();
   buildTabs();
@@ -970,13 +981,14 @@ function renderTable() {
     var typeColor = s.type==='SCALP' ? '#f59e0b' : '#22c55e';
     var typeBg    = s.type==='SCALP' ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)';
     var typeBadge = '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:'+typeBg+';color:'+typeColor+';margin-left:6px;">'+s.type+'</span>';
+    var adxBadge = r.optimalAdx !== undefined ? '<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(99,102,241,0.15);color:#818cf8;margin-left:4px;">ADX≥'+(r.optimalAdx===0?'없음':r.optimalAdx)+'</span>' : '';
     var dr = isNA?'N/A':'<span style="color:'+clr(r.dayRet)+'">'+pct(r.dayRet)+'</span>';
     var mr = isNA?'N/A':'<span style="color:'+clr(r.monRet)+'">'+pct(r.monRet)+'</span>';
     var ar = isNA?'N/A':'<span style="color:'+clr(r.annRet)+'">'+pct(r.annRet,1)+'</span>';
     var dd = isNA?'N/A':'<span style="color:#ef4444">-'+pct(r.maxDD,1).replace('+','')+'</span>';
     var wr = isNA?'N/A':'<span style="color:'+clr(r.winRate-0.5)+'">'+Math.round(r.winRate*100)+'%</span>';
     return '<tr>'+
-      '<td>'+s.name+typeBadge+'</td>'+
+      '<td>'+s.name+typeBadge+adxBadge+'</td>'+
       '<td style="text-align:center;">'+s.type+'</td>'+
       '<td>'+r.totalTrades+'</td>'+
       '<td>'+wr+'</td>'+
