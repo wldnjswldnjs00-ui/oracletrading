@@ -719,18 +719,14 @@ function aggregate1H(c5_of) {
 //      where notionalFrac = min(riskFrac/slDist, posSize%/100×leverage)
 //      → fee scales with leverage automatically via notionalFrac
 
-var SCALP_STRATS = { ma50_bounce:1, ema_9_21:1, bb_bounce:1, fisher:1, cci_100:1, rsi_bb:1 };
-
-// Position-based win rate: a position is a WIN only if it reached the first TP.
-// SCALP: win = TP hit. SWING: win = TP50 hit (regardless of trailing outcome).
-// This avoids SWING strategies falsely inflating win rate by counting trailing closes as extra wins.
+// 모든 전략: TP 도달 시 100% 즉시 청산, SL 도달 시 100% 손절
 function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
-  var isScalp = !!SCALP_STRATS[strategy];
   var RR = 1.5;
   var maxNotionalFrac = (posSizePct / 100) * leverage;
 
   var equity = 10000, pos = null, pending = null;
-  var trades = [], positions = [], curve = [], lastDay = -1;
+  var trades = [], curve = [], lastDay = -1;
+  var wins = 0, total = 0;
   var WARMUP = 2520;
 
   for (var i = WARMUP; i < c5_of.length - 1; i++) {
@@ -749,8 +745,7 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
       var actualTp = pending.dir==='long' ? entryPx*(1+actualSlDist*RR) : entryPx*(1-actualSlDist*RR);
       var notionalFrac = Math.min(riskFrac / actualSlDist, maxNotionalFrac);
       pos = { dir:pending.dir, entry:entryPx, sl:pending.sl, tp:actualTp,
-               slDist:actualSlDist, notionalFrac:notionalFrac,
-               halfClosed:false, reachedTP:false, idx:i };
+               slDist:actualSlDist, notionalFrac:notionalFrac, idx:i };
       equity = Math.max(100, equity - equity * notionalFrac * 0.0005);
       pending = null;
     }
@@ -760,36 +755,17 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
       var tpHit = pos.dir==='long' ? hi5>=pos.tp : lo5<=pos.tp;
 
       if (slHit) {
-        var mul = pos.halfClosed ? 0.5 : 1;
         var exitRet = pos.dir==='long' ? (pos.sl - pos.entry) / pos.entry : (pos.entry - pos.sl) / pos.entry;
-        var pnl = equity * pos.notionalFrac * exitRet * mul;
-        equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005 * mul);
+        var pnl = equity * pos.notionalFrac * exitRet;
+        equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005);
         trades.push({ts:ts, type:'SL', pnl:pnl, eq:equity});
-        // Position closed: win only if we already hit TP once
-        positions.push({isWin: pos.reachedTP});
-        pos = null;
+        total++; pos = null;
       } else if (tpHit) {
-        if (isScalp || pos.halfClosed) {
-          var mul = pos.halfClosed ? 0.5 : 1;
-          var exitRet = pos.dir==='long' ? (pos.tp - pos.entry) / pos.entry : (pos.entry - pos.tp) / pos.entry;
-          var pnl = equity * pos.notionalFrac * exitRet * mul;
-          equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005 * mul);
-          trades.push({ts:ts, type:'TP', pnl:pnl, eq:equity});
-          // Position closed at TP = always a win
-          positions.push({isWin: true});
-          pos = null;
-        } else {
-          // SWING: 50% close at TP1 — mark as reached TP
-          var exitRet = pos.dir==='long' ? (pos.tp - pos.entry) / pos.entry : (pos.entry - pos.tp) / pos.entry;
-          var pnl = equity * pos.notionalFrac * exitRet * 0.5;
-          equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005 * 0.5);
-          trades.push({ts:ts, type:'TP50', pnl:pnl, eq:equity});
-          pos.halfClosed = true;
-          pos.reachedTP = true;
-          var dist = Math.abs(pos.tp - pos.entry);
-          pos.sl = pos.dir==='long' ? pos.entry + dist * 0.5 : pos.entry - dist * 0.5;
-          pos.tp = pos.dir==='long' ? pos.tp + dist : pos.tp - dist;
-        }
+        var exitRet = pos.dir==='long' ? (pos.tp - pos.entry) / pos.entry : (pos.entry - pos.tp) / pos.entry;
+        var pnl = equity * pos.notionalFrac * exitRet;
+        equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005);
+        trades.push({ts:ts, type:'TP', pnl:pnl, eq:equity});
+        wins++; total++; pos = null;
       }
     }
 
@@ -834,9 +810,7 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
     }
   }
 
-  var posWins = positions.filter(function(p){return p.isWin;}).length;
-  var posTotal = positions.length;
-  var winRate = posTotal > 0 ? posWins / posTotal : 0;
+  var winRate = total > 0 ? wins / total : 0;
   var actualDays = curve.length || 365;
   var totalRet = (equity - 10000) / 10000;
   var annRet = Math.pow(1 + totalRet, 365 / actualDays) - 1;
@@ -845,7 +819,7 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
   var peak = 0, maxDD = 0;
   curve.forEach(function(p){ if(p.equity>peak)peak=p.equity; var dd=(peak-p.equity)/peak; if(dd>maxDD)maxDD=dd; });
   return { equity:equity, totalRet:totalRet, annRet:annRet, monRet:monRet, dayRet:dayRet,
-           totalTrades:posTotal, winRate:winRate,
+           totalTrades:total, winRate:winRate,
            maxDD:maxDD, curve:curve, trades:trades };
 }
 
