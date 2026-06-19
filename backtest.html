@@ -87,6 +87,42 @@ tr:last-child td{border-bottom:none;}
   <div class="chart-wrap"><canvas id="btCanvas"></canvas></div>
 </div>
 
+<div class="card hidden" id="pfCard">
+  <div class="card-title">포트폴리오 시뮬레이션 <span style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.35);">— 수익 전략 동시 운영 합산 성과</span></div>
+  <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <span style="font-size:12px;color:rgba(255,255,255,0.4);">전략 선택:</span>
+    <button onclick="pfSelectProfitable()" style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#22c55e;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">수익 전략만</button>
+    <button onclick="pfSelectAll()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">전체 선택</button>
+    <button onclick="pfSelectNone()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">전체 해제</button>
+  </div>
+  <div id="pfCheckboxes" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;"></div>
+  <div style="max-width:200px;margin-bottom:16px;">
+    <label>최대 동시 포지션</label>
+    <input id="pfMaxPos" type="number" value="6" min="1" max="17">
+  </div>
+  <button class="btn" id="pfBtn" onclick="startPortfolioBacktest()">포트폴리오 시뮬레이션 실행</button>
+  <div class="progress-wrap" id="pfProg">
+    <div class="progress-msg" id="pfMsg">실행 중...</div>
+    <div class="progress-bg"><div class="progress-bar" id="pfBar"></div></div>
+  </div>
+</div>
+
+<div class="card hidden" id="pfResultCard">
+  <div class="card-title" id="pfResultTitle">포트폴리오 결과</div>
+  <div id="pfSummary" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;"></div>
+  <div class="chart-wrap" style="margin-bottom:24px;"><canvas id="pfCanvas"></canvas></div>
+  <div style="font-size:13px;font-weight:600;margin-bottom:10px;">전략별 기여도</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr>
+        <th style="text-align:left;">전략</th>
+        <th>거래수</th><th>승률</th><th>수익 기여</th>
+      </tr></thead>
+      <tbody id="pfStratTbody"></tbody>
+    </table>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════════
 // INDICATOR FUNCTIONS — newest-first candles convention
@@ -836,6 +872,131 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct, ad
            maxDD:maxDD, curve:curve, trades:trades };
 }
 
+// runPortfolioBacktest: multiple strategies share one equity pool
+function runPortfolioBacktest(c5_of, c1h_of, stratConfigs, riskFrac, leverage, posSizePct, maxPositions) {
+  maxPositions = maxPositions || stratConfigs.length;
+  var maxNotionalFrac = (posSizePct / 100) * leverage;
+  var equity = 10000, lastDay = -1;
+  var positions = {}, pendings = {};
+  var trades = [], curve = [];
+  var wins = 0, total = 0;
+  var stratStats = {};
+  stratConfigs.forEach(function(sc){ stratStats[sc.id] = {wins:0, total:0, name:sc.name}; });
+  var WARMUP = 2520;
+
+  for (var i = WARMUP; i < c5_of.length - 1; i++) {
+    var c   = c5_of[i];
+    var ts  = parseInt(c[0]);
+    var op5 = parseFloat(c[1]);
+    var hi5 = parseFloat(c[2]);
+    var lo5 = parseFloat(c[3]);
+    var cl5 = parseFloat(c[4]);
+    var dayKey = Math.floor(ts / 86400000);
+    if (dayKey !== lastDay) { curve.push({ts:ts, equity:equity}); lastDay = dayKey; }
+
+    // 1. Enter pending positions at current candle open
+    var activeCount = Object.keys(positions).length;
+    var pKeys = Object.keys(pendings);
+    for (var pi = 0; pi < pKeys.length; pi++) {
+      var psid = pKeys[pi];
+      if (positions[psid]) { delete pendings[psid]; continue; }
+      if (activeCount >= maxPositions) continue;
+      var pend = pendings[psid];
+      var slD = Math.abs(op5 - pend.sl) / op5;
+      if (slD < 0.001) { delete pendings[psid]; continue; }
+      var nf = Math.min(riskFrac / slD, maxNotionalFrac);
+      positions[psid] = { dir:pend.dir, entry:op5, sl:pend.sl, stepPrice:Math.abs(op5 - pend.sl), notionalFrac:nf };
+      equity = Math.max(100, equity - equity * nf * 0.0005);
+      delete pendings[psid]; activeCount++;
+    }
+
+    // 2. Update trailing SL and check exits
+    var pIds = Object.keys(positions);
+    for (var ki = 0; ki < pIds.length; ki++) {
+      var sid = pIds[ki];
+      var pos = positions[sid];
+      var steps = pos.dir==='long'
+        ? Math.floor((hi5 - pos.entry) / pos.stepPrice)
+        : Math.floor((pos.entry - lo5) / pos.stepPrice);
+      if (steps > 0) {
+        var nsl = pos.dir==='long' ? pos.entry + steps*pos.stepPrice : pos.entry - steps*pos.stepPrice;
+        if (pos.dir==='long' && nsl > pos.sl) pos.sl = nsl;
+        if (pos.dir==='short' && nsl < pos.sl) pos.sl = nsl;
+      }
+      var hit = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
+      if (hit) {
+        var er = pos.dir==='long' ? (pos.sl - pos.entry)/pos.entry : (pos.entry - pos.sl)/pos.entry;
+        var pnl = equity * pos.notionalFrac * er;
+        equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005);
+        trades.push({ts:ts, strat:sid, type:er>=0?'WIN':'LOSS', pnl:pnl, eq:equity});
+        if (er >= 0) { wins++; stratStats[sid].wins++; }
+        total++; stratStats[sid].total++;
+        delete positions[sid];
+      }
+    }
+
+    // 3. Detect signals — 1H close only
+    if (i % 12 !== 11) continue;
+    var h1Done = Math.floor((i + 1) / 12);
+    var c1h_nf = h1Done > 0 ? c1h_of.slice(0, h1Done).reverse() : [];
+    var cl5h = c1h_nf.length >= 45 ? c1h_nf.map(function(x){return parseFloat(x[4]);}) : null;
+    var ema200f = (cl5h && c1h_nf.length >= 200) ? calcEMA200(cl5h) : null;
+    var adxf    = c1h_nf.length >= 45 ? calcADX(c1h_nf, 14) : null;
+
+    activeCount = Object.keys(positions).length;
+    var pendCount = Object.keys(pendings).length;
+
+    for (var sci = 0; sci < stratConfigs.length; sci++) {
+      var sc = stratConfigs[sci];
+      if (positions[sc.id] || pendings[sc.id]) continue;
+      if (activeCount + pendCount >= maxPositions) continue;
+
+      var sig = null, n = c1h_nf.length;
+      if      (sc.id==='ha_ema_srsi'   && n>=210) sig=detectSignalHAEmaSRSI(c1h_nf,cl5);
+      else if (sc.id==='ma_ribbon'     && n>=105) sig=detectSignalMARibbon(c1h_nf,cl5);
+      else if (sc.id==='ma50_bounce'   && n>=210) sig=detectSignalMA50Bounce(c1h_nf,cl5);
+      else if (sc.id==='ict_fib_ote'   && n>=60)  sig=detectSignalICTFibOTE(c1h_nf,cl5);
+      else if (sc.id==='ema_9_21'      && n>=30)  sig=detectSignalEMA921(c1h_nf,cl5);
+      else if (sc.id==='ema_21_55'     && n>=65)  sig=detectSignalEMA2155(c1h_nf,cl5);
+      else if (sc.id==='macd_signal'   && n>=55)  sig=detectSignalMACDSignal(c1h_nf,cl5);
+      else if (sc.id==='macd_zero'     && n>=55)  sig=detectSignalMACDZero(c1h_nf,cl5);
+      else if (sc.id==='supertrend'    && n>=50)  sig=detectSignalSupertrend(c1h_nf,cl5);
+      else if (sc.id==='bb_bounce'     && n>=25)  sig=detectSignalBBBounce(c1h_nf,cl5);
+      else if (sc.id==='bb_breakout'   && n>=25)  sig=detectSignalBBBreakout(c1h_nf,cl5);
+      else if (sc.id==='rsi_trend'     && n>=220) sig=detectSignalRSITrend(c1h_nf,cl5);
+      else if (sc.id==='adx_di'        && n>=55)  sig=detectSignalADXDI(c1h_nf,cl5);
+      else if (sc.id==='ichimoku'      && n>=85)  sig=detectSignalIchimoku(c1h_nf,cl5);
+      else if (sc.id==='hull_cross'    && n>=45)  sig=detectSignalHullCross(c1h_nf,cl5);
+      else if (sc.id==='chandelier'    && n>=45)  sig=detectSignalChandelier(c1h_nf,cl5);
+      else if (sc.id==='ha_supertrend' && n>=55)  sig=detectSignalHASupertrend(c1h_nf,cl5);
+
+      if (sig && sig.stopLoss) {
+        if (ema200f && sig.type==='long'  && cl5 < ema200f) sig = null;
+        if (ema200f && sig && sig.type==='short' && cl5 > ema200f) sig = null;
+        if (sig && adxf && adxf.adx < sc.adxMin) sig = null;
+      }
+      if (sig && sig.stopLoss) {
+        var slDist = Math.abs(cl5 - sig.stopLoss) / cl5;
+        if (slDist >= 0.002 && slDist <= 0.15) {
+          pendings[sc.id] = { dir:sig.type, sl:sig.stopLoss };
+          pendCount++;
+        }
+      }
+    }
+  }
+
+  var winRate = total > 0 ? wins / total : 0;
+  var actualDays = curve.length || 365;
+  var totalRet = (equity - 10000) / 10000;
+  var annRet = Math.pow(1 + totalRet, 365 / actualDays) - 1;
+  var monRet = Math.pow(1 + annRet, 1/12) - 1;
+  var dayRet = Math.pow(1 + annRet, 1/365) - 1;
+  var peak = 0, maxDD = 0;
+  curve.forEach(function(p){ if(p.equity>peak)peak=p.equity; var dd=(peak-p.equity)/peak; if(dd>maxDD)maxDD=dd; });
+  return { equity:equity, totalRet:totalRet, annRet:annRet, monRet:monRet, dayRet:dayRet,
+           totalTrades:total, winRate:winRate, maxDD:maxDD, curve:curve, trades:trades, stratStats:stratStats };
+}
+
 // ════════════════════════════════════════════════════════════
 // DATA FETCH
 // ════════════════════════════════════════════════════════════
@@ -1001,6 +1162,7 @@ function renderTable() {
   }).join('');
   tbody.innerHTML = rows;
   document.getElementById('btResultCard').classList.remove('hidden');
+  buildPfCheckboxes();
 }
 
 function buildTabs() {
@@ -1052,6 +1214,130 @@ function showChart(id) {
   });
   document.getElementById('btChartCard').classList.remove('hidden');
   document.getElementById('btChartCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+var _pfChart = null;
+
+function buildPfCheckboxes() {
+  var el = document.getElementById('pfCheckboxes');
+  if (!el) return;
+  el.innerHTML = BT_STRATS.map(function(s) {
+    var r = _results[s.id];
+    var isProfit = r && r.annRet > 0;
+    var checked = isProfit ? 'checked' : '';
+    var col = isProfit ? '#22c55e' : 'rgba(255,255,255,0.3)';
+    var annText = r ? pct(r.annRet, 1) : 'N/A';
+    return '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;font-size:12px;">'+
+      '<input type="checkbox" id="pf_'+s.id+'" '+checked+' style="width:auto;cursor:pointer;accent-color:#22c55e;">'+
+      '<span style="color:#fff;">'+s.name+'</span>'+
+      '<span style="color:'+col+';margin-left:4px;font-size:11px;">'+annText+'</span>'+
+    '</label>';
+  }).join('');
+  document.getElementById('pfCard').classList.remove('hidden');
+}
+
+function pfSelectProfitable() {
+  BT_STRATS.forEach(function(s) {
+    var r = _results[s.id];
+    var cb = document.getElementById('pf_'+s.id);
+    if (cb) cb.checked = !!(r && r.annRet > 0);
+  });
+}
+
+function pfSelectAll() {
+  BT_STRATS.forEach(function(s) { var cb=document.getElementById('pf_'+s.id); if(cb) cb.checked=true; });
+}
+
+function pfSelectNone() {
+  BT_STRATS.forEach(function(s) { var cb=document.getElementById('pf_'+s.id); if(cb) cb.checked=false; });
+}
+
+async function startPortfolioBacktest() {
+  if (!_c5of || !_c1hof) { alert('먼저 개별 전략 백테스팅을 실행하세요.'); return; }
+  var riskPct = parseFloat(document.getElementById('btRisk').value) || 2;
+  var lev     = parseFloat(document.getElementById('btLev').value)  || 10;
+  var posSz   = parseFloat(document.getElementById('btPos').value)  || 10;
+  var maxPos  = parseInt(document.getElementById('pfMaxPos').value) || 6;
+
+  var selected = BT_STRATS.filter(function(s) {
+    var cb = document.getElementById('pf_'+s.id); return cb && cb.checked;
+  }).map(function(s) {
+    var r = _results[s.id];
+    return { id:s.id, name:s.name, adxMin:(r && r.optimalAdx !== undefined) ? r.optimalAdx : 20 };
+  });
+  if (!selected.length) { alert('전략을 최소 1개 선택하세요.'); return; }
+
+  var btn=document.getElementById('pfBtn'), prog=document.getElementById('pfProg');
+  var bar=document.getElementById('pfBar'), msg=document.getElementById('pfMsg');
+  btn.disabled=true; prog.style.display='block';
+  bar.style.width='10%'; msg.textContent=selected.length+'개 전략 포트폴리오 시뮬레이션 중...';
+  await new Promise(function(r){setTimeout(r,10);});
+
+  bar.style.width='50%';
+  var result = runPortfolioBacktest(_c5of, _c1hof, selected, riskPct/100, lev, posSz, maxPos);
+  bar.style.width='100%'; msg.textContent='완료!';
+  btn.disabled=false; btn.textContent='다시 실행';
+
+  renderPortfolioResult(result, selected);
+}
+
+function renderPortfolioResult(r, selected) {
+  var card = document.getElementById('pfResultCard');
+  card.classList.remove('hidden');
+  document.getElementById('pfResultTitle').textContent = '포트폴리오 결과 ('+selected.length+'개 전략 동시 운영)';
+
+  var stats = [
+    {label:'연 복리', val:pct(r.annRet,1), color:clr(r.annRet)},
+    {label:'월 평균', val:pct(r.monRet),   color:clr(r.monRet)},
+    {label:'총 거래', val:r.totalTrades+'건', color:'#fff'},
+    {label:'승률',   val:Math.round(r.winRate*100)+'%', color:clr(r.winRate-0.5)},
+    {label:'최대낙폭',val:'-'+pct(r.maxDD,1).replace('+',''), color:'#ef4444'},
+    {label:'최종자산',val:'$'+r.equity.toFixed(0), color:clr(r.totalRet)},
+  ];
+  document.getElementById('pfSummary').innerHTML = stats.map(function(s){
+    return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 18px;">'+
+      '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;">'+s.label+'</div>'+
+      '<div style="font-size:18px;font-weight:700;color:'+s.color+';">'+s.val+'</div>'+
+    '</div>';
+  }).join('');
+
+  var pnlByStrat = {};
+  r.trades.forEach(function(t){ pnlByStrat[t.strat] = (pnlByStrat[t.strat]||0) + t.pnl; });
+  document.getElementById('pfStratTbody').innerHTML = selected.map(function(sc) {
+    var ss = r.stratStats[sc.id] || {wins:0, total:0};
+    var wr = ss.total > 0 ? ss.wins/ss.total : 0;
+    var contrib = pnlByStrat[sc.id] || 0;
+    return '<tr>'+
+      '<td>'+sc.name+'</td>'+
+      '<td>'+ss.total+'</td>'+
+      '<td><span style="color:'+clr(wr-0.5)+'">'+Math.round(wr*100)+'%</span></td>'+
+      '<td><span style="color:'+clr(contrib)+'">'+pct(contrib/10000,1)+'</span></td>'+
+    '</tr>';
+  }).join('');
+
+  var ctx = document.getElementById('pfCanvas').getContext('2d');
+  if (_pfChart) _pfChart.destroy();
+  var labels = r.curve.map(function(p){return new Date(p.ts).toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'});});
+  var data   = r.curve.map(function(p){return p.equity;});
+  var isPos  = r.annRet >= 0;
+  var col    = isPos ? '#22c55e' : '#ef4444';
+  var grd    = ctx.createLinearGradient(0,0,0,280);
+  grd.addColorStop(0, isPos?'rgba(34,197,94,0.3)':'rgba(239,68,68,0.3)');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  _pfChart = new Chart(ctx, {
+    type:'line',
+    data:{labels:labels, datasets:[{label:'포트폴리오 자산($)', data:data,
+      borderColor:col, borderWidth:2, pointRadius:0, fill:true, backgroundColor:grd, tension:0.3}]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return '$'+c.parsed.y.toFixed(0);}}}},
+      scales:{
+        x:{ticks:{color:'rgba(255,255,255,0.3)',maxTicksLimit:12,font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:10},callback:function(v){return '$'+v.toFixed(0);}}, grid:{color:'rgba(255,255,255,0.06)'}}
+      }
+    }
+  });
+  card.scrollIntoView({behavior:'smooth', block:'start'});
 }
 </script>
 </body>
