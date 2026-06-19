@@ -48,7 +48,13 @@ tr:last-child td{border-bottom:none;}
   <div class="grid3">
     <div><label>Trading Pair</label><input id="btPair" value="BTC-USDT-SWAP" oninput="onPairChange()"></div>
     <div><label>리스크/트레이드 (%)</label><input id="btRisk" type="number" value="2" min="0.5" max="5" step="0.5"></div>
-    <div style="display:flex;align-items:flex-end;padding-bottom:2px;"><span style="font-size:11px;color:rgba(255,255,255,0.3);">실제 봇과 동일한 방식: SL 거리와 무관하게 항상 리스크% 손실</span></div>
+    <div><label>레버리지</label><input id="btLev" type="number" value="10" min="1" max="50"></div>
+  </div>
+  <div class="grid3" style="margin-top:0;">
+    <div><label>최대 포지션 크기 (%)</label><input id="btPos" type="number" value="10" min="1" max="100"></div>
+    <div style="grid-column:span 2;display:flex;align-items:flex-end;padding-bottom:2px;">
+      <span style="font-size:11px;color:rgba(255,255,255,0.3);">실제 봇 포지션 = min(리스크%/SL거리, 포지션크기%×레버리지) × 자산 — SL거리 넓을수록 계약수 감소</span>
+    </div>
   </div>
   <button class="btn" id="btStartBtn" onclick="startBacktest()">백테스팅 시작 (4개 전략 · 약 30초 소요)</button>
   <div class="progress-wrap" id="btProg">
@@ -311,12 +317,16 @@ function aggregate1H(c5_of) {
 
 var SCALP_STRATS = { ma50_bounce: 1 };
 
-// Risk-based sizing — identical to actual bot logic:
-// Each trade risks exactly riskFrac of current equity regardless of SL distance.
-// Win at RR=1.5 → +riskFrac*1.5, Loss → -riskFrac
-function runBacktest(c5_of, c1h_of, strategy, riskFrac) {
+// Mirrors actual bot position sizing:
+//   notionalFrac = min(riskFrac / slDist, posSize/100 * leverage)
+//   pnl = equity * notionalFrac * priceRet
+//   fee = equity * notionalFrac * 0.001 per side
+// When slDist is small → risk-limited (always risks riskFrac of equity on SL)
+// When slDist is large → position-limited (capped by posSize * leverage)
+function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
   var isScalp = !!SCALP_STRATS[strategy];
   var RR = 1.5;
+  var maxNotionalFrac = (posSizePct / 100) * leverage;
 
   var equity = 10000, pos = null, pending = null;
   var trades = [], curve = [], lastDay = -1;
@@ -331,59 +341,44 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac) {
     var dayKey = Math.floor(ts / 86400000);
     if (dayKey !== lastDay) { curve.push({ts:ts, equity:equity}); lastDay = dayKey; }
 
-    // Enter pending position at open of current candle
     if (pending && !pos) {
       var entryPx = parseFloat(c5_of[i][1]);
-      // Recalculate slDist using actual entry price
       var actualSlDist = Math.abs(entryPx - pending.sl) / entryPx;
       if (actualSlDist < 0.001) { pending = null; continue; }
       var actualTp = pending.dir==='long' ? entryPx*(1+actualSlDist*RR) : entryPx*(1-actualSlDist*RR);
+      // notionalFrac: capped by posSize*leverage, floored by risk constraint
+      var notionalFrac = Math.min(riskFrac / actualSlDist, maxNotionalFrac);
       pos = { dir:pending.dir, entry:entryPx, sl:pending.sl, tp:actualTp,
-               slDist:actualSlDist, halfClosed:false,
-               riskAmt: equity * riskFrac, idx:i };
-      // Entry fee: 0.05% of notional ≈ riskFrac/slDist * 0.0005 of equity
-      var entryFee = Math.min(equity * riskFrac / actualSlDist * 0.0005, equity * 0.001);
-      equity = Math.max(100, equity - entryFee);
+               slDist:actualSlDist, notionalFrac:notionalFrac,
+               halfClosed:false, idx:i };
+      equity = Math.max(100, equity - equity * notionalFrac * 0.0005); // entry fee (0.05% of notional)
       pending = null;
     }
 
-    // Check position SL/TP
     if (pos) {
       var slHit = pos.dir==='long' ? lo5<=pos.sl : hi5>=pos.sl;
       var tpHit = pos.dir==='long' ? hi5>=pos.tp : lo5<=pos.tp;
 
-      // SL wins when both hit same candle
       if (slHit) {
         var mul = pos.halfClosed ? 0.5 : 1;
-        if (pos.halfClosed) {
-          // SL in profit territory (locked-in SL) — compute actual R
-          var priceMove = pos.dir==='long' ? (pos.sl - pos.entry) : (pos.entry - pos.sl);
-          var R = priceMove / pos.entry / pos.slDist;
-          var pnl = pos.riskAmt * R * mul;
-        } else {
-          var pnl = -pos.riskAmt * mul; // full loss
-        }
-        var exitFee = Math.min(pos.riskAmt / pos.slDist * 0.0005 * mul, equity * 0.001);
-        equity = Math.max(100, equity + pnl - exitFee);
+        var exitRet = pos.dir==='long' ? (pos.sl - pos.entry) / pos.entry : (pos.entry - pos.sl) / pos.entry;
+        var pnl = equity * pos.notionalFrac * exitRet * mul;
+        equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005 * mul);
         trades.push({ts:ts, type:'SL', pnl:pnl, eq:equity});
         pos = null;
       } else if (tpHit) {
         if (isScalp || pos.halfClosed) {
           var mul = pos.halfClosed ? 0.5 : 1;
-          var priceMove = pos.dir==='long' ? (pos.tp - pos.entry) : (pos.entry - pos.tp);
-          var R = priceMove / pos.entry / pos.slDist;
-          var pnl = pos.riskAmt * R * mul;
-          var exitFee = Math.min(pos.riskAmt / pos.slDist * 0.0005 * mul, equity * 0.001);
-          equity = Math.max(100, equity + pnl - exitFee);
+          var exitRet = pos.dir==='long' ? (pos.tp - pos.entry) / pos.entry : (pos.entry - pos.tp) / pos.entry;
+          var pnl = equity * pos.notionalFrac * exitRet * mul;
+          equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005 * mul);
           trades.push({ts:ts, type:'TP', pnl:pnl, eq:equity});
           pos = null;
         } else {
-          // SWING: 50% close at TP1, lock in 50% of TP1 profit as new SL, extend TP
-          var priceMove = pos.dir==='long' ? (pos.tp - pos.entry) : (pos.entry - pos.tp);
-          var R = priceMove / pos.entry / pos.slDist; // should be ~1.5
-          var pnl = pos.riskAmt * R * 0.5;
-          var exitFee = Math.min(pos.riskAmt / pos.slDist * 0.0005 * 0.5, equity * 0.001);
-          equity = Math.max(100, equity + pnl - exitFee);
+          // SWING: 50% close at TP1, lock in 50% of TP1 profit as SL
+          var exitRet = pos.dir==='long' ? (pos.tp - pos.entry) / pos.entry : (pos.entry - pos.tp) / pos.entry;
+          var pnl = equity * pos.notionalFrac * exitRet * 0.5;
+          equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005 * 0.5);
           trades.push({ts:ts, type:'TP50', pnl:pnl, eq:equity});
           pos.halfClosed = true;
           var dist = Math.abs(pos.tp - pos.entry);
@@ -487,6 +482,8 @@ function clr(v){return v>=0?'#22c55e':'#ef4444';}
 async function startBacktest() {
   var pair    = (document.getElementById('btPair').value||'BTC-USDT-SWAP').toUpperCase().trim();
   var riskPct = parseFloat(document.getElementById('btRisk').value) || 2;
+  var lev     = parseFloat(document.getElementById('btLev').value)  || 10;
+  var posSz   = parseFloat(document.getElementById('btPos').value)  || 10;
 
   var btn=document.getElementById('btStartBtn');
   var prog=document.getElementById('btProg');
@@ -531,7 +528,7 @@ async function startBacktest() {
     bar.style.width=(42 + si/BT_STRATS.length*56)+'%';
     msg.textContent='['+(si+1)+'/'+BT_STRATS.length+'] '+s.name+' 백테스팅 중...';
     await new Promise(function(r){setTimeout(r,0);});
-    _results[s.id] = runBacktest(_c5of, _c1hof, s.id, riskPct / 100);
+    _results[s.id] = runBacktest(_c5of, _c1hof, s.id, riskPct / 100, lev, posSz);
   }
 
   bar.style.width='100%';
