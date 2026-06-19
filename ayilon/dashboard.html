@@ -1293,9 +1293,11 @@
     var token = getSessionToken();
     if (!token) return;
     try {
-      var res  = await fetch(WORKER_URL + '/bot-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token }) });
+      var res  = await fetch(WORKER_URL + '/get-bot-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token }) });
       var data = await res.json();
-      var el   = document.getElementById('dashActiveBots');
+
+      // Active bots count
+      var el = document.getElementById('dashActiveBots');
       if (el) {
         var stratCount = data.running
           ? ((data.config && data.config.strategies && data.config.strategies.length)
@@ -1303,6 +1305,24 @@
               : (data.config && data.config.strategy ? 1 : 1))
           : 0;
         el.textContent = String(stratCount);
+      }
+
+      // Win rate
+      var wrEl  = document.getElementById('dashWinRate');
+      var wrSub = document.getElementById('dashWinRateSub');
+      if (wrEl) {
+        var wins   = data.winCount  || 0;
+        var losses = data.lossCount || 0;
+        var total  = wins + losses;
+        if (total === 0) {
+          wrEl.textContent = '—';
+          if (wrSub) wrSub.textContent = _t('db.dash.win_rate_no_data');
+        } else {
+          var pct = (wins / total * 100).toFixed(1);
+          wrEl.style.color = parseFloat(pct) >= 50 ? 'var(--green)' : '#ef4444';
+          wrEl.textContent = pct + '%';
+          if (wrSub) wrSub.textContent = wins + 'W / ' + losses + 'L · ' + total + ' ' + _t('db.dash.win_rate_trades');
+        }
       }
     } catch(e) {}
   }
@@ -1345,6 +1365,32 @@
       // Update portfolio value card
       var pvEl = document.getElementById('dashPortfolioVal');
       if (pvEl && b.equity > 0) pvEl.textContent = '$' + fmtNum(b.equity, 2);
+
+      // Daily P&L — equity difference from start of today (UTC)
+      if (b.equity > 0) {
+        var _email    = (getUserData().email || 'anon').toLowerCase();
+        var _today    = new Date().toISOString().slice(0, 10);
+        var _dayKey   = 'ayilon_daily_start:' + _email + ':' + _today;
+        var _dayStart = parseFloat(localStorage.getItem(_dayKey) || '0');
+        if (!_dayStart || _dayStart <= 0) {
+          localStorage.setItem(_dayKey, String(b.equity));
+          _dayStart = b.equity;
+        }
+        var _dailyPnl = b.equity - _dayStart;
+        var _dailyPct = _dayStart > 0 ? (_dailyPnl / _dayStart * 100) : 0;
+        var dpEl  = document.getElementById('dashDailyPnl');
+        var dpPct = document.getElementById('dashDailyPct');
+        if (dpEl) {
+          var _ds = _dailyPnl >= 0 ? '+' : '';
+          dpEl.textContent  = _ds + '$' + fmtNum(_dailyPnl, 2);
+          dpEl.style.color  = _dailyPnl >= 0 ? 'var(--green)' : 'var(--red)';
+        }
+        if (dpPct) {
+          var _ps = _dailyPct >= 0 ? '+' : '';
+          dpPct.textContent = _ps + fmtNum(_dailyPct, 2) + '%';
+          dpPct.style.color = _dailyPct >= 0 ? 'var(--green)' : 'var(--red)';
+        }
+      }
 
       // Total compound return calculation
       if (b.equity > 0) {
