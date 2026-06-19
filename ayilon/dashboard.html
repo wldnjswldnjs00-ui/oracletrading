@@ -999,6 +999,11 @@
         <label class="d-form-label">Chat ID</label>
         <input type="text" class="d-form-input" id="tgChatId" placeholder="-1001234567890" autocomplete="off" />
       </div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--gray-400);line-height:1.7;">
+        <span data-i18n="db.set.tg_help_1">① 텔레그램에서 <strong style="color:#fff;">@BotFather</strong>를 검색 → <code>/newbot</code> 명령으로 봇 생성 → Bot Token 복사</span><br>
+        <span data-i18n="db.set.tg_help_2">② 봇에게 <code>/start</code> 전송 후 브라우저에서 <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> 접속 → <code>chat.id</code> 값이 Chat ID</span><br>
+        <span style="color:var(--gray-500);" data-i18n="db.set.tg_help_3">자세한 방법은 사용 가이드 → "텔레그램 알림 설정 가이드"를 참고하세요.</span>
+      </div>
       <div id="tgMsg" style="font-size:12px;margin-bottom:12px;min-height:16px;"></div>
       <button class="btn-secondary" onclick="saveTelegramSettings()" data-i18n="db.save">저장</button>
     </div>
@@ -2225,6 +2230,8 @@
     var tgData = JSON.parse(localStorage.getItem('ayilon_telegram') || '{}');
     el = document.getElementById('tgBotToken'); if(el) el.value = tgData.token || '';
     el = document.getElementById('tgChatId');   if(el) el.value = tgData.chatId || '';
+
+    load2FAStatus();
   }
 
   function loadApiSection() {
@@ -2782,65 +2789,6 @@
         '</div>'
     },
     {
-      id: 2, title: '공지사항: OKX API 발급 가이드', title_en: 'Notice: OKX API Key Guide', cat: 'notice', date: '2026-05-31',
-      desc: 'OKX에서 API 키를 발급하는 방법과 AYILON에 연결하는 방법을 안내합니다.',
-      desc_en: 'How to generate API keys on OKX and connect them to AYILON.',
-      content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">OKX API 키 발급 가이드</h2>' +
-        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">최종 업데이트: 2026-05-31</p>' +
-        '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px;margin-bottom:20px;color:#fbbf24;font-size:13px;">⚠️ API 키에 <strong>출금(Withdraw) 권한은 절대 부여하지 마세요.</strong> 거래(Trade) 권한만 설정해야 안전합니다.</div>' +
-        '<div style="display:flex;flex-direction:column;gap:16px;">' +
-        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
-        '<div style="font-weight:600;margin-bottom:10px;">1. OKX 로그인 후 오른쪽 상단 프로필 아이콘 클릭</div>' +
-        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">OKX 웹사이트(okx.com)에 로그인한 후 우측 상단의 프로필 아이콘을 클릭합니다.</div>' +
-        '</div>' +
-        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
-        '<div style="font-weight:600;margin-bottom:10px;">2. 계정 설정 → API 관리 이동</div>' +
-        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">"계정 설정(Account Settings)" → "API 관리(API Management)" 메뉴로 이동합니다. "API 키 생성(Create API Key)" 버튼을 클릭합니다.</div>' +
-        '</div>' +
-        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
-        '<div style="font-weight:600;margin-bottom:10px;">3. API 키 설정값</div>' +
-        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;margin-bottom:12px;">아래와 같이 설정하세요:</div>' +
-        '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
-        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">API 이름</td><td style="padding:8px 4px;">AYILON (구분하기 쉬운 이름)</td></tr>' +
-        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">Passphrase</td><td style="padding:8px 4px;">기억하기 쉬운 비밀번호 설정 (저장 필수)</td></tr>' +
-        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">권한</td><td style="padding:8px 4px;color:#22c55e;font-weight:600;">거래(Trade) 만 체크 ✓</td></tr>' +
-        '<tr><td style="padding:8px 4px;color:var(--gray-400);">IP 제한</td><td style="padding:8px 4px;">비워두기 (필요 시 설정)</td></tr>' +
-        '</table>' +
-        '</div>' +
-        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
-        '<div style="font-weight:600;margin-bottom:10px;">4. AYILON에 연결</div>' +
-        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">생성된 API Key, Secret Key, Passphrase를 복사하여 AYILON 대시보드 → API 탭에 붙여넣고 저장을 누르면 연결이 완료됩니다. API 키는 생성 시에만 확인 가능하니 반드시 저장해두세요.</div>' +
-        '</div>' +
-        '</div>',
-      content_en: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">OKX API Key Guide</h2>' +
-        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">Last updated: 2026-05-31</p>' +
-        '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px;margin-bottom:20px;color:#fbbf24;font-size:13px;">⚠️ <strong>Never grant Withdraw permission</strong> to your API key. Only set Trade permission to stay secure.</div>' +
-        '<div style="display:flex;flex-direction:column;gap:16px;">' +
-        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
-        '<div style="font-weight:600;margin-bottom:10px;">1. Log in to OKX and click the profile icon at the top right</div>' +
-        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Log in to the OKX website (okx.com) and click the profile icon at the top right.</div>' +
-        '</div>' +
-        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
-        '<div style="font-weight:600;margin-bottom:10px;">2. Go to Account Settings → API Management</div>' +
-        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Navigate to "Account Settings" → "API Management". Click the "Create API Key" button.</div>' +
-        '</div>' +
-        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
-        '<div style="font-weight:600;margin-bottom:10px;">3. API Key Settings</div>' +
-        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;margin-bottom:12px;">Configure as follows:</div>' +
-        '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
-        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">API Name</td><td style="padding:8px 4px;">AYILON (any recognizable name)</td></tr>' +
-        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">Passphrase</td><td style="padding:8px 4px;">Set a memorable password (save it!)</td></tr>' +
-        '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 4px;color:var(--gray-400);">Permissions</td><td style="padding:8px 4px;color:#22c55e;font-weight:600;">Trade only ✓</td></tr>' +
-        '<tr><td style="padding:8px 4px;color:var(--gray-400);">IP Restriction</td><td style="padding:8px 4px;">Leave blank (or set if needed)</td></tr>' +
-        '</table>' +
-        '</div>' +
-        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
-        '<div style="font-weight:600;margin-bottom:10px;">4. Connect to AYILON</div>' +
-        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">Copy the generated API Key, Secret Key, and Passphrase, then paste them into AYILON Dashboard → API tab and save. The API key can only be viewed at creation time — make sure to save it immediately.</div>' +
-        '</div>' +
-        '</div>'
-    },
-    {
       id: 3, title: '공지사항: OKX 가입 상세 가이드', title_en: 'Notice: OKX Registration Guide', cat: 'notice', date: '2026-05-31',
       desc: 'OKX 거래소에 가입하는 방법을 단계별로 상세히 안내합니다. KYC 인증 포함.',
       desc_en: 'Step-by-step guide to registering on OKX exchange. Includes KYC verification.',
@@ -2992,6 +2940,81 @@
         '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
         '<div style="font-weight:600;margin-bottom:10px;">3. Wait for Automatic Detection</div>' +
         '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">The system automatically detects payments within 1–10 minutes. Once confirmed, your subscription activates immediately and an email notification is sent. If delayed over 10 minutes, contact support with your TXID.</div>' +
+        '</div>' +
+        '</div>'
+    },
+    {
+      id: 7, title: '텔레그램 알림 설정 가이드', title_en: 'Telegram Alerts Setup Guide', cat: 'tutorial', date: '2026-06-01',
+      desc: '텔레그램 봇 토큰과 채팅 ID를 발급하고 AYILON 알림을 연동하는 방법을 단계별로 안내합니다.',
+      desc_en: 'Step-by-step guide to getting a Telegram Bot Token and Chat ID, then connecting them to AYILON alerts.',
+      content: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">텔레그램 알림 설정 가이드</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">봇을 만들고 AYILON과 연동하면 거래 체결, 손절, 리포트를 텔레그램으로 즉시 수신할 수 있습니다.</p>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 1 — Bot Token 발급</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">' +
+        '텔레그램 앱을 열고 검색창에 <span style="color:#fff;font-weight:600;font-family:monospace;">@BotFather</span>를 검색하세요.<br>' +
+        '1. <span style="color:#fff;">/newbot</span> 명령어 입력<br>' +
+        '2. 봇 이름 입력 (예: <code style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px;">AYILON Alerts</code>)<br>' +
+        '3. 봇 사용자명 입력 (끝에 <code style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px;">_bot</code> 필수, 예: <code style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px;">ayilon_alerts_bot</code>)<br>' +
+        '4. BotFather가 <strong style="color:#fff;">HTTP API 토큰</strong>을 발급해 줍니다. 예: <code style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px;font-family:monospace;">1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ</code><br>' +
+        '이 값이 <strong style="color:#fff;">Bot Token</strong>입니다. 복사해 두세요.' +
+        '</div></div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 2 — Chat ID 확인</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">' +
+        '방금 만든 봇을 직접 채팅에서 검색해 <span style="color:#fff;">/start</span>를 입력하세요.<br>' +
+        '그런 다음 브라우저에서 아래 URL을 열어 Chat ID를 확인합니다:<br>' +
+        '<code style="display:block;margin:8px 0;background:rgba(255,255,255,0.08);padding:8px 12px;border-radius:6px;font-size:12px;word-break:break-all;">https://api.telegram.org/bot<span style="color:#fbbf24;">&lt;YOUR_BOT_TOKEN&gt;</span>/getUpdates</code>' +
+        '응답 JSON에서 <code style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px;">result[0].message.chat.id</code> 값이 <strong style="color:#fff;">Chat ID</strong>입니다.<br>' +
+        '<span style="color:var(--gray-500);">개인 채팅은 양수, 그룹 채팅은 음수(-)로 시작합니다.</span>' +
+        '</div></div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 3 — AYILON 설정에 입력</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">' +
+        '대시보드 → <strong style="color:#fff;">설정</strong> 탭 → <strong style="color:#fff;">텔레그램 알림</strong> 섹션에서<br>' +
+        '• Bot Token 란에 Step 1에서 복사한 토큰 붙여넣기<br>' +
+        '• Chat ID 란에 Step 2에서 확인한 ID 입력<br>' +
+        '• <strong style="color:#fff;">저장</strong> 버튼 클릭<br><br>' +
+        '저장 즉시 테스트 메시지가 발송됩니다. 텔레그램에 "✅ AYILON 알림이 연결되었습니다" 메시지가 오면 정상입니다.' +
+        '</div></div>' +
+        '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px;font-size:13px;color:#fbbf24;">' +
+        '⚠️ Bot Token은 외부에 노출하지 마세요. 노출 시 BotFather에서 /revoke 명령으로 재발급하세요.' +
+        '</div>' +
+        '</div>',
+      content_en: '<h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">Telegram Alerts Setup Guide</h2>' +
+        '<p style="color:var(--gray-400);margin-bottom:24px;font-size:13px;">Once connected, you\'ll receive instant Telegram messages for trade executions, stop-losses, and daily reports.</p>' +
+        '<div style="display:flex;flex-direction:column;gap:16px;">' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 1 — Get a Bot Token</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">' +
+        'Open Telegram and search for <span style="color:#fff;font-weight:600;font-family:monospace;">@BotFather</span>.<br>' +
+        '1. Send the command <span style="color:#fff;">/newbot</span><br>' +
+        '2. Enter a display name (e.g. <code style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px;">AYILON Alerts</code>)<br>' +
+        '3. Enter a username ending in <code style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px;">_bot</code> (e.g. <code style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px;">ayilon_alerts_bot</code>)<br>' +
+        '4. BotFather will send you an <strong style="color:#fff;">HTTP API token</strong>, e.g. <code style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px;font-family:monospace;">1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ</code><br>' +
+        'That is your <strong style="color:#fff;">Bot Token</strong>. Copy it.' +
+        '</div></div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 2 — Find Your Chat ID</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">' +
+        'Search for your new bot in Telegram and send it <span style="color:#fff;">/start</span>.<br>' +
+        'Then open this URL in a browser to find your Chat ID:<br>' +
+        '<code style="display:block;margin:8px 0;background:rgba(255,255,255,0.08);padding:8px 12px;border-radius:6px;font-size:12px;word-break:break-all;">https://api.telegram.org/bot<span style="color:#fbbf24;">&lt;YOUR_BOT_TOKEN&gt;</span>/getUpdates</code>' +
+        'In the JSON response, the value at <code style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px;">result[0].message.chat.id</code> is your <strong style="color:#fff;">Chat ID</strong>.<br>' +
+        '<span style="color:var(--gray-500);">Personal chats have a positive ID; group chats have a negative (–) ID.</span>' +
+        '</div></div>' +
+        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;">' +
+        '<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:8px;">STEP 3 — Enter in AYILON Settings</div>' +
+        '<div style="color:var(--gray-400);font-size:13px;line-height:1.7;">' +
+        'Go to Dashboard → <strong style="color:#fff;">Settings</strong> tab → <strong style="color:#fff;">Telegram Alerts</strong> section.<br>' +
+        '• Paste your Bot Token in the Bot Token field<br>' +
+        '• Enter your Chat ID in the Chat ID field<br>' +
+        '• Click <strong style="color:#fff;">Save</strong><br><br>' +
+        'A test message is sent immediately. If you receive "✅ AYILON alerts connected" on Telegram, you\'re all set.' +
+        '</div></div>' +
+        '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:16px;font-size:13px;color:#fbbf24;">' +
+        '⚠️ Never share your Bot Token publicly. If compromised, use /revoke in BotFather to regenerate it.' +
         '</div>' +
         '</div>'
     },
