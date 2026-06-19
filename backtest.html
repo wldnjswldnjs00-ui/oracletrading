@@ -55,21 +55,21 @@ button.run:disabled{background:#333;color:#666;cursor:not-allowed}
 <div class="grid" id="cards"></div>
 
 <script>
-const OKX = 'https://www.okx.com';
-const RR = 1.5;
-const FEE = 0.001;
-const TRAIL_STEP = 0.01;
-const STRATEGIES = [
+var OKX = 'https://www.okx.com';
+var RR = 1.5;
+var FEE = 0.001;
+var TRAIL_STEP = 0.01;
+var STRATEGIES = [
   { id: 'ha_ema_srsi', name: 'HA + EMA + StochRSI', type: 'SWING' },
   { id: 'ma_ribbon',   name: 'MA Ribbon',            type: 'SWING' },
   { id: 'ma50_bounce', name: 'MA50 Bounce',           type: 'SCALP' },
   { id: 'ict_fib_ote', name: 'ICT Fibonacci OTE',     type: 'SWING' }
 ];
-const SCALP_STRATS = new Set(['ma50_bounce']);
+var SCALP_STRATS = { ma50_bounce: true };
 
 function log(msg) {
-  const el = document.getElementById('log');
-  const d = document.createElement('div');
+  var el = document.getElementById('log');
+  var d = document.createElement('div');
   d.className = 'msg';
   d.textContent = new Date().toTimeString().slice(0,8) + ' ' + msg;
   el.insertBefore(d, el.firstChild);
@@ -79,253 +79,286 @@ function prog(pct) {
 }
 
 async function fetchCandles5m(pair) {
-  const ONE_YEAR_AGO = Math.floor(Date.now() / 3600000) * 3600000 - 365 * 24 * 3600000;
-  log(`Fetching 5m candles for ${pair}...`);
-  const seen = new Map();
-  let after = '';
-  let batch = 0;
+  var ONE_YEAR_AGO = Math.floor(Date.now() / 3600000) * 3600000 - 365 * 24 * 3600000;
+  log('Fetching 5m candles for ' + pair + '...');
+  var seen = new Map();
+  var after = '';
+  var batch = 0;
   for (;;) {
-    const url = `${OKX}/api/v5/market/history-candles?instId=${pair}&bar=5m&limit=100${after ? '&after=' + after : ''}`;
-    const res = await fetch(url);
-    const j = await res.json();
-    const rows = j.data || [];
+    var url = OKX + '/api/v5/market/history-candles?instId=' + pair + '&bar=5m&limit=100' + (after ? '&after=' + after : '');
+    var res = await fetch(url);
+    var j = await res.json();
+    var rows = j.data || [];
     if (!rows.length) break;
-    let gotNew = false;
-    for (const r of rows) {
-      const ts = parseInt(r[0]);
+    var gotNew = false;
+    for (var ri = 0; ri < rows.length; ri++) {
+      var r = rows[ri];
+      var ts = parseInt(r[0]);
       if (ts < ONE_YEAR_AGO) continue;
       if (!seen.has(ts)) { seen.set(ts, r); gotNew = true; }
     }
-    const oldest = parseInt(rows[rows.length - 1][0]);
+    var oldest = parseInt(rows[rows.length - 1][0]);
     if (oldest < ONE_YEAR_AGO) break;
     if (!gotNew) break;
     after = oldest;
     batch++;
-    if (batch % 20 === 0) log(`  ...fetched ${seen.size} 5m candles so far`);
-    await new Promise(r => setTimeout(r, 120));
+    if (batch % 20 === 0) log('  ...fetched ' + seen.size + ' 5m candles so far');
+    await new Promise(function(resolve) { setTimeout(resolve, 120); });
   }
-  const sorted = [...seen.values()].sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
-  log(`Loaded ${sorted.length} 5m candles for ${pair}`);
+  var sorted = Array.from(seen.values()).sort(function(a, b) { return parseInt(a[0]) - parseInt(b[0]); });
+  log('Loaded ' + sorted.length + ' 5m candles for ' + pair);
   return sorted;
 }
 
 function aggregate1H(candles5m) {
-  // candles5m: oldest-first [ts, open, high, low, close, vol]
-  const buckets = new Map();
-  for (const c of candles5m) {
-    const ts = parseInt(c[0]);
-    const hr = Math.floor(ts / 3600000) * 3600000;
+  var buckets = new Map();
+  for (var i = 0; i < candles5m.length; i++) {
+    var c = candles5m[i];
+    var ts = parseInt(c[0]);
+    var hr = Math.floor(ts / 3600000) * 3600000;
     if (!buckets.has(hr)) {
       buckets.set(hr, { ts: hr, open: c[1], high: parseFloat(c[2]), low: parseFloat(c[3]), close: c[4], vol: 0 });
     } else {
-      const b = buckets.get(hr);
+      var b = buckets.get(hr);
       b.high = Math.max(b.high, parseFloat(c[2]));
       b.low  = Math.min(b.low,  parseFloat(c[3]));
       b.close = c[4];
     }
     buckets.get(hr).vol += parseFloat(c[5]);
   }
-  return [...buckets.values()]
-    .sort((a, b) => a.ts - b.ts)
-    .map(b => [String(b.ts), String(b.open), String(b.high), String(b.low), String(b.close), String(b.vol)]);
+  return Array.from(buckets.values())
+    .sort(function(a, b) { return a.ts - b.ts; })
+    .map(function(b) { return [String(b.ts), String(b.open), String(b.high), String(b.low), String(b.close), String(b.vol)]; });
 }
 
 // ── Indicators ────────────────────────────────────────────────
 function _sma(arr, n) {
   if (arr.length < n) return null;
-  return arr.slice(arr.length - n).reduce((s, v) => s + v, 0) / n;
+  var sum = 0;
+  for (var i = arr.length - n; i < arr.length; i++) sum += arr[i];
+  return sum / n;
 }
-function calcRSIarr(closes, period = 14) {
+
+function calcRSIarr(closes, period) {
+  period = period || 14;
   if (closes.length < period + 2) return null;
-  let gains = 0, losses = 0;
-  for (let i = 1; i <= period; i++) {
-    const d = closes[i] - closes[i - 1];
+  var gains = 0, losses = 0;
+  for (var i = 1; i <= period; i++) {
+    var d = closes[i] - closes[i - 1];
     if (d > 0) gains += d; else losses -= d;
   }
-  let ag = gains / period, al = losses / period;
-  for (let i = period + 1; i < closes.length; i++) {
-    const d = closes[i] - closes[i - 1];
-    ag = (ag * (period - 1) + Math.max(0, d)) / period;
-    al = (al * (period - 1) + Math.max(0, -d)) / period;
+  var ag = gains / period, al = losses / period;
+  for (var j = period + 1; j < closes.length; j++) {
+    var dj = closes[j] - closes[j - 1];
+    ag = (ag * (period - 1) + Math.max(0, dj)) / period;
+    al = (al * (period - 1) + Math.max(0, -dj)) / period;
   }
   if (al === 0) return 100;
   return 100 - 100 / (1 + ag / al);
 }
+
 function calcEMA200arr(closes) {
   if (closes.length < 200) return null;
-  const k = 2 / 201;
-  let ema = closes.slice(0, 200).reduce((s, v) => s + v, 0) / 200;
-  for (let i = 200; i < closes.length; i++) ema = closes[i] * k + ema * (1 - k);
+  var k = 2 / 201;
+  var sum = 0;
+  for (var i = 0; i < 200; i++) sum += closes[i];
+  var ema = sum / 200;
+  for (var j = 200; j < closes.length; j++) ema = closes[j] * k + ema * (1 - k);
   return ema;
 }
-function calcStochRSIarr(closes, rsiLen = 14, stochLen = 14, kSmooth = 3, dSmooth = 3) {
+
+function calcStochRSIarr(closes, rsiLen, stochLen, kSmooth, dSmooth) {
+  rsiLen = rsiLen || 14; stochLen = stochLen || 14; kSmooth = kSmooth || 3; dSmooth = dSmooth || 3;
   if (closes.length < rsiLen + stochLen + kSmooth + dSmooth + 5) return null;
-  let gains = 0, losses = 0;
-  for (let i = 1; i <= rsiLen; i++) {
-    const d = closes[i] - closes[i - 1];
+  var gains = 0, losses = 0;
+  for (var i = 1; i <= rsiLen; i++) {
+    var d = closes[i] - closes[i - 1];
     if (d > 0) gains += d; else losses -= d;
   }
-  let ag = gains / rsiLen, al = losses / rsiLen;
-  const rsiSeries = [];
-  for (let i = rsiLen; i < closes.length; i++) {
-    const rs = al === 0 ? 100 : ag / al;
+  var ag = gains / rsiLen, al = losses / rsiLen;
+  var rsiSeries = [];
+  for (var ri = rsiLen; ri < closes.length; ri++) {
+    var rs = al === 0 ? 100 : ag / al;
     rsiSeries.push(100 - 100 / (1 + rs));
-    if (i < closes.length - 1) {
-      const d = closes[i + 1] - closes[i];
-      ag = (ag * (rsiLen - 1) + Math.max(d, 0)) / rsiLen;
-      al = (al * (rsiLen - 1) + Math.max(-d, 0)) / rsiLen;
+    if (ri < closes.length - 1) {
+      var di = closes[ri + 1] - closes[ri];
+      ag = (ag * (rsiLen - 1) + Math.max(di, 0)) / rsiLen;
+      al = (al * (rsiLen - 1) + Math.max(-di, 0)) / rsiLen;
     }
   }
   if (rsiSeries.length < stochLen) return null;
-  const stochSeries = [];
-  for (let i = stochLen - 1; i < rsiSeries.length; i++) {
-    const sl = rsiSeries.slice(i - stochLen + 1, i + 1);
-    const hi = Math.max(...sl), lo = Math.min(...sl);
-    stochSeries.push(hi === lo ? 50 : (rsiSeries[i] - lo) / (hi - lo) * 100);
+  var stochSeries = [];
+  for (var si = stochLen - 1; si < rsiSeries.length; si++) {
+    var sl2 = rsiSeries.slice(si - stochLen + 1, si + 1);
+    var hi = Math.max.apply(null, sl2), lo = Math.min.apply(null, sl2);
+    stochSeries.push(hi === lo ? 50 : (rsiSeries[si] - lo) / (hi - lo) * 100);
   }
   if (stochSeries.length < kSmooth + dSmooth) return null;
-  const kSeries = [];
-  for (let i = kSmooth - 1; i < stochSeries.length; i++)
-    kSeries.push(stochSeries.slice(i - kSmooth + 1, i + 1).reduce((s, v) => s + v, 0) / kSmooth);
+  var kSeries = [];
+  for (var ki = kSmooth - 1; ki < stochSeries.length; ki++) {
+    var ks = 0;
+    for (var kj = ki - kSmooth + 1; kj <= ki; kj++) ks += stochSeries[kj];
+    kSeries.push(ks / kSmooth);
+  }
   if (kSeries.length < dSmooth + 1) return null;
-  const dSeries = [];
-  for (let i = dSmooth - 1; i < kSeries.length; i++)
-    dSeries.push(kSeries.slice(i - dSmooth + 1, i + 1).reduce((s, v) => s + v, 0) / dSmooth);
-  const k0 = kSeries[kSeries.length - 1], k1 = kSeries[kSeries.length - 2];
-  const d0 = dSeries[dSeries.length - 1], d1 = dSeries[dSeries.length - 2];
-  return { k: k0, kPrev: k1, d: d0, dPrev: d1 };
+  var dSeries = [];
+  for (var di2 = dSmooth - 1; di2 < kSeries.length; di2++) {
+    var ds = 0;
+    for (var dj2 = di2 - dSmooth + 1; dj2 <= di2; dj2++) ds += kSeries[dj2];
+    dSeries.push(ds / dSmooth);
+  }
+  return {
+    k: kSeries[kSeries.length - 1],
+    kPrev: kSeries[kSeries.length - 2],
+    d: dSeries[dSeries.length - 1],
+    dPrev: dSeries[dSeries.length - 2]
+  };
 }
+
 function calcHAarr(candles) {
-  const ha = [];
-  for (let i = 0; i < candles.length; i++) {
-    const o = parseFloat(candles[i][1]), h = parseFloat(candles[i][2]);
-    const l = parseFloat(candles[i][3]), c = parseFloat(candles[i][4]);
-    const haC = (o + h + l + c) / 4;
-    const haO = i === 0 ? (o + c) / 2 : (ha[i-1][1] + ha[i-1][4]) / 2;
-    const haH = Math.max(h, haO, haC), haL = Math.min(l, haO, haC);
+  var ha = [];
+  for (var i = 0; i < candles.length; i++) {
+    var o = parseFloat(candles[i][1]), h = parseFloat(candles[i][2]);
+    var l = parseFloat(candles[i][3]), c = parseFloat(candles[i][4]);
+    var haC = (o + h + l + c) / 4;
+    var haO = i === 0 ? (o + c) / 2 : (ha[i-1][1] + ha[i-1][4]) / 2;
+    var haH = Math.max(h, haO, haC), haL = Math.min(l, haO, haC);
     ha.push([candles[i][0], haO, haH, haL, haC, candles[i][5]]);
   }
   return ha;
 }
 
-// ── Signal functions (oldest-first candles, idx = current candle index) ──
+// ── Signal functions (oldest-first candles, idx = signal candle index) ──
 function signalHAEmaSRSI(candles, idx) {
   if (idx < 210) return null;
-  const slice = candles.slice(0, idx + 1); // oldest to current
-  const closes = slice.map(c => parseFloat(c[4]));
-  const ema200 = calcEMA200arr(closes);
+  var slice = candles.slice(0, idx + 1);
+  var closes = slice.map(function(c) { return parseFloat(c[4]); });
+  var ema200 = calcEMA200arr(closes);
   if (!ema200) return null;
-  const srsi = calcStochRSIarr(closes);
+  var srsi = calcStochRSIarr(closes);
   if (!srsi) return null;
-  const ha = calcHAarr(slice);
-  const haC = ha[ha.length - 1], haP = ha[ha.length - 2];
-  const haOpen = haC[1], haHigh = haC[2], haLow = haC[3], haClose = haC[4];
-  const pClose = haP[4], pOpen = haP[1];
-  const haBody = Math.abs(haClose - haOpen), pBody = Math.abs(pClose - pOpen);
-  const lowerWick = Math.min(haOpen, haClose) - haLow;
-  const upperWick = haHigh - Math.max(haOpen, haClose);
-  const price = parseFloat(candles[idx][4]);
-  const kCrossUp   = srsi.kPrev < srsi.dPrev && srsi.k >= srsi.d && srsi.kPrev < 30;
-  const strongBull = haClose > haOpen && haBody > pBody * 0.8 && lowerWick < haBody * 0.15;
+  var ha = calcHAarr(slice);
+  var haC = ha[ha.length - 1], haP = ha[ha.length - 2];
+  if (!haP) return null;
+  var haOpen = haC[1], haHigh = haC[2], haLow = haC[3], haClose = haC[4];
+  var pOpen = haP[1], pClose = haP[4];
+  var haBody = Math.abs(haClose - haOpen), pBody = Math.abs(pClose - pOpen);
+  var lowerWick = Math.min(haOpen, haClose) - haLow;
+  var upperWick = haHigh - Math.max(haOpen, haClose);
+  var price = parseFloat(candles[idx][4]);
+  var kCrossUp   = srsi.kPrev < srsi.dPrev && srsi.k >= srsi.d && srsi.kPrev < 30;
+  var strongBull = haClose > haOpen && haBody > pBody * 0.8 && lowerWick < haBody * 0.15;
   if (price > ema200 && kCrossUp && strongBull) {
-    const swingLow = Math.min(...candles.slice(Math.max(0, idx - 7), idx).map(c => parseFloat(c[3])));
-    if (swingLow >= price) return null;
-    return { type: 'long', sl: swingLow };
+    var swLow = Infinity;
+    for (var i = Math.max(0, idx - 7); i < idx; i++) swLow = Math.min(swLow, parseFloat(candles[i][3]));
+    if (swLow >= price || swLow === Infinity) return null;
+    return { type: 'long', sl: swLow };
   }
-  const kCrossDown = srsi.kPrev > srsi.dPrev && srsi.k <= srsi.d && srsi.kPrev > 70;
-  const strongBear = haClose < haOpen && haBody > pBody * 0.8 && upperWick < haBody * 0.15;
+  var kCrossDown = srsi.kPrev > srsi.dPrev && srsi.k <= srsi.d && srsi.kPrev > 70;
+  var strongBear = haClose < haOpen && haBody > pBody * 0.8 && upperWick < haBody * 0.15;
   if (price < ema200 && kCrossDown && strongBear) {
-    const swingHigh = Math.max(...candles.slice(Math.max(0, idx - 7), idx).map(c => parseFloat(c[2])));
-    if (swingHigh <= price) return null;
-    return { type: 'short', sl: swingHigh };
+    var swHigh = -Infinity;
+    for (var j = Math.max(0, idx - 7); j < idx; j++) swHigh = Math.max(swHigh, parseFloat(candles[j][2]));
+    if (swHigh <= price || swHigh === -Infinity) return null;
+    return { type: 'short', sl: swHigh };
   }
   return null;
 }
 
 function signalMARibbon(candles, idx) {
   if (idx < 105) return null;
-  const closes = candles.slice(0, idx + 1).map(c => parseFloat(c[4]));
-  const price = closes[closes.length - 1];
-  const mas = [10, 20, 50, 100].map(p => ({ p, v: _sma(closes, p) })).filter(m => m.v);
+  var closes = candles.slice(0, idx + 1).map(function(c) { return parseFloat(c[4]); });
+  var price = closes[closes.length - 1];
+  var mas = [10, 20, 50, 100].map(function(p) { return { p: p, v: _sma(closes, p) }; }).filter(function(m) { return m.v; });
   if (mas.length < 4) return null;
-  const sorted = [...mas].sort((a, b) => a.p - b.p);
-  const bullish = price > sorted[0].v && sorted.every((m, i) => i === 0 || sorted[i-1].v > m.v);
-  const bearish = price < sorted[0].v && sorted.every((m, i) => i === 0 || sorted[i-1].v < m.v);
+  var sorted = mas.slice().sort(function(a, b) { return a.p - b.p; });
+  var bullish = price > sorted[0].v && sorted.every(function(m, i) { return i === 0 || sorted[i-1].v > m.v; });
+  var bearish = price < sorted[0].v && sorted.every(function(m, i) { return i === 0 || sorted[i-1].v < m.v; });
   if (!bullish && !bearish) return null;
   if (Math.abs(price - sorted[0].v) / price > 0.010) return null;
-  const recentCandles = candles.slice(Math.max(0, idx - 5), idx + 1);
-  const sl = bullish
-    ? Math.min(...recentCandles.map(c => parseFloat(c[3])))
-    : Math.max(...recentCandles.map(c => parseFloat(c[2])));
-  const d = Math.abs(price - sl) / price;
+  var slLow = Infinity, slHigh = -Infinity;
+  for (var i = Math.max(0, idx - 5); i <= idx; i++) {
+    slLow  = Math.min(slLow,  parseFloat(candles[i][3]));
+    slHigh = Math.max(slHigh, parseFloat(candles[i][2]));
+  }
+  var sl = bullish ? slLow : slHigh;
+  var d = Math.abs(price - sl) / price;
   if (d < 0.005 || d > 0.12) return null;
-  return bullish ? { type: 'long', sl } : { type: 'short', sl };
+  return bullish ? { type: 'long', sl: sl } : { type: 'short', sl: sl };
 }
 
 function signalMA50Bounce(candles, idx) {
   if (idx < 205) return null;
-  const closes = candles.slice(0, idx + 1).map(c => parseFloat(c[4]));
-  const price = closes[closes.length - 1];
-  const sma50  = _sma(closes, 50);
-  const sma200 = _sma(closes, 200);
+  var closes = candles.slice(0, idx + 1).map(function(c) { return parseFloat(c[4]); });
+  var price = closes[closes.length - 1];
+  var sma50  = _sma(closes, 50);
+  var sma200 = _sma(closes, 200);
   if (!sma50 || !sma200) return null;
   if (Math.abs(price - sma50) / price > 0.012) return null;
-  const recent10 = candles.slice(Math.max(0, idx - 10), idx);
-  const recentAbove = recent10.filter(c => parseFloat(c[4]) > sma50).length;
-  const recentBelow = recent10.filter(c => parseFloat(c[4]) < sma50).length;
-  const last3 = candles.slice(Math.max(0, idx - 3), idx + 1);
-  const isNarrow = last3.every(c => Math.abs(parseFloat(c[4]) - parseFloat(c[1])) / parseFloat(c[1]) <= 0.008);
-  const rsi = calcRSIarr(closes);
+  var recentAbove = 0, recentBelow = 0;
+  for (var i = Math.max(0, idx - 10); i < idx; i++) {
+    if (parseFloat(candles[i][4]) > sma50) recentAbove++;
+    else recentBelow++;
+  }
+  var isNarrow = true;
+  for (var j = Math.max(0, idx - 2); j <= idx; j++) {
+    if (Math.abs(parseFloat(candles[j][4]) - parseFloat(candles[j][1])) / parseFloat(candles[j][1]) > 0.008) { isNarrow = false; break; }
+  }
+  var rsi = calcRSIarr(closes);
   if (!rsi || rsi < 35 || rsi > 65) return null;
   if (sma50 > sma200 && recentAbove >= 7 && price >= sma50 && isNarrow) {
-    const sl = Math.min(...candles.slice(Math.max(0, idx - 5), idx + 1).map(c => parseFloat(c[3])));
-    const d = (price - sl) / price;
-    if (d < 0.003 || d > 0.08) return null;
-    return { type: 'long', sl };
+    var slLow = Infinity;
+    for (var k = Math.max(0, idx - 4); k <= idx; k++) slLow = Math.min(slLow, parseFloat(candles[k][3]));
+    var d1 = (price - slLow) / price;
+    if (d1 < 0.003 || d1 > 0.08) return null;
+    return { type: 'long', sl: slLow };
   }
   if (sma50 < sma200 && recentBelow >= 7 && price <= sma50 && isNarrow) {
-    const sl = Math.max(...candles.slice(Math.max(0, idx - 5), idx + 1).map(c => parseFloat(c[2])));
-    const d = (sl - price) / price;
-    if (d < 0.003 || d > 0.08) return null;
-    return { type: 'short', sl };
+    var slHigh = -Infinity;
+    for (var m = Math.max(0, idx - 4); m <= idx; m++) slHigh = Math.max(slHigh, parseFloat(candles[m][2]));
+    var d2 = (slHigh - price) / price;
+    if (d2 < 0.003 || d2 > 0.08) return null;
+    return { type: 'short', sl: slHigh };
   }
   return null;
 }
 
 function signalICTFibOTE(candles, idx) {
   if (idx < 55) return null;
-  const swing = candles.slice(Math.max(0, idx - 50), idx);
-  const swingHigh = Math.max(...swing.map(c => parseFloat(c[2])));
-  const swingLow  = Math.min(...swing.map(c => parseFloat(c[3])));
-  const range = swingHigh - swingLow;
+  var swingHigh = -Infinity, swingLow = Infinity;
+  for (var i = Math.max(0, idx - 50); i < idx; i++) {
+    swingHigh = Math.max(swingHigh, parseFloat(candles[i][2]));
+    swingLow  = Math.min(swingLow,  parseFloat(candles[i][3]));
+  }
+  var range = swingHigh - swingLow;
   if (range <= 0) return null;
-  const oteBot = swingLow  + range * 0.21;
-  const oteTop = swingLow  + range * 0.38;
-  const prBot  = swingHigh - range * 0.38;
-  const prTop  = swingHigh - range * 0.21;
-  const cur = candles[idx];
-  const price = parseFloat(cur[4]);
-  const isBullish = parseFloat(cur[4]) > parseFloat(cur[1]);
-  const isBearish = parseFloat(cur[4]) < parseFloat(cur[1]);
-  const closes = candles.slice(0, idx + 1).map(c => parseFloat(c[4]));
-  const rsi = calcRSIarr(closes);
+  var oteBot = swingLow  + range * 0.21;
+  var oteTop = swingLow  + range * 0.38;
+  var prBot  = swingHigh - range * 0.38;
+  var prTop  = swingHigh - range * 0.21;
+  var cur = candles[idx];
+  var price = parseFloat(cur[4]);
+  var isBullish = parseFloat(cur[4]) > parseFloat(cur[1]);
+  var isBearish = parseFloat(cur[4]) < parseFloat(cur[1]);
+  var closes = candles.slice(0, idx + 1).map(function(c) { return parseFloat(c[4]); });
+  var rsi = calcRSIarr(closes);
   if (!rsi) return null;
   if (price >= oteBot && price <= oteTop && isBullish && rsi < 55) {
-    const sl = swingLow * 0.999;
-    const d = (price - sl) / price;
+    var sl = swingLow * 0.999;
+    var d = (price - sl) / price;
     if (d < 0.005 || d > 0.15) return null;
-    return { type: 'long', sl };
+    return { type: 'long', sl: sl };
   }
   if (price >= prBot && price <= prTop && isBearish && rsi > 45) {
-    const sl = swingHigh * 1.001;
-    const d = (sl - price) / price;
-    if (d < 0.005 || d > 0.15) return null;
-    return { type: 'short', sl };
+    var sl2 = swingHigh * 1.001;
+    var d2 = (sl2 - price) / price;
+    if (d2 < 0.005 || d2 > 0.15) return null;
+    return { type: 'short', sl: sl2 };
   }
   return null;
 }
 
-const SIGNAL_FN = {
+var SIGNAL_FN = {
   ha_ema_srsi: signalHAEmaSRSI,
   ma_ribbon:   signalMARibbon,
   ma50_bounce: signalMA50Bounce,
@@ -334,28 +367,28 @@ const SIGNAL_FN = {
 
 // ── Backtest engine ───────────────────────────────────────────
 function runStrategy(candles1H, stratId) {
-  const isScalp = SCALP_STRATS.has(stratId);
-  const fn = SIGNAL_FN[stratId];
-  let trades = 0, wins = 0, totalPnl = 0;
-  let pos = null;
+  var isScalp = !!SCALP_STRATS[stratId];
+  var fn = SIGNAL_FN[stratId];
+  var trades = 0, wins = 0, totalPnl = 0;
+  var pos = null;
 
-  for (let i = 0; i < candles1H.length - 1; i++) {
-    const c = candles1H[i];
-    const nextC = candles1H[i + 1];
-    const nextOpen = parseFloat(nextC[1]);
-    const nextHigh = parseFloat(nextC[2]);
-    const nextLow  = parseFloat(nextC[3]);
+  for (var i = 0; i < candles1H.length - 1; i++) {
+    var nextC    = candles1H[i + 1];
+    var nextOpen = parseFloat(nextC[1]);
+    var nextHigh = parseFloat(nextC[2]);
+    var nextLow  = parseFloat(nextC[3]);
 
-    // Check open position
     if (pos) {
-      // Swing: trailing logic
-      if (!isScalp && pos.halfClosed) {
-        const movedEnough = pos.dir === 'long'
+      // Trailing for swing after half-close
+      if (!isScalp && pos.halfClosed && pos.lastTPLevel !== null) {
+        var movedEnough = pos.dir === 'long'
           ? nextHigh >= pos.lastTPLevel * (1 + TRAIL_STEP)
           : nextLow  <= pos.lastTPLevel * (1 - TRAIL_STEP);
         if (movedEnough) {
-          const trailPrice = pos.dir === 'long' ? pos.lastTPLevel * (1 + TRAIL_STEP) : pos.lastTPLevel * (1 - TRAIL_STEP);
-          const pnlPct = pos.dir === 'long'
+          var trailPrice = pos.dir === 'long'
+            ? pos.lastTPLevel * (1 + TRAIL_STEP)
+            : pos.lastTPLevel * (1 - TRAIL_STEP);
+          var pnlPct = pos.dir === 'long'
             ? (trailPrice - pos.entry) / pos.entry
             : (pos.entry - trailPrice) / pos.entry;
           totalPnl += pnlPct * pos.remainFrac - FEE * pos.remainFrac;
@@ -366,45 +399,47 @@ function runStrategy(candles1H, stratId) {
         }
       }
 
-      // SL check
-      const slHit = pos.dir === 'long' ? nextLow <= pos.sl : nextHigh >= pos.sl;
-      // TP check
-      const tpHit = pos.dir === 'long' ? nextHigh >= pos.tp : nextLow <= pos.tp;
+      var slHit = pos.dir === 'long' ? nextLow  <= pos.sl : nextHigh >= pos.sl;
+      var tpHit = pos.tp !== null && (pos.dir === 'long' ? nextHigh >= pos.tp : nextLow <= pos.tp);
 
+      // SL wins when both hit same candle
       if (slHit && tpHit) {
-        // SL wins when both hit same candle
-        const pnl = pos.dir === 'long'
+        var pnl0 = pos.dir === 'long'
           ? (pos.sl - pos.entry) / pos.entry
           : (pos.entry - pos.sl) / pos.entry;
-        totalPnl += pnl - FEE;
-        trades++; // loss
+        if (pos.halfClosed) {
+          totalPnl += pnl0 * pos.remainFrac - FEE * pos.remainFrac;
+        } else {
+          totalPnl += pnl0 - FEE;
+          trades++;
+        }
         pos = null;
         continue;
       }
 
       if (tpHit && !isScalp && !pos.halfClosed) {
-        // SWING: 50% close at TP
-        const pnlHalf = pos.dir === 'long'
+        // SWING: 50% close at TP, lock in 50% of TP1 profit as new SL
+        var pnlHalf = pos.dir === 'long'
           ? (pos.tp - pos.entry) / pos.entry * 0.5
           : (pos.entry - pos.tp) / pos.entry * 0.5;
         totalPnl += pnlHalf - FEE * 0.5;
         wins++;
         trades++;
-        const dist = Math.abs(pos.tp - pos.entry);
+        var dist = Math.abs(pos.tp - pos.entry);
         pos.sl = pos.dir === 'long' ? pos.entry + dist * 0.5 : pos.entry - dist * 0.5;
-        pos.halfClosed = true;
+        pos.halfClosed  = true;
         pos.lastTPLevel = pos.tp;
-        pos.remainFrac = 0.5;
-        pos.tp = null;
+        pos.remainFrac  = 0.5;
+        pos.tp          = null;
         continue;
       }
 
       if (tpHit && isScalp) {
         // SCALP: 100% close at TP
-        const pnl = pos.dir === 'long'
+        var pnlFull = pos.dir === 'long'
           ? (pos.tp - pos.entry) / pos.entry
           : (pos.entry - pos.tp) / pos.entry;
-        totalPnl += pnl - FEE;
+        totalPnl += pnlFull - FEE;
         wins++;
         trades++;
         pos = null;
@@ -412,17 +447,16 @@ function runStrategy(candles1H, stratId) {
       }
 
       if (slHit) {
-        let pnl;
         if (pos.halfClosed) {
-          pnl = pos.dir === 'long'
+          var pnlSL = pos.dir === 'long'
             ? (pos.sl - pos.entry) / pos.entry * pos.remainFrac
             : (pos.entry - pos.sl) / pos.entry * pos.remainFrac;
-          totalPnl += pnl - FEE * pos.remainFrac;
+          totalPnl += pnlSL - FEE * pos.remainFrac;
         } else {
-          pnl = pos.dir === 'long'
+          var pnlSL2 = pos.dir === 'long'
             ? (pos.sl - pos.entry) / pos.entry
             : (pos.entry - pos.sl) / pos.entry;
-          totalPnl += pnl - FEE;
+          totalPnl += pnlSL2 - FEE;
           trades++;
         }
         pos = null;
@@ -432,27 +466,33 @@ function runStrategy(candles1H, stratId) {
       continue;
     }
 
-    // No position — check for signal
-    const sig = fn(candles1H, i);
+    // No position — check for signal at candle i
+    var sig = fn(candles1H, i);
     if (!sig) continue;
     if (i + 1 >= candles1H.length) continue;
 
-    const entry = nextOpen;
-    const sl = sig.sl;
-    const slDist = Math.abs(entry - sl) / entry;
+    var entry  = nextOpen;
+    var rawSL  = sig.sl;
+    var slDist = Math.abs(entry - rawSL) / entry;
     if (slDist < 0.002 || slDist > 0.15) continue;
-    const tp = sig.type === 'long' ? entry * (1 + slDist * RR) : entry * (1 - slDist * RR);
 
-    pos = { dir: sig.type, entry, sl, tp, halfClosed: false, lastTPLevel: null, remainFrac: 1.0 };
-    i++; // skip to next candle (already consumed as entry)
+    var sl = sig.type === 'long'
+      ? Math.min(rawSL, entry * 0.999)
+      : Math.max(rawSL, entry * 1.001);
+    var tp = sig.type === 'long'
+      ? entry * (1 + slDist * RR)
+      : entry * (1 - slDist * RR);
+
+    pos = { dir: sig.type, entry: entry, sl: sl, tp: tp, halfClosed: false, lastTPLevel: null, remainFrac: 1.0 };
+    i++; // consume next candle as entry candle
   }
 
-  const winRate = trades > 0 ? (wins / trades * 100) : 0;
-  return { trades, wins, winRate, totalPnl: totalPnl * 100 };
+  var winRate = trades > 0 ? wins / trades * 100 : 0;
+  return { trades: trades, wins: wins, winRate: winRate, totalPnl: totalPnl * 100 };
 }
 
 async function runBacktest() {
-  const btn = document.getElementById('runBtn');
+  var btn = document.getElementById('runBtn');
   btn.disabled = true;
   btn.textContent = 'Running...';
   document.getElementById('log').innerHTML = '';
@@ -460,65 +500,69 @@ async function runBacktest() {
   document.getElementById('summary').style.display = 'none';
   prog(0);
 
-  const pair = document.getElementById('pairSel').value;
+  var pair = document.getElementById('pairSel').value;
 
   try {
-    const candles5m = await fetchCandles5m(pair);
+    var candles5m = await fetchCandles5m(pair);
     prog(40);
-    const candles1H = aggregate1H(candles5m);
-    log(`Aggregated to ${candles1H.length} 1H candles`);
+    var candles1H = aggregate1H(candles5m);
+    log('Aggregated to ' + candles1H.length + ' 1H candles');
     prog(50);
 
-    const results = [];
-    let si = 0;
-    for (const strat of STRATEGIES) {
-      log(`Running ${strat.name}...`);
-      const r = runStrategy(candles1H, strat.id);
-      results.push({ ...strat, ...r });
-      log(`  ${strat.name}: ${r.trades} trades, ${r.winRate.toFixed(1)}% WR, ${r.totalPnl >= 0 ? '+' : ''}${r.totalPnl.toFixed(2)}% PnL`);
-      si++;
-      prog(50 + si / STRATEGIES.length * 50);
+    var results = [];
+    for (var si = 0; si < STRATEGIES.length; si++) {
+      var strat = STRATEGIES[si];
+      log('Running ' + strat.name + '...');
+      var r = runStrategy(candles1H, strat.id);
+      var entry2 = { id: strat.id, name: strat.name, type: strat.type, trades: r.trades, wins: r.wins, winRate: r.winRate, totalPnl: r.totalPnl };
+      results.push(entry2);
+      var sign = r.totalPnl >= 0 ? '+' : '';
+      log('  ' + strat.name + ': ' + r.trades + ' trades, ' + r.winRate.toFixed(1) + '% WR, ' + sign + r.totalPnl.toFixed(2) + '% PnL');
+      prog(50 + (si + 1) / STRATEGIES.length * 50);
     }
 
-    // Render cards
-    const cards = document.getElementById('cards');
+    var cards = document.getElementById('cards');
     cards.innerHTML = '';
-    for (const r of results) {
-      const pnlClass = r.totalPnl >= 0 ? 'up' : 'down';
-      const pnlStr = (r.totalPnl >= 0 ? '+' : '') + r.totalPnl.toFixed(2) + '%';
-      cards.innerHTML += `
-        <div class="card">
-          <div class="card-title">Strategy</div>
-          <div class="card-strat">${r.name}<span class="card-type type-${r.type.toLowerCase()}">${r.type}</span></div>
-          <div class="stat-row"><span class="stat-label">Total Trades</span><span class="stat-val">${r.trades}</span></div>
-          <div class="stat-row"><span class="stat-label">Wins</span><span class="stat-val up">${r.wins}</span></div>
-          <div class="stat-row"><span class="stat-label">Win Rate</span><span class="stat-val ${r.winRate >= 50 ? 'up' : 'down'}">${r.winRate.toFixed(1)}%</span></div>
-          <div class="stat-row"><span class="stat-label">Total PnL</span><span class="stat-val ${pnlClass}">${pnlStr}</span></div>
-        </div>`;
+    for (var ri2 = 0; ri2 < results.length; ri2++) {
+      var rr = results[ri2];
+      var pnlClass = rr.totalPnl >= 0 ? 'up' : 'down';
+      var pnlStr = (rr.totalPnl >= 0 ? '+' : '') + rr.totalPnl.toFixed(2) + '%';
+      var wrClass = rr.winRate >= 50 ? 'up' : 'down';
+      cards.innerHTML += '<div class="card">' +
+        '<div class="card-title">Strategy</div>' +
+        '<div class="card-strat">' + rr.name + '<span class="card-type type-' + rr.type.toLowerCase() + '">' + rr.type + '</span></div>' +
+        '<div class="stat-row"><span class="stat-label">Total Trades</span><span class="stat-val">' + rr.trades + '</span></div>' +
+        '<div class="stat-row"><span class="stat-label">Wins</span><span class="stat-val up">' + rr.wins + '</span></div>' +
+        '<div class="stat-row"><span class="stat-label">Win Rate</span><span class="stat-val ' + wrClass + '">' + rr.winRate.toFixed(1) + '%</span></div>' +
+        '<div class="stat-row"><span class="stat-label">Total PnL</span><span class="stat-val ' + pnlClass + '">' + pnlStr + '</span></div>' +
+        '</div>';
     }
 
-    // Summary
-    const totalTrades = results.reduce((s, r) => s + r.trades, 0);
-    const totalWins   = results.reduce((s, r) => s + r.wins, 0);
-    const avgPnl      = results.reduce((s, r) => s + r.totalPnl, 0) / results.length;
-    const best = results.reduce((a, b) => a.totalPnl > b.totalPnl ? a : b);
-    const sumEl = document.getElementById('summary');
+    var totalTrades = 0, totalWins = 0, sumPnl = 0;
+    var best = results[0];
+    for (var bi = 0; bi < results.length; bi++) {
+      totalTrades += results[bi].trades;
+      totalWins   += results[bi].wins;
+      sumPnl      += results[bi].totalPnl;
+      if (results[bi].totalPnl > best.totalPnl) best = results[bi];
+    }
+    var avgPnl  = sumPnl / results.length;
+    var wrClass2 = totalTrades > 0 && totalWins / totalTrades >= 0.5 ? 'up' : 'down';
+    var sumEl = document.getElementById('summary');
     sumEl.style.display = 'block';
-    sumEl.innerHTML = `
-      <h2>Summary — ${pair}</h2>
-      <div class="sum-row"><span style="color:#666">Total trades (all strategies)</span><span>${totalTrades}</span></div>
-      <div class="sum-row"><span style="color:#666">Combined win rate</span><span class="${totalTrades > 0 && totalWins/totalTrades >= 0.5 ? 'up' : 'down'}">${totalTrades > 0 ? (totalWins/totalTrades*100).toFixed(1) : 0}%</span></div>
-      <div class="sum-row"><span style="color:#666">Average PnL across strategies</span><span class="${avgPnl >= 0 ? 'up' : 'down'}">${avgPnl >= 0 ? '+' : ''}${avgPnl.toFixed(2)}%</span></div>
-      <div class="sum-row"><span style="color:#666">Best strategy</span><span class="up">${best.name} (${best.totalPnl >= 0 ? '+' : ''}${best.totalPnl.toFixed(2)}%)</span></div>`;
+    sumEl.innerHTML = '<h2>Summary — ' + pair + '</h2>' +
+      '<div class="sum-row"><span style="color:#666">Total trades (all strategies)</span><span>' + totalTrades + '</span></div>' +
+      '<div class="sum-row"><span style="color:#666">Combined win rate</span><span class="' + wrClass2 + '">' + (totalTrades > 0 ? (totalWins / totalTrades * 100).toFixed(1) : 0) + '%</span></div>' +
+      '<div class="sum-row"><span style="color:#666">Average PnL across strategies</span><span class="' + (avgPnl >= 0 ? 'up' : 'down') + '">' + (avgPnl >= 0 ? '+' : '') + avgPnl.toFixed(2) + '%</span></div>' +
+      '<div class="sum-row"><span style="color:#666">Best strategy</span><span class="up">' + best.name + ' (' + (best.totalPnl >= 0 ? '+' : '') + best.totalPnl.toFixed(2) + '%)</span></div>';
 
     prog(100);
     log('Backtest complete.');
-  } catch (e) {
+  } catch(e) {
     log('ERROR: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Run Backtest';
   }
+  btn.disabled = false;
+  btn.textContent = 'Run Backtest';
 }
 </script>
 </body>
