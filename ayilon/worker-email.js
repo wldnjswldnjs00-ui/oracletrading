@@ -811,7 +811,7 @@ async function handleSaveBotSettings(request, env) {
   }
 
   // Sanitize numeric config fields — prevent invalid/extreme values reaching runBotForUser
-  const VALID_STRATS = ['ha_ema_srsi','ny_open_fvg','rsi_dca','ma_support','ma_crossover','bb_reversion','breakout','ma_ribbon','macd_div','atr_trend'];
+  const VALID_STRATS = ['ha_ema_srsi','ny_open_fvg','ma_rsi_scalp','rsi_dca','ma_support','ma_crossover','bb_reversion','breakout','ma_ribbon','macd_div','atr_trend'];
   const VALID_PAIRS  = ['BTC-USDT-SWAP','ETH-USDT-SWAP'];
   if (body.leverage     !== undefined) body.leverage     = Math.min(Math.max(parseInt(body.leverage)       || 20,   1), 125);
   if (body.posSize      !== undefined) body.posSize      = Math.min(Math.max(parseFloat(body.posSize)      || 40,   1), 100);
@@ -1387,6 +1387,27 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       return;
     }
 
+    // ── 2-hour force close for ma_rsi_scalp ──────────────────────
+    if (strategy === 'ma_rsi_scalp' && ps[stateKey]?.direction) {
+      const entryTime = ps[stateKey]?.entries?.[0]?.time;
+      if (entryTime && Date.now() - entryTime > 2 * 60 * 60 * 1000) {
+        const closeDir = ps[stateKey].direction;
+        const closeRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
+          instId: tradingPair, mgnMode: 'cross',
+          posSide: isOneWayMode ? 'net' : (closeDir === 'long' ? 'long' : 'short')
+        }, demoMode);
+        if (closeRes?.code === '0') {
+          if (ps[stateKey].tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[stateKey].tpAlgoId, demoMode);
+          if (ps[stateKey].slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[stateKey].slAlgoId, demoMode);
+          delete ps[stateKey];
+          await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
+          await botLog(env, email, `[ma_rsi_scalp] 2-hour force close @ ${currentPrice.toFixed(2)}`);
+          return;
+        }
+        await botLog(env, email, `[ma_rsi_scalp] 2-hour force close FAILED [${closeRes?.code}]: ${closeRes?.msg}`);
+      }
+    }
+
     const trend   = detectTrend(candlesD, currentPrice);
     const sr1H    = candles1H.length >= 20 ? detectSR(candles1H) : { supports: [], resistances: [] };
     const sr4H    = candles4H.length >= 20 ? detectSR(candles4H) : { supports: [], resistances: [] };
@@ -1539,6 +1560,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     switch (strategy) {
       case 'ha_ema_srsi':  signal = detectSignalHAEmaSRSI(candles1H, currentPrice);                 break;
       case 'ny_open_fvg':  signal = detectSignalNYOpenFVG(c5, currentPrice, nyRef);                  break;
+      case 'ma_rsi_scalp': signal = detectSignalMARSIScalp(c5, currentPrice);                        break;
       case 'rsi_dca':      signal = detectSignalRSIDCA(candles1H, levels, currentPrice);             break;
       case 'ma_support':   signal = detectSignalMASupport(candles1H, currentPrice);                 break;
       case 'ma_crossover': signal = detectSignalMACrossover(c5, candles1H, currentPrice);           break;
@@ -2372,6 +2394,35 @@ function detectSignalHAEmaSRSI(candles, currentPrice) {
     return { type: 'short', level: currentPrice, grade: 'S', stopLoss: swingHigh, strategy: 'ha_ema_srsi' };
   }
 
+  return null;
+}
+
+// ── MA + RSI SCALP STRATEGY ───────────────────────────────────
+// 5min chart: MA(10)/MA(34) golden/dead cross + RSI(14) filter
+// Long:  golden cross (MA10 crosses above MA34) AND RSI > 55
+// Short: dead cross   (MA10 crosses below MA34) AND RSI < 45
+// SL:    previous candle's low (long) / high (short)
+function detectSignalMARSIScalp(c5, currentPrice) {
+  if (c5.length < 36) return null;
+  const closes = c5.slice(0, 36).map(c => parseFloat(c[4]));
+  const ma10Curr = closes.slice(0, 10).reduce((s, v) => s + v, 0) / 10;
+  const ma10Prev = closes.slice(1, 11).reduce((s, v) => s + v, 0) / 10;
+  const ma34Curr = closes.slice(0, 34).reduce((s, v) => s + v, 0) / 34;
+  const ma34Prev = closes.slice(1, 35).reduce((s, v) => s + v, 0) / 34;
+  const rsi = calcRSI(c5.slice(0, 30), 14);
+  if (rsi === null) return null;
+  const goldenCross = ma10Prev <= ma34Prev && ma10Curr > ma34Curr;
+  const deadCross   = ma10Prev >= ma34Prev && ma10Curr < ma34Curr;
+  if (goldenCross && rsi > 55) {
+    const sl = parseFloat(c5[1][3]); // previous candle low
+    if (sl >= currentPrice) return null;
+    return { type: 'long',  level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'ma_rsi_scalp' };
+  }
+  if (deadCross && rsi < 45) {
+    const sl = parseFloat(c5[1][2]); // previous candle high
+    if (sl <= currentPrice) return null;
+    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'ma_rsi_scalp' };
+  }
   return null;
 }
 

@@ -662,8 +662,14 @@
           <div class="d-form-group">
             <label class="d-form-label">Position Size (%)</label>
             <div style="display:flex;align-items:center;gap:12px;">
-              <input type="range" id="botPosSize" min="1" max="50" value="10" oninput="document.getElementById('botPosSizeVal').textContent=this.value+'%'" style="flex:1;">
+              <input type="range" id="botPosSize" min="1" max="40" value="10" oninput="updatePosSizeDisplay(this.value)" style="flex:1;">
               <span id="botPosSizeVal" style="font-size:13px;font-weight:600;min-width:36px;">10%</span>
+            </div>
+            <div id="botPosSizeWarn" style="display:none;margin-top:6px;padding:8px 10px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:6px;font-size:11px;color:#ef4444;line-height:1.5;">
+              ⚠️ 40% 이상 포지션 진입 시 수학적으로 자산이 하락할 수밖에 없습니다
+            </div>
+            <div style="margin-top:6px;padding:8px 10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:6px;font-size:11px;color:rgba(255,255,255,0.55);line-height:1.5;">
+              💡 포지션 크기를 작게 유지할수록 복리 효과로 장기 수익이 극대화됩니다. 권장: 5~15%
             </div>
           </div>
           <div class="d-form-group">
@@ -1844,6 +1850,7 @@
   var STRATEGIES = [
     { id: 'ha-ema-srsi',    name: 'HA + EMA + StochRSI', tier: 'STARTER', desc: 'Heikin Ashi + 200 EMA + Stochastic RSI 복합 추세 전략 (권장)' },
     { id: 'ny-open-fvg',    name: 'NY Open FVG',        tier: 'STARTER', desc: '뉴욕 오픈(09:30 EST) 15분봉 고저 기준, 5분봉 돌파 후 FVG 되돌림 진입 전략' },
+    { id: 'ma-rsi-scalp',   name: 'MA Cross + RSI',     tier: 'STARTER', desc: '5분봉 MA(10)/MA(34) 골든·데드크로스 + RSI 필터 스캘핑 전략 (최대 2시간 보유)' },
     { id: 'rsi-dca',         name: 'RSI DCA',          tier: 'STARTER', desc: 'RSI 과매도 구간에서 진입하는 전략' },
     { id: 'ma-crossover',    name: 'MA Crossover',     tier: 'PRO',   desc: '이동평균 골든크로스/데드크로스 기반 추세 추종 전략' },
     { id: 'bb-reversion',    name: 'BB Reversion',     tier: 'PRO',   desc: '볼린저밴드 상/하단 이탈 후 평균회귀 전략' },
@@ -1869,6 +1876,12 @@
     if (tier === 'PRO')     return 2;
     if (tier === 'ELITE')   return 3;
     return 1;
+  }
+
+  function updatePosSizeDisplay(val) {
+    document.getElementById('botPosSizeVal').textContent = val + '%';
+    var warnEl = document.getElementById('botPosSizeWarn');
+    if (warnEl) warnEl.style.display = parseInt(val) >= 35 ? 'block' : 'none';
   }
 
   function renderStrategyList() {
@@ -1932,8 +1945,8 @@
 
   function stratIdToWorkerName(id) {
     var map = {
-      'ha-ema-srsi': 'ha_ema_srsi', 'ny-open-fvg': 'ny_open_fvg', 'rsi-dca': 'rsi_dca',
-      'ma-crossover': 'ma_crossover', 'bb-reversion': 'bb_reversion',
+      'ha-ema-srsi': 'ha_ema_srsi', 'ny-open-fvg': 'ny_open_fvg', 'ma-rsi-scalp': 'ma_rsi_scalp',
+      'rsi-dca': 'rsi_dca', 'ma-crossover': 'ma_crossover', 'bb-reversion': 'bb_reversion',
       'breakout': 'breakout', 'ma-ribbon': 'ma_ribbon',
       'macd-divergence': 'macd_div', 'atr-trend': 'atr_trend'
     };
@@ -2001,8 +2014,8 @@
   }
 
   var STRAT_DISPLAY_NAMES = {
-    'ha_ema_srsi': 'HA+EMA+StochRSI', 'ny_open_fvg': 'NY Open FVG', 'rsi_dca': 'RSI DCA',
-    'ma_support': 'MA Support', 'ma_crossover': 'MA Crossover',
+    'ha_ema_srsi': 'HA+EMA+StochRSI', 'ny_open_fvg': 'NY Open FVG', 'ma_rsi_scalp': 'MA Cross+RSI',
+    'rsi_dca': 'RSI DCA', 'ma_support': 'MA Support', 'ma_crossover': 'MA Crossover',
     'bb_reversion': 'BB Reversion', 'breakout': 'Breakout',
     'ma_ribbon': 'MA Ribbon', 'macd_div': 'MACD Divergence',
     'atr_trend': 'ATR Trend'
