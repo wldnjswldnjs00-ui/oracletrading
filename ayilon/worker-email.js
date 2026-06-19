@@ -3,15 +3,13 @@ const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
 const ALLOWED_ORIGINS = [
   'https://oracletrading-01o.pages.dev',
+  'https://claude-trading-bot-website-plan-2tjg13.oracletrading-01o.pages.dev',
   'http://localhost',
   'http://127.0.0.1'
 ];
 function isAllowedOrigin(origin) {
   if (!origin) return true;
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
-  // Allow all Cloudflare Pages preview deployments for this project
-  if (/^https:\/\/[^.]+\.oracletrading-01o\.pages\.dev$/.test(origin)) return true;
-  return false;
+  return ALLOWED_ORIGINS.includes(origin);
 }
 
 export default {
@@ -100,13 +98,13 @@ async function handleCheckUsername(request, env) {
 // ── REGISTER USER ────────────────────────────────────────────
 async function handleRegisterUser(request, env) {
   const { email, username, name, password, code, country } = await request.json();
-  if (!email || !username || !code) return json({ success: false, error: 'missing_fields' }, 400);
+  if (!email || !username || !code) return json({ ok: false, success: false, error: 'missing_fields' }, 400);
 
   // Verify email code server-side — always required
   if (env.USERS_KV) {
     const storedCode = await env.USERS_KV.get('verify:' + email.toLowerCase());
     if (!storedCode || storedCode !== String(code)) {
-      return json({ success: false, error: 'invalid_code' });
+      return json({ ok: false, success: false, error: 'invalid_code' });
     }
     await env.USERS_KV.delete('verify:' + email.toLowerCase());
   }
@@ -115,9 +113,9 @@ async function handleRegisterUser(request, env) {
     const emailKey    = 'user:'     + email.toLowerCase();
     const usernameKey = 'username:' + username.toLowerCase();
     const emailExists    = await env.USERS_KV.get(emailKey);
-    if (emailExists)    return json({ success: false, error: 'email_taken' });
+    if (emailExists)    return json({ ok: false, success: false, error: 'email_taken' });
     const usernameExists = await env.USERS_KV.get(usernameKey);
-    if (usernameExists) return json({ success: false, error: 'username_taken' });
+    if (usernameExists) return json({ ok: false, success: false, error: 'username_taken' });
 
     const pwData = password ? await hashPassword(password) : { hash: null, salt: null };
     await env.USERS_KV.put(emailKey, JSON.stringify({
@@ -127,21 +125,21 @@ async function handleRegisterUser(request, env) {
     }));
     await env.USERS_KV.put(usernameKey, email.toLowerCase());
   }
-  return json({ success: true });
+  return json({ ok: true, success: true });
 }
 
 // ── VERIFY EMAIL CODE (server-side) ─────────────────────────
 async function handleVerifyCode(request, env) {
   const { email, code } = await request.json();
-  if (!email || !code) return json({ valid: false });
-  if (!env.USERS_KV) return json({ valid: true }); // dev fallback
+  if (!email || !code) return json({ ok: false, valid: false });
+  if (!env.USERS_KV) return json({ ok: true, valid: true }); // dev fallback
 
   // Brute-force protection: max 5 attempts per code, then auto-invalidate
   const attemptsKey = 'rate:code_attempt:' + email.toLowerCase();
   const attempts = await env.USERS_KV.get(attemptsKey, { type: 'json' });
   if ((attempts?.count || 0) >= 5) {
     await env.USERS_KV.delete('verify:' + email.toLowerCase());
-    return json({ valid: false, error: 'too_many_attempts' });
+    return json({ ok: false, valid: false, error: 'too_many_attempts' });
   }
 
   const stored = await env.USERS_KV.get('verify:' + email.toLowerCase());
@@ -153,7 +151,7 @@ async function handleVerifyCode(request, env) {
   } else {
     await env.USERS_KV.delete(attemptsKey);
   }
-  return json({ valid });
+  return json({ ok: valid, valid });
 }
 
 // ── CREATE PAYMENT (assign unique amount) ────────────────────
@@ -335,8 +333,8 @@ async function handleVerification(request, env) {
       html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:40px;max-width:480px;margin:0 auto;border-radius:12px;"><h1 style="font-size:24px;margin-bottom:8px;">AYILON</h1><p style="color:#a3a3a3;margin-bottom:32px;">Email Verification</p><p style="color:#a3a3a3;margin-bottom:16px;">Your verification code is:</p><div style="background:#111;border:1px solid #333;border-radius:10px;padding:24px;text-align:center;font-size:42px;font-weight:700;letter-spacing:12px;margin-bottom:24px;">${code}</div><p style="color:#525252;font-size:13px;">This code expires in 5 minutes. Do not share it with anyone.</p></div>`
     })
   });
-  if (!res.ok) return json({ error: 'Failed to send email' }, 500);
-  return json({ success: true }); // code NOT returned — client must verify via /verify-code
+  if (!res.ok) return json({ ok: false, error: 'Failed to send email' }, 500);
+  return json({ ok: true, success: true }); // code NOT returned — client must verify via /verify-code
 }
 
 // ── SEND CONFIRMATION EMAIL ──────────────────────────────────
@@ -362,8 +360,8 @@ async function handleConfirmation(request, env) {
       html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:40px;max-width:480px;margin:0 auto;border-radius:12px;"><h1 style="font-size:24px;margin-bottom:8px;">AYILON</h1><p style="color:#a3a3a3;margin-bottom:32px;">Payment Confirmed</p><div style="background:#111;border:1px solid #333;border-radius:10px;padding:24px;margin-bottom:24px;"><p style="color:#a3a3a3;font-size:13px;margin-bottom:16px;">ORDER SUMMARY</p><table style="width:100%;font-size:14px;"><tr><td style="color:#a3a3a3;padding:6px 0;">Plan</td><td style="text-align:right;font-weight:600;">${plan}</td></tr><tr><td style="color:#a3a3a3;padding:6px 0;">Billing</td><td style="text-align:right;">${billingLabel}</td></tr><tr><td style="color:#a3a3a3;padding:6px 0;border-top:1px solid #333;">Amount paid</td><td style="text-align:right;font-weight:700;border-top:1px solid #333;">$${amount}</td></tr></table></div><p style="color:#22c55e;font-size:15px;font-weight:600;margin-bottom:16px;">✓ Your bots are ready to trade on OKX.</p><a href="https://oracletrading-01o.pages.dev/dashboard.html" style="display:inline-block;background:#fff;color:#000;padding:12px 28px;border-radius:8px;font-weight:600;text-decoration:none;font-size:14px;">Go to Dashboard →</a></div>`
     })
   });
-  if (!res.ok) return json({ error: 'Failed to send email' }, 500);
-  return json({ success: true });
+  if (!res.ok) return json({ ok: false, error: 'Failed to send email' }, 500);
+  return json({ ok: true, success: true });
 }
 
 // ── HELPERS ──────────────────────────────────────────────────
@@ -918,16 +916,25 @@ async function ensureDB(env) {
   await initDB(env);
 }
 
+// In-memory cache to avoid repeated D1 reads within the same worker tick
+const _botStateCache = new Map(); // email → { row, ts }
+const _BOT_STATE_TTL = 10000;    // 10 seconds — covers a single bot execution
+
 async function getBotState(env, email) {
   if (!env.BOT_DB) return {};
+  const cached = _botStateCache.get(email);
+  if (cached && Date.now() - cached.ts < _BOT_STATE_TTL) return cached.row;
   try {
     const row = await env.BOT_DB.prepare('SELECT * FROM bot_state WHERE email=?').bind(email).first();
-    return row || {};
+    const result = row || {};
+    _botStateCache.set(email, { row: result, ts: Date.now() });
+    return result;
   } catch { return {}; }
 }
 
 async function upsertBotState(env, email, fields) {
   if (!env.BOT_DB) return;
+  _botStateCache.delete(email); // invalidate on write
   const keys = Object.keys(fields);
   if (!keys.length) return;
   const setClauses = keys.map(k => `${k}=?`).join(', ');
