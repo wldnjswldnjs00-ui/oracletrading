@@ -782,8 +782,13 @@ async function handleGetOrders(request, env) {
   const demo = config?.demoMode === true || mode === 'demo';
 
   try {
-    const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/trade/orders-pending?instType=SWAP`, demo);
-    return json({ orders: data?.data || [] });
+    const [regular, algo] = await Promise.all([
+      okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/trade/orders-pending?instType=SWAP`, demo),
+      okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/trade/orders-algo-pending?instType=SWAP&ordType=conditional`, demo)
+    ]);
+    const regularOrders = (regular?.data || []);
+    const algoOrders = (algo?.data || []).map(o => ({ ...o, _isAlgo: true }));
+    return json({ orders: [...regularOrders, ...algoOrders] });
   } catch(e) { return json({ orders: [], error: e.message }); }
 }
 

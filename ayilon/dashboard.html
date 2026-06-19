@@ -1454,16 +1454,29 @@
     var hasTable = !!el.querySelector('.term-table');
     if (!hasTable) el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.loading') + '</div>';
     try {
-      var res  = await fetch(WORKER_URL + '/get-positions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) });
-      var data = await res.json();
+      // Refresh algo orders cache if stale (>30s), in parallel with positions
+      var posPromise = fetch(WORKER_URL + '/get-positions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) });
+      var algoPromise = (Date.now() - _algoOrdersCacheTs > 30000)
+        ? fetch(WORKER_URL + '/get-orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) })
+        : null;
+      var posRes = await posPromise;
+      var data = await posRes.json();
+      if (algoPromise) {
+        try {
+          var algoRes = await algoPromise;
+          var algoData = await algoRes.json();
+          _algoOrdersCache = (algoData.orders || []).filter(function(o) { return o._isAlgo; });
+          _algoOrdersCacheTs = Date.now();
+        } catch(e2) {}
+      }
       var rows = (data.positions || []).filter(function(p){ return parseFloat(p.pos || 0) !== 0; });
       if (!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.term.no_positions') + '</div>'; return; }
 
-      // Check if table structure matches (same positions, same order)
+      // Check if table structure matches (same positions, same order, same algo cache)
       var newKeys = rows.map(function(p){ return p.instId + '|' + p.posSide; }).join(',');
       var curKeys = (el.dataset.posKeys || '');
 
-      if (hasTable && newKeys === curKeys) {
+      if (hasTable && newKeys === curKeys && _algoOrdersCacheRenderedTs === _algoOrdersCacheTs) {
         // In-place update — only touch dynamic cells, no DOM rebuild
         rows.forEach(function(p) {
           var k   = (p.instId + '|' + p.posSide).replace(/[^a-zA-Z0-9]/g, '_');
@@ -1483,9 +1496,17 @@
           }
         });
       } else {
-        // Full rebuild (first load or position set changed)
+        // Full rebuild (first load, position set changed, or algo cache refreshed)
         el.dataset.posKeys = newKeys;
-        el.innerHTML = '<table class="term-table"><thead><tr><th>' + _t('db.term.symbol') + '</th><th>' + _t('db.term.direction') + '</th><th>' + _t('db.term.qty') + '</th><th>' + _t('db.term.entry_price') + '</th><th>' + _t('db.term.mark_price') + '</th><th>' + _t('db.term.unreal_pnl') + '</th><th>' + _t('db.term.roe') + '</th></tr></thead><tbody>' +
+        _algoOrdersCacheRenderedTs = _algoOrdersCacheTs;
+        // Build TP/SL map from cached algo orders
+        var algoMap = {};
+        _algoOrdersCache.forEach(function(o) {
+          if (!algoMap[o.instId]) algoMap[o.instId] = {};
+          if (o.tpTriggerPx && parseFloat(o.tpTriggerPx) > 0) algoMap[o.instId].tp = o.tpTriggerPx;
+          if (o.slTriggerPx && parseFloat(o.slTriggerPx) > 0) algoMap[o.instId].sl = o.slTriggerPx;
+        });
+        el.innerHTML = '<table class="term-table"><thead><tr><th>' + _t('db.term.symbol') + '</th><th>' + _t('db.term.direction') + '</th><th>' + _t('db.term.qty') + '</th><th>' + _t('db.term.entry_price') + '</th><th>TP</th><th>SL</th><th>' + _t('db.term.mark_price') + '</th><th>' + _t('db.term.unreal_pnl') + '</th><th>' + _t('db.term.roe') + '</th></tr></thead><tbody>' +
           rows.map(function(p) {
             var calc = calcPosRow(p);
             var k    = (p.instId + '|' + p.posSide).replace(/[^a-zA-Z0-9]/g, '_');
@@ -1493,11 +1514,16 @@
             var v    = parseFloat(p.upl || 0);
             var pnlHtml = '<span id="pp_' + k + '" class="' + (v >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg') + '">' + (v >= 0 ? '+' : '') + fmtNum(v, 4) + ' USDT</span>';
             var roeHtml = '<span id="pr_' + k + '" class="' + (calc.roe >= 0 ? 'pos-pnl-pos' : 'pos-pnl-neg') + '">' + (calc.roe >= 0 ? '+' : '') + fmtNum(calc.roe, 2) + '%</span>';
+            var algo = algoMap[p.instId] || {};
+            var tpHtml = algo.tp ? '<span class="pos-pnl-pos" style="font-variant-numeric:tabular-nums;">$' + fmtNum(algo.tp, 2) + '</span>' : '<span style="color:var(--gray-600)">—</span>';
+            var slHtml = algo.sl ? '<span class="pos-pnl-neg" style="font-variant-numeric:tabular-nums;">$' + fmtNum(algo.sl, 2) + '</span>' : '<span style="color:var(--gray-600)">—</span>';
             return '<tr>' +
               '<td>' + escapeHtml(p.instId || '—') + '</td>' +
               '<td>' + side + '</td>' +
               '<td style="min-width:90px;font-variant-numeric:tabular-nums;">' + fmtNum(calc.size, 4) + '</td>' +
               '<td style="min-width:100px;font-variant-numeric:tabular-nums;">$' + fmtNum(p.avgPx, 2) + '</td>' +
+              '<td style="min-width:90px;">' + tpHtml + '</td>' +
+              '<td style="min-width:90px;">' + slHtml + '</td>' +
               '<td id="pm_' + k + '" style="min-width:100px;font-variant-numeric:tabular-nums;">$' + fmtNum(p.markPx, 2) + '</td>' +
               '<td style="min-width:140px;font-variant-numeric:tabular-nums;">' + pnlHtml + '</td>' +
               '<td style="min-width:70px;font-variant-numeric:tabular-nums;">' + roeHtml + '</td>' +
@@ -1517,9 +1543,20 @@
       var res  = await fetch(WORKER_URL + '/get-orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionToken: getSessionToken() }) });
       var data = await res.json();
       var rows = data.orders || [];
+      // Update algo orders cache
+      _algoOrdersCache = rows.filter(function(o) { return o._isAlgo; });
+      _algoOrdersCacheTs = Date.now();
       if (!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;">' + _t('db.term.no_orders') + '</div>'; return; }
       el.innerHTML = '<table class="term-table"><thead><tr><th>' + _t('db.term.symbol') + '</th><th>' + _t('db.term.direction') + '</th><th>' + _t('db.term.ord_type') + '</th><th>' + _t('db.term.qty') + '</th><th>' + _t('db.term.price') + '</th><th>' + _t('db.term.status') + '</th></tr></thead><tbody>' +
         rows.map(function(o) {
+          if (o._isAlgo) {
+            var posDir = o.posSide === 'long' ? '<span class="pos-side-long">LONG</span>' : '<span class="pos-side-short">SHORT</span>';
+            var hasTP = o.tpTriggerPx && parseFloat(o.tpTriggerPx) > 0;
+            var hasSL = o.slTriggerPx && parseFloat(o.slTriggerPx) > 0;
+            var typeLabel = hasTP && hasSL ? '<span style="color:#f59e0b">TP/SL</span>' : hasTP ? '<span class="pos-pnl-pos">TP</span>' : '<span class="pos-pnl-neg">SL</span>';
+            var triggerPx = hasTP ? o.tpTriggerPx : (hasSL ? o.slTriggerPx : '—');
+            return '<tr><td>' + escapeHtml(o.instId||'—') + '</td><td>' + posDir + '</td><td>' + typeLabel + '</td><td>' + fmtNum(o.sz,4) + '</td><td>$' + fmtNum(triggerPx,2) + '</td><td>' + escapeHtml(o.state||'—') + '</td></tr>';
+          }
           var side = o.side === 'buy' ? '<span class="pos-side-long">BUY</span>' : '<span class="pos-side-short">SELL</span>';
           return '<tr><td>' + escapeHtml(o.instId||'—') + '</td><td>' + side + '</td><td>' + escapeHtml(o.ordType||'—') + '</td><td>' + fmtNum(o.sz,4) + '</td><td>$' + fmtNum(o.px,2) + '</td><td>' + escapeHtml(o.state||'—') + '</td></tr>';
         }).join('') + '</tbody></table>';
@@ -1540,7 +1577,8 @@
       el.innerHTML = '<table class="term-table"><thead><tr><th>' + _t('db.term.time') + '</th><th>' + _t('db.term.symbol') + '</th><th>' + _t('db.term.direction') + '</th><th>' + _t('db.term.qty') + '</th><th>' + _t('db.term.entry_price') + '</th><th>' + _t('db.term.fee') + '</th></tr></thead><tbody>' +
         rows.map(function(h) {
           var side = h.side === 'buy' ? '<span class="pos-side-long">BUY</span>' : '<span class="pos-side-short">SELL</span>';
-          var ts   = h.ts ? new Date(parseInt(h.ts)).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+          var _d = h.ts ? new Date(parseInt(h.ts)) : null;
+          var ts = _d ? (String(_d.getMonth()+1).padStart(2,'0') + '/' + String(_d.getDate()).padStart(2,'0') + ' ' + String(_d.getHours()).padStart(2,'0') + ':' + String(_d.getMinutes()).padStart(2,'0')) : '—';
           return '<tr><td style="color:var(--gray-400);font-size:11px;">' + ts + '</td><td>' + escapeHtml(h.instId||'—') + '</td><td>' + side + '</td><td>' + fmtNum(h.fillSz,4) + '</td><td>$' + fmtNum(h.fillPx,2) + '</td><td>' + fmtNum(h.fee,6) + '</td></tr>';
         }).join('') + '</tbody></table>';
     } catch(e) { el.innerHTML = '<div class="empty-state" style="padding:24px 0;color:#ef4444;">' + _t('db.term.load_fail') + '</div>'; }
@@ -1572,6 +1610,9 @@
   ════════════════════════════════════════ */
   var selectedStrategies = [];
   var termPosRefreshActive = false;
+  var _algoOrdersCache = [];
+  var _algoOrdersCacheTs = 0;
+  var _algoOrdersCacheRenderedTs = 0;
 
   var STRATEGIES = [
     { id: 'sr-bounce',       name: 'SR Bounce',       tier: 'STARTER', desc: 'Support & Resistance Bounce — 지지/저항 레벨에서 반등 진입 전략' },
@@ -1820,7 +1861,8 @@
     var el = document.getElementById('botLogsContent');
     if (!el) return;
     if (lastScan) {
-      var scanTime = new Date(lastScan).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      var _sd = new Date(lastScan);
+      var scanTime = String(_sd.getMonth()+1).padStart(2,'0') + '/' + String(_sd.getDate()).padStart(2,'0') + ' ' + String(_sd.getHours()).padStart(2,'0') + ':' + String(_sd.getMinutes()).padStart(2,'0') + ':' + String(_sd.getSeconds()).padStart(2,'0');
       el.innerHTML = '<div style="color:var(--gray-600);font-size:11px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06);">Last scan: ' + scanTime + '</div>';
     } else {
       el.innerHTML = '';
@@ -1830,7 +1872,7 @@
       return;
     }
     el.innerHTML += logs.map(function(l) {
-      var t = new Date(l.time).toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      var _ld = new Date(l.time); var t = String(_ld.getMonth()+1).padStart(2,'0') + '/' + String(_ld.getDate()).padStart(2,'0') + ' ' + String(_ld.getHours()).padStart(2,'0') + ':' + String(_ld.getMinutes()).padStart(2,'0') + ':' + String(_ld.getSeconds()).padStart(2,'0');
       var color = l.msg.startsWith('Skip') ? '#f59e0b' :
                   l.msg.startsWith('⚠️') ? '#ef4444' :
                   l.msg.startsWith('LONG') || l.msg.startsWith('SHORT') ? '#22c55e' :
