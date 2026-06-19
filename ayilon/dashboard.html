@@ -1685,7 +1685,7 @@
     var strategyNames = selectedStrategies.map(stratIdToWorkerName);
     var primaryStrategy = strategyNames[0];
     msgEl.style.color = 'var(--gray-400)';
-    msgEl.textContent = '설정 저장 중...';
+    msgEl.textContent = _t('db.set.saving');
     try {
       // Step 1: save strategy config (merges with existing API key in KV)
       var saveRes = await fetch(WORKER_URL + '/save-bot-settings', {
@@ -1707,7 +1707,7 @@
       var saveData = await saveRes.json();
       if (!saveData.ok) {
         msgEl.style.color = 'var(--red)';
-        msgEl.textContent = saveData.error || '설정 저장에 실패했습니다';
+        msgEl.textContent = saveData.error || _t('db.set.save_fail');
         return;
       }
       // Step 2: set running = true
@@ -1995,7 +1995,7 @@
         if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = data.error || '확인 실패. 트랜잭션이 아직 처리 중일 수 있습니다.'; }
       }
     } catch(e) {
-      if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = '오류가 발생했습니다. 다시 시도해 주세요.'; }
+      if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = _t('db.set.error'); }
     }
   }
 
@@ -2142,7 +2142,7 @@
       if (data.ok) {
         _emailVerifyPending = newEmail;
         if (wrapEl) wrapEl.style.display = 'block';
-        if (msgEl) { msgEl.style.color = '#22c55e'; msgEl.textContent = '인증 코드가 전송되었습니다. 이메일을 확인하세요.'; }
+        if (msgEl) { msgEl.style.color = '#22c55e'; msgEl.textContent = _t('db.set.code_sent'); }
       } else {
         if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = data.error || '전송 실패. 다시 시도하세요.'; }
         if (wrapEl) wrapEl.style.display = 'block';
@@ -2180,7 +2180,7 @@
         if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = data.error || '코드가 올바르지 않습니다.'; }
       }
     } catch(e) {
-      if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = '오류가 발생했습니다. 다시 시도하세요.'; }
+      if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = _t('db.set.error'); }
     }
   }
 
@@ -2189,7 +2189,7 @@
     var username = (document.getElementById('settingsUsername') || {}).value || '';
     var token    = getSessionToken();
     var msgEl    = document.getElementById('profileMsg');
-    if (msgEl) { msgEl.style.color = 'var(--gray-400)'; msgEl.textContent = '저장 중...'; }
+    if (msgEl) { msgEl.style.color = 'var(--gray-400)'; msgEl.textContent = _t('db.set.saving'); }
     try {
       var res  = await fetch(WORKER_URL + '/update-profile', {
         method: 'POST',
@@ -2203,16 +2203,16 @@
         user.username = username;
         localStorage.setItem('ayilon_user', JSON.stringify(user));
         updateTopbar();
-        if (msgEl) { msgEl.style.color = 'var(--green)'; msgEl.textContent = '✓ 저장되었습니다'; }
+        if (msgEl) { msgEl.style.color = 'var(--green)'; msgEl.textContent = _t('db.set.saved'); }
       } else {
-        if (msgEl) { msgEl.style.color = 'var(--red)'; msgEl.textContent = data.error || '저장에 실패했습니다'; }
+        if (msgEl) { msgEl.style.color = 'var(--red)'; msgEl.textContent = data.error || _t('db.set.save_fail'); }
       }
     } catch(e) {
       var user = getUserData();
       user.name = name; user.username = username;
       localStorage.setItem('ayilon_user', JSON.stringify(user));
       updateTopbar();
-      if (msgEl) { msgEl.style.color = 'var(--green)'; msgEl.textContent = '✓ 저장되었습니다'; }
+      if (msgEl) { msgEl.style.color = 'var(--green)'; msgEl.textContent = _t('db.set.saved'); }
     }
   }
 
@@ -2237,9 +2237,9 @@
         });
         var data = await res.json();
         if (data.available) {
-          if (hintEl) { hintEl.style.color = 'var(--green)'; hintEl.textContent = '✓ 사용 가능한 사용자명입니다'; }
+          if (hintEl) { hintEl.style.color = 'var(--green)'; hintEl.textContent = _t('db.set.username_ok'); }
         } else {
-          if (hintEl) { hintEl.style.color = 'var(--red)'; hintEl.textContent = '이미 사용 중인 사용자명입니다'; }
+          if (hintEl) { hintEl.style.color = 'var(--red)'; hintEl.textContent = _t('db.set.username_taken'); }
         }
       } catch(e) {
         if (hintEl) { hintEl.style.color = 'var(--green)'; hintEl.textContent = '✓ 형식이 올바릅니다'; }
@@ -2264,7 +2264,7 @@
         body: JSON.stringify({ sessionToken: sessionToken, telegramToken: token, telegramChatId: chatId, notifyTelegram: true })
       });
     } catch(e) {}
-    if (msgEl) { msgEl.style.color = 'var(--green)'; msgEl.textContent = '✓ 텔레그램 설정이 저장되었습니다'; }
+    if (msgEl) { msgEl.style.color = 'var(--green)'; msgEl.textContent = _t('db.set.telegram_saved'); }
   }
 
   var _2faMethod = null;
