@@ -1,568 +1,614 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Backtest — AYILON</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AYILON 백테스팅</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',system-ui,sans-serif;background:#000;color:#fff;min-height:100vh;padding:32px}
-h1{font-size:22px;font-weight:700;margin-bottom:8px}
-.sub{color:#666;font-size:13px;margin-bottom:32px}
-.controls{display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap;align-items:center}
-select,button{background:#111;border:1px solid #333;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit}
-button:hover{background:#222}
-button.run{background:#fff;color:#000;font-weight:700;padding:10px 28px}
-button.run:hover{background:#e5e5e5}
-button.run:disabled{background:#333;color:#666;cursor:not-allowed}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:32px}
-.card{background:#111;border:1px solid #222;border-radius:10px;padding:20px}
-.card-title{font-size:12px;color:#666;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px}
-.card-strat{font-size:15px;font-weight:700;margin-bottom:12px}
-.card-type{display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.1em;padding:2px 8px;border-radius:4px;margin-left:6px;vertical-align:middle}
-.type-swing{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
-.type-scalp{background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)}
-.stat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a1a1a;font-size:13px}
-.stat-row:last-child{border-bottom:none}
-.stat-label{color:#666}
-.stat-val{font-weight:600}
-.up{color:#22c55e}.down{color:#ef4444}.neutral{color:#a3a3a3}
-.log{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;padding:16px;font-size:11px;color:#555;font-family:monospace;max-height:280px;overflow-y:auto;margin-bottom:24px}
-.log .msg{padding:2px 0;border-bottom:1px solid #111}
-.progress{height:3px;background:#1a1a1a;border-radius:2px;margin-bottom:24px;overflow:hidden}
-.progress-bar{height:100%;background:#fff;width:0%;transition:width 0.3s}
-.summary{background:#111;border:1px solid #222;border-radius:10px;padding:20px;margin-bottom:24px}
-.summary h2{font-size:14px;font-weight:700;margin-bottom:16px}
-.sum-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #1a1a1a}
-.sum-row:last-child{border-bottom:none}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',system-ui,sans-serif;background:#000;color:#fff;min-height:100vh;padding:32px;}
+h1{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;}
+.sub{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:28px;}
+.card{background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:24px;margin-bottom:20px;}
+.card-title{font-size:14px;font-weight:600;margin-bottom:16px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;}
+label{display:block;font-size:11px;color:rgba(255,255,255,0.45);font-weight:500;margin-bottom:6px;letter-spacing:.04em;}
+input{width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit;}
+input:focus{outline:none;border-color:rgba(255,255,255,0.25);}
+.btn{display:block;width:100%;padding:13px;background:#fff;color:#000;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;}
+.btn:hover{opacity:.85;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.progress-wrap{display:none;margin-top:14px;}
+.progress-msg{font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:6px;}
+.progress-bg{background:rgba(255,255,255,0.07);border-radius:4px;height:4px;overflow:hidden;}
+.progress-bar{height:100%;background:#22c55e;width:0%;transition:width .3s;border-radius:4px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{border-bottom:1px solid rgba(255,255,255,0.07);}
+th{text-align:right;padding:10px 12px;color:rgba(255,255,255,0.4);font-weight:500;font-size:12px;white-space:nowrap;}
+th:first-child{text-align:left;}
+td{padding:12px 12px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:right;font-size:13px;}
+td:first-child{text-align:left;font-weight:500;}
+tr:last-child td{border-bottom:none;}
+.chart-wrap{position:relative;height:280px;}
+.hidden{display:none;}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.tab{padding:5px 14px;border-radius:100px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.5);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;}
+.tab:hover{border-color:rgba(255,255,255,0.3);color:#fff;}
+.tab.active{background:#fff;color:#000;border-color:#fff;}
+.note{font-size:11px;color:rgba(255,255,255,0.3);margin-top:10px;}
 </style>
 </head>
 <body>
-<h1>Strategy Backtest</h1>
-<p class="sub">1-year backtest · 5m candles → 1H aggregation · OKX BTC/ETH-USDT-SWAP</p>
+<h1>AYILON 전략 백테스팅</h1>
+<p class="sub">최근 1년 · 5분봉 실행 · 1H 집계 신호 · 진입가 = 다음 캔들 시가 · 수수료 0.1%/거래 반영</p>
 
-<div class="controls">
-  <select id="pairSel">
-    <option value="BTC-USDT-SWAP">BTC-USDT-SWAP</option>
-    <option value="ETH-USDT-SWAP">ETH-USDT-SWAP</option>
-  </select>
-  <button class="run" id="runBtn" onclick="runBacktest()">Run Backtest</button>
+<div class="card">
+  <div class="card-title">설정</div>
+  <div class="grid3">
+    <div><label>Trading Pair</label><input id="btPair" value="BTC-USDT-SWAP" oninput="onPairChange()"></div>
+    <div><label>레버리지</label><input id="btLev" type="number" value="10" min="1" max="20"></div>
+    <div><label>포지션 크기 (%)</label><input id="btPos" type="number" value="10" min="1" max="40"></div>
+  </div>
+  <button class="btn" id="btStartBtn" onclick="startBacktest()">백테스팅 시작 (4개 전략 · 약 30초 소요)</button>
+  <div class="progress-wrap" id="btProg">
+    <div class="progress-msg" id="btMsg">준비 중...</div>
+    <div class="progress-bg"><div class="progress-bar" id="btBar"></div></div>
+  </div>
+  <p class="note">⚠ 슬리피지·펀딩비 미반영. SL/TP 동일 캔들 내 충돌 시 SL 우선 처리(보수적). 백테스트 ≠ 실제 수익 보장.</p>
 </div>
 
-<div class="progress"><div class="progress-bar" id="prog"></div></div>
-<div class="log" id="log"></div>
-<div class="summary" id="summary" style="display:none"></div>
-<div class="grid" id="cards"></div>
+<div class="card hidden" id="btResultCard">
+  <div class="card-title">전략별 성과 비교</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr>
+        <th style="text-align:left;">전략</th>
+        <th>유형</th><th>거래수</th><th>승률</th><th>일 평균</th>
+        <th>월 평균</th><th>연 복리</th><th>최대낙폭</th>
+        <th style="text-align:center;">차트</th>
+      </tr></thead>
+      <tbody id="btTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card hidden" id="btChartCard">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+    <div id="btChartTitle" style="font-size:14px;font-weight:600;flex:1 1 auto;"></div>
+    <div class="tabs" id="btTabs"></div>
+  </div>
+  <div class="chart-wrap"><canvas id="btCanvas"></canvas></div>
+</div>
 
 <script>
-var OKX = 'https://www.okx.com';
-var RR = 1.5;
-var FEE = 0.001;
-var TRAIL_STEP = 0.01;
-var STRATEGIES = [
-  { id: 'ha_ema_srsi', name: 'HA + EMA + StochRSI', type: 'SWING' },
-  { id: 'ma_ribbon',   name: 'MA Ribbon',            type: 'SWING' },
-  { id: 'ma50_bounce', name: 'MA50 Bounce',           type: 'SCALP' },
-  { id: 'ict_fib_ote', name: 'ICT Fibonacci OTE',     type: 'SWING' }
-];
-var SCALP_STRATS = { ma50_bounce: true };
+// ════════════════════════════════════════════════════════════
+// INDICATOR FUNCTIONS — newest-first candles convention
+// ════════════════════════════════════════════════════════════
 
-function log(msg) {
-  var el = document.getElementById('log');
-  var d = document.createElement('div');
-  d.className = 'msg';
-  d.textContent = new Date().toTimeString().slice(0,8) + ' ' + msg;
-  el.insertBefore(d, el.firstChild);
-}
-function prog(pct) {
-  document.getElementById('prog').style.width = pct + '%';
+function _sma(closes, period) {
+  if (closes.length < period) return null;
+  return closes.slice(0, period).reduce(function(s,v){return s+v;}, 0) / period;
 }
 
-async function fetchCandles5m(pair) {
-  var ONE_YEAR_AGO = Math.floor(Date.now() / 3600000) * 3600000 - 365 * 24 * 3600000;
-  log('Fetching 5m candles for ' + pair + '...');
-  var seen = new Map();
-  var after = '';
-  var batch = 0;
-  for (;;) {
-    var url = OKX + '/api/v5/market/history-candles?instId=' + pair + '&bar=5m&limit=100' + (after ? '&after=' + after : '');
-    var res = await fetch(url);
-    var j = await res.json();
-    var rows = j.data || [];
-    if (!rows.length) break;
-    var gotNew = false;
-    for (var ri = 0; ri < rows.length; ri++) {
-      var r = rows[ri];
-      var ts = parseInt(r[0]);
-      if (ts < ONE_YEAR_AGO) continue;
-      if (!seen.has(ts)) { seen.set(ts, r); gotNew = true; }
-    }
-    var oldest = parseInt(rows[rows.length - 1][0]);
-    if (oldest < ONE_YEAR_AGO) break;
-    if (!gotNew) break;
-    after = oldest;
-    batch++;
-    if (batch % 20 === 0) log('  ...fetched ' + seen.size + ' 5m candles so far');
-    await new Promise(function(resolve) { setTimeout(resolve, 120); });
-  }
-  var sorted = Array.from(seen.values()).sort(function(a, b) { return parseInt(a[0]) - parseInt(b[0]); });
-  log('Loaded ' + sorted.length + ' 5m candles for ' + pair);
-  return sorted;
+function _ema(closes, period) {
+  if (closes.length < period) return null;
+  var k = 2 / (period + 1);
+  var e = closes.slice(0, period).reduce(function(s,v){return s+v;}, 0) / period;
+  for (var i = period; i < closes.length; i++) e = closes[i] * k + e * (1 - k);
+  return e;
 }
 
-function aggregate1H(candles5m) {
-  var buckets = new Map();
-  for (var i = 0; i < candles5m.length; i++) {
-    var c = candles5m[i];
-    var ts = parseInt(c[0]);
-    var hr = Math.floor(ts / 3600000) * 3600000;
-    if (!buckets.has(hr)) {
-      buckets.set(hr, { ts: hr, open: c[1], high: parseFloat(c[2]), low: parseFloat(c[3]), close: c[4], vol: 0 });
-    } else {
-      var b = buckets.get(hr);
-      b.high = Math.max(b.high, parseFloat(c[2]));
-      b.low  = Math.min(b.low,  parseFloat(c[3]));
-      b.close = c[4];
-    }
-    buckets.get(hr).vol += parseFloat(c[5]);
-  }
-  return Array.from(buckets.values())
-    .sort(function(a, b) { return a.ts - b.ts; })
-    .map(function(b) { return [String(b.ts), String(b.open), String(b.high), String(b.low), String(b.close), String(b.vol)]; });
-}
-
-// ── Indicators ────────────────────────────────────────────────
-function _sma(arr, n) {
-  if (arr.length < n) return null;
-  var sum = 0;
-  for (var i = arr.length - n; i < arr.length; i++) sum += arr[i];
-  return sum / n;
-}
-
-function calcRSIarr(closes, period) {
+// candles: newest-first
+function calcRSI(candles, period) {
   period = period || 14;
-  if (closes.length < period + 2) return null;
+  var closes = candles.map(function(c){return parseFloat(c[4]);}).reverse();
+  if (closes.length < period + 1) return null;
   var gains = 0, losses = 0;
   for (var i = 1; i <= period; i++) {
-    var d = closes[i] - closes[i - 1];
+    var d = closes[i] - closes[i-1];
     if (d > 0) gains += d; else losses -= d;
   }
-  var ag = gains / period, al = losses / period;
-  for (var j = period + 1; j < closes.length; j++) {
-    var dj = closes[j] - closes[j - 1];
-    ag = (ag * (period - 1) + Math.max(0, dj)) / period;
-    al = (al * (period - 1) + Math.max(0, -dj)) / period;
+  var avgG = gains / period, avgL = losses / period;
+  for (var i = period + 1; i < closes.length; i++) {
+    var d = closes[i] - closes[i-1];
+    avgG = (avgG * (period - 1) + Math.max(0, d)) / period;
+    avgL = (avgL * (period - 1) + Math.max(0, -d)) / period;
   }
-  if (al === 0) return 100;
-  return 100 - 100 / (1 + ag / al);
+  if (avgL === 0) return 100;
+  return 100 - 100 / (1 + avgG / avgL);
 }
 
-function calcEMA200arr(closes) {
-  if (closes.length < 200) return null;
-  var k = 2 / 201;
-  var sum = 0;
-  for (var i = 0; i < 200; i++) sum += closes[i];
-  var ema = sum / 200;
-  for (var j = 200; j < closes.length; j++) ema = closes[j] * k + ema * (1 - k);
-  return ema;
-}
-
-function calcStochRSIarr(closes, rsiLen, stochLen, kSmooth, dSmooth) {
-  rsiLen = rsiLen || 14; stochLen = stochLen || 14; kSmooth = kSmooth || 3; dSmooth = dSmooth || 3;
-  if (closes.length < rsiLen + stochLen + kSmooth + dSmooth + 5) return null;
-  var gains = 0, losses = 0;
-  for (var i = 1; i <= rsiLen; i++) {
-    var d = closes[i] - closes[i - 1];
-    if (d > 0) gains += d; else losses -= d;
-  }
-  var ag = gains / rsiLen, al = losses / rsiLen;
-  var rsiSeries = [];
-  for (var ri = rsiLen; ri < closes.length; ri++) {
-    var rs = al === 0 ? 100 : ag / al;
-    rsiSeries.push(100 - 100 / (1 + rs));
-    if (ri < closes.length - 1) {
-      var di = closes[ri + 1] - closes[ri];
-      ag = (ag * (rsiLen - 1) + Math.max(di, 0)) / rsiLen;
-      al = (al * (rsiLen - 1) + Math.max(-di, 0)) / rsiLen;
-    }
-  }
-  if (rsiSeries.length < stochLen) return null;
-  var stochSeries = [];
-  for (var si = stochLen - 1; si < rsiSeries.length; si++) {
-    var sl2 = rsiSeries.slice(si - stochLen + 1, si + 1);
-    var hi = Math.max.apply(null, sl2), lo = Math.min.apply(null, sl2);
-    stochSeries.push(hi === lo ? 50 : (rsiSeries[si] - lo) / (hi - lo) * 100);
-  }
-  if (stochSeries.length < kSmooth + dSmooth) return null;
-  var kSeries = [];
-  for (var ki = kSmooth - 1; ki < stochSeries.length; ki++) {
-    var ks = 0;
-    for (var kj = ki - kSmooth + 1; kj <= ki; kj++) ks += stochSeries[kj];
-    kSeries.push(ks / kSmooth);
-  }
-  if (kSeries.length < dSmooth + 1) return null;
-  var dSeries = [];
-  for (var di2 = dSmooth - 1; di2 < kSeries.length; di2++) {
-    var ds = 0;
-    for (var dj2 = di2 - dSmooth + 1; dj2 <= di2; dj2++) ds += kSeries[dj2];
-    dSeries.push(ds / dSmooth);
-  }
-  return {
-    k: kSeries[kSeries.length - 1],
-    kPrev: kSeries[kSeries.length - 2],
-    d: dSeries[dSeries.length - 1],
-    dPrev: dSeries[dSeries.length - 2]
-  };
-}
-
-function calcHAarr(candles) {
+// candles: newest-first → returns newest-first HA candles
+function calcHACandles(candles) {
+  var rev = candles.slice().reverse();
   var ha = [];
-  for (var i = 0; i < candles.length; i++) {
-    var o = parseFloat(candles[i][1]), h = parseFloat(candles[i][2]);
-    var l = parseFloat(candles[i][3]), c = parseFloat(candles[i][4]);
-    var haC = (o + h + l + c) / 4;
-    var haO = i === 0 ? (o + c) / 2 : (ha[i-1][1] + ha[i-1][4]) / 2;
-    var haH = Math.max(h, haO, haC), haL = Math.min(l, haO, haC);
-    ha.push([candles[i][0], haO, haH, haL, haC, candles[i][5]]);
+  for (var i = 0; i < rev.length; i++) {
+    var o=parseFloat(rev[i][1]),h=parseFloat(rev[i][2]),l=parseFloat(rev[i][3]),cl=parseFloat(rev[i][4]);
+    var haClose=(o+h+l+cl)/4;
+    var haOpen = i===0 ? (o+cl)/2 : (ha[i-1][1]+ha[i-1][4])/2;
+    ha.push([rev[i][0], haOpen, Math.max(h,haOpen,haClose), Math.min(l,haOpen,haClose), haClose, rev[i][5]]);
   }
+  ha.reverse();
   return ha;
 }
 
-// ── Signal functions (oldest-first candles, idx = signal candle index) ──
-function signalHAEmaSRSI(candles, idx) {
-  if (idx < 210) return null;
-  var slice = candles.slice(0, idx + 1);
-  var closes = slice.map(function(c) { return parseFloat(c[4]); });
-  var ema200 = calcEMA200arr(closes);
-  if (!ema200) return null;
-  var srsi = calcStochRSIarr(closes);
-  if (!srsi) return null;
-  var ha = calcHAarr(slice);
-  var haC = ha[ha.length - 1], haP = ha[ha.length - 2];
-  if (!haP) return null;
-  var haOpen = haC[1], haHigh = haC[2], haLow = haC[3], haClose = haC[4];
-  var pOpen = haP[1], pClose = haP[4];
-  var haBody = Math.abs(haClose - haOpen), pBody = Math.abs(pClose - pOpen);
-  var lowerWick = Math.min(haOpen, haClose) - haLow;
-  var upperWick = haHigh - Math.max(haOpen, haClose);
-  var price = parseFloat(candles[idx][4]);
-  var kCrossUp   = srsi.kPrev < srsi.dPrev && srsi.k >= srsi.d && srsi.kPrev < 30;
-  var strongBull = haClose > haOpen && haBody > pBody * 0.8 && lowerWick < haBody * 0.15;
-  if (price > ema200 && kCrossUp && strongBull) {
-    var swLow = Infinity;
-    for (var i = Math.max(0, idx - 7); i < idx; i++) swLow = Math.min(swLow, parseFloat(candles[i][3]));
-    if (swLow >= price || swLow === Infinity) return null;
-    return { type: 'long', sl: swLow };
+// closes: newest-first
+function calcEMA200(closes) {
+  if (closes.length < 200) return null;
+  var rev = closes.slice().reverse();
+  var k = 2/201, ema = rev.slice(0,200).reduce(function(s,v){return s+v;},0)/200;
+  for (var i = 200; i < rev.length; i++) ema = rev[i]*k + ema*(1-k);
+  return ema;
+}
+
+// closes: newest-first
+function calcStochRSI(closes, rsiLen, stochLen, kSmooth, dSmooth) {
+  rsiLen=rsiLen||14; stochLen=stochLen||14; kSmooth=kSmooth||3; dSmooth=dSmooth||3;
+  if (closes.length < rsiLen+stochLen+kSmooth+dSmooth+5) return null;
+  var rev = closes.slice().reverse();
+  var gains=0, losses=0;
+  for (var i=1; i<=rsiLen; i++) { var d=rev[i]-rev[i-1]; if(d>0)gains+=d; else losses-=d; }
+  var ag=gains/rsiLen, al=losses/rsiLen, rsiSeries=[];
+  for (var i=rsiLen; i<rev.length; i++) {
+    var rs=al===0?100:ag/al;
+    rsiSeries.push(100-100/(1+rs));
+    if (i<rev.length-1) { var d=rev[i+1]-rev[i]; ag=(ag*(rsiLen-1)+Math.max(d,0))/rsiLen; al=(al*(rsiLen-1)+Math.max(-d,0))/rsiLen; }
   }
-  var kCrossDown = srsi.kPrev > srsi.dPrev && srsi.k <= srsi.d && srsi.kPrev > 70;
-  var strongBear = haClose < haOpen && haBody > pBody * 0.8 && upperWick < haBody * 0.15;
-  if (price < ema200 && kCrossDown && strongBear) {
-    var swHigh = -Infinity;
-    for (var j = Math.max(0, idx - 7); j < idx; j++) swHigh = Math.max(swHigh, parseFloat(candles[j][2]));
-    if (swHigh <= price || swHigh === -Infinity) return null;
-    return { type: 'short', sl: swHigh };
+  if (rsiSeries.length < stochLen) return null;
+  var stochSeries=[];
+  for (var i=stochLen-1; i<rsiSeries.length; i++) {
+    var win=rsiSeries.slice(i-stochLen+1,i+1), hi=Math.max.apply(null,win), lo=Math.min.apply(null,win);
+    stochSeries.push(hi===lo?50:(rsiSeries[i]-lo)/(hi-lo)*100);
+  }
+  if (stochSeries.length < kSmooth+dSmooth) return null;
+  var kSeries=[];
+  for (var i=kSmooth-1; i<stochSeries.length; i++) kSeries.push(stochSeries.slice(i-kSmooth+1,i+1).reduce(function(s,v){return s+v;},0)/kSmooth);
+  if (kSeries.length < dSmooth+1) return null;
+  var dSeries=[];
+  for (var i=dSmooth-1; i<kSeries.length; i++) dSeries.push(kSeries.slice(i-dSmooth+1,i+1).reduce(function(s,v){return s+v;},0)/dSmooth);
+  return { k:kSeries[kSeries.length-1], kPrev:kSeries[kSeries.length-2], d:dSeries[dSeries.length-1], dPrev:dSeries[dSeries.length-2] };
+}
+
+// ════════════════════════════════════════════════════════════
+// SIGNAL FUNCTIONS — candles: newest-first
+// ════════════════════════════════════════════════════════════
+
+function detectSignalHAEmaSRSI(candles, currentPrice) {
+  if (candles.length < 210) return null;
+  var closes = candles.map(function(c){return parseFloat(c[4]);});
+  var ema200 = calcEMA200(closes); if (!ema200) return null;
+  var srsi = calcStochRSI(closes); if (!srsi) return null;
+  var ha = calcHACandles(candles); if (ha.length < 3) return null;
+  var haC=ha[0], haP=ha[1];
+  var haOpen=haC[1], haHigh=haC[2], haLow=haC[3], haClose=haC[4];
+  var pOpen=haP[1], pClose=haP[4];
+  var haBody=Math.abs(haClose-haOpen), pBody=Math.abs(pClose-pOpen);
+  var lowerWick=Math.min(haOpen,haClose)-haLow, upperWick=haHigh-Math.max(haOpen,haClose);
+  var kCrossUp   = srsi.kPrev<srsi.dPrev && srsi.k>=srsi.d && srsi.kPrev<30;
+  var strongBull = haClose>haOpen && haBody>pBody*0.8 && lowerWick<haBody*0.15;
+  if (currentPrice>ema200 && kCrossUp && strongBull) {
+    var swingLow=Math.min.apply(null, candles.slice(1,8).map(function(c){return parseFloat(c[3]);}));
+    if (swingLow>=currentPrice) return null;
+    return { type:'long', stopLoss:swingLow };
+  }
+  var kCrossDown = srsi.kPrev>srsi.dPrev && srsi.k<=srsi.d && srsi.kPrev>70;
+  var strongBear = haClose<haOpen && haBody>pBody*0.8 && upperWick<haBody*0.15;
+  if (currentPrice<ema200 && kCrossDown && strongBear) {
+    var swingHigh=Math.max.apply(null, candles.slice(1,8).map(function(c){return parseFloat(c[2]);}));
+    if (swingHigh<=currentPrice) return null;
+    return { type:'short', stopLoss:swingHigh };
   }
   return null;
 }
 
-function signalMARibbon(candles, idx) {
-  if (idx < 105) return null;
-  var closes = candles.slice(0, idx + 1).map(function(c) { return parseFloat(c[4]); });
-  var price = closes[closes.length - 1];
-  var mas = [10, 20, 50, 100].map(function(p) { return { p: p, v: _sma(closes, p) }; }).filter(function(m) { return m.v; });
-  if (mas.length < 4) return null;
-  var sorted = mas.slice().sort(function(a, b) { return a.p - b.p; });
-  var bullish = price > sorted[0].v && sorted.every(function(m, i) { return i === 0 || sorted[i-1].v > m.v; });
-  var bearish = price < sorted[0].v && sorted.every(function(m, i) { return i === 0 || sorted[i-1].v < m.v; });
-  if (!bullish && !bearish) return null;
-  if (Math.abs(price - sorted[0].v) / price > 0.010) return null;
-  var slLow = Infinity, slHigh = -Infinity;
-  for (var i = Math.max(0, idx - 5); i <= idx; i++) {
-    slLow  = Math.min(slLow,  parseFloat(candles[i][3]));
-    slHigh = Math.max(slHigh, parseFloat(candles[i][2]));
-  }
-  var sl = bullish ? slLow : slHigh;
-  var d = Math.abs(price - sl) / price;
-  if (d < 0.005 || d > 0.12) return null;
-  return bullish ? { type: 'long', sl: sl } : { type: 'short', sl: sl };
+function detectSignalMARibbon(candles1H, currentPrice) {
+  var closes=candles1H.map(function(c){return parseFloat(c[4]);});
+  var mas=[10,20,50,100].map(function(p){return {p:p,v:_sma(closes,p)};}).filter(function(m){return m.v;});
+  if (mas.length<4) return null;
+  var sorted=mas.slice().sort(function(a,b){return a.p-b.p;});
+  var bullish=currentPrice>sorted[0].v && sorted.every(function(m,i){return i===0||sorted[i-1].v>m.v;});
+  var bearish=currentPrice<sorted[0].v && sorted.every(function(m,i){return i===0||sorted[i-1].v<m.v;});
+  if (!bullish&&!bearish) return null;
+  if (Math.abs(currentPrice-sorted[0].v)/currentPrice>0.010) return null;
+  var sl=bullish
+    ? Math.min.apply(null,candles1H.slice(0,5).map(function(c){return parseFloat(c[3]);}))
+    : Math.max.apply(null,candles1H.slice(0,5).map(function(c){return parseFloat(c[2]);}));
+  var d=Math.abs(currentPrice-sl)/currentPrice;
+  if (d<0.005||d>0.12) return null;
+  return bullish ? {type:'long',stopLoss:sl} : {type:'short',stopLoss:sl};
 }
 
-function signalMA50Bounce(candles, idx) {
-  if (idx < 205) return null;
-  var closes = candles.slice(0, idx + 1).map(function(c) { return parseFloat(c[4]); });
-  var price = closes[closes.length - 1];
-  var sma50  = _sma(closes, 50);
+function detectSignalMA50Bounce(candles1H, currentPrice) {
+  var closes = candles1H.map(function(c){return parseFloat(c[4]);});
+  if (closes.length < 205) return null;
+  var sma50 = _sma(closes, 50);
   var sma200 = _sma(closes, 200);
   if (!sma50 || !sma200) return null;
-  if (Math.abs(price - sma50) / price > 0.012) return null;
+  var distTo50 = Math.abs(currentPrice - sma50) / currentPrice;
+  if (distTo50 > 0.012) return null;
   var recentAbove = 0, recentBelow = 0;
-  for (var i = Math.max(0, idx - 10); i < idx; i++) {
-    if (parseFloat(candles[i][4]) > sma50) recentAbove++;
+  for (var i = 1; i <= 10; i++) {
+    if (parseFloat(candles1H[i][4]) > sma50) recentAbove++;
     else recentBelow++;
   }
-  var isNarrow = true;
-  for (var j = Math.max(0, idx - 2); j <= idx; j++) {
-    if (Math.abs(parseFloat(candles[j][4]) - parseFloat(candles[j][1])) / parseFloat(candles[j][1]) > 0.008) { isNarrow = false; break; }
-  }
-  var rsi = calcRSIarr(closes);
+  var bodies = candles1H.slice(0,3).map(function(c){return Math.abs(parseFloat(c[4])-parseFloat(c[1]))/parseFloat(c[1]);});
+  var isNarrow = bodies.every(function(b){return b <= 0.008;});
+  var rsi = calcRSI(candles1H, 14);
   if (!rsi || rsi < 35 || rsi > 65) return null;
-  if (sma50 > sma200 && recentAbove >= 7 && price >= sma50 && isNarrow) {
-    var slLow = Infinity;
-    for (var k = Math.max(0, idx - 4); k <= idx; k++) slLow = Math.min(slLow, parseFloat(candles[k][3]));
-    var d1 = (price - slLow) / price;
-    if (d1 < 0.003 || d1 > 0.08) return null;
-    return { type: 'long', sl: slLow };
+  if (sma50 > sma200 && recentAbove >= 7 && currentPrice >= sma50 && isNarrow) {
+    var sl = Math.min.apply(null, candles1H.slice(0,5).map(function(c){return parseFloat(c[3]);}));
+    var d = (currentPrice - sl) / currentPrice;
+    if (d < 0.003 || d > 0.08) return null;
+    return { type:'long', stopLoss:sl };
   }
-  if (sma50 < sma200 && recentBelow >= 7 && price <= sma50 && isNarrow) {
-    var slHigh = -Infinity;
-    for (var m = Math.max(0, idx - 4); m <= idx; m++) slHigh = Math.max(slHigh, parseFloat(candles[m][2]));
-    var d2 = (slHigh - price) / price;
-    if (d2 < 0.003 || d2 > 0.08) return null;
-    return { type: 'short', sl: slHigh };
+  if (sma50 < sma200 && recentBelow >= 7 && currentPrice <= sma50 && isNarrow) {
+    var sl = Math.max.apply(null, candles1H.slice(0,5).map(function(c){return parseFloat(c[2]);}));
+    var d = (sl - currentPrice) / currentPrice;
+    if (d < 0.003 || d > 0.08) return null;
+    return { type:'short', stopLoss:sl };
   }
   return null;
 }
 
-function signalICTFibOTE(candles, idx) {
-  if (idx < 55) return null;
-  var swingHigh = -Infinity, swingLow = Infinity;
-  for (var i = Math.max(0, idx - 50); i < idx; i++) {
-    swingHigh = Math.max(swingHigh, parseFloat(candles[i][2]));
-    swingLow  = Math.min(swingLow,  parseFloat(candles[i][3]));
-  }
+function detectSignalICTFibOTE(candles1H, currentPrice) {
+  if (candles1H.length < 55) return null;
+  var swing = candles1H.slice(1, 51);
+  var swingHigh = Math.max.apply(null, swing.map(function(c){return parseFloat(c[2]);}));
+  var swingLow  = Math.min.apply(null, swing.map(function(c){return parseFloat(c[3]);}));
   var range = swingHigh - swingLow;
   if (range <= 0) return null;
   var oteBot = swingLow  + range * 0.21;
   var oteTop = swingLow  + range * 0.38;
   var prBot  = swingHigh - range * 0.38;
   var prTop  = swingHigh - range * 0.21;
-  var cur = candles[idx];
-  var price = parseFloat(cur[4]);
-  var isBullish = parseFloat(cur[4]) > parseFloat(cur[1]);
-  var isBearish = parseFloat(cur[4]) < parseFloat(cur[1]);
-  var closes = candles.slice(0, idx + 1).map(function(c) { return parseFloat(c[4]); });
-  var rsi = calcRSIarr(closes);
+  var curCandle = candles1H[0];
+  var isBullish = parseFloat(curCandle[4]) > parseFloat(curCandle[1]);
+  var isBearish = parseFloat(curCandle[4]) < parseFloat(curCandle[1]);
+  var rsi = calcRSI(candles1H, 14);
   if (!rsi) return null;
-  if (price >= oteBot && price <= oteTop && isBullish && rsi < 55) {
+  if (currentPrice >= oteBot && currentPrice <= oteTop && isBullish && rsi < 55) {
     var sl = swingLow * 0.999;
-    var d = (price - sl) / price;
+    var d = (currentPrice - sl) / currentPrice;
     if (d < 0.005 || d > 0.15) return null;
-    return { type: 'long', sl: sl };
+    return { type:'long', stopLoss:sl };
   }
-  if (price >= prBot && price <= prTop && isBearish && rsi > 45) {
-    var sl2 = swingHigh * 1.001;
-    var d2 = (sl2 - price) / price;
-    if (d2 < 0.005 || d2 > 0.15) return null;
-    return { type: 'short', sl: sl2 };
+  if (currentPrice >= prBot && currentPrice <= prTop && isBearish && rsi > 45) {
+    var sl = swingHigh * 1.001;
+    var d = (sl - currentPrice) / currentPrice;
+    if (d < 0.005 || d > 0.15) return null;
+    return { type:'short', stopLoss:sl };
   }
   return null;
 }
 
-var SIGNAL_FN = {
-  ha_ema_srsi: signalHAEmaSRSI,
-  ma_ribbon:   signalMARibbon,
-  ma50_bounce: signalMA50Bounce,
-  ict_fib_ote: signalICTFibOTE
-};
+// ════════════════════════════════════════════════════════════
+// DATA HELPERS
+// ════════════════════════════════════════════════════════════
 
-// ── Backtest engine ───────────────────────────────────────────
-function runStrategy(candles1H, stratId) {
-  var isScalp = !!SCALP_STRATS[stratId];
-  var fn = SIGNAL_FN[stratId];
-  var trades = 0, wins = 0, totalPnl = 0;
-  var pos = null;
-
-  for (var i = 0; i < candles1H.length - 1; i++) {
-    var nextC    = candles1H[i + 1];
-    var nextOpen = parseFloat(nextC[1]);
-    var nextHigh = parseFloat(nextC[2]);
-    var nextLow  = parseFloat(nextC[3]);
-
-    if (pos) {
-      // Trailing for swing after half-close
-      if (!isScalp && pos.halfClosed && pos.lastTPLevel !== null) {
-        var movedEnough = pos.dir === 'long'
-          ? nextHigh >= pos.lastTPLevel * (1 + TRAIL_STEP)
-          : nextLow  <= pos.lastTPLevel * (1 - TRAIL_STEP);
-        if (movedEnough) {
-          var trailPrice = pos.dir === 'long'
-            ? pos.lastTPLevel * (1 + TRAIL_STEP)
-            : pos.lastTPLevel * (1 - TRAIL_STEP);
-          var pnlPct = pos.dir === 'long'
-            ? (trailPrice - pos.entry) / pos.entry
-            : (pos.entry - trailPrice) / pos.entry;
-          totalPnl += pnlPct * pos.remainFrac - FEE * pos.remainFrac;
-          pos.lastTPLevel = trailPrice;
-          pos.remainFrac *= 0.9;
-          if (pos.remainFrac < 0.01) pos = null;
-          continue;
-        }
-      }
-
-      var slHit = pos.dir === 'long' ? nextLow  <= pos.sl : nextHigh >= pos.sl;
-      var tpHit = pos.tp !== null && (pos.dir === 'long' ? nextHigh >= pos.tp : nextLow <= pos.tp);
-
-      // SL wins when both hit same candle
-      if (slHit && tpHit) {
-        var pnl0 = pos.dir === 'long'
-          ? (pos.sl - pos.entry) / pos.entry
-          : (pos.entry - pos.sl) / pos.entry;
-        if (pos.halfClosed) {
-          totalPnl += pnl0 * pos.remainFrac - FEE * pos.remainFrac;
-        } else {
-          totalPnl += pnl0 - FEE;
-          trades++;
-        }
-        pos = null;
-        continue;
-      }
-
-      if (tpHit && !isScalp && !pos.halfClosed) {
-        // SWING: 50% close at TP, lock in 50% of TP1 profit as new SL
-        var pnlHalf = pos.dir === 'long'
-          ? (pos.tp - pos.entry) / pos.entry * 0.5
-          : (pos.entry - pos.tp) / pos.entry * 0.5;
-        totalPnl += pnlHalf - FEE * 0.5;
-        wins++;
-        trades++;
-        var dist = Math.abs(pos.tp - pos.entry);
-        pos.sl = pos.dir === 'long' ? pos.entry + dist * 0.5 : pos.entry - dist * 0.5;
-        pos.halfClosed  = true;
-        pos.lastTPLevel = pos.tp;
-        pos.remainFrac  = 0.5;
-        pos.tp          = null;
-        continue;
-      }
-
-      if (tpHit && isScalp) {
-        // SCALP: 100% close at TP
-        var pnlFull = pos.dir === 'long'
-          ? (pos.tp - pos.entry) / pos.entry
-          : (pos.entry - pos.tp) / pos.entry;
-        totalPnl += pnlFull - FEE;
-        wins++;
-        trades++;
-        pos = null;
-        continue;
-      }
-
-      if (slHit) {
-        if (pos.halfClosed) {
-          var pnlSL = pos.dir === 'long'
-            ? (pos.sl - pos.entry) / pos.entry * pos.remainFrac
-            : (pos.entry - pos.sl) / pos.entry * pos.remainFrac;
-          totalPnl += pnlSL - FEE * pos.remainFrac;
-        } else {
-          var pnlSL2 = pos.dir === 'long'
-            ? (pos.sl - pos.entry) / pos.entry
-            : (pos.entry - pos.sl) / pos.entry;
-          totalPnl += pnlSL2 - FEE;
-          trades++;
-        }
-        pos = null;
-        continue;
-      }
-
-      continue;
-    }
-
-    // No position — check for signal at candle i
-    var sig = fn(candles1H, i);
-    if (!sig) continue;
-    if (i + 1 >= candles1H.length) continue;
-
-    var entry  = nextOpen;
-    var rawSL  = sig.sl;
-    var slDist = Math.abs(entry - rawSL) / entry;
-    if (slDist < 0.002 || slDist > 0.15) continue;
-
-    var sl = sig.type === 'long'
-      ? Math.min(rawSL, entry * 0.999)
-      : Math.max(rawSL, entry * 1.001);
-    var tp = sig.type === 'long'
-      ? entry * (1 + slDist * RR)
-      : entry * (1 - slDist * RR);
-
-    pos = { dir: sig.type, entry: entry, sl: sl, tp: tp, halfClosed: false, lastTPLevel: null, remainFrac: 1.0 };
-    i++; // consume next candle as entry candle
+function aggregate1H(c5_of) {
+  var hours = {}, order = [];
+  for (var i = 0; i < c5_of.length; i++) {
+    var h = Math.floor(parseInt(c5_of[i][0]) / 3600000) * 3600000;
+    if (!hours[h]) { hours[h] = []; order.push(h); }
+    hours[h].push(c5_of[i]);
   }
-
-  var winRate = trades > 0 ? wins / trades * 100 : 0;
-  return { trades: trades, wins: wins, winRate: winRate, totalPnl: totalPnl * 100 };
+  return order.map(function(h) {
+    var b = hours[h];
+    var hi = b.reduce(function(m,c){return Math.max(m,parseFloat(c[2]));}, -Infinity);
+    var lo = b.reduce(function(m,c){return Math.min(m,parseFloat(c[3]));},  Infinity);
+    var vol= b.reduce(function(s,c){return s+parseFloat(c[5]);}, 0);
+    return [String(h), b[0][1], String(hi), String(lo), b[b.length-1][4], String(vol)];
+  });
 }
 
-async function runBacktest() {
-  var btn = document.getElementById('runBtn');
-  btn.disabled = true;
-  btn.textContent = 'Running...';
-  document.getElementById('log').innerHTML = '';
-  document.getElementById('cards').innerHTML = '';
-  document.getElementById('summary').style.display = 'none';
-  prog(0);
+// ════════════════════════════════════════════════════════════
+// BACKTEST ENGINE
+// ════════════════════════════════════════════════════════════
+// SCALP: 100% TP close (no trailing)
+// SWING: 50% TP → SL locked at entry+50%*dist → trailing TP (same dist again)
+// Fee: 0.05% per side = 0.1% round-trip
 
-  var pair = document.getElementById('pairSel').value;
+var SCALP_STRATS = { ma50_bounce: 1 };
 
-  try {
-    var candles5m = await fetchCandles5m(pair);
-    prog(40);
-    var candles1H = aggregate1H(candles5m);
-    log('Aggregated to ' + candles1H.length + ' 1H candles');
-    prog(50);
+function runBacktest(c5_of, c1h_of, strategy, leverage, posSize) {
+  var isScalp = !!SCALP_STRATS[strategy];
+  var posFrac = posSize / 100;
+  var FEE_ENTRY  = posFrac * leverage * 0.0005;
+  var FEE_EXIT_1 = posFrac * leverage * 0.0005;
+  var FEE_EXIT_H = posFrac * leverage * 0.0005 * 0.5;
 
-    var results = [];
-    for (var si = 0; si < STRATEGIES.length; si++) {
-      var strat = STRATEGIES[si];
-      log('Running ' + strat.name + '...');
-      var r = runStrategy(candles1H, strat.id);
-      var entry2 = { id: strat.id, name: strat.name, type: strat.type, trades: r.trades, wins: r.wins, winRate: r.winRate, totalPnl: r.totalPnl };
-      results.push(entry2);
-      var sign = r.totalPnl >= 0 ? '+' : '';
-      log('  ' + strat.name + ': ' + r.trades + ' trades, ' + r.winRate.toFixed(1) + '% WR, ' + sign + r.totalPnl.toFixed(2) + '% PnL');
-      prog(50 + (si + 1) / STRATEGIES.length * 50);
+  var equity = 10000, pos = null, pending = null;
+  var trades = [], curve = [], lastDay = -1;
+
+  var WARMUP = 2520; // 210 × 12 — enough for 200 closed 1H bars
+
+  for (var i = WARMUP; i < c5_of.length - 1; i++) {
+    var c   = c5_of[i];
+    var ts  = parseInt(c[0]);
+    var hi5 = parseFloat(c[2]);
+    var lo5 = parseFloat(c[3]);
+    var cl5 = parseFloat(c[4]);
+    var dayKey = Math.floor(ts / 86400000);
+    if (dayKey !== lastDay) { curve.push({ts:ts, equity:equity}); lastDay = dayKey; }
+
+    // Enter pending position at open of current candle
+    if (pending && !pos) {
+      var entryPx = parseFloat(c5_of[i][1]);
+      pos = { dir:pending.dir, entry:entryPx, sl:pending.sl, tp:pending.tp,
+               halfClosed:false, idx:i };
+      equity = Math.max(100, equity - equity * FEE_ENTRY);
+      pending = null;
     }
 
-    var cards = document.getElementById('cards');
-    cards.innerHTML = '';
-    for (var ri2 = 0; ri2 < results.length; ri2++) {
-      var rr = results[ri2];
-      var pnlClass = rr.totalPnl >= 0 ? 'up' : 'down';
-      var pnlStr = (rr.totalPnl >= 0 ? '+' : '') + rr.totalPnl.toFixed(2) + '%';
-      var wrClass = rr.winRate >= 50 ? 'up' : 'down';
-      cards.innerHTML += '<div class="card">' +
-        '<div class="card-title">Strategy</div>' +
-        '<div class="card-strat">' + rr.name + '<span class="card-type type-' + rr.type.toLowerCase() + '">' + rr.type + '</span></div>' +
-        '<div class="stat-row"><span class="stat-label">Total Trades</span><span class="stat-val">' + rr.trades + '</span></div>' +
-        '<div class="stat-row"><span class="stat-label">Wins</span><span class="stat-val up">' + rr.wins + '</span></div>' +
-        '<div class="stat-row"><span class="stat-label">Win Rate</span><span class="stat-val ' + wrClass + '">' + rr.winRate.toFixed(1) + '%</span></div>' +
-        '<div class="stat-row"><span class="stat-label">Total PnL</span><span class="stat-val ' + pnlClass + '">' + pnlStr + '</span></div>' +
-        '</div>';
+    // Check position SL/TP against 5m candle range
+    if (pos) {
+      var slHit = pos.dir==='long' ? lo5<=pos.sl : hi5>=pos.sl;
+      var tpHit = pos.dir==='long' ? hi5>=pos.tp : lo5<=pos.tp;
+
+      if (slHit) {
+        // SL wins when both hit same candle
+        var exitPx = pos.sl;
+        var ret = (pos.dir==='long' ? exitPx-pos.entry : pos.entry-exitPx) / pos.entry;
+        var mul = pos.halfClosed ? 0.5 : 1;
+        var pnl = equity * posFrac * leverage * ret * mul;
+        equity = Math.max(100, equity + pnl - equity * FEE_EXIT_1 * mul);
+        trades.push({ts:ts, type:'SL', pnl:pnl, eq:equity});
+        pos = null;
+      } else if (tpHit) {
+        var exitPx = pos.tp;
+        var ret = (pos.dir==='long' ? exitPx-pos.entry : pos.entry-exitPx) / pos.entry;
+        if (isScalp || pos.halfClosed) {
+          // SCALP or trailing close: full (or remaining) position out
+          var mul = pos.halfClosed ? 0.5 : 1;
+          var pnl = equity * posFrac * leverage * ret * mul;
+          equity = Math.max(100, equity + pnl - equity * FEE_EXIT_1 * mul);
+          trades.push({ts:ts, type:'TP', pnl:pnl, eq:equity});
+          pos = null;
+        } else {
+          // SWING 50% close — lock in 50% of TP1 profit as new SL
+          var pnl = equity * posFrac * leverage * ret * 0.5;
+          equity = Math.max(100, equity + pnl - equity * FEE_EXIT_H);
+          trades.push({ts:ts, type:'TP50', pnl:pnl, eq:equity});
+          pos.halfClosed = true;
+          var dist = Math.abs(pos.tp - pos.entry);
+          pos.sl = pos.dir==='long' ? pos.entry + dist * 0.5 : pos.entry - dist * 0.5;
+          pos.tp = pos.dir==='long' ? pos.tp + dist : pos.tp - dist;
+        }
+      }
     }
 
-    var totalTrades = 0, totalWins = 0, sumPnl = 0;
-    var best = results[0];
-    for (var bi = 0; bi < results.length; bi++) {
-      totalTrades += results[bi].trades;
-      totalWins   += results[bi].wins;
-      sumPnl      += results[bi].totalPnl;
-      if (results[bi].totalPnl > best.totalPnl) best = results[bi];
-    }
-    var avgPnl  = sumPnl / results.length;
-    var wrClass2 = totalTrades > 0 && totalWins / totalTrades >= 0.5 ? 'up' : 'down';
-    var sumEl = document.getElementById('summary');
-    sumEl.style.display = 'block';
-    sumEl.innerHTML = '<h2>Summary — ' + pair + '</h2>' +
-      '<div class="sum-row"><span style="color:#666">Total trades (all strategies)</span><span>' + totalTrades + '</span></div>' +
-      '<div class="sum-row"><span style="color:#666">Combined win rate</span><span class="' + wrClass2 + '">' + (totalTrades > 0 ? (totalWins / totalTrades * 100).toFixed(1) : 0) + '%</span></div>' +
-      '<div class="sum-row"><span style="color:#666">Average PnL across strategies</span><span class="' + (avgPnl >= 0 ? 'up' : 'down') + '">' + (avgPnl >= 0 ? '+' : '') + avgPnl.toFixed(2) + '%</span></div>' +
-      '<div class="sum-row"><span style="color:#666">Best strategy</span><span class="up">' + best.name + ' (' + (best.totalPnl >= 0 ? '+' : '') + best.totalPnl.toFixed(2) + '%)</span></div>';
+    // Detect new signal (no position, no pending) — 1H close only
+    if (!pos && !pending) {
+      var is1HClose = (i % 12 === 11);
+      if (!is1HClose) continue;
 
-    prog(100);
-    log('Backtest complete.');
-  } catch(e) {
-    log('ERROR: ' + e.message);
+      var h1Done = Math.floor(i / 12);
+      var c1h_nf = h1Done > 0 ? c1h_of.slice(0, h1Done).reverse() : [];
+
+      var sig = null;
+
+      if (strategy==='ha_ema_srsi' && c1h_nf.length>=210) {
+        sig = detectSignalHAEmaSRSI(c1h_nf, cl5);
+      } else if (strategy==='ma_ribbon' && c1h_nf.length>=105) {
+        sig = detectSignalMARibbon(c1h_nf, cl5);
+      } else if (strategy==='ma50_bounce' && c1h_nf.length>=210) {
+        sig = detectSignalMA50Bounce(c1h_nf, cl5);
+      } else if (strategy==='ict_fib_ote' && c1h_nf.length>=60) {
+        sig = detectSignalICTFibOTE(c1h_nf, cl5);
+      }
+
+      if (sig && sig.stopLoss) {
+        var slDist = Math.abs(cl5 - sig.stopLoss) / cl5;
+        if (slDist >= 0.002 && slDist <= 0.15) {
+          var tpDist = slDist * 1.5;
+          var tp = sig.type==='long' ? cl5*(1+tpDist) : cl5*(1-tpDist);
+          pending = { dir:sig.type, sl:sig.stopLoss, tp:tp };
+        }
+      }
+    }
   }
-  btn.disabled = false;
-  btn.textContent = 'Run Backtest';
+
+  var wins = trades.filter(function(t){return t.pnl>0;});
+  var actualDays = curve.length || 365;
+  var totalRet = (equity - 10000) / 10000;
+  var annRet = Math.pow(1 + totalRet, 365 / actualDays) - 1;
+  var monRet = Math.pow(1 + annRet, 1/12) - 1;
+  var dayRet = Math.pow(1 + annRet, 1/365) - 1;
+  var peak = 0, maxDD = 0;
+  curve.forEach(function(p){ if(p.equity>peak)peak=p.equity; var dd=(peak-p.equity)/peak; if(dd>maxDD)maxDD=dd; });
+  return { equity:equity, totalRet:totalRet, annRet:annRet, monRet:monRet, dayRet:dayRet,
+           totalTrades:trades.length, winRate:trades.length?wins.length/trades.length:0,
+           maxDD:maxDD, curve:curve, trades:trades };
+}
+
+// ════════════════════════════════════════════════════════════
+// DATA FETCH
+// ════════════════════════════════════════════════════════════
+
+async function fetchCandles5m(pair, onProgress) {
+  var ONE_YEAR_AGO = Math.floor(Date.now() / 3600000) * 3600000 - 365*24*3600*1000;
+  var all = [], after = '';
+  for (var iter = 0; iter < 1200; iter++) {
+    var qs = 'instId='+encodeURIComponent(pair)+'&bar=5m&limit=100'+(after?'&after='+after:'');
+    try {
+      var res = await fetch('https://www.okx.com/api/v5/market/history-candles?'+qs);
+      var j = await res.json();
+      var batch = j.data || [];
+      if (!batch.length) break;
+      all.push.apply(all, batch);
+      after = batch[batch.length-1][0];
+      if (onProgress) onProgress(all.length);
+      if (parseInt(batch[batch.length-1][0]) <= ONE_YEAR_AGO) break;
+      await new Promise(function(r){setTimeout(r,50);});
+    } catch(e) { break; }
+  }
+  var seen = {}, deduped = [];
+  all.forEach(function(c){ if(!seen[c[0]]){seen[c[0]]=1;deduped.push(c);} });
+  return deduped.filter(function(c){return parseInt(c[0])>=ONE_YEAR_AGO;}).reverse();
+}
+
+// ════════════════════════════════════════════════════════════
+// UI
+// ════════════════════════════════════════════════════════════
+
+var BT_STRATS = [
+  {id:'ha_ema_srsi', name:'HA+EMA+StochRSI', type:'SWING'},
+  {id:'ma_ribbon',   name:'MA Ribbon',        type:'SWING'},
+  {id:'ma50_bounce', name:'MA50 Bounce',       type:'SCALP'},
+  {id:'ict_fib_ote', name:'ICT Fibonacci OTE', type:'SWING'}
+];
+
+var _c5of = null, _c1hof = null, _results = {}, _chart = null, _loadedPair = '';
+
+function onPairChange() {
+  var p = (document.getElementById('btPair').value||'').toUpperCase().trim();
+  document.getElementById('btStartBtn').textContent =
+    p !== _loadedPair ? '백테스팅 시작 (4개 전략 · 약 30초 소요)' : '다시 실행 (캐시 재사용)';
+}
+
+function pct(v,d){d=d==null?2:d; return (v>=0?'+':'')+(v*100).toFixed(d)+'%';}
+function clr(v){return v>=0?'#22c55e':'#ef4444';}
+
+async function startBacktest() {
+  var pair = (document.getElementById('btPair').value||'BTC-USDT-SWAP').toUpperCase().trim();
+  var lev  = parseFloat(document.getElementById('btLev').value)||10;
+  var pos  = parseFloat(document.getElementById('btPos').value)||10;
+
+  var btn=document.getElementById('btStartBtn');
+  var prog=document.getElementById('btProg');
+  var bar=document.getElementById('btBar');
+  var msg=document.getElementById('btMsg');
+
+  btn.disabled=true;
+  prog.style.display='block';
+
+  if (_c5of && _loadedPair === pair) {
+    bar.style.width='42%';
+    msg.textContent='캐시 데이터 재사용: '+_c5of.length.toLocaleString()+'개 5분봉 (동일 결과 보장)';
+    btn.textContent='실행 중...';
+    await new Promise(function(r){setTimeout(r,10);});
+  } else {
+    btn.textContent='데이터 수집 중...';
+    bar.style.width='0%';
+    msg.textContent='OKX 5분봉 데이터 수집 중 (약 10만 개)...';
+    try {
+      _c5of = await fetchCandles5m(pair, function(n){
+        bar.style.width=Math.min(40, n/2625)+'%';
+        msg.textContent='5분봉 수집: '+n.toLocaleString()+'개...';
+      });
+      _loadedPair = pair;
+    } catch(e) {
+      msg.textContent='데이터 수집 실패: '+(e.message||e);
+      btn.disabled=false; btn.textContent='백테스팅 시작 (4개 전략 · 약 30초 소요)';
+      return;
+    }
+  }
+
+  bar.style.width='42%';
+  msg.textContent='1H 집계 중... ('+_c5of.length.toLocaleString()+'개 5분봉)';
+  await new Promise(function(r){setTimeout(r,10);});
+  _c1hof = aggregate1H(_c5of);
+
+  msg.textContent='5분봉 '+_c5of.length.toLocaleString()+'개 / 1H '+_c1hof.length.toLocaleString()+'개 → 백테스팅 실행 중';
+
+  _results = {};
+  for (var si = 0; si < BT_STRATS.length; si++) {
+    var s = BT_STRATS[si];
+    bar.style.width=(42 + si/BT_STRATS.length*56)+'%';
+    msg.textContent='['+(si+1)+'/'+BT_STRATS.length+'] '+s.name+' 백테스팅 중...';
+    await new Promise(function(r){setTimeout(r,0);});
+    _results[s.id] = runBacktest(_c5of, _c1hof, s.id, lev, pos);
+  }
+
+  bar.style.width='100%';
+  msg.textContent='완료! 5분봉 '+_c5of.length.toLocaleString()+'개 · 1H '+_c1hof.length.toLocaleString()+'개 사용 (캐시 보존)';
+  btn.disabled=false; btn.textContent='다시 실행 (캐시 재사용)';
+
+  renderTable();
+  buildTabs();
+  showChart(BT_STRATS[0].id);
+}
+
+function renderTable() {
+  var tbody = document.getElementById('btTbody');
+  var rows = BT_STRATS.map(function(s){
+    var r = _results[s.id];
+    if (!r) return '';
+    var isNA = r.totalTrades === 0;
+    var typeColor = s.type==='SCALP' ? '#f59e0b' : '#22c55e';
+    var typeBg    = s.type==='SCALP' ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)';
+    var typeBadge = '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:'+typeBg+';color:'+typeColor+';margin-left:6px;">'+s.type+'</span>';
+    var dr = isNA?'N/A':'<span style="color:'+clr(r.dayRet)+'">'+pct(r.dayRet)+'</span>';
+    var mr = isNA?'N/A':'<span style="color:'+clr(r.monRet)+'">'+pct(r.monRet)+'</span>';
+    var ar = isNA?'N/A':'<span style="color:'+clr(r.annRet)+'">'+pct(r.annRet,1)+'</span>';
+    var dd = isNA?'N/A':'<span style="color:#ef4444">-'+pct(r.maxDD,1).replace('+','')+'</span>';
+    var wr = isNA?'N/A':'<span style="color:'+clr(r.winRate-0.5)+'">'+Math.round(r.winRate*100)+'%</span>';
+    return '<tr>'+
+      '<td>'+s.name+typeBadge+'</td>'+
+      '<td style="text-align:center;">'+s.type+'</td>'+
+      '<td>'+r.totalTrades+'</td>'+
+      '<td>'+wr+'</td>'+
+      '<td>'+dr+'</td>'+
+      '<td>'+mr+'</td>'+
+      '<td>'+ar+'</td>'+
+      '<td>'+dd+'</td>'+
+      '<td style="text-align:center;"><button onclick="showChart(\''+s.id+'\')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">차트</button></td>'+
+    '</tr>';
+  }).join('');
+  tbody.innerHTML = rows;
+  document.getElementById('btResultCard').classList.remove('hidden');
+}
+
+function buildTabs() {
+  var el = document.getElementById('btTabs');
+  el.innerHTML = BT_STRATS.map(function(s){
+    return '<button class="tab" id="tab_'+s.id+'" onclick="showChart(\''+s.id+'\')">'+s.name+'</button>';
+  }).join('');
+}
+
+function showChart(id) {
+  var s = BT_STRATS.find(function(x){return x.id===id;});
+  var r = _results[id];
+  if (!s||!r) return;
+
+  BT_STRATS.forEach(function(x){
+    var t=document.getElementById('tab_'+x.id);
+    if(t) t.classList.toggle('active', x.id===id);
+  });
+
+  var t = s.name+' | 연 복리: '+pct(r.annRet,1)+
+    ' | 승률: '+Math.round(r.winRate*100)+'%'+
+    ' | 거래: '+r.totalTrades+'건'+
+    ' | 최대낙폭: -'+pct(r.maxDD,1).replace('+','');
+  document.getElementById('btChartTitle').textContent = t;
+
+  var ctx = document.getElementById('btCanvas').getContext('2d');
+  if (_chart) _chart.destroy();
+
+  var labels = r.curve.map(function(p){return new Date(p.ts).toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'});});
+  var data   = r.curve.map(function(p){return p.equity;});
+  var isPos  = r.annRet >= 0;
+  var col    = isPos ? '#22c55e' : '#ef4444';
+  var grd    = ctx.createLinearGradient(0,0,0,280);
+  grd.addColorStop(0, isPos?'rgba(34,197,94,0.25)':'rgba(239,68,68,0.25)');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+
+  _chart = new Chart(ctx, {
+    type:'line',
+    data:{labels:labels,datasets:[{label:'자산($)',data:data,borderColor:col,borderWidth:1.5,
+          pointRadius:0,fill:true,backgroundColor:grd,tension:0.3}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '$'+c.parsed.y.toFixed(0);}}}},
+      scales:{
+        x:{ticks:{color:'rgba(255,255,255,0.3)',maxTicksLimit:12,font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:10},callback:function(v){return '$'+v.toFixed(0);}},grid:{color:'rgba(255,255,255,0.06)'}}
+      }
+    }
+  });
+  document.getElementById('btChartCard').classList.remove('hidden');
+  document.getElementById('btChartCard').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 </script>
 </body>
