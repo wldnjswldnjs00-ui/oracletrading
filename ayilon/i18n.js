@@ -534,6 +534,7 @@
       'db.dash.win_rate':          'Win Rate',
       'db.dash.win_rate_no_data':  'No closed trades yet',
       'db.dash.win_rate_trades':   'trades',
+      'db.dash.avg_rr':            'Avg Profit/Loss Ratio',
       'db.dash.no_equity_data':    'Collecting data. Chart will populate automatically as the bot runs.',
 
       /* ── INDEX: STRATEGY SIMULATION ── */
@@ -1168,6 +1169,7 @@
       'db.dash.win_rate':          '승률',
       'db.dash.win_rate_no_data':  '종료된 거래 없음',
       'db.dash.win_rate_trades':   '거래',
+      'db.dash.avg_rr':            '평균 손익비',
       'db.dash.no_equity_data':    '데이터 수집 중입니다. 봇이 실행되면 자동으로 기록됩니다.',
 
       /* ── INDEX: STRATEGY SIMULATION ── */

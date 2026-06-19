@@ -896,7 +896,9 @@ async function handleBotStatus(request, env) {
     },
     logs: _logs, alert, positions: _pos, positionSummary, lastScan, fundingRate, marketData: null,
     winCount:  parseInt(botStateRow.win_count  || '0'),
-    lossCount: parseInt(botStateRow.loss_count || '0')
+    lossCount: parseInt(botStateRow.loss_count || '0'),
+    totalWinPnl:  parseFloat(botStateRow.total_win_pnl  || '0'),
+    totalLossPnl: parseFloat(botStateRow.total_loss_pnl || '0')
   });
 }
 
@@ -1143,6 +1145,8 @@ async function initDB(env) {
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN stopped_strategies TEXT DEFAULT NULL`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN win_count INTEGER DEFAULT 0`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN loss_count INTEGER DEFAULT 0`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN total_win_pnl REAL DEFAULT 0`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN total_loss_pnl REAL DEFAULT 0`).run().catch(() => {});
     _dbReady = true;
   } catch(e) {}
 }
@@ -1421,8 +1425,17 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
           const freshState = await getBotState(env, email);
           const newWin  = parseInt(freshState.win_count  || '0') + (isWin ? 1 : 0);
           const newLoss = parseInt(freshState.loss_count || '0') + (isWin ? 0 : 1);
-          await upsertBotState(env, email, { win_count: newWin, loss_count: newLoss });
-          await botLog(env, email, `[${strategy}] Sync: ${tradingPair} closed externally — ${isWin ? '✓ WIN' : '✗ LOSS'} (W:${newWin} L:${newLoss})`);
+          // Fetch realized PnL from OKX positions history
+          let realizedPnl = 0;
+          try {
+            const histRes = await okxGet(apiKey, apiSecret, apiPassphrase,
+              `/api/v5/account/positions-history?instId=${tradingPair}&limit=1`, demoMode);
+            realizedPnl = parseFloat(histRes?.data?.[0]?.realizedPnl || '0');
+          } catch(_) {}
+          const newWinPnl  = parseFloat(freshState.total_win_pnl  || '0') + (isWin  && realizedPnl > 0 ? realizedPnl  : 0);
+          const newLossPnl = parseFloat(freshState.total_loss_pnl || '0') + (!isWin && realizedPnl < 0 ? Math.abs(realizedPnl) : 0);
+          await upsertBotState(env, email, { win_count: newWin, loss_count: newLoss, total_win_pnl: newWinPnl, total_loss_pnl: newLossPnl });
+          await botLog(env, email, `[${strategy}] Sync: ${tradingPair} closed externally — ${isWin ? '✓ WIN' : '✗ LOSS'} PnL:${realizedPnl.toFixed(2)} (W:${newWin} L:${newLoss})`);
         } catch(e2) {
           await botLog(env, email, `[${strategy}] Sync: cleared ${tradingPair} state — position closed externally`);
         }
@@ -1852,7 +1865,13 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
 
   dl.pct = totalLossPct;
   const newLossCount = parseInt(dlStateRow.loss_count || '0') + 1;
-  await upsertBotState(env, email, { daily_loss: JSON.stringify({ date: today, pct: totalLossPct }), loss_count: newLossCount });
+  let dlRealizedPnl = 0;
+  try {
+    const dlHistRes = await okxGet(apiKey, secret, pass, `/api/v5/account/positions-history?instId=${pair}&limit=1`, demo);
+    dlRealizedPnl = parseFloat(dlHistRes?.data?.[0]?.realizedPnl || '0');
+  } catch(_) {}
+  const newDlLossPnl = parseFloat(dlStateRow.total_loss_pnl || '0') + (dlRealizedPnl < 0 ? Math.abs(dlRealizedPnl) : 0);
+  await upsertBotState(env, email, { daily_loss: JSON.stringify({ date: today, pct: totalLossPct }), loss_count: newLossCount, total_loss_pnl: newDlLossPnl });
   delete ps[actualKey];
   psModifiedRef.modified = true;
   await botLog(env, email, `Loss limit ${(totalLossPct*100).toFixed(2)}% reached (float: ${(floatLossPct*100).toFixed(2)}%) — position closed ✗ LOSS (total losses: ${newLossCount})`);

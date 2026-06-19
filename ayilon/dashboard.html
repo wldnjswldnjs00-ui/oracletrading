@@ -464,6 +464,11 @@
         <div class="stat-card-value" id="dashWinRate">—</div>
         <div class="stat-card-sub" id="dashWinRateSub">—</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-card-label" data-i18n="db.dash.avg_rr">평균 손익비</div>
+        <div class="stat-card-value" id="dashAvgRR">—</div>
+        <div class="stat-card-sub" id="dashAvgRRSub">—</div>
+      </div>
     </div>
 
     <!-- Equity Chart -->
@@ -1325,6 +1330,27 @@
           wrEl.style.color = parseFloat(pct) >= 50 ? 'var(--green)' : '#ef4444';
           wrEl.textContent = pct + '%';
           if (wrSub) wrSub.textContent = wins + 'W / ' + losses + 'L · ' + total + ' ' + _t('db.dash.win_rate_trades');
+        }
+      }
+
+      // Average R:R
+      var rrEl  = document.getElementById('dashAvgRR');
+      var rrSub = document.getElementById('dashAvgRRSub');
+      if (rrEl) {
+        var twp = data.totalWinPnl  || 0;
+        var tlp = data.totalLossPnl || 0;
+        var wc  = data.winCount     || 0;
+        var lc  = data.lossCount    || 0;
+        var avgWin  = wc > 0 ? twp / wc  : 0;
+        var avgLoss = lc > 0 ? tlp / lc  : 0;
+        if (avgWin === 0 || avgLoss === 0) {
+          rrEl.textContent = '—';
+          if (rrSub) rrSub.textContent = _t('db.dash.win_rate_no_data');
+        } else {
+          var rr = (avgWin / avgLoss).toFixed(2);
+          rrEl.textContent = rr + ':1';
+          rrEl.style.color = parseFloat(rr) >= 1 ? 'var(--green)' : '#ef4444';
+          if (rrSub) rrSub.textContent = '+$' + fmtNum(avgWin, 2) + ' / -$' + fmtNum(avgLoss, 2);
         }
       }
     } catch(e) {}
