@@ -508,6 +508,9 @@
       'db.title':            'Dashboard',
       'db.bots.logs_title':  'Bot Logs',
       'db.bots.no_logs':     'No logs yet. Logs appear once the bot runs.',
+      'db.dash.win_rate':          'Win Rate',
+      'db.dash.win_rate_no_data':  'No closed trades yet',
+      'db.dash.win_rate_trades':   'trades',
 
       /* ── INDEX: STRATEGY SIMULATION ── */
       'sim.tag':   'Strategy Simulation',
@@ -1115,6 +1118,9 @@
       'db.title':            '대시보드',
       'db.bots.logs_title':  '봇 로그',
       'db.bots.no_logs':     '아직 로그가 없습니다. 봇이 실행되면 로그가 나타납니다.',
+      'db.dash.win_rate':          '승률',
+      'db.dash.win_rate_no_data':  '종료된 거래 없음',
+      'db.dash.win_rate_trades':   '거래',
 
       /* ── INDEX: STRATEGY SIMULATION ── */
       'sim.tag':   '전략 시뮬레이션',

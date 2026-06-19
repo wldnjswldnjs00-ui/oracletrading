@@ -459,6 +459,11 @@
         <div class="stat-card-value" id="dashActiveBots">0</div>
         <div class="stat-card-sub" id="dashBotSub" data-i18n="db.running">실행 중</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-card-label" data-i18n="db.dash.win_rate">승률</div>
+        <div class="stat-card-value" id="dashWinRate">—</div>
+        <div class="stat-card-sub" id="dashWinRateSub">—</div>
+      </div>
     </div>
 
     <!-- Equity Chart -->
@@ -1911,6 +1916,24 @@
       listEl.innerHTML = botItemsHtml;
       var dashActive = document.getElementById('dashActiveBots');
       if (dashActive) dashActive.textContent = String(runningStrats.length || 1);
+
+      // Update win rate stat card
+      var wrEl  = document.getElementById('dashWinRate');
+      var wrSub = document.getElementById('dashWinRateSub');
+      if (wrEl) {
+        var wins   = data.winCount  || 0;
+        var losses = data.lossCount || 0;
+        var total  = wins + losses;
+        if (total === 0) {
+          wrEl.textContent  = '—';
+          if (wrSub) wrSub.textContent = _t('db.dash.win_rate_no_data');
+        } else {
+          var pct = (wins / total * 100).toFixed(1);
+          wrEl.style.color  = parseFloat(pct) >= 50 ? 'var(--green)' : '#ef4444';
+          wrEl.textContent  = pct + '%';
+          if (wrSub) wrSub.textContent = wins + 'W / ' + losses + 'L · ' + total + ' ' + _t('db.dash.win_rate_trades');
+        }
+      }
 
       // Render logs
       renderBotLogs(data.logs || [], data.lastScan);

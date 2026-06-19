@@ -693,7 +693,9 @@ async function handleBotStatus(request, env) {
       posSize:     _config.posSize     || 40,
       tradingPair: _config.tradingPair || 'BTC-USDT-SWAP'
     },
-    logs: _logs, alert, positions: _pos, positionSummary, lastScan, fundingRate, marketData: null
+    logs: _logs, alert, positions: _pos, positionSummary, lastScan, fundingRate, marketData: null,
+    winCount:  parseInt(botStateRow.win_count  || '0'),
+    lossCount: parseInt(botStateRow.loss_count || '0')
   });
 }
 
@@ -907,6 +909,8 @@ async function initDB(env) {
     // Add new columns to existing tables (no-op if already present)
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN running INTEGER DEFAULT 1`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN stopped_strategies TEXT DEFAULT NULL`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN win_count INTEGER DEFAULT 0`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN loss_count INTEGER DEFAULT 0`).run().catch(() => {});
     _dbReady = true;
   } catch(e) {}
 }
@@ -1158,7 +1162,29 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       if (!matchingPos) {
         if (ps[stateKey].tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[stateKey].tpAlgoId, demoMode);
         if (ps[stateKey].slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[stateKey].slAlgoId, demoMode);
-        await botLog(env, email, `[${strategy}] Sync: cleared ${tradingPair} state — position closed externally`);
+        // Determine win/loss from close context
+        const closedState = ps[stateKey];
+        try {
+          const avgEntry = closedState.entries?.length
+            ? closedState.entries.reduce((s,e) => s + parseFloat(e.price)*parseInt(e.sz), 0) /
+              closedState.entries.reduce((s,e) => s + parseInt(e.sz), 0)
+            : 0;
+          let isWin;
+          if (closedState.halfClosed) {
+            isWin = true; // already hit TP; remaining is a win
+          } else if (closedState.takeProfit && closedState.stopLoss && currentPrice > 0) {
+            isWin = Math.abs(currentPrice - closedState.takeProfit) < Math.abs(currentPrice - closedState.stopLoss);
+          } else {
+            isWin = avgEntry > 0 && (closedState.direction === 'long' ? currentPrice > avgEntry : currentPrice < avgEntry);
+          }
+          const freshState = await getBotState(env, email);
+          const newWin  = parseInt(freshState.win_count  || '0') + (isWin ? 1 : 0);
+          const newLoss = parseInt(freshState.loss_count || '0') + (isWin ? 0 : 1);
+          await upsertBotState(env, email, { win_count: newWin, loss_count: newLoss });
+          await botLog(env, email, `[${strategy}] Sync: ${tradingPair} closed externally — ${isWin ? '✓ WIN' : '✗ LOSS'} (W:${newWin} L:${newLoss})`);
+        } catch(e2) {
+          await botLog(env, email, `[${strategy}] Sync: cleared ${tradingPair} state — position closed externally`);
+        }
         delete ps[stateKey];
         psModifiedRef.modified = true;
       }
@@ -1584,10 +1610,11 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
   if (state.slAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.slAlgoId, demo);
 
   dl.pct = totalLossPct;
-  await upsertBotState(env, email, { daily_loss: JSON.stringify({ date: today, pct: totalLossPct }) });
+  const newLossCount = parseInt(dlStateRow.loss_count || '0') + 1;
+  await upsertBotState(env, email, { daily_loss: JSON.stringify({ date: today, pct: totalLossPct }), loss_count: newLossCount });
   delete ps[actualKey];
   psModifiedRef.modified = true;
-  await botLog(env, email, `Loss limit ${(totalLossPct*100).toFixed(2)}% reached (float: ${(floatLossPct*100).toFixed(2)}%) — position closed`);
+  await botLog(env, email, `Loss limit ${(totalLossPct*100).toFixed(2)}% reached (float: ${(floatLossPct*100).toFixed(2)}%) — position closed ✗ LOSS (total losses: ${newLossCount})`);
 }
 
 // ════════════════════════════════════════════════════════════
