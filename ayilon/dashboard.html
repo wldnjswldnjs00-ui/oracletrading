@@ -1293,7 +1293,7 @@
     var token = getSessionToken();
     if (!token) return;
     try {
-      var res  = await fetch(WORKER_URL + '/get-bot-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token }) });
+      var res  = await fetch(WORKER_URL + '/bot-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token }) });
       var data = await res.json();
 
       // Active bots count
