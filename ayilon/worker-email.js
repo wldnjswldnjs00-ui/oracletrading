@@ -812,7 +812,8 @@ async function handleSaveBotSettings(request, env) {
   }
 
   // Sanitize numeric config fields — prevent invalid/extreme values reaching runBotForUser
-  const VALID_STRATS = ['ha_ema_srsi','ma_ribbon'];
+  const VALID_STRATS = ['ha_ema_srsi','ma_ribbon','ma50_bounce','ict_fib_ote'];
+  const SCALP_STRATS = ['ma50_bounce'];
   if (body.leverage     !== undefined) body.leverage     = Math.min(Math.max(parseInt(body.leverage)       || 20,   1), 125);
   if (body.posSize      !== undefined) body.posSize      = Math.min(Math.max(parseFloat(body.posSize)      || 40,   1), 100);
   if (body.riskPerTrade !== undefined) body.riskPerTrade = Math.min(Math.max(parseFloat(body.riskPerTrade) ||  2, 0.1),  10);
@@ -1516,9 +1517,11 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     // ── Entry signal (strategy routing) ──────────────────────
     let signal = null;
     switch (strategy) {
-      case 'ha_ema_srsi': signal = detectSignalHAEmaSRSI(candles1H, currentPrice); break;
-      case 'ma_ribbon':   signal = detectSignalMARibbon(candles1H, currentPrice);  break;
-      default:            signal = detectSignalHAEmaSRSI(candles1H, currentPrice); break;
+      case 'ha_ema_srsi':  signal = detectSignalHAEmaSRSI(candles1H, currentPrice);  break;
+      case 'ma_ribbon':    signal = detectSignalMARibbon(candles1H, currentPrice);   break;
+      case 'ma50_bounce':  signal = detectSignalMA50Bounce(candles1H, currentPrice); break;
+      case 'ict_fib_ote':  signal = detectSignalICTFibOTE(candles1H, currentPrice);  break;
+      default:             signal = detectSignalHAEmaSRSI(candles1H, currentPrice);  break;
     }
     if (!signal) {
       // Heartbeat: log once per 5 min so user can confirm bot is alive
@@ -1732,8 +1735,29 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
       const tpHit = state.direction === 'long' ? price >= state.takeProfit : price <= state.takeProfit;
       if (tpHit) {
         const totalSz = state.entries.reduce((sum, e) => sum + parseInt(e.sz), 0);
+        const isScalp = SCALP_STRATS.includes(state.strategy);
 
-        // Swing strategies: close 50%, place break-even SL, start trailing
+        if (isScalp) {
+          // Scalp strategies: close 100%, done
+          const tpCloseRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
+            instId: pair, tdMode: 'cross',
+            side:    state.direction === 'long' ? 'sell' : 'buy',
+            ...(isOneWayMode ? {} : { posSide: state.direction === 'long' ? 'long' : 'short' }),
+            ordType: 'market', sz: String(totalSz)
+          }, demo);
+          if (!tpCloseRes?.data?.[0]?.ordId) {
+            await botLog(env, email, `TP close FAILED [${tpCloseRes?.code}]: ${tpCloseRes?.msg} — algos preserved`);
+            return;
+          }
+          if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
+          if (state.slAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.slAlgoId, demo);
+          await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 100% closed (scalp)`);
+          delete ps[actualKey];
+          psModifiedRef.modified = true;
+          return;
+        }
+
+        // Swing strategies: close 50%, lock in 50% of TP1 profit as SL, start trailing
         const halfContracts = Math.max(1, Math.floor(totalSz / 2));
         const tpCloseRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
           instId: pair, tdMode: 'cross',
@@ -1750,9 +1774,10 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
         if (state.slAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.slAlgoId, demo);
         const remContracts = Math.max(0, totalSz - halfContracts);
 
-        // Compute break-even (average entry price) for the remaining position's SL
         const avgEntry = state.entries.reduce((s, e) => s + parseFloat(e.price) * parseInt(e.sz), 0) /
                          state.entries.reduce((s, e) => s + parseInt(e.sz), 0);
+        const dist = Math.abs(price - avgEntry);
+        const lockedSL = state.direction === 'long' ? avgEntry + dist * 0.5 : avgEntry - dist * 0.5;
 
         state.halfClosed         = true;
         state.takeProfit         = null;
@@ -1762,14 +1787,13 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
         state.tpAlgoId           = null;
         state.slAlgoId           = null;
 
-        // Place break-even SL for remaining contracts — prevents winner turning into loser
         if (remContracts > 0 && avgEntry > 0) {
-          const beSlRes = await placeSLAlgo(apiKey, secret, pass, pair, state.direction, avgEntry, String(remContracts), demo, isOneWayMode);
+          const beSlRes = await placeSLAlgo(apiKey, secret, pass, pair, state.direction, lockedSL, String(remContracts), demo, isOneWayMode);
           state.slAlgoId = beSlRes?.data?.[0]?.algoId ? String(beSlRes.data[0].algoId) : null;
           if (state.slAlgoId) {
-            await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 50% closed | break-even SL @ ${avgEntry.toFixed(2)} | trailing active`);
+            await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 50% closed | locked SL @ ${lockedSL.toFixed(2)} (+50% TP1 profit) | trailing active`);
           } else {
-            await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 50% closed | ⚠️ break-even SL failed | trailing active (no SL protection)`);
+            await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 50% closed | ⚠️ locked SL failed | trailing active (no SL protection)`);
           }
         } else {
           await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 50% closed | trailing active`);
@@ -1992,6 +2016,67 @@ function detectSignalHAEmaSRSI(candles, currentPrice) {
   return null;
 }
 
+
+
+function detectSignalMA50Bounce(candles1H, currentPrice) {
+  const closes = candles1H.map(c => parseFloat(c[4]));
+  if (closes.length < 205) return null;
+  const sma50 = _sma(closes, 50);
+  const sma200 = _sma(closes, 200);
+  if (!sma50 || !sma200) return null;
+  const distTo50 = Math.abs(currentPrice - sma50) / currentPrice;
+  if (distTo50 > 0.012) return null;
+  const recentAbove = candles1H.slice(1, 11).filter(c => parseFloat(c[4]) > sma50).length;
+  const recentBelow = candles1H.slice(1, 11).filter(c => parseFloat(c[4]) < sma50).length;
+  const bodies = candles1H.slice(0, 3).map(c => Math.abs(parseFloat(c[4]) - parseFloat(c[1])) / parseFloat(c[1]));
+  const isNarrow = bodies.every(b => b <= 0.008);
+  const rsi = calcRSI(candles1H, 14);
+  if (!rsi) return null;
+  if (sma50 > sma200 && recentAbove >= 7 && currentPrice >= sma50 && isNarrow && rsi >= 35 && rsi <= 65) {
+    const sl = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
+    const d = (currentPrice - sl) / currentPrice;
+    if (d < 0.003 || d > 0.08) return null;
+    return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'ma50_bounce' };
+  }
+  if (sma50 < sma200 && recentBelow >= 7 && currentPrice <= sma50 && isNarrow && rsi >= 35 && rsi <= 65) {
+    const sl = Math.max(...candles1H.slice(0, 5).map(c => parseFloat(c[2])));
+    const d = (sl - currentPrice) / currentPrice;
+    if (d < 0.003 || d > 0.08) return null;
+    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'ma50_bounce' };
+  }
+  return null;
+}
+
+function detectSignalICTFibOTE(candles1H, currentPrice) {
+  if (candles1H.length < 55) return null;
+  const swing = candles1H.slice(1, 51);
+  const swingHigh = Math.max(...swing.map(c => parseFloat(c[2])));
+  const swingLow  = Math.min(...swing.map(c => parseFloat(c[3])));
+  const range = swingHigh - swingLow;
+  if (range <= 0) return null;
+  const oteBot = swingLow  + range * 0.21;
+  const oteTop = swingLow  + range * 0.38;
+  const prBot  = swingHigh - range * 0.38;
+  const prTop  = swingHigh - range * 0.21;
+  const curCandle = candles1H[0];
+  const isBullish = parseFloat(curCandle[4]) > parseFloat(curCandle[1]);
+  const isBearish = parseFloat(curCandle[4]) < parseFloat(curCandle[1]);
+  const rsi = calcRSI(candles1H, 14);
+  if (!rsi) return null;
+  if (currentPrice >= oteBot && currentPrice <= oteTop && isBullish && rsi < 55) {
+    const sl = swingLow * 0.999;
+    const d = (currentPrice - sl) / currentPrice;
+    if (d < 0.005 || d > 0.15) return null;
+    return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'ict_fib_ote' };
+  }
+  if (currentPrice >= prBot && currentPrice <= prTop && isBearish && rsi > 45) {
+    const sl = swingHigh * 1.001;
+    const d = (sl - currentPrice) / currentPrice;
+    if (d < 0.005 || d > 0.15) return null;
+    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'ict_fib_ote' };
+  }
+  return null;
+}
 
 // ── NATIVE ALGO ORDERS ────────────────────────────────────────
 async function placeSLAlgo(apiKey, secret, pass, pair, direction, slPrice, sz, demo = false, isOneWayMode = false) {

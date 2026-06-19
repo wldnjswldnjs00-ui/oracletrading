@@ -1,883 +1,524 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>AYILON 백테스팅</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Backtest — AYILON</title>
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',system-ui,sans-serif;background:#000;color:#fff;min-height:100vh;padding:32px;}
-h1{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;}
-.sub{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:28px;}
-.card{background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:24px;margin-bottom:20px;}
-.card-title{font-size:14px;font-weight:600;margin-bottom:16px;}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;}
-label{display:block;font-size:11px;color:rgba(255,255,255,0.45);font-weight:500;margin-bottom:6px;letter-spacing:.04em;}
-input{width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit;}
-input:focus{outline:none;border-color:rgba(255,255,255,0.25);}
-.btn{display:block;width:100%;padding:13px;background:#fff;color:#000;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;}
-.btn:hover{opacity:.85;}
-.btn:disabled{opacity:.4;cursor:not-allowed;}
-.progress-wrap{display:none;margin-top:14px;}
-.progress-msg{font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:6px;}
-.progress-bg{background:rgba(255,255,255,0.07);border-radius:4px;height:4px;overflow:hidden;}
-.progress-bar{height:100%;background:#22c55e;width:0%;transition:width .3s;border-radius:4px;}
-table{width:100%;border-collapse:collapse;font-size:13px;}
-thead tr{border-bottom:1px solid rgba(255,255,255,0.07);}
-th{text-align:right;padding:10px 12px;color:rgba(255,255,255,0.4);font-weight:500;font-size:12px;white-space:nowrap;}
-th:first-child{text-align:left;}
-td{padding:12px 12px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:right;font-size:13px;}
-td:first-child{text-align:left;font-weight:500;}
-tr:last-child td{border-bottom:none;}
-.chart-wrap{position:relative;height:280px;}
-.hidden{display:none;}
-.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
-.tab{padding:5px 14px;border-radius:100px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.5);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;}
-.tab:hover{border-color:rgba(255,255,255,0.3);color:#fff;}
-.tab.active{background:#fff;color:#000;border-color:#fff;}
-.note{font-size:11px;color:rgba(255,255,255,0.3);margin-top:10px;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:#000;color:#fff;min-height:100vh;padding:32px}
+h1{font-size:22px;font-weight:700;margin-bottom:8px}
+.sub{color:#666;font-size:13px;margin-bottom:32px}
+.controls{display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap;align-items:center}
+select,button{background:#111;border:1px solid #333;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit}
+button:hover{background:#222}
+button.run{background:#fff;color:#000;font-weight:700;padding:10px 28px}
+button.run:hover{background:#e5e5e5}
+button.run:disabled{background:#333;color:#666;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:32px}
+.card{background:#111;border:1px solid #222;border-radius:10px;padding:20px}
+.card-title{font-size:12px;color:#666;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px}
+.card-strat{font-size:15px;font-weight:700;margin-bottom:12px}
+.card-type{display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.1em;padding:2px 8px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.type-swing{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
+.type-scalp{background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a1a1a;font-size:13px}
+.stat-row:last-child{border-bottom:none}
+.stat-label{color:#666}
+.stat-val{font-weight:600}
+.up{color:#22c55e}.down{color:#ef4444}.neutral{color:#a3a3a3}
+.log{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;padding:16px;font-size:11px;color:#555;font-family:monospace;max-height:280px;overflow-y:auto;margin-bottom:24px}
+.log .msg{padding:2px 0;border-bottom:1px solid #111}
+.progress{height:3px;background:#1a1a1a;border-radius:2px;margin-bottom:24px;overflow:hidden}
+.progress-bar{height:100%;background:#fff;width:0%;transition:width 0.3s}
+.summary{background:#111;border:1px solid #222;border-radius:10px;padding:20px;margin-bottom:24px}
+.summary h2{font-size:14px;font-weight:700;margin-bottom:16px}
+.sum-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #1a1a1a}
+.sum-row:last-child{border-bottom:none}
 </style>
 </head>
 <body>
-<h1>AYILON 전략 백테스팅</h1>
-<p class="sub">최근 1년 · 5분봉 실행 · 1H 집계 신호 · 진입가 = 다음 캔들 시가 · 수수료 0.1%/거래 반영</p>
+<h1>Strategy Backtest</h1>
+<p class="sub">1-year backtest · 5m candles → 1H aggregation · OKX BTC/ETH-USDT-SWAP</p>
 
-<div class="card">
-  <div class="card-title">설정</div>
-  <div class="grid3">
-    <div><label>Trading Pair</label><input id="btPair" value="BTC-USDT-SWAP" oninput="onPairChange()"></div>
-    <div><label>레버리지</label><input id="btLev" type="number" value="10" min="1" max="20"></div>
-    <div><label>포지션 크기 (%)</label><input id="btPos" type="number" value="10" min="1" max="40"></div>
-  </div>
-  <button class="btn" id="btStartBtn" onclick="startBacktest()">백테스팅 시작 (9개 전략 · 약 60초 소요)</button>
-  <div class="progress-wrap" id="btProg">
-    <div class="progress-msg" id="btMsg">준비 중...</div>
-    <div class="progress-bg"><div class="progress-bar" id="btBar"></div></div>
-  </div>
-  <p class="note">⚠ 슬리피지·펀딩비 미반영. SL/TP 동일 캔들 내 충돌 시 SL 우선 처리(보수적). 백테스트 ≠ 실제 수익 보장.</p>
+<div class="controls">
+  <select id="pairSel">
+    <option value="BTC-USDT-SWAP">BTC-USDT-SWAP</option>
+    <option value="ETH-USDT-SWAP">ETH-USDT-SWAP</option>
+  </select>
+  <button class="run" id="runBtn" onclick="runBacktest()">Run Backtest</button>
 </div>
 
-<div class="card hidden" id="btResultCard">
-  <div class="card-title">전략별 성과 비교</div>
-  <div style="overflow-x:auto;">
-    <table>
-      <thead><tr>
-        <th style="text-align:left;">전략</th>
-        <th>거래수</th><th>승률</th><th>일 평균</th>
-        <th>월 평균</th><th>연 복리</th><th>최대낙폭</th>
-        <th style="text-align:center;">차트</th>
-      </tr></thead>
-      <tbody id="btTbody"></tbody>
-    </table>
-  </div>
-</div>
-
-<div class="card hidden" id="btChartCard">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-    <div id="btChartTitle" style="font-size:14px;font-weight:600;flex:1 1 auto;"></div>
-    <div class="tabs" id="btTabs"></div>
-  </div>
-  <div class="chart-wrap"><canvas id="btCanvas"></canvas></div>
-</div>
+<div class="progress"><div class="progress-bar" id="prog"></div></div>
+<div class="log" id="log"></div>
+<div class="summary" id="summary" style="display:none"></div>
+<div class="grid" id="cards"></div>
 
 <script>
-// ════════════════════════════════════════════════════════════
-// INDICATOR FUNCTIONS — copied exactly from worker-email.js
-// ════════════════════════════════════════════════════════════
+const OKX = 'https://www.okx.com';
+const RR = 1.5;
+const FEE = 0.001;
+const TRAIL_STEP = 0.01;
+const STRATEGIES = [
+  { id: 'ha_ema_srsi', name: 'HA + EMA + StochRSI', type: 'SWING' },
+  { id: 'ma_ribbon',   name: 'MA Ribbon',            type: 'SWING' },
+  { id: 'ma50_bounce', name: 'MA50 Bounce',           type: 'SCALP' },
+  { id: 'ict_fib_ote', name: 'ICT Fibonacci OTE',     type: 'SWING' }
+];
+const SCALP_STRATS = new Set(['ma50_bounce']);
 
-// closes: newest-first
-function _sma(closes, period) {
-  if (closes.length < period) return null;
-  return closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
+function log(msg) {
+  const el = document.getElementById('log');
+  const d = document.createElement('div');
+  d.className = 'msg';
+  d.textContent = new Date().toTimeString().slice(0,8) + ' ' + msg;
+  el.insertBefore(d, el.firstChild);
+}
+function prog(pct) {
+  document.getElementById('prog').style.width = pct + '%';
 }
 
-// closes: oldest-first
-function _ema(closes, period) {
-  if (closes.length < period) return null;
-  const k = 2 / (period + 1);
-  let e = closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
-  for (let i = period; i < closes.length; i++) e = closes[i] * k + e * (1 - k);
-  return e;
+async function fetchCandles5m(pair) {
+  const ONE_YEAR_AGO = Math.floor(Date.now() / 3600000) * 3600000 - 365 * 24 * 3600000;
+  log(`Fetching 5m candles for ${pair}...`);
+  const seen = new Map();
+  let after = '';
+  let batch = 0;
+  for (;;) {
+    const url = `${OKX}/api/v5/market/history-candles?instId=${pair}&bar=5m&limit=100${after ? '&after=' + after : ''}`;
+    const res = await fetch(url);
+    const j = await res.json();
+    const rows = j.data || [];
+    if (!rows.length) break;
+    let gotNew = false;
+    for (const r of rows) {
+      const ts = parseInt(r[0]);
+      if (ts < ONE_YEAR_AGO) continue;
+      if (!seen.has(ts)) { seen.set(ts, r); gotNew = true; }
+    }
+    const oldest = parseInt(rows[rows.length - 1][0]);
+    if (oldest < ONE_YEAR_AGO) break;
+    if (!gotNew) break;
+    after = oldest;
+    batch++;
+    if (batch % 20 === 0) log(`  ...fetched ${seen.size} 5m candles so far`);
+    await new Promise(r => setTimeout(r, 120));
+  }
+  const sorted = [...seen.values()].sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+  log(`Loaded ${sorted.length} 5m candles for ${pair}`);
+  return sorted;
 }
 
-// candles: newest-first
-function calcRSI(candles, period) {
-  period = period || 14;
-  const closes = candles.map(function(c){return parseFloat(c[4]);}).reverse();
-  if (closes.length < period + 1) return null;
-  var gains = 0, losses = 0;
-  for (var i = 1; i <= period; i++) {
-    var d = closes[i] - closes[i-1];
+function aggregate1H(candles5m) {
+  // candles5m: oldest-first [ts, open, high, low, close, vol]
+  const buckets = new Map();
+  for (const c of candles5m) {
+    const ts = parseInt(c[0]);
+    const hr = Math.floor(ts / 3600000) * 3600000;
+    if (!buckets.has(hr)) {
+      buckets.set(hr, { ts: hr, open: c[1], high: parseFloat(c[2]), low: parseFloat(c[3]), close: c[4], vol: 0 });
+    } else {
+      const b = buckets.get(hr);
+      b.high = Math.max(b.high, parseFloat(c[2]));
+      b.low  = Math.min(b.low,  parseFloat(c[3]));
+      b.close = c[4];
+    }
+    buckets.get(hr).vol += parseFloat(c[5]);
+  }
+  return [...buckets.values()]
+    .sort((a, b) => a.ts - b.ts)
+    .map(b => [String(b.ts), String(b.open), String(b.high), String(b.low), String(b.close), String(b.vol)]);
+}
+
+// ── Indicators ────────────────────────────────────────────────
+function _sma(arr, n) {
+  if (arr.length < n) return null;
+  return arr.slice(arr.length - n).reduce((s, v) => s + v, 0) / n;
+}
+function calcRSIarr(closes, period = 14) {
+  if (closes.length < period + 2) return null;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = closes[i] - closes[i - 1];
     if (d > 0) gains += d; else losses -= d;
   }
-  var avgG = gains / period, avgL = losses / period;
-  for (var i = period + 1; i < closes.length; i++) {
-    var d = closes[i] - closes[i-1];
-    avgG = (avgG * (period - 1) + Math.max(0, d)) / period;
-    avgL = (avgL * (period - 1) + Math.max(0, -d)) / period;
+  let ag = gains / period, al = losses / period;
+  for (let i = period + 1; i < closes.length; i++) {
+    const d = closes[i] - closes[i - 1];
+    ag = (ag * (period - 1) + Math.max(0, d)) / period;
+    al = (al * (period - 1) + Math.max(0, -d)) / period;
   }
-  if (avgL === 0) return 100;
-  return 100 - 100 / (1 + avgG / avgL);
+  if (al === 0) return 100;
+  return 100 - 100 / (1 + ag / al);
 }
-
-// candles: newest-first
-function calcBB(candles, period, mult) {
-  period = period || 20; mult = mult || 2;
-  var closes = candles.map(function(c){return parseFloat(c[4]);});
-  if (closes.length < period) return null;
-  var slice = closes.slice(0, period);
-  var mid = slice.reduce(function(s,v){return s+v;}, 0) / period;
-  var std = Math.sqrt(slice.reduce(function(s,v){return s+(v-mid)*(v-mid);}, 0) / period);
-  return { upper: mid + mult * std, mid: mid, lower: mid - mult * std };
+function calcEMA200arr(closes) {
+  if (closes.length < 200) return null;
+  const k = 2 / 201;
+  let ema = closes.slice(0, 200).reduce((s, v) => s + v, 0) / 200;
+  for (let i = 200; i < closes.length; i++) ema = closes[i] * k + ema * (1 - k);
+  return ema;
 }
-
-// candles: newest-first
-function calcMACD(candles, fast, slow, sig) {
-  fast = fast||12; slow = slow||26; sig = sig||9;
-  var closes = candles.map(function(c){return parseFloat(c[4]);}).reverse();
-  if (closes.length < slow + sig + 2) return null;
-  var kF = 2/(fast+1), kS = 2/(slow+1);
-  var eF = 0, eS = 0, macdArr = [];
-  for (var i = 0; i < closes.length; i++) {
-    eF = i < fast ? (eF * i + closes[i]) / (i+1) : closes[i]*kF + eF*(1-kF);
-    eS = i < slow ? (eS * i + closes[i]) / (i+1) : closes[i]*kS + eS*(1-kS);
-    if (i >= slow - 1) macdArr.push(eF - eS);
+function calcStochRSIarr(closes, rsiLen = 14, stochLen = 14, kSmooth = 3, dSmooth = 3) {
+  if (closes.length < rsiLen + stochLen + kSmooth + dSmooth + 5) return null;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= rsiLen; i++) {
+    const d = closes[i] - closes[i - 1];
+    if (d > 0) gains += d; else losses -= d;
   }
-  if (macdArr.length < sig + 2) return null;
-  var kSig = 2/(sig+1), sigEMA = macdArr.slice(0,sig).reduce(function(s,v){return s+v;},0)/sig, prevSigEMA = sigEMA;
-  for (var i = sig; i < macdArr.length; i++) {
-    prevSigEMA = sigEMA;
-    sigEMA = macdArr[i]*kSig + sigEMA*(1-kSig);
+  let ag = gains / rsiLen, al = losses / rsiLen;
+  const rsiSeries = [];
+  for (let i = rsiLen; i < closes.length; i++) {
+    const rs = al === 0 ? 100 : ag / al;
+    rsiSeries.push(100 - 100 / (1 + rs));
+    if (i < closes.length - 1) {
+      const d = closes[i + 1] - closes[i];
+      ag = (ag * (rsiLen - 1) + Math.max(d, 0)) / rsiLen;
+      al = (al * (rsiLen - 1) + Math.max(-d, 0)) / rsiLen;
+    }
   }
-  return { histogram: macdArr[macdArr.length-1] - sigEMA, prevHistogram: macdArr[macdArr.length-2] - prevSigEMA };
+  if (rsiSeries.length < stochLen) return null;
+  const stochSeries = [];
+  for (let i = stochLen - 1; i < rsiSeries.length; i++) {
+    const sl = rsiSeries.slice(i - stochLen + 1, i + 1);
+    const hi = Math.max(...sl), lo = Math.min(...sl);
+    stochSeries.push(hi === lo ? 50 : (rsiSeries[i] - lo) / (hi - lo) * 100);
+  }
+  if (stochSeries.length < kSmooth + dSmooth) return null;
+  const kSeries = [];
+  for (let i = kSmooth - 1; i < stochSeries.length; i++)
+    kSeries.push(stochSeries.slice(i - kSmooth + 1, i + 1).reduce((s, v) => s + v, 0) / kSmooth);
+  if (kSeries.length < dSmooth + 1) return null;
+  const dSeries = [];
+  for (let i = dSmooth - 1; i < kSeries.length; i++)
+    dSeries.push(kSeries.slice(i - dSmooth + 1, i + 1).reduce((s, v) => s + v, 0) / dSmooth);
+  const k0 = kSeries[kSeries.length - 1], k1 = kSeries[kSeries.length - 2];
+  const d0 = dSeries[dSeries.length - 1], d1 = dSeries[dSeries.length - 2];
+  return { k: k0, kPrev: k1, d: d0, dPrev: d1 };
 }
-
-// candles: newest-first
-function calcATR(candles, period) {
-  period = period || 14;
-  if (candles.length < period + 1) return null;
-  var tr = 0;
-  for (var i = 0; i < period; i++) {
-    var hi = parseFloat(candles[i][2]), lo = parseFloat(candles[i][3]), pc = parseFloat(candles[i+1][4]);
-    tr += Math.max(hi - lo, Math.abs(hi - pc), Math.abs(lo - pc));
+function calcHAarr(candles) {
+  const ha = [];
+  for (let i = 0; i < candles.length; i++) {
+    const o = parseFloat(candles[i][1]), h = parseFloat(candles[i][2]);
+    const l = parseFloat(candles[i][3]), c = parseFloat(candles[i][4]);
+    const haC = (o + h + l + c) / 4;
+    const haO = i === 0 ? (o + c) / 2 : (ha[i-1][1] + ha[i-1][4]) / 2;
+    const haH = Math.max(h, haO, haC), haL = Math.min(l, haO, haC);
+    ha.push([candles[i][0], haO, haH, haL, haC, candles[i][5]]);
   }
-  return tr / period;
-}
-
-// candles: newest-first
-function calcADX(candles, period) {
-  period = period || 14;
-  if (candles.length < period * 2 + 1) return null;
-  var c = candles.slice().reverse();
-  var wk = 1 / period, smTR = 0, smPDM = 0, smNDM = 0;
-  for (var i = 1; i <= period; i++) {
-    var hi = parseFloat(c[i][2]), lo = parseFloat(c[i][3]), pc = parseFloat(c[i-1][4]);
-    smTR += Math.max(hi - lo, Math.abs(hi - pc), Math.abs(lo - pc));
-    var up = hi - parseFloat(c[i-1][2]), dn = parseFloat(c[i-1][3]) - lo;
-    smPDM += (up > dn && up > 0) ? up : 0;
-    smNDM += (dn > up && dn > 0) ? dn : 0;
-  }
-  var pDI = smTR > 0 ? 100*smPDM/smTR : 0;
-  var nDI = smTR > 0 ? 100*smNDM/smTR : 0;
-  var adx = (pDI+nDI) > 0 ? Math.abs(pDI-nDI)/(pDI+nDI)*100 : 0;
-  for (var i = period + 1; i < c.length; i++) {
-    var hi = parseFloat(c[i][2]), lo = parseFloat(c[i][3]), pc = parseFloat(c[i-1][4]);
-    var tr = Math.max(hi-lo, Math.abs(hi-pc), Math.abs(lo-pc));
-    var up = hi - parseFloat(c[i-1][2]), dn = parseFloat(c[i-1][3]) - lo;
-    smTR  = smTR*(1-wk)+tr;
-    smPDM = smPDM*(1-wk)+((up>dn&&up>0)?up:0);
-    smNDM = smNDM*(1-wk)+((dn>up&&dn>0)?dn:0);
-    pDI = smTR>0 ? 100*smPDM/smTR : 0;
-    nDI = smTR>0 ? 100*smNDM/smTR : 0;
-    var dx = (pDI+nDI)>0 ? Math.abs(pDI-nDI)/(pDI+nDI)*100 : 0;
-    adx = adx*(1-wk)+dx*wk;
-  }
-  return { adx: adx, plusDI: pDI, minusDI: nDI };
-}
-
-// candles: newest-first → returns newest-first HA candles
-function calcHACandles(candles) {
-  var rev = candles.slice().reverse();
-  var ha = [];
-  for (var i = 0; i < rev.length; i++) {
-    var o=parseFloat(rev[i][1]),h=parseFloat(rev[i][2]),l=parseFloat(rev[i][3]),cl=parseFloat(rev[i][4]);
-    var haClose=(o+h+l+cl)/4;
-    var haOpen = i===0 ? (o+cl)/2 : (ha[i-1][1]+ha[i-1][4])/2;
-    ha.push([rev[i][0], haOpen, Math.max(h,haOpen,haClose), Math.min(l,haOpen,haClose), haClose, rev[i][5]]);
-  }
-  ha.reverse();
   return ha;
 }
 
-// closes: newest-first
-function calcEMA200(closes) {
-  if (closes.length < 200) return null;
-  var rev = closes.slice().reverse();
-  var k = 2/201, ema = rev.slice(0,200).reduce(function(s,v){return s+v;},0)/200;
-  for (var i = 200; i < rev.length; i++) ema = rev[i]*k + ema*(1-k);
-  return ema;
-}
-
-// closes: newest-first
-function calcStochRSI(closes, rsiLen, stochLen, kSmooth, dSmooth) {
-  rsiLen=rsiLen||14; stochLen=stochLen||14; kSmooth=kSmooth||3; dSmooth=dSmooth||3;
-  if (closes.length < rsiLen+stochLen+kSmooth+dSmooth+5) return null;
-  var rev = closes.slice().reverse();
-  var gains=0, losses=0;
-  for (var i=1; i<=rsiLen; i++) { var d=rev[i]-rev[i-1]; if(d>0)gains+=d; else losses-=d; }
-  var ag=gains/rsiLen, al=losses/rsiLen, rsiSeries=[];
-  for (var i=rsiLen; i<rev.length; i++) {
-    var rs=al===0?100:ag/al;
-    rsiSeries.push(100-100/(1+rs));
-    if (i<rev.length-1) { var d=rev[i+1]-rev[i]; ag=(ag*(rsiLen-1)+Math.max(d,0))/rsiLen; al=(al*(rsiLen-1)+Math.max(-d,0))/rsiLen; }
+// ── Signal functions (oldest-first candles, idx = current candle index) ──
+function signalHAEmaSRSI(candles, idx) {
+  if (idx < 210) return null;
+  const slice = candles.slice(0, idx + 1); // oldest to current
+  const closes = slice.map(c => parseFloat(c[4]));
+  const ema200 = calcEMA200arr(closes);
+  if (!ema200) return null;
+  const srsi = calcStochRSIarr(closes);
+  if (!srsi) return null;
+  const ha = calcHAarr(slice);
+  const haC = ha[ha.length - 1], haP = ha[ha.length - 2];
+  const haOpen = haC[1], haHigh = haC[2], haLow = haC[3], haClose = haC[4];
+  const pClose = haP[4], pOpen = haP[1];
+  const haBody = Math.abs(haClose - haOpen), pBody = Math.abs(pClose - pOpen);
+  const lowerWick = Math.min(haOpen, haClose) - haLow;
+  const upperWick = haHigh - Math.max(haOpen, haClose);
+  const price = parseFloat(candles[idx][4]);
+  const kCrossUp   = srsi.kPrev < srsi.dPrev && srsi.k >= srsi.d && srsi.kPrev < 30;
+  const strongBull = haClose > haOpen && haBody > pBody * 0.8 && lowerWick < haBody * 0.15;
+  if (price > ema200 && kCrossUp && strongBull) {
+    const swingLow = Math.min(...candles.slice(Math.max(0, idx - 7), idx).map(c => parseFloat(c[3])));
+    if (swingLow >= price) return null;
+    return { type: 'long', sl: swingLow };
   }
-  if (rsiSeries.length < stochLen) return null;
-  var stochSeries=[];
-  for (var i=stochLen-1; i<rsiSeries.length; i++) {
-    var win=rsiSeries.slice(i-stochLen+1,i+1), hi=Math.max.apply(null,win), lo=Math.min.apply(null,win);
-    stochSeries.push(hi===lo?50:(rsiSeries[i]-lo)/(hi-lo)*100);
-  }
-  if (stochSeries.length < kSmooth+dSmooth) return null;
-  var kSeries=[];
-  for (var i=kSmooth-1; i<stochSeries.length; i++) kSeries.push(stochSeries.slice(i-kSmooth+1,i+1).reduce(function(s,v){return s+v;},0)/kSmooth);
-  if (kSeries.length < dSmooth+1) return null;
-  var dSeries=[];
-  for (var i=dSmooth-1; i<kSeries.length; i++) dSeries.push(kSeries.slice(i-dSmooth+1,i+1).reduce(function(s,v){return s+v;},0)/dSmooth);
-  return { k:kSeries[kSeries.length-1], kPrev:kSeries[kSeries.length-2], d:dSeries[dSeries.length-1], dPrev:dSeries[dSeries.length-2] };
-}
-
-// candles: newest-first 1H — uses EMA20/EMA50 as trend proxy
-function detectTrend(candles1H, currentPrice) {
-  if (candles1H.length < 55) return { dir: 'neutral', strong: false };
-  var closes = candles1H.slice(0, 55).map(function(c){return parseFloat(c[4]);}).reverse();
-  var closes5 = candles1H.slice(5, 60).map(function(c){return parseFloat(c[4]);}).reverse();
-  var ema20 = _ema(closes, 20), ema50 = _ema(closes, 50);
-  if (!ema20 || !ema50) return { dir: 'neutral', strong: false };
-  var ema20_5 = closes5.length >= 20 ? _ema(closes5, 20) : ema20;
-  var slope  = Math.abs(ema20 - ema20_5) / (ema20_5 || 1);
-  var spread = Math.abs(ema20 - ema50) / (ema50 || 1);
-  var strong = slope > 0.002 && spread > 0.008;
-  var dir;
-  if (currentPrice > ema20 && ema20 > ema50) dir = 'up';
-  else if (currentPrice < ema20 && ema20 < ema50) dir = 'down';
-  else dir = 'neutral';
-  return { dir: dir, strong: strong };
-}
-
-// ════════════════════════════════════════════════════════════
-// SIGNAL FUNCTIONS — copied exactly from worker-email.js
-// candles: newest-first
-// ════════════════════════════════════════════════════════════
-
-function detectSignalHAEmaSRSI(candles, currentPrice) {
-  if (candles.length < 210) return null;
-  var closes = candles.map(function(c){return parseFloat(c[4]);});
-  var ema200 = calcEMA200(closes); if (!ema200) return null;
-  var srsi = calcStochRSI(closes); if (!srsi) return null;
-  var ha = calcHACandles(candles); if (ha.length < 3) return null;
-  var haC=ha[0], haP=ha[1];
-  var haOpen=haC[1], haHigh=haC[2], haLow=haC[3], haClose=haC[4];
-  var pOpen=haP[1], pClose=haP[4];
-  var haBody=Math.abs(haClose-haOpen), pBody=Math.abs(pClose-pOpen);
-  var lowerWick=Math.min(haOpen,haClose)-haLow, upperWick=haHigh-Math.max(haOpen,haClose);
-  var kCrossUp   = srsi.kPrev<srsi.dPrev && srsi.k>=srsi.d && srsi.kPrev<30;
-  var strongBull = haClose>haOpen && haBody>pBody*0.8 && lowerWick<haBody*0.15;
-  if (currentPrice>ema200 && kCrossUp && strongBull) {
-    var swingLow=Math.min.apply(null, candles.slice(1,8).map(function(c){return parseFloat(c[3]);}));
-    if (swingLow>=currentPrice) return null;
-    return { type:'long', stopLoss:swingLow };
-  }
-  var kCrossDown = srsi.kPrev>srsi.dPrev && srsi.k<=srsi.d && srsi.kPrev>70;
-  var strongBear = haClose<haOpen && haBody>pBody*0.8 && upperWick<haBody*0.15;
-  if (currentPrice<ema200 && kCrossDown && strongBear) {
-    var swingHigh=Math.max.apply(null, candles.slice(1,8).map(function(c){return parseFloat(c[2]);}));
-    if (swingHigh<=currentPrice) return null;
-    return { type:'short', stopLoss:swingHigh };
+  const kCrossDown = srsi.kPrev > srsi.dPrev && srsi.k <= srsi.d && srsi.kPrev > 70;
+  const strongBear = haClose < haOpen && haBody > pBody * 0.8 && upperWick < haBody * 0.15;
+  if (price < ema200 && kCrossDown && strongBear) {
+    const swingHigh = Math.max(...candles.slice(Math.max(0, idx - 7), idx).map(c => parseFloat(c[2])));
+    if (swingHigh <= price) return null;
+    return { type: 'short', sl: swingHigh };
   }
   return null;
 }
 
-function detectSignalNYOpenFVG(candles5m, currentPrice, nyRef) {
-  if (!nyRef || candles5m.length < 6) return null;
-  var brokenUp = candles5m.slice(1,20).some(function(c){return parseFloat(c[4])>nyRef.high;});
-  if (brokenUp) {
-    for (var i=1; i<Math.min(candles5m.length-1,16); i++) {
-      var c1High=parseFloat(candles5m[i+1][2]), c3Low=parseFloat(candles5m[i-1][3]);
-      if (c3Low>c1High && currentPrice>=c1High && currentPrice<=c3Low) {
-        var sl=parseFloat(candles5m[1][3]);
-        if (sl>=currentPrice) continue;
-        return { type:'long', stopLoss:sl };
-      }
-    }
+function signalMARibbon(candles, idx) {
+  if (idx < 105) return null;
+  const closes = candles.slice(0, idx + 1).map(c => parseFloat(c[4]));
+  const price = closes[closes.length - 1];
+  const mas = [10, 20, 50, 100].map(p => ({ p, v: _sma(closes, p) })).filter(m => m.v);
+  if (mas.length < 4) return null;
+  const sorted = [...mas].sort((a, b) => a.p - b.p);
+  const bullish = price > sorted[0].v && sorted.every((m, i) => i === 0 || sorted[i-1].v > m.v);
+  const bearish = price < sorted[0].v && sorted.every((m, i) => i === 0 || sorted[i-1].v < m.v);
+  if (!bullish && !bearish) return null;
+  if (Math.abs(price - sorted[0].v) / price > 0.010) return null;
+  const recentCandles = candles.slice(Math.max(0, idx - 5), idx + 1);
+  const sl = bullish
+    ? Math.min(...recentCandles.map(c => parseFloat(c[3])))
+    : Math.max(...recentCandles.map(c => parseFloat(c[2])));
+  const d = Math.abs(price - sl) / price;
+  if (d < 0.005 || d > 0.12) return null;
+  return bullish ? { type: 'long', sl } : { type: 'short', sl };
+}
+
+function signalMA50Bounce(candles, idx) {
+  if (idx < 205) return null;
+  const closes = candles.slice(0, idx + 1).map(c => parseFloat(c[4]));
+  const price = closes[closes.length - 1];
+  const sma50  = _sma(closes, 50);
+  const sma200 = _sma(closes, 200);
+  if (!sma50 || !sma200) return null;
+  if (Math.abs(price - sma50) / price > 0.012) return null;
+  const recent10 = candles.slice(Math.max(0, idx - 10), idx);
+  const recentAbove = recent10.filter(c => parseFloat(c[4]) > sma50).length;
+  const recentBelow = recent10.filter(c => parseFloat(c[4]) < sma50).length;
+  const last3 = candles.slice(Math.max(0, idx - 3), idx + 1);
+  const isNarrow = last3.every(c => Math.abs(parseFloat(c[4]) - parseFloat(c[1])) / parseFloat(c[1]) <= 0.008);
+  const rsi = calcRSIarr(closes);
+  if (!rsi || rsi < 35 || rsi > 65) return null;
+  if (sma50 > sma200 && recentAbove >= 7 && price >= sma50 && isNarrow) {
+    const sl = Math.min(...candles.slice(Math.max(0, idx - 5), idx + 1).map(c => parseFloat(c[3])));
+    const d = (price - sl) / price;
+    if (d < 0.003 || d > 0.08) return null;
+    return { type: 'long', sl };
   }
-  var brokenDown = candles5m.slice(1,20).some(function(c){return parseFloat(c[4])<nyRef.low;});
-  if (brokenDown) {
-    for (var i=1; i<Math.min(candles5m.length-1,16); i++) {
-      var c1Low=parseFloat(candles5m[i+1][3]), c3High=parseFloat(candles5m[i-1][2]);
-      if (c3High<c1Low && currentPrice>=c3High && currentPrice<=c1Low) {
-        var sl=parseFloat(candles5m[1][2]);
-        if (sl<=currentPrice) continue;
-        return { type:'short', stopLoss:sl };
-      }
-    }
+  if (sma50 < sma200 && recentBelow >= 7 && price <= sma50 && isNarrow) {
+    const sl = Math.max(...candles.slice(Math.max(0, idx - 5), idx + 1).map(c => parseFloat(c[2])));
+    const d = (sl - price) / price;
+    if (d < 0.003 || d > 0.08) return null;
+    return { type: 'short', sl };
   }
   return null;
 }
 
-function detectSignalMARSIScalp(c5, currentPrice) {
-  if (c5.length < 36) return null;
-  var closes = c5.slice(0,36).map(function(c){return parseFloat(c[4]);});
-  var ma10Curr=closes.slice(0,10).reduce(function(s,v){return s+v;},0)/10;
-  var ma10Prev=closes.slice(1,11).reduce(function(s,v){return s+v;},0)/10;
-  var ma34Curr=closes.slice(0,34).reduce(function(s,v){return s+v;},0)/34;
-  var ma34Prev=closes.slice(1,35).reduce(function(s,v){return s+v;},0)/34;
-  var rsi=calcRSI(c5.slice(0,30),14); if(rsi===null) return null;
-  if (ma10Prev<=ma34Prev && ma10Curr>ma34Curr && rsi>55) {
-    var sl=parseFloat(c5[1][3]); if(sl>=currentPrice) return null;
-    return { type:'long', stopLoss:sl };
+function signalICTFibOTE(candles, idx) {
+  if (idx < 55) return null;
+  const swing = candles.slice(Math.max(0, idx - 50), idx);
+  const swingHigh = Math.max(...swing.map(c => parseFloat(c[2])));
+  const swingLow  = Math.min(...swing.map(c => parseFloat(c[3])));
+  const range = swingHigh - swingLow;
+  if (range <= 0) return null;
+  const oteBot = swingLow  + range * 0.21;
+  const oteTop = swingLow  + range * 0.38;
+  const prBot  = swingHigh - range * 0.38;
+  const prTop  = swingHigh - range * 0.21;
+  const cur = candles[idx];
+  const price = parseFloat(cur[4]);
+  const isBullish = parseFloat(cur[4]) > parseFloat(cur[1]);
+  const isBearish = parseFloat(cur[4]) < parseFloat(cur[1]);
+  const closes = candles.slice(0, idx + 1).map(c => parseFloat(c[4]));
+  const rsi = calcRSIarr(closes);
+  if (!rsi) return null;
+  if (price >= oteBot && price <= oteTop && isBullish && rsi < 55) {
+    const sl = swingLow * 0.999;
+    const d = (price - sl) / price;
+    if (d < 0.005 || d > 0.15) return null;
+    return { type: 'long', sl };
   }
-  if (ma10Prev>=ma34Prev && ma10Curr<ma34Curr && rsi<45) {
-    var sl=parseFloat(c5[1][2]); if(sl<=currentPrice) return null;
-    return { type:'short', stopLoss:sl };
-  }
-  return null;
-}
-
-function detectSignalRSIDCA(candles1H, currentPrice) {
-  var rsi=calcRSI(candles1H,14); if(!rsi) return null;
-  if (rsi<40) {
-    var swingLow=Math.min.apply(null,candles1H.slice(0,5).map(function(c){return parseFloat(c[3]);}));
-    var d=(currentPrice-swingLow)/currentPrice;
-    if (d>=0.005 && d<=0.10) return { type:'long', stopLoss:swingLow };
-  }
-  if (rsi>65) {
-    var swingHigh=Math.max.apply(null,candles1H.slice(0,5).map(function(c){return parseFloat(c[2]);}));
-    var d=(swingHigh-currentPrice)/currentPrice;
-    if (d>=0.005 && d<=0.10) return { type:'short', stopLoss:swingHigh };
-  }
-  return null;
-}
-
-function detectSignalMACrossover(candles5m, candles1H, currentPrice) {
-  var closes=candles1H.map(function(c){return parseFloat(c[4]);}).reverse();
-  if (closes.length<36) return null;
-  var ema10c=_ema(closes,10), ema34c=_ema(closes,34);
-  var ema10p=_ema(closes.slice(0,closes.length-1),10), ema34p=_ema(closes.slice(0,closes.length-1),34);
-  if (!ema10c||!ema34c||!ema10p||!ema34p) return null;
-  var rsi=calcRSI(candles1H,14); if(!rsi) return null;
-  var lows5m=candles5m.slice(0,4).map(function(c){return parseFloat(c[3]);});
-  var highs5m=candles5m.slice(0,4).map(function(c){return parseFloat(c[2]);});
-  if (ema10c>ema34c && ema10p<=ema34p && rsi>=50 && rsi<70) {
-    var sl=Math.min.apply(null,lows5m);
-    var d=(currentPrice-sl)/currentPrice;
-    if (d<0.005||d>0.10) return null;
-    return { type:'long', stopLoss:sl };
-  }
-  if (ema10c<ema34c && ema10p>=ema34p && rsi<=50 && rsi>30) {
-    var sl=Math.max.apply(null,highs5m);
-    var d=(sl-currentPrice)/currentPrice;
-    if (d<0.005||d>0.10) return null;
-    return { type:'short', stopLoss:sl };
+  if (price >= prBot && price <= prTop && isBearish && rsi > 45) {
+    const sl = swingHigh * 1.001;
+    const d = (sl - price) / price;
+    if (d < 0.005 || d > 0.15) return null;
+    return { type: 'short', sl };
   }
   return null;
 }
 
-function detectSignalBBReversion(candles5m, currentPrice, trend) {
-  var bb=calcBB(candles5m,20,2); if(!bb) return null;
-  if (candles5m.length<3) return null;
-  var prev=candles5m[1].map(parseFloat), cur=candles5m[0].map(parseFloat);
-  if (prev[4]<bb.lower && cur[4]>bb.lower && trend.dir!=='down') {
-    var sl=Math.min.apply(null,candles5m.slice(0,4).map(function(c){return parseFloat(c[3]);}));
-    var d=(currentPrice-sl)/currentPrice;
-    if (d<0.005||d>0.12) return null;
-    return { type:'long', stopLoss:sl };
-  }
-  if (prev[4]>bb.upper && cur[4]<bb.upper && trend.dir!=='up') {
-    var sl=Math.max.apply(null,candles5m.slice(0,4).map(function(c){return parseFloat(c[2]);}));
-    var d=(sl-currentPrice)/currentPrice;
-    if (d<0.005||d>0.12) return null;
-    return { type:'short', stopLoss:sl };
-  }
-  return null;
-}
+const SIGNAL_FN = {
+  ha_ema_srsi: signalHAEmaSRSI,
+  ma_ribbon:   signalMARibbon,
+  ma50_bounce: signalMA50Bounce,
+  ict_fib_ote: signalICTFibOTE
+};
 
-function detectSignalBreakout(candles1H, candles5m, currentPrice) {
-  if (candles1H.length<22||candles5m.length<22) return null;
-  var res20=Math.max.apply(null,candles1H.slice(1,21).map(function(c){return parseFloat(c[2]);}));
-  var sup20=Math.min.apply(null,candles1H.slice(1,21).map(function(c){return parseFloat(c[3]);}));
-  var prev5m=candles5m[1]&&candles5m[1].map(parseFloat), cur5m=candles5m[0]&&candles5m[0].map(parseFloat);
-  if (!prev5m||!cur5m) return null;
-  var avgVol=candles5m.slice(1,21).map(function(c){return parseFloat(c[5]);}).reduce(function(s,v){return s+v;},0)/20;
-  if (parseFloat(cur5m[5])<avgVol*1.5) return null;
-  if (prev5m[4]<=res20 && currentPrice>res20*1.001) {
-    var sl=prev5m[3]; var d=(currentPrice-sl)/currentPrice;
-    if (d<0.003||d>0.08) return null;
-    return { type:'long', stopLoss:sl };
-  }
-  if (prev5m[4]>=sup20 && currentPrice<sup20*0.999) {
-    var sl=prev5m[2]; var d=(sl-currentPrice)/currentPrice;
-    if (d<0.003||d>0.08) return null;
-    return { type:'short', stopLoss:sl };
-  }
-  return null;
-}
+// ── Backtest engine ───────────────────────────────────────────
+function runStrategy(candles1H, stratId) {
+  const isScalp = SCALP_STRATS.has(stratId);
+  const fn = SIGNAL_FN[stratId];
+  let trades = 0, wins = 0, totalPnl = 0;
+  let pos = null;
 
-function detectSignalMARibbon(candles1H, currentPrice) {
-  var closes=candles1H.map(function(c){return parseFloat(c[4]);});
-  var mas=[10,20,50,100].map(function(p){return {p:p,v:_sma(closes,p)};}).filter(function(m){return m.v;});
-  if (mas.length<4) return null;
-  var sorted=mas.slice().sort(function(a,b){return a.p-b.p;});
-  var bullish=currentPrice>sorted[0].v && sorted.every(function(m,i){return i===0||sorted[i-1].v>m.v;});
-  var bearish=currentPrice<sorted[0].v && sorted.every(function(m,i){return i===0||sorted[i-1].v<m.v;});
-  if (!bullish&&!bearish) return null;
-  if (Math.abs(currentPrice-sorted[0].v)/currentPrice>0.010) return null;
-  var sl=bullish
-    ? Math.min.apply(null,candles1H.slice(0,5).map(function(c){return parseFloat(c[3]);}))
-    : Math.max.apply(null,candles1H.slice(0,5).map(function(c){return parseFloat(c[2]);}));
-  var d=Math.abs(currentPrice-sl)/currentPrice;
-  if (d<0.005||d>0.12) return null;
-  return bullish ? {type:'long',stopLoss:sl} : {type:'short',stopLoss:sl};
-}
+  for (let i = 0; i < candles1H.length - 1; i++) {
+    const c = candles1H[i];
+    const nextC = candles1H[i + 1];
+    const nextOpen = parseFloat(nextC[1]);
+    const nextHigh = parseFloat(nextC[2]);
+    const nextLow  = parseFloat(nextC[3]);
 
-function detectSignalMACDDiv(candles1H, candles5m, currentPrice) {
-  var macdData=calcMACD(candles1H), rsi=calcRSI(candles1H,14);
-  if (!macdData||!rsi) return null;
-  var lows=candles1H.slice(0,10).map(function(c){return parseFloat(c[3]);});
-  var highs=candles1H.slice(0,10).map(function(c){return parseFloat(c[2]);});
-  var nearLow  = Math.abs(currentPrice-Math.min.apply(null,lows))/currentPrice<=0.02;
-  var nearHigh = Math.abs(currentPrice-Math.max.apply(null,highs))/currentPrice<=0.02;
-  if (nearLow && macdData.histogram>macdData.prevHistogram && rsi>40) {
-    var sl=Math.min.apply(null,candles5m.slice(0,4).map(function(c){return parseFloat(c[3]);}));
-    var d=(currentPrice-sl)/currentPrice;
-    if (d<0.005||d>0.12) return null;
-    return { type:'long', stopLoss:sl };
-  }
-  if (nearHigh && macdData.histogram<macdData.prevHistogram && rsi<60) {
-    var sl=Math.max.apply(null,candles5m.slice(0,4).map(function(c){return parseFloat(c[2]);}));
-    var d=(sl-currentPrice)/currentPrice;
-    if (d<0.005||d>0.12) return null;
-    return { type:'short', stopLoss:sl };
-  }
-  return null;
-}
-
-function detectSignalATRTrend(candles1H, candles5m, currentPrice) {
-  if (candles1H.length<60) return null;
-  var adxData=calcADX(candles1H,14);
-  if (!adxData||adxData.adx<25) return null;
-  var closes=candles1H.map(function(c){return parseFloat(c[4]);});
-  var sma50=_sma(closes,50), atr=calcATR(candles1H,14);
-  if (!sma50||!atr) return null;
-  if (currentPrice>sma50 && adxData.plusDI>adxData.minusDI) {
-    var recentHigh=Math.max.apply(null,candles1H.slice(0,5).map(function(c){return parseFloat(c[2]);}));
-    var pullback=recentHigh-currentPrice;
-    if (pullback<atr*0.5||pullback>atr*2.0) return null;
-    var sl=currentPrice-atr*1.5;
-    var d=(currentPrice-sl)/currentPrice;
-    if (d<0.005||d>0.12) return null;
-    return { type:'long', stopLoss:sl };
-  }
-  if (currentPrice<sma50 && adxData.minusDI>adxData.plusDI) {
-    var recentLow=Math.min.apply(null,candles1H.slice(0,5).map(function(c){return parseFloat(c[3]);}));
-    var bounce=currentPrice-recentLow;
-    if (bounce<atr*0.5||bounce>atr*2.0) return null;
-    var sl=currentPrice+atr*1.5;
-    var d=(sl-currentPrice)/currentPrice;
-    if (d<0.005||d>0.12) return null;
-    return { type:'short', stopLoss:sl };
-  }
-  return null;
-}
-
-// ════════════════════════════════════════════════════════════
-// DATA HELPERS
-// ════════════════════════════════════════════════════════════
-
-// 5m oldest-first → 1H oldest-first (group by hour timestamp)
-function aggregate1H(c5_of) {
-  var hours = {}, order = [];
-  for (var i = 0; i < c5_of.length; i++) {
-    var h = Math.floor(parseInt(c5_of[i][0]) / 3600000) * 3600000;
-    if (!hours[h]) { hours[h] = []; order.push(h); }
-    hours[h].push(c5_of[i]);
-  }
-  return order.map(function(h) {
-    var b = hours[h];
-    var hi = b.reduce(function(m,c){return Math.max(m,parseFloat(c[2]));}, -Infinity);
-    var lo = b.reduce(function(m,c){return Math.min(m,parseFloat(c[3]));},  Infinity);
-    var vol= b.reduce(function(s,c){return s+parseFloat(c[5]);}, 0);
-    return [String(h), b[0][1], String(hi), String(lo), b[b.length-1][4], String(vol)];
-  });
-}
-
-function isEDT(d) {
-  var m = d.getUTCMonth() + 1;
-  return m >= 4 && m <= 10;
-}
-
-// ════════════════════════════════════════════════════════════
-// BACKTEST ENGINE
-// ════════════════════════════════════════════════════════════
-// Scalp: 100% TP close (no trailing)
-// Swing: 50% TP → break-even SL → trailing TP (same dist again)
-// Fee: 0.05% per side = 0.1% round-trip, applied as fraction of equity
-
-var SCALP_STRATS = { ma_rsi_scalp:1, ny_open_fvg:1, bb_reversion:1, rsi_dca:1 };
-
-function runBacktest(c5_of, c1h_of, strategy, leverage, posSize) {
-  var isScalp = !!SCALP_STRATS[strategy];
-  var posFrac = posSize / 100;
-  var FEE_ENTRY  = posFrac * leverage * 0.0005; // 0.05% of notional as fraction of equity
-  var FEE_EXIT_1 = posFrac * leverage * 0.0005;
-  var FEE_EXIT_H = posFrac * leverage * 0.0005 * 0.5; // half-size close fee
-
-  var equity = 10000, pos = null, pending = null;
-  var trades = [], curve = [], lastDay = -1;
-
-  // 5m-based strategies: check every 5m close
-  // 1H-based strategies: check every 1H close (i % 12 === 11 in 5m terms)
-  var check5m = ['ma_rsi_scalp','ny_open_fvg','bb_reversion','breakout','ma_crossover','macd_div','atr_trend'];
-  var is5mCheck = check5m.indexOf(strategy) !== -1;
-
-  // NY session state (for ny_open_fvg)
-  var nyRef = null, nyDay = -1;
-
-  // Need 210+ 1H bars completed → wait 210*12 = 2520 5m bars for warmup
-  var WARMUP = 2520;
-
-  for (var i = WARMUP; i < c5_of.length - 1; i++) {
-    var c   = c5_of[i];
-    var ts  = parseInt(c[0]);
-    var hi5 = parseFloat(c[2]);
-    var lo5 = parseFloat(c[3]);
-    var cl5 = parseFloat(c[4]);
-    var dayKey = Math.floor(ts / 86400000);
-    if (dayKey !== lastDay) { curve.push({ts:ts, equity:equity}); lastDay = dayKey; }
-
-    // NY session ref candle tracking
-    if (strategy === 'ny_open_fvg') {
-      var d = new Date(ts);
-      var nyH = isEDT(d) ? 13 : 14;
-      if (d.getUTCHours() === nyH && d.getUTCMinutes() === 0 && dayKey !== nyDay) {
-        nyRef = { high: hi5, low: lo5, ts: ts };
-        nyDay = dayKey;
-      }
-    }
-
-    // Enter pending position at open of candle i+1
-    // (signal detected at close of candle i-1, entry = open of candle i)
-    // Here we use: signal at close of i → pending → entry at open of i+1
-    // So the pending set at iteration i will become position at iteration i+1
-    // We process pending BEFORE SL/TP check so the same candle can trigger SL/TP
-    if (pending && !pos) {
-      var entryPx = parseFloat(c5_of[i][1]); // open of current candle
-      pos = { dir:pending.dir, entry:entryPx, sl:pending.sl, tp:pending.tp,
-               halfClosed:false, idx:i };
-      equity = Math.max(100, equity - equity * FEE_ENTRY);
-      pending = null;
-    }
-
-    // Check position SL/TP against 5m candle range
+    // Check open position
     if (pos) {
-      var timeout = strategy==='ma_rsi_scalp' && (i-pos.idx)>=24; // 2H = 24 × 5m
-      var slHit = pos.dir==='long' ? lo5<=pos.sl : hi5>=pos.sl;
-      var tpHit = pos.dir==='long' ? hi5>=pos.tp : lo5<=pos.tp;
+      // Swing: trailing logic
+      if (!isScalp && pos.halfClosed) {
+        const movedEnough = pos.dir === 'long'
+          ? nextHigh >= pos.lastTPLevel * (1 + TRAIL_STEP)
+          : nextLow  <= pos.lastTPLevel * (1 - TRAIL_STEP);
+        if (movedEnough) {
+          const trailPrice = pos.dir === 'long' ? pos.lastTPLevel * (1 + TRAIL_STEP) : pos.lastTPLevel * (1 - TRAIL_STEP);
+          const pnlPct = pos.dir === 'long'
+            ? (trailPrice - pos.entry) / pos.entry
+            : (pos.entry - trailPrice) / pos.entry;
+          totalPnl += pnlPct * pos.remainFrac - FEE * pos.remainFrac;
+          pos.lastTPLevel = trailPrice;
+          pos.remainFrac *= 0.9;
+          if (pos.remainFrac < 0.01) pos = null;
+          continue;
+        }
+      }
 
-      if (timeout) {
-        var ret=(pos.dir==='long'?cl5-pos.entry:pos.entry-cl5)/pos.entry;
-        var mul=pos.halfClosed?0.5:1;
-        var pnl=equity*posFrac*leverage*ret*mul;
-        equity=Math.max(100, equity+pnl - equity*FEE_EXIT_1*mul);
-        trades.push({ts:ts,type:'TIMEOUT',pnl:pnl,eq:equity});
-        pos=null;
-      } else if (slHit) {
-        // SL wins even if TP also hit (conservative — can't know order within 5m)
-        var exitPx=pos.sl;
-        var ret=(pos.dir==='long'?exitPx-pos.entry:pos.entry-exitPx)/pos.entry;
-        var mul=pos.halfClosed?0.5:1;
-        var pnl=equity*posFrac*leverage*ret*mul;
-        equity=Math.max(100, equity+pnl - equity*FEE_EXIT_1*mul);
-        trades.push({ts:ts,type:'SL',pnl:pnl,eq:equity});
-        pos=null;
-      } else if (tpHit) {
-        var exitPx=pos.tp;
-        var ret=(pos.dir==='long'?exitPx-pos.entry:pos.entry-exitPx)/pos.entry;
-        if (isScalp || pos.halfClosed) {
-          var mul=pos.halfClosed?0.5:1;
-          var pnl=equity*posFrac*leverage*ret*mul;
-          equity=Math.max(100, equity+pnl - equity*FEE_EXIT_1*mul);
-          trades.push({ts:ts,type:'TP',pnl:pnl,eq:equity});
-          pos=null;
+      // SL check
+      const slHit = pos.dir === 'long' ? nextLow <= pos.sl : nextHigh >= pos.sl;
+      // TP check
+      const tpHit = pos.dir === 'long' ? nextHigh >= pos.tp : nextLow <= pos.tp;
+
+      if (slHit && tpHit) {
+        // SL wins when both hit same candle
+        const pnl = pos.dir === 'long'
+          ? (pos.sl - pos.entry) / pos.entry
+          : (pos.entry - pos.sl) / pos.entry;
+        totalPnl += pnl - FEE;
+        trades++; // loss
+        pos = null;
+        continue;
+      }
+
+      if (tpHit && !isScalp && !pos.halfClosed) {
+        // SWING: 50% close at TP
+        const pnlHalf = pos.dir === 'long'
+          ? (pos.tp - pos.entry) / pos.entry * 0.5
+          : (pos.entry - pos.tp) / pos.entry * 0.5;
+        totalPnl += pnlHalf - FEE * 0.5;
+        wins++;
+        trades++;
+        const dist = Math.abs(pos.tp - pos.entry);
+        pos.sl = pos.dir === 'long' ? pos.entry + dist * 0.5 : pos.entry - dist * 0.5;
+        pos.halfClosed = true;
+        pos.lastTPLevel = pos.tp;
+        pos.remainFrac = 0.5;
+        pos.tp = null;
+        continue;
+      }
+
+      if (tpHit && isScalp) {
+        // SCALP: 100% close at TP
+        const pnl = pos.dir === 'long'
+          ? (pos.tp - pos.entry) / pos.entry
+          : (pos.entry - pos.tp) / pos.entry;
+        totalPnl += pnl - FEE;
+        wins++;
+        trades++;
+        pos = null;
+        continue;
+      }
+
+      if (slHit) {
+        let pnl;
+        if (pos.halfClosed) {
+          pnl = pos.dir === 'long'
+            ? (pos.sl - pos.entry) / pos.entry * pos.remainFrac
+            : (pos.entry - pos.sl) / pos.entry * pos.remainFrac;
+          totalPnl += pnl - FEE * pos.remainFrac;
         } else {
-          // 50% close, break-even SL, new TP same distance
-          var pnl=equity*posFrac*leverage*ret*0.5;
-          equity=Math.max(100, equity+pnl - equity*FEE_EXIT_H);
-          trades.push({ts:ts,type:'TP50',pnl:pnl,eq:equity});
-          pos.halfClosed=true;
-          pos.sl=pos.entry; // break-even
-          var dist=Math.abs(pos.tp-pos.entry);
-          pos.tp=pos.dir==='long'?pos.tp+dist:pos.tp-dist;
+          pnl = pos.dir === 'long'
+            ? (pos.sl - pos.entry) / pos.entry
+            : (pos.entry - pos.sl) / pos.entry;
+          totalPnl += pnl - FEE;
+          trades++;
         }
-      }
-    }
-
-    // Detect new signal (no position, no pending)
-    if (!pos && !pending) {
-      var h1Done = Math.floor(i / 12); // number of fully closed 1H bars
-      var is1HClose = (i % 12 === 11);
-
-      if (!is5mCheck && !is1HClose) continue; // 1H-only strategy → skip mid-candle
-
-      var c5_nf  = c5_of.slice(Math.max(0, i-99), i+1).reverse();
-      var c1h_nf = h1Done > 0 ? c1h_of.slice(0, h1Done).reverse() : [];
-
-      var sig = null;
-
-      if (strategy==='ha_ema_srsi' && is1HClose && c1h_nf.length>=210) {
-        sig = detectSignalHAEmaSRSI(c1h_nf, cl5);
-      } else if (strategy==='ny_open_fvg' && nyRef) {
-        sig = detectSignalNYOpenFVG(c5_nf, cl5, nyRef);
-      } else if (strategy==='ma_rsi_scalp') {
-        sig = detectSignalMARSIScalp(c5_nf, cl5);
-      } else if (strategy==='rsi_dca' && is1HClose && c1h_nf.length>=20) {
-        sig = detectSignalRSIDCA(c1h_nf, cl5);
-      } else if (strategy==='ma_crossover' && c1h_nf.length>=40) {
-        sig = detectSignalMACrossover(c5_nf, c1h_nf, cl5);
-      } else if (strategy==='bb_reversion' && c1h_nf.length>=55) {
-        var trend = detectTrend(c1h_nf, cl5);
-        sig = detectSignalBBReversion(c5_nf, cl5, trend);
-      } else if (strategy==='breakout' && c1h_nf.length>=25) {
-        sig = detectSignalBreakout(c1h_nf, c5_nf, cl5);
-      } else if (strategy==='ma_ribbon' && is1HClose && c1h_nf.length>=105) {
-        sig = detectSignalMARibbon(c1h_nf, cl5);
-      } else if (strategy==='macd_div' && c1h_nf.length>=40) {
-        sig = detectSignalMACDDiv(c1h_nf, c5_nf, cl5);
-      } else if (strategy==='atr_trend' && c1h_nf.length>=65) {
-        sig = detectSignalATRTrend(c1h_nf, c5_nf, cl5);
+        pos = null;
+        continue;
       }
 
-      if (sig && sig.stopLoss) {
-        var slDist = Math.abs(cl5 - sig.stopLoss) / cl5;
-        if (slDist >= 0.002 && slDist <= 0.15) {
-          var tpDist = slDist * 1.5;
-          var tp = sig.type==='long' ? cl5*(1+tpDist) : cl5*(1-tpDist);
-          pending = { dir:sig.type, sl:sig.stopLoss, tp:tp };
-        }
-      }
+      continue;
     }
+
+    // No position — check for signal
+    const sig = fn(candles1H, i);
+    if (!sig) continue;
+    if (i + 1 >= candles1H.length) continue;
+
+    const entry = nextOpen;
+    const sl = sig.sl;
+    const slDist = Math.abs(entry - sl) / entry;
+    if (slDist < 0.002 || slDist > 0.15) continue;
+    const tp = sig.type === 'long' ? entry * (1 + slDist * RR) : entry * (1 - slDist * RR);
+
+    pos = { dir: sig.type, entry, sl, tp, halfClosed: false, lastTPLevel: null, remainFrac: 1.0 };
+    i++; // skip to next candle (already consumed as entry)
   }
 
-  // Stats
-  var wins = trades.filter(function(t){return t.pnl>0;});
-  var actualDays = curve.length || 365;
-  var totalRet = (equity - 10000) / 10000;
-  var annRet = Math.pow(1 + totalRet, 365 / actualDays) - 1;
-  var monRet = Math.pow(1 + annRet, 1/12) - 1;
-  var dayRet = Math.pow(1 + annRet, 1/365) - 1;
-  var peak = 0, maxDD = 0;
-  curve.forEach(function(p){ if(p.equity>peak)peak=p.equity; var dd=(peak-p.equity)/peak; if(dd>maxDD)maxDD=dd; });
-  return { equity:equity, totalRet:totalRet, annRet:annRet, monRet:monRet, dayRet:dayRet,
-           totalTrades:trades.length, winRate:trades.length?wins.length/trades.length:0,
-           maxDD:maxDD, curve:curve, trades:trades };
+  const winRate = trades > 0 ? (wins / trades * 100) : 0;
+  return { trades, wins, winRate, totalPnl: totalPnl * 100 };
 }
 
-// ════════════════════════════════════════════════════════════
-// DATA FETCH
-// ════════════════════════════════════════════════════════════
+async function runBacktest() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Running...';
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('cards').innerHTML = '';
+  document.getElementById('summary').style.display = 'none';
+  prog(0);
 
-async function fetchCandles5m(pair, onProgress) {
-  // Align cutoff to the start of the current hour so repeated runs use identical data
-  var ONE_YEAR_AGO = Math.floor(Date.now() / 3600000) * 3600000 - 365*24*3600*1000;
-  var all = [], after = '';
-  for (var iter = 0; iter < 1200; iter++) {
-    var qs = 'instId='+encodeURIComponent(pair)+'&bar=5m&limit=100'+(after?'&after='+after:'');
-    try {
-      var res = await fetch('https://www.okx.com/api/v5/market/history-candles?'+qs);
-      var j = await res.json();
-      var batch = j.data || [];
-      if (!batch.length) break;
-      all.push.apply(all, batch);
-      after = batch[batch.length-1][0];
-      if (onProgress) onProgress(all.length);
-      if (parseInt(batch[batch.length-1][0]) <= ONE_YEAR_AGO) break;
-      await new Promise(function(r){setTimeout(r,50);});
-    } catch(e) { break; }
-  }
-  // Remove duplicate timestamps (stable sort by ts, then deduplicate)
-  var seen = {}, deduped = [];
-  all.forEach(function(c){ if(!seen[c[0]]){seen[c[0]]=1;deduped.push(c);} });
-  return deduped.filter(function(c){return parseInt(c[0])>=ONE_YEAR_AGO;}).reverse();
-}
+  const pair = document.getElementById('pairSel').value;
 
-// ════════════════════════════════════════════════════════════
-// UI
-// ════════════════════════════════════════════════════════════
+  try {
+    const candles5m = await fetchCandles5m(pair);
+    prog(40);
+    const candles1H = aggregate1H(candles5m);
+    log(`Aggregated to ${candles1H.length} 1H candles`);
+    prog(50);
 
-var BT_STRATS = [
-  {id:'ha_ema_srsi',  name:'HA+EMA+StochRSI'},
-  {id:'ny_open_fvg',  name:'NY Open FVG'},
-  {id:'ma_rsi_scalp', name:'MA Cross+RSI'},
-  {id:'rsi_dca',      name:'RSI DCA'},
-  {id:'ma_crossover', name:'MA Crossover'},
-  {id:'bb_reversion', name:'BB Reversion'},
-  {id:'breakout',     name:'Breakout'},
-  {id:'ma_ribbon',    name:'MA Ribbon'},
-  {id:'macd_div',     name:'MACD Divergence'},
-  {id:'atr_trend',    name:'ATR Trend'}
-];
-
-var _c5of = null, _c1hof = null, _results = {}, _chart = null, _loadedPair = '';
-
-function onPairChange() {
-  var p = (document.getElementById('btPair').value||'').toUpperCase().trim();
-  if (p !== _loadedPair) {
-    document.getElementById('btStartBtn').textContent = '백테스팅 시작 (새 데이터 수집)';
-  } else {
-    document.getElementById('btStartBtn').textContent = '다시 실행 (캐시 재사용)';
-  }
-}
-
-function pct(v,d){d=d==null?2:d; return (v>=0?'+':'')+(v*100).toFixed(d)+'%';}
-function clr(v){return v>=0?'#22c55e':'#ef4444';}
-
-async function startBacktest() {
-  var pair = (document.getElementById('btPair').value||'BTC-USDT-SWAP').toUpperCase().trim();
-  var lev  = parseFloat(document.getElementById('btLev').value)||10;
-  var pos  = parseFloat(document.getElementById('btPos').value)||10;
-
-  var btn=document.getElementById('btStartBtn');
-  var prog=document.getElementById('btProg');
-  var bar=document.getElementById('btBar');
-  var msg=document.getElementById('btMsg');
-
-  btn.disabled=true;
-  prog.style.display='block';
-
-  // 1. Fetch 5m candles — reuse cache if same pair (guarantees deterministic results)
-  if (_c5of && _loadedPair === pair) {
-    bar.style.width='42%';
-    msg.textContent='캐시 데이터 재사용: '+_c5of.length.toLocaleString()+'개 5분봉 (동일 결과 보장)';
-    btn.textContent='실행 중...';
-    await new Promise(function(r){setTimeout(r,10);});
-  } else {
-    btn.textContent='데이터 수집 중...';
-    bar.style.width='0%';
-    msg.textContent='OKX 5분봉 데이터 수집 중 (약 10만 개)...';
-    try {
-      _c5of = await fetchCandles5m(pair, function(n){
-        bar.style.width=Math.min(40, n/2625)+'%';
-        msg.textContent='5분봉 수집: '+n.toLocaleString()+'개...';
-      });
-      _loadedPair = pair;
-    } catch(e) {
-      msg.textContent='데이터 수집 실패: '+(e.message||e);
-      btn.disabled=false; btn.textContent='백테스팅 시작';
-      return;
+    const results = [];
+    let si = 0;
+    for (const strat of STRATEGIES) {
+      log(`Running ${strat.name}...`);
+      const r = runStrategy(candles1H, strat.id);
+      results.push({ ...strat, ...r });
+      log(`  ${strat.name}: ${r.trades} trades, ${r.winRate.toFixed(1)}% WR, ${r.totalPnl >= 0 ? '+' : ''}${r.totalPnl.toFixed(2)}% PnL`);
+      si++;
+      prog(50 + si / STRATEGIES.length * 50);
     }
-  }
 
-  bar.style.width='42%';
-  msg.textContent='1H 집계 중... ('+_c5of.length.toLocaleString()+'개 5분봉)';
-  await new Promise(function(r){setTimeout(r,10);});
-  _c1hof = aggregate1H(_c5of);
-
-  msg.textContent='5분봉 '+_c5of.length.toLocaleString()+'개 / 1H '+_c1hof.length.toLocaleString()+'개 → 백테스팅 실행 중';
-
-  // 2. Run each strategy
-  _results = {};
-  for (var si = 0; si < BT_STRATS.length; si++) {
-    var s = BT_STRATS[si];
-    bar.style.width=(42 + si/BT_STRATS.length*56)+'%';
-    msg.textContent='['+( si+1)+'/'+BT_STRATS.length+'] '+s.name+' 백테스팅 중...';
-    await new Promise(function(r){setTimeout(r,0);});
-    _results[s.id] = runBacktest(_c5of, _c1hof, s.id, lev, pos);
-  }
-
-  bar.style.width='100%';
-  msg.textContent='완료! 5분봉 '+_c5of.length.toLocaleString()+'개 · 1H '+_c1hof.length.toLocaleString()+'개 사용 (캐시 보존 — 레버리지/포지션 변경 후 재실행해도 동일 데이터)';
-  btn.disabled=false; btn.textContent='다시 실행 (캐시 재사용)';
-
-  renderTable();
-  buildTabs();
-  showChart(BT_STRATS[0].id);
-}
-
-function renderTable() {
-  var tbody = document.getElementById('btTbody');
-  var rows = BT_STRATS.map(function(s){
-    var r = _results[s.id];
-    if (!r) return '';
-    var isNA = r.totalTrades === 0;
-    var dr = isNA?'N/A':'<span style="color:'+clr(r.dayRet)+'">'+pct(r.dayRet)+'</span>';
-    var mr = isNA?'N/A':'<span style="color:'+clr(r.monRet)+'">'+pct(r.monRet)+'</span>';
-    var ar = isNA?'N/A':'<span style="color:'+clr(r.annRet)+'">'+pct(r.annRet,1)+'</span>';
-    var dd = isNA?'N/A':'<span style="color:#ef4444">-'+pct(r.maxDD,1).replace('+','')+'</span>';
-    var wr = isNA?'N/A':'<span style="color:'+clr(r.winRate-0.5)+'">'+Math.round(r.winRate*100)+'%</span>';
-    return '<tr>'+
-      '<td>'+s.name+'</td>'+
-      '<td>'+r.totalTrades+'</td>'+
-      '<td>'+wr+'</td>'+
-      '<td>'+dr+'</td>'+
-      '<td>'+mr+'</td>'+
-      '<td>'+ar+'</td>'+
-      '<td>'+dd+'</td>'+
-      '<td style="text-align:center;"><button onclick="showChart(\''+s.id+'\')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">차트</button></td>'+
-    '</tr>';
-  }).join('');
-  tbody.innerHTML = rows;
-  document.getElementById('btResultCard').classList.remove('hidden');
-}
-
-function buildTabs() {
-  var el = document.getElementById('btTabs');
-  el.innerHTML = BT_STRATS.map(function(s){
-    return '<button class="tab" id="tab_'+s.id+'" onclick="showChart(\''+s.id+'\')">'+s.name+'</button>';
-  }).join('');
-}
-
-function showChart(id) {
-  var s = BT_STRATS.find(function(x){return x.id===id;});
-  var r = _results[id];
-  if (!s||!r) return;
-
-  BT_STRATS.forEach(function(x){
-    var t=document.getElementById('tab_'+x.id);
-    if(t) t.classList.toggle('active', x.id===id);
-  });
-
-  var t = s.name+' | 연 복리: '+pct(r.annRet,1)+
-    ' | 승률: '+Math.round(r.winRate*100)+'%'+
-    ' | 거래: '+r.totalTrades+'건'+
-    ' | 최대낙폭: -'+pct(r.maxDD,1).replace('+','');
-  document.getElementById('btChartTitle').textContent = t;
-
-  var ctx = document.getElementById('btCanvas').getContext('2d');
-  if (_chart) _chart.destroy();
-
-  var labels = r.curve.map(function(p){return new Date(p.ts).toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'});});
-  var data   = r.curve.map(function(p){return p.equity;});
-  var pos    = r.annRet >= 0;
-  var col    = pos ? '#22c55e' : '#ef4444';
-  var grd    = ctx.createLinearGradient(0,0,0,280);
-  grd.addColorStop(0, pos?'rgba(34,197,94,0.25)':'rgba(239,68,68,0.25)');
-  grd.addColorStop(1,'rgba(0,0,0,0)');
-
-  _chart = new Chart(ctx, {
-    type:'line',
-    data:{labels:labels,datasets:[{label:'자산($)',data:data,borderColor:col,borderWidth:1.5,
-          pointRadius:0,fill:true,backgroundColor:grd,tension:0.3}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '$'+c.parsed.y.toFixed(0);}}}},
-      scales:{
-        x:{ticks:{color:'rgba(255,255,255,0.3)',maxTicksLimit:12,font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
-        y:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:10},callback:function(v){return '$'+v.toFixed(0);}},grid:{color:'rgba(255,255,255,0.06)'}}
-      }
+    // Render cards
+    const cards = document.getElementById('cards');
+    cards.innerHTML = '';
+    for (const r of results) {
+      const pnlClass = r.totalPnl >= 0 ? 'up' : 'down';
+      const pnlStr = (r.totalPnl >= 0 ? '+' : '') + r.totalPnl.toFixed(2) + '%';
+      cards.innerHTML += `
+        <div class="card">
+          <div class="card-title">Strategy</div>
+          <div class="card-strat">${r.name}<span class="card-type type-${r.type.toLowerCase()}">${r.type}</span></div>
+          <div class="stat-row"><span class="stat-label">Total Trades</span><span class="stat-val">${r.trades}</span></div>
+          <div class="stat-row"><span class="stat-label">Wins</span><span class="stat-val up">${r.wins}</span></div>
+          <div class="stat-row"><span class="stat-label">Win Rate</span><span class="stat-val ${r.winRate >= 50 ? 'up' : 'down'}">${r.winRate.toFixed(1)}%</span></div>
+          <div class="stat-row"><span class="stat-label">Total PnL</span><span class="stat-val ${pnlClass}">${pnlStr}</span></div>
+        </div>`;
     }
-  });
-  document.getElementById('btChartCard').classList.remove('hidden');
-  document.getElementById('btChartCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+
+    // Summary
+    const totalTrades = results.reduce((s, r) => s + r.trades, 0);
+    const totalWins   = results.reduce((s, r) => s + r.wins, 0);
+    const avgPnl      = results.reduce((s, r) => s + r.totalPnl, 0) / results.length;
+    const best = results.reduce((a, b) => a.totalPnl > b.totalPnl ? a : b);
+    const sumEl = document.getElementById('summary');
+    sumEl.style.display = 'block';
+    sumEl.innerHTML = `
+      <h2>Summary — ${pair}</h2>
+      <div class="sum-row"><span style="color:#666">Total trades (all strategies)</span><span>${totalTrades}</span></div>
+      <div class="sum-row"><span style="color:#666">Combined win rate</span><span class="${totalTrades > 0 && totalWins/totalTrades >= 0.5 ? 'up' : 'down'}">${totalTrades > 0 ? (totalWins/totalTrades*100).toFixed(1) : 0}%</span></div>
+      <div class="sum-row"><span style="color:#666">Average PnL across strategies</span><span class="${avgPnl >= 0 ? 'up' : 'down'}">${avgPnl >= 0 ? '+' : ''}${avgPnl.toFixed(2)}%</span></div>
+      <div class="sum-row"><span style="color:#666">Best strategy</span><span class="up">${best.name} (${best.totalPnl >= 0 ? '+' : ''}${best.totalPnl.toFixed(2)}%)</span></div>`;
+
+    prog(100);
+    log('Backtest complete.');
+  } catch (e) {
+    log('ERROR: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Run Backtest';
+  }
 }
 </script>
 </body>
