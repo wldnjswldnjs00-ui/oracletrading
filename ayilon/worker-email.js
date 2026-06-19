@@ -1546,17 +1546,16 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     const entryNum = (state.entries || []).length + 1;
     if (entryNum > 1) return; // single entry only
 
-    // ── TP = fixed 1.5% from entry (swing strategies) ────────
+    // ── TP = SL거리 × 1.5 (동적 R:R 1.5:1 고정) ─────────────
+    const slDistRR = Math.abs(currentPrice - signal.stopLoss) / currentPrice;
     const tp = signal.type === 'long'
-      ? currentPrice * 1.015
-      : currentPrice * 0.985;
+      ? currentPrice * (1 + slDistRR * 1.5)
+      : currentPrice * (1 - slDistRR * 1.5);
     const useTP = true;
 
-    // ── R:R filter ───────────────────────────────────────────
-    const slDistRR = Math.abs(currentPrice - signal.stopLoss) / currentPrice;
-    const tpDistRR = Math.abs(tp - currentPrice) / currentPrice;
-    if (tpDistRR / slDistRR < 1.0) {
-      await botLog(env, email, `Skip: R:R ${(tpDistRR / slDistRR).toFixed(2)}:1 < 1.0 | TP:${tp.toFixed(0)} SL:${signal.stopLoss.toFixed(0)}`);
+    // ── R:R 항상 1.5:1 보장 — 범위 외 SL만 필터 ─────────────
+    if (slDistRR < 0.002 || slDistRR > 0.15) {
+      await botLog(env, email, `Skip: SL dist ${(slDistRR*100).toFixed(2)}% out of range [0.2%~15%] | SL:${signal.stopLoss.toFixed(0)}`);
       return;
     }
 
