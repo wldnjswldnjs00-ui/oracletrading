@@ -2150,6 +2150,7 @@
     el = document.getElementById('settingsDisplayEmail'); if(el) el.textContent = user.email || '—';
     el = document.getElementById('settingsFullName');     if(el) el.value = user.name || '';
     el = document.getElementById('settingsUsername');     if(el) el.value = user.username || '';
+    el = document.getElementById('usernameHint');         if(el) el.textContent = '';
     el = document.getElementById('settingsEmail');        if(el) el.value = user.email || '';
     loadApiSection();
 
@@ -2359,10 +2360,10 @@
     var val = el.value.trim();
     if (!val) { if (hintEl) hintEl.textContent = ''; return; }
     if (!/^[a-zA-Z0-9_]{2,20}$/.test(val)) {
-      if (hintEl) { hintEl.style.color = 'var(--red)'; hintEl.textContent = '영문, 숫자, _ 만 가능 (2-20자)'; }
+      if (hintEl) { hintEl.style.color = 'var(--red)'; hintEl.textContent = _t('db.set.username_format'); }
       return;
     }
-    if (hintEl) { hintEl.style.color = 'var(--gray-400)'; hintEl.textContent = '확인 중...'; }
+    if (hintEl) { hintEl.style.color = 'var(--gray-400)'; hintEl.textContent = _t('db.set.username_checking'); }
     _usernameTimer = setTimeout(async function() {
       try {
         var token = getSessionToken();
@@ -2378,7 +2379,7 @@
           if (hintEl) { hintEl.style.color = 'var(--red)'; hintEl.textContent = _t('db.set.username_taken'); }
         }
       } catch(e) {
-        if (hintEl) { hintEl.style.color = 'var(--green)'; hintEl.textContent = '✓ 형식이 올바릅니다'; }
+        if (hintEl) { hintEl.style.color = 'var(--green)'; hintEl.textContent = _t('db.set.username_ok'); }
       }
     }, 600);
   }
