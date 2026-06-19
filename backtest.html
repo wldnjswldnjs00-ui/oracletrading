@@ -46,7 +46,7 @@ tr:last-child td{border-bottom:none;}
 <div class="card">
   <div class="card-title">설정</div>
   <div class="grid3">
-    <div><label>Trading Pair</label><input id="btPair" value="BTC-USDT-SWAP"></div>
+    <div><label>Trading Pair</label><input id="btPair" value="BTC-USDT-SWAP" oninput="onPairChange()"></div>
     <div><label>레버리지</label><input id="btLev" type="number" value="10" min="1" max="20"></div>
     <div><label>포지션 크기 (%)</label><input id="btPos" type="number" value="10" min="1" max="40"></div>
   </div>
@@ -687,7 +687,8 @@ function runBacktest(c5_of, c1h_of, strategy, leverage, posSize) {
 // ════════════════════════════════════════════════════════════
 
 async function fetchCandles5m(pair, onProgress) {
-  var ONE_YEAR_AGO = Date.now() - 365*24*3600*1000;
+  // Align cutoff to the start of the current hour so repeated runs use identical data
+  var ONE_YEAR_AGO = Math.floor(Date.now() / 3600000) * 3600000 - 365*24*3600*1000;
   var all = [], after = '';
   for (var iter = 0; iter < 1200; iter++) {
     var qs = 'instId='+encodeURIComponent(pair)+'&bar=5m&limit=100'+(after?'&after='+after:'');
@@ -703,7 +704,10 @@ async function fetchCandles5m(pair, onProgress) {
       await new Promise(function(r){setTimeout(r,50);});
     } catch(e) { break; }
   }
-  return all.filter(function(c){return parseInt(c[0])>=ONE_YEAR_AGO;}).reverse();
+  // Remove duplicate timestamps (stable sort by ts, then deduplicate)
+  var seen = {}, deduped = [];
+  all.forEach(function(c){ if(!seen[c[0]]){seen[c[0]]=1;deduped.push(c);} });
+  return deduped.filter(function(c){return parseInt(c[0])>=ONE_YEAR_AGO;}).reverse();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -723,7 +727,16 @@ var BT_STRATS = [
   {id:'atr_trend',    name:'ATR Trend'}
 ];
 
-var _c5of = null, _c1hof = null, _results = {}, _chart = null;
+var _c5of = null, _c1hof = null, _results = {}, _chart = null, _loadedPair = '';
+
+function onPairChange() {
+  var p = (document.getElementById('btPair').value||'').toUpperCase().trim();
+  if (p !== _loadedPair) {
+    document.getElementById('btStartBtn').textContent = '백테스팅 시작 (새 데이터 수집)';
+  } else {
+    document.getElementById('btStartBtn').textContent = '다시 실행 (캐시 재사용)';
+  }
+}
 
 function pct(v,d){d=d==null?2:d; return (v>=0?'+':'')+(v*100).toFixed(d)+'%';}
 function clr(v){return v>=0?'#22c55e':'#ef4444';}
@@ -738,21 +751,30 @@ async function startBacktest() {
   var bar=document.getElementById('btBar');
   var msg=document.getElementById('btMsg');
 
-  btn.disabled=true; btn.textContent='실행 중...';
+  btn.disabled=true;
   prog.style.display='block';
-  bar.style.width='0%';
 
-  // 1. Fetch 5m candles
-  msg.textContent='OKX 5분봉 데이터 수집 중 (약 10만 개)...';
-  try {
-    _c5of = await fetchCandles5m(pair, function(n){
-      bar.style.width=Math.min(40, n/2625)+'%';
-      msg.textContent='5분봉 수집: '+n.toLocaleString()+'개...';
-    });
-  } catch(e) {
-    msg.textContent='데이터 수집 실패: '+(e.message||e);
-    btn.disabled=false; btn.textContent='백테스팅 시작';
-    return;
+  // 1. Fetch 5m candles — reuse cache if same pair (guarantees deterministic results)
+  if (_c5of && _loadedPair === pair) {
+    bar.style.width='42%';
+    msg.textContent='캐시 데이터 재사용: '+_c5of.length.toLocaleString()+'개 5분봉 (동일 결과 보장)';
+    btn.textContent='실행 중...';
+    await new Promise(function(r){setTimeout(r,10);});
+  } else {
+    btn.textContent='데이터 수집 중...';
+    bar.style.width='0%';
+    msg.textContent='OKX 5분봉 데이터 수집 중 (약 10만 개)...';
+    try {
+      _c5of = await fetchCandles5m(pair, function(n){
+        bar.style.width=Math.min(40, n/2625)+'%';
+        msg.textContent='5분봉 수집: '+n.toLocaleString()+'개...';
+      });
+      _loadedPair = pair;
+    } catch(e) {
+      msg.textContent='데이터 수집 실패: '+(e.message||e);
+      btn.disabled=false; btn.textContent='백테스팅 시작';
+      return;
+    }
   }
 
   bar.style.width='42%';
@@ -773,8 +795,8 @@ async function startBacktest() {
   }
 
   bar.style.width='100%';
-  msg.textContent='완료! 5분봉 '+_c5of.length.toLocaleString()+'개 · 1H '+_c1hof.length.toLocaleString()+'개 사용';
-  btn.disabled=false; btn.textContent='다시 실행';
+  msg.textContent='완료! 5분봉 '+_c5of.length.toLocaleString()+'개 · 1H '+_c1hof.length.toLocaleString()+'개 사용 (캐시 보존 — 레버리지/포지션 변경 후 재실행해도 동일 데이터)';
+  btn.disabled=false; btn.textContent='다시 실행 (캐시 재사용)';
 
   renderTable();
   buildTabs();
