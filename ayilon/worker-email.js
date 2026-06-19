@@ -812,7 +812,7 @@ async function handleSaveBotSettings(request, env) {
   }
 
   // Sanitize numeric config fields — prevent invalid/extreme values reaching runBotForUser
-  const VALID_STRATS = ['ha_ema_srsi','ny_open_fvg','ma_rsi_scalp','rsi_dca','ma_support','ma_crossover','bb_reversion','breakout','ma_ribbon','macd_div','atr_trend'];
+  const VALID_STRATS = ['ha_ema_srsi','ma_ribbon'];
   if (body.leverage     !== undefined) body.leverage     = Math.min(Math.max(parseInt(body.leverage)       || 20,   1), 125);
   if (body.posSize      !== undefined) body.posSize      = Math.min(Math.max(parseFloat(body.posSize)      || 40,   1), 100);
   if (body.riskPerTrade !== undefined) body.riskPerTrade = Math.min(Math.max(parseFloat(body.riskPerTrade) ||  2, 0.1),  10);
@@ -1385,18 +1385,9 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     }
 
     // ── Fetch all candles in parallel ─────────────────────────
-    const [candles1H, candles4H, candlesD, c5] = await Promise.all([
-      getCandles(tradingPair, '1H', 100),
-      getCandles(tradingPair, '4H', 100),
-      getCandles(tradingPair, '1D', 60),
-      getCandles(tradingPair, '5m', 25)
-    ]);
-    if (candles1H.length < 20 && candles4H.length < 20) {
-      await botLog(env, email, `Skip: insufficient candle data (1H:${candles1H.length} 4H:${candles4H.length})`);
-      return;
-    }
-    if (c5.length < 4) {
-      await botLog(env, email, `Skip: insufficient 5m candles (got ${c5.length}, need 4)`);
+    const candles1H = await getCandles(tradingPair, '1H', 250);
+    if (candles1H.length < 20) {
+      await botLog(env, email, `Skip: insufficient candle data (1H:${candles1H.length})`);
       return;
     }
     const [currentPrice, ctVal] = await Promise.all([
@@ -1407,36 +1398,6 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       await botLog(env, email, `Skip: failed to fetch current price for ${tradingPair} (3 retries)`);
       return;
     }
-
-    // ── 2-hour force close for ma_rsi_scalp ──────────────────────
-    if (strategy === 'ma_rsi_scalp' && ps[stateKey]?.direction) {
-      const entryTime = ps[stateKey]?.entries?.[0]?.time;
-      if (entryTime && Date.now() - entryTime > 2 * 60 * 60 * 1000) {
-        const closeDir = ps[stateKey].direction;
-        const closeRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
-          instId: tradingPair, mgnMode: 'cross',
-          posSide: isOneWayMode ? 'net' : (closeDir === 'long' ? 'long' : 'short')
-        }, demoMode);
-        if (closeRes?.code === '0') {
-          if (ps[stateKey].tpAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[stateKey].tpAlgoId, demoMode);
-          if (ps[stateKey].slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, ps[stateKey].slAlgoId, demoMode);
-          delete ps[stateKey];
-          await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
-          await botLog(env, email, `[ma_rsi_scalp] 2-hour force close @ ${currentPrice.toFixed(2)}`);
-          return;
-        }
-        await botLog(env, email, `[ma_rsi_scalp] 2-hour force close FAILED [${closeRes?.code}]: ${closeRes?.msg}`);
-      }
-    }
-
-    const trend   = detectTrend(candlesD, currentPrice);
-    const sr1H    = candles1H.length >= 20 ? detectSR(candles1H) : { supports: [], resistances: [] };
-    const sr4H    = candles4H.length >= 20 ? detectSR(candles4H) : { supports: [], resistances: [] };
-    const srLevels  = gradeLevels(sr1H, sr4H);
-    const rawVol    = detectVolumeZones(candles4H.length >= 20 ? candles4H : candles1H, currentPrice);
-    const volLevels = filterVolBySR(rawVol, srLevels);
-    const levels    = mergeLevels(srLevels, volLevels);
-    if (!levels.supports.length && !levels.resistances.length) return;
 
     // ── Sync position state with OKX ─────────────────────────
     if (ps[stateKey]?.direction) {
@@ -1488,14 +1449,14 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     }
     const state = ps[stateKey] || { entries: [], direction: null, takeProfit: null };
 
-    // ── Trailing TP: 10% close at each subsequent S/R level ───
+    // ── Trailing TP: 10% close every 1% move beyond last TP ──
     if (state.halfClosed && state.lastTPLevel && openPos.length > 0) {
-      const TOUCH = 0.004;
-      const nextLv = state.direction === 'long'
-        ? levels.resistances.find(r => r.price > state.lastTPLevel * 1.001 && Math.abs(currentPrice - r.price) / r.price <= TOUCH)
-        : levels.supports.find(r =>   r.price < state.lastTPLevel * 0.999 && Math.abs(currentPrice - r.price) / r.price <= TOUCH);
+      const TRAIL_STEP = 0.010; // 1% move triggers next 10% close
+      const movedEnough = state.direction === 'long'
+        ? currentPrice >= state.lastTPLevel * (1 + TRAIL_STEP)
+        : currentPrice <= state.lastTPLevel * (1 - TRAIL_STEP);
 
-      if (nextLv) {
+      if (movedEnough) {
         const totalSz = state.entries.reduce((s, e) => s + parseInt(e.sz), 0);
         const trailContracts = Math.max(1, Math.floor(totalSz * 0.10));
         const trailRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
@@ -1517,7 +1478,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
           if (state.slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.slAlgoId, demoMode);
           state.slAlgoId = null;
 
-          state.lastTPLevel        = nextLv.price;
+          state.lastTPLevel        = currentPrice;
           state.remainingContracts = newRemaining;
           state.remainingFrac      = newRemFrac;
           state.tpAlgoId           = null;
@@ -1525,7 +1486,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
           if (newRemaining <= 0) {
             delete ps[stateKey];
             await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
-            await botLog(env, email, `[${strategy}] TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} — position fully closed`);
+            await botLog(env, email, `[${strategy}] TRAIL +10% @ ${currentPrice} — position fully closed`);
           } else {
             // Place trailing SL at prevTPLevel — locks in profits from last close point
             if (prevTPLevel) {
@@ -1535,10 +1496,10 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
             }
             ps[stateKey] = state;
             await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
-            await botLog(env, email, `[${strategy}] TRAIL +10% @ ${currentPrice} | L:${nextLv.price.toFixed(2)} | SL locked @ ${prevTPLevel?.toFixed(2) ?? 'n/a'} | Rem:${newRemaining}cts`);
+            await botLog(env, email, `[${strategy}] TRAIL +10% @ ${currentPrice} | SL locked @ ${prevTPLevel?.toFixed(2) ?? 'n/a'} | Rem:${newRemaining}cts`);
           }
         } else {
-          await botLog(env, email, `Trail order FAILED @ ${nextLv.price.toFixed(2)}: ${trailRes?.msg || 'unknown'}`);
+          await botLog(env, email, `Trail order FAILED @ ${currentPrice}: ${trailRes?.msg || 'unknown'}`);
         }
         return;
       }
@@ -1552,56 +1513,12 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       if ((h1High - h1Low) / (h1Low || 1) < 0.010) return;
     }
 
-    // ── Plan-based strategy gate ──────────────────────────────
-    const midStrategies     = ['ma_crossover', 'bb_reversion', 'breakout', 'ma_ribbon'];
-    const premiumStrategies = ['macd_div', 'atr_trend'];
-    if (midStrategies.includes(strategy) && plan === 'starter') {
-      await botLog(env, email, `Skip: strategy '${strategy}' requires Pro plan or higher`);
-      return;
-    }
-    if (premiumStrategies.includes(strategy) && plan !== 'elite') {
-      await botLog(env, email, `Skip: strategy '${strategy}' requires Elite plan`);
-      return;
-    }
-
     // ── Entry signal (strategy routing) ──────────────────────
-    // NY Open FVG: compute/refresh daily reference high/low
-    let nyRef = null;
-    if (strategy === 'ny_open_fvg') {
-      const todayEST = getTodayEST();
-      try { nyRef = JSON.parse(botStateRow.ny_ref || 'null'); } catch(_) {}
-      if (!nyRef || nyRef.date !== todayEST) {
-        const nyHour = getNYOpenUTCHour();
-        const now = new Date();
-        const nyOpenMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), nyHour, 30, 0);
-        const nyEndMs  = nyOpenMs + 15 * 60 * 1000;
-        const nyC = c5.filter(c => { const ts = parseInt(c[0]); return ts >= nyOpenMs && ts < nyEndMs; });
-        if (nyC.length > 0) {
-          nyRef = {
-            date: todayEST,
-            high: Math.max(...nyC.map(c => parseFloat(c[2]))),
-            low:  Math.min(...nyC.map(c => parseFloat(c[3])))
-          };
-          await upsertBotState(env, email, { ny_ref: JSON.stringify(nyRef) });
-          await botLog(env, email, `[ny_open_fvg] NY ref updated: H=${nyRef.high.toFixed(2)} L=${nyRef.low.toFixed(2)}`);
-        }
-      }
-    }
-
     let signal = null;
     switch (strategy) {
-      case 'ha_ema_srsi':  signal = detectSignalHAEmaSRSI(candles1H, currentPrice);                 break;
-      case 'ny_open_fvg':  signal = detectSignalNYOpenFVG(c5, currentPrice, nyRef);                  break;
-      case 'ma_rsi_scalp': signal = detectSignalMARSIScalp(c5, currentPrice);                        break;
-      case 'rsi_dca':      signal = detectSignalRSIDCA(candles1H, levels, currentPrice);             break;
-      case 'ma_support':   signal = detectSignalMASupport(candles1H, currentPrice);                 break;
-      case 'ma_crossover': signal = detectSignalMACrossover(c5, candles1H, currentPrice);           break;
-      case 'bb_reversion': signal = detectSignalBBReversion(c5, currentPrice, trend);               break;
-      case 'breakout':     signal = detectSignalBreakout(candles1H, c5, currentPrice);              break;
-      case 'ma_ribbon':    signal = detectSignalMARibbon(candles1H, currentPrice);                  break;
-      case 'macd_div':     signal = detectSignalMACDDiv(candles1H, c5, currentPrice);               break;
-      case 'atr_trend':    signal = detectSignalATRTrend(candles1H, c5, currentPrice);              break;
-      default:             signal = detectSignal(c5, levels);
+      case 'ha_ema_srsi': signal = detectSignalHAEmaSRSI(candles1H, currentPrice); break;
+      case 'ma_ribbon':   signal = detectSignalMARibbon(candles1H, currentPrice);  break;
+      default:            signal = detectSignalHAEmaSRSI(candles1H, currentPrice); break;
     }
     if (!signal) {
       // Heartbeat: log once per 5 min so user can confirm bot is alive
@@ -1614,21 +1531,11 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       return;
     }
 
-    // ── Trend strength + direction filter ────────────────────
-    // rsi_dca is contrarian/mean-reversion — skip trend direction filter
-    const skipTrendFilter = strategy === 'rsi_dca';
-    if (!skipTrendFilter) {
-      if (trend.dir === 'up'   && signal.type === 'short') { await botLog(env, email, `[${strategy}] Skip: trend UP but signal is SHORT`); return; }
-      if (trend.dir === 'down' && signal.type === 'long')  { await botLog(env, email, `[${strategy}] Skip: trend DOWN but signal is LONG`); return; }
-      if (!trend.strong && signal.grade === 'B') { await botLog(env, email, `[${strategy}] Skip: weak trend + B-grade signal`); return; }
-    }
-
     // ── 1H confirmation for SHORT ─────────────────────────────
     if (signal.type === 'short') {
       const h1c    = candles1H[0]?.map(parseFloat);
       const h1Bear = h1c && h1c[4] < h1c[1];
-      const h1NRes = sr1H.resistances.some(r => Math.abs(currentPrice - r.price) / r.price <= 0.015);
-      if (!h1Bear && !h1NRes) return; // need at least one: bearish candle OR near resistance
+      if (!h1Bear) return; // require bearish candle for short confirmation
     }
 
     if (state.direction && state.direction !== signal.type) return;
@@ -1636,24 +1543,17 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     const entryNum = (state.entries || []).length + 1;
     if (entryNum > 1) return; // single entry only
 
-    // ── TP = next S/R level in trade direction (RSI DCA uses fixed 1.5% fallback) ────
-    let tp = signal.type === 'long'
-      ? levels.resistances[0]?.price
-      : levels.supports[0]?.price;
-    if (strategy === 'rsi_dca') {
-      const fixedTP = signal.type === 'long'
-        ? currentPrice * 1.015
-        : currentPrice * 0.985;
-      tp = (tp && signal.type === 'long' ? Math.max(tp, fixedTP) : tp && Math.min(tp, fixedTP)) || fixedTP;
-    }
-    const useTP = tp && (signal.type === 'long' ? tp > currentPrice * 1.003 : tp < currentPrice * 0.997);
+    // ── TP = fixed 1.5% from entry (swing strategies) ────────
+    const tp = signal.type === 'long'
+      ? currentPrice * 1.015
+      : currentPrice * 0.985;
+    const useTP = true;
 
     // ── R:R filter ───────────────────────────────────────────
     const slDistRR = Math.abs(currentPrice - signal.stopLoss) / currentPrice;
-    const tpDistRR = useTP ? Math.abs(tp - currentPrice) / currentPrice : 0;
-    const minRR = strategy === 'rsi_dca' ? 0.8 : 1.0;
-    if (!useTP || tpDistRR / slDistRR < minRR) {
-      await botLog(env, email, `Skip: R:R ${useTP ? (tpDistRR / slDistRR).toFixed(2) : 'n/a'}:1 < ${minRR} | TP:${tp?.toFixed(0) ?? 'none'} SL:${signal.stopLoss.toFixed(0)}`);
+    const tpDistRR = Math.abs(tp - currentPrice) / currentPrice;
+    if (tpDistRR / slDistRR < 1.0) {
+      await botLog(env, email, `Skip: R:R ${(tpDistRR / slDistRR).toFixed(2)}:1 < 1.0 | TP:${tp.toFixed(0)} SL:${signal.stopLoss.toFixed(0)}`);
       return;
     }
 
@@ -1789,11 +1689,10 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
         return;
       }
 
-      const tpStr    = useTP ? ` | TP:${tp.toFixed(2)}` : '';
+      const tpStr    = ` | TP:${tp.toFixed(2)}`;
       const gradeStr = signal.grade ? `[Grade ${signal.grade}] ` : '';
-      const trendStr = trend.dir !== 'neutral' ? ` | trend:${trend.dir}${trend.strong ? '' : '(w)'}` : '';
-      const riskStr  = `risk:${(lossLimitNorm*100).toFixed(0)}%@${numEntries}x`;
-      await botLog(env, email, `[${strategy}] ${signal.type.toUpperCase()} #${entryNum}/${numEntries} @ ${fillPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | ${riskStr}${tpStr}${trendStr} | sz:${sz}`);
+      const riskStr  = `risk:${(lossLimitNorm*100).toFixed(0)}%`;
+      await botLog(env, email, `[${strategy}] ${signal.type.toUpperCase()} #${entryNum} @ ${fillPrice} | ${gradeStr}L:${signal.level.toFixed(2)} | ${riskStr}${tpStr} | sz:${sz}`);
       await botNotify(env, { notifyEmail, notifyTelegram, telegramToken, telegramChatId, userEmail },
         `${signal.type.toUpperCase()} entry #${entryNum} placed @ ${fillPrice} USDT${tpStr}`);
     } else {
@@ -1834,30 +1733,7 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
       if (tpHit) {
         const totalSz = state.entries.reduce((sum, e) => sum + parseInt(e.sz), 0);
 
-        // Scalping/mean-reversion strategies: close 100% at TP, no trailing
-        const SCALP_STRATS = ['ma_rsi_scalp', 'ny_open_fvg', 'bb_reversion', 'rsi_dca'];
-        const isScalp = SCALP_STRATS.includes(state.strategy);
-
-        if (isScalp) {
-          const fullCloseRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
-            instId: pair, tdMode: 'cross',
-            side:    state.direction === 'long' ? 'sell' : 'buy',
-            ...(isOneWayMode ? {} : { posSide: state.direction === 'long' ? 'long' : 'short' }),
-            ordType: 'market', sz: String(totalSz)
-          }, demo);
-          if (!fullCloseRes?.data?.[0]?.ordId) {
-            await botLog(env, email, `[${state.strategy}] TP full-close FAILED [${fullCloseRes?.code}]: ${fullCloseRes?.msg} — algos preserved`);
-            return;
-          }
-          if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
-          if (state.slAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.slAlgoId, demo);
-          delete ps[actualKey];
-          psModifiedRef.modified = true;
-          await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 100% closed ✓ WIN`);
-          return;
-        }
-
-        // Swing/trend strategies: close 50%, place break-even SL, start trailing
+        // Swing strategies: close 50%, place break-even SL, start trailing
         const halfContracts = Math.max(1, Math.floor(totalSz / 2));
         const tpCloseRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
           instId: pair, tdMode: 'cross',
@@ -1951,14 +1827,6 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
 // INDICATORS
 // ════════════════════════════════════════════════════════════
 
-function _ema(closes, period) {
-  if (closes.length < period) return null;
-  const k = 2 / (period + 1);
-  let e = closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
-  for (let i = period; i < closes.length; i++) e = closes[i] * k + e * (1 - k);
-  return e;
-}
-
 function _sma(closes, period) {
   if (closes.length < period) return null;
   return closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
@@ -1982,201 +1850,6 @@ function calcRSI(candles, period = 14) {
   return 100 - 100 / (1 + avgG / avgL);
 }
 
-function calcBB(candles, period = 20, mult = 2) {
-  const closes = candles.map(c => parseFloat(c[4]));
-  if (closes.length < period) return null;
-  const slice = closes.slice(0, period);
-  const mid = slice.reduce((s, v) => s + v, 0) / period;
-  const std = Math.sqrt(slice.reduce((s, v) => s + (v - mid) ** 2, 0) / period);
-  return { upper: mid + mult * std, mid, lower: mid - mult * std };
-}
-
-function calcMACD(candles, fast = 12, slow = 26, sig = 9) {
-  const closes = candles.map(c => parseFloat(c[4])).reverse(); // oldest first
-  if (closes.length < slow + sig + 2) return null;
-
-  // Build MACD line in O(N) with running EMAs
-  const kF = 2 / (fast + 1), kS = 2 / (slow + 1);
-  let eF = 0, eS = 0;
-  const macdArr = [];
-  for (let i = 0; i < closes.length; i++) {
-    eF = i < fast ? (eF * i + closes[i]) / (i + 1) : closes[i] * kF + eF * (1 - kF);
-    eS = i < slow ? (eS * i + closes[i]) / (i + 1) : closes[i] * kS + eS * (1 - kS);
-    if (i >= slow - 1) macdArr.push(eF - eS);
-  }
-  if (macdArr.length < sig + 2) return null;
-
-  // Signal line: single forward pass — prevSigEMA is the exact prior bar value
-  const kSig = 2 / (sig + 1);
-  let sigEMA = macdArr.slice(0, sig).reduce((s, v) => s + v, 0) / sig;
-  let prevSigEMA = sigEMA;
-  for (let i = sig; i < macdArr.length; i++) {
-    prevSigEMA = sigEMA;
-    sigEMA = macdArr[i] * kSig + sigEMA * (1 - kSig);
-  }
-  return {
-    histogram:     macdArr[macdArr.length - 1] - sigEMA,
-    prevHistogram: macdArr[macdArr.length - 2] - prevSigEMA
-  };
-}
-
-function calcATR(candles, period = 14) {
-  if (candles.length < period + 1) return null;
-  let tr = 0;
-  for (let i = 0; i < period; i++) {
-    const hi = parseFloat(candles[i][2]), lo = parseFloat(candles[i][3]);
-    const pc = parseFloat(candles[i + 1][4]);
-    tr += Math.max(hi - lo, Math.abs(hi - pc), Math.abs(lo - pc));
-  }
-  return tr / period;
-}
-
-function calcADX(candles, period = 14) {
-  if (candles.length < period * 2 + 1) return null;
-  const c = candles.slice().reverse(); // oldest-first
-  const wk = 1 / period; // Wilder smoothing
-
-  let smTR = 0, smPDM = 0, smNDM = 0;
-  for (let i = 1; i <= period; i++) {
-    const hi = parseFloat(c[i][2]), lo = parseFloat(c[i][3]), pc = parseFloat(c[i-1][4]);
-    smTR  += Math.max(hi - lo, Math.abs(hi - pc), Math.abs(lo - pc));
-    const up = hi - parseFloat(c[i-1][2]), dn = parseFloat(c[i-1][3]) - lo;
-    smPDM += (up > dn && up > 0) ? up : 0;
-    smNDM += (dn > up && dn > 0) ? dn : 0;
-  }
-  let pDI = smTR > 0 ? 100 * smPDM / smTR : 0;
-  let nDI = smTR > 0 ? 100 * smNDM / smTR : 0;
-  let adx  = (pDI + nDI) > 0 ? Math.abs(pDI - nDI) / (pDI + nDI) * 100 : 0;
-
-  for (let i = period + 1; i < c.length; i++) {
-    const hi = parseFloat(c[i][2]), lo = parseFloat(c[i][3]), pc = parseFloat(c[i-1][4]);
-    const tr = Math.max(hi - lo, Math.abs(hi - pc), Math.abs(lo - pc));
-    const up = hi - parseFloat(c[i-1][2]), dn = parseFloat(c[i-1][3]) - lo;
-    smTR  = smTR  * (1 - wk) + tr;
-    smPDM = smPDM * (1 - wk) + ((up > dn && up > 0) ? up : 0);
-    smNDM = smNDM * (1 - wk) + ((dn > up && dn > 0) ? dn : 0);
-    pDI = smTR > 0 ? 100 * smPDM / smTR : 0;
-    nDI = smTR > 0 ? 100 * smNDM / smTR : 0;
-    const dx = (pDI + nDI) > 0 ? Math.abs(pDI - nDI) / (pDI + nDI) * 100 : 0;
-    adx = adx * (1 - wk) + dx * wk;
-  }
-  return { adx, plusDI: pDI, minusDI: nDI };
-}
-
-// ════════════════════════════════════════════════════════════
-// STRATEGY SIGNAL FUNCTIONS
-// ════════════════════════════════════════════════════════════
-
-function detectSignalRSIDCA(candles1H, levels, currentPrice) {
-  const rsi = calcRSI(candles1H, 14);
-  if (!rsi) return null;
-  const px = currentPrice || parseFloat(candles1H[0][4]);
-
-  // LONG: oversold (RSI < 40)
-  if (rsi < 40) {
-    const swingLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
-    const slDist = (px - swingLow) / px;
-    if (slDist >= 0.005 && slDist <= 0.10) {
-      const support = levels.supports[0];
-      return { type: 'long', level: support?.price || px, grade: rsi < 30 ? 'S' : 'A', stopLoss: swingLow, strategy: 'rsi_dca' };
-    }
-  }
-
-  // SHORT: overbought (RSI > 65)
-  if (rsi > 65) {
-    const swingHigh = Math.max(...candles1H.slice(0, 5).map(c => parseFloat(c[2])));
-    const slDist = (swingHigh - px) / px;
-    if (slDist >= 0.005 && slDist <= 0.10) {
-      const resistance = levels.resistances[0];
-      return { type: 'short', level: resistance?.price || px, grade: rsi > 75 ? 'S' : 'A', stopLoss: swingHigh, strategy: 'rsi_dca' };
-    }
-  }
-
-  return null;
-}
-
-function detectSignalMASupport(candles1H, currentPrice) {
-  const closes = candles1H.map(c => parseFloat(c[4]));
-  const periods = [10, 20, 34, 50, 100, 200];
-  const mas = periods.map(p => ({ p, v: _sma(closes, p) })).filter(m => m.v && m.v < currentPrice);
-  if (mas.length < 3) return null;
-  const nearMA = mas.find(m => Math.abs(currentPrice - m.v) / currentPrice <= 0.005);
-  if (!nearMA) return null;
-  const swingLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
-  const slDist = (currentPrice - swingLow) / currentPrice;
-  if (slDist < 0.005 || slDist > 0.12) return null;
-  return { type: 'long', level: nearMA.v, grade: 'A', stopLoss: swingLow, strategy: 'ma_support' };
-}
-
-function detectSignalMACrossover(candles5m, candles1H, currentPrice) {
-  const closes = candles1H.map(c => parseFloat(c[4])).reverse(); // oldest-first for EMA
-  if (closes.length < 36) return null;
-  const ema10c = _ema(closes, 10), ema34c = _ema(closes, 34);
-  const ema10p = _ema(closes.slice(0, closes.length - 1), 10), ema34p = _ema(closes.slice(0, closes.length - 1), 34);
-  if (!ema10c || !ema34c || !ema10p || !ema34p) return null;
-  const rsi = calcRSI(candles1H, 14);
-  if (!rsi) return null;
-  const lows5m  = candles5m.slice(0, 4).map(c => parseFloat(c[3]));
-  const highs5m = candles5m.slice(0, 4).map(c => parseFloat(c[2]));
-  if (ema10c > ema34c && ema10p <= ema34p && rsi >= 50 && rsi < 70) {
-    const sl = Math.min(...lows5m);
-    const d = (currentPrice - sl) / currentPrice;
-    if (d < 0.005 || d > 0.10) return null;
-    return { type: 'long', level: ema10c, grade: 'A', stopLoss: sl, strategy: 'ma_crossover' };
-  }
-  if (ema10c < ema34c && ema10p >= ema34p && rsi <= 50 && rsi > 30) {
-    const sl = Math.max(...highs5m);
-    const d = (sl - currentPrice) / currentPrice;
-    if (d < 0.005 || d > 0.10) return null;
-    return { type: 'short', level: ema10c, grade: 'A', stopLoss: sl, strategy: 'ma_crossover' };
-  }
-  return null;
-}
-
-function detectSignalBBReversion(candles5m, currentPrice, trend) {
-  const bb = calcBB(candles5m, 20, 2);
-  if (!bb) return null;
-  if (candles5m.length < 3) return null;
-  const prev = candles5m[1].map(parseFloat), cur = candles5m[0].map(parseFloat);
-  if (prev[4] < bb.lower && cur[4] > bb.lower && trend.dir !== 'down') {
-    const sl = Math.min(...candles5m.slice(0, 4).map(c => parseFloat(c[3])));
-    const d = (currentPrice - sl) / currentPrice;
-    if (d < 0.005 || d > 0.12) return null;
-    return { type: 'long', level: bb.lower, grade: 'A', stopLoss: sl, strategy: 'bb_reversion' };
-  }
-  if (prev[4] > bb.upper && cur[4] < bb.upper && trend.dir !== 'up') {
-    const sl = Math.max(...candles5m.slice(0, 4).map(c => parseFloat(c[2])));
-    const d = (sl - currentPrice) / currentPrice;
-    if (d < 0.005 || d > 0.12) return null;
-    return { type: 'short', level: bb.upper, grade: 'A', stopLoss: sl, strategy: 'bb_reversion' };
-  }
-  return null;
-}
-
-function detectSignalBreakout(candles1H, candles5m, currentPrice) {
-  if (candles1H.length < 22 || candles5m.length < 22) return null;
-  const res20  = Math.max(...candles1H.slice(1, 21).map(c => parseFloat(c[2])));
-  const sup20  = Math.min(...candles1H.slice(1, 21).map(c => parseFloat(c[3])));
-  const prev5m = candles5m[1]?.map(parseFloat);
-  const cur5m  = candles5m[0]?.map(parseFloat);
-  if (!prev5m || !cur5m) return null;
-  const avgVol = candles5m.slice(1, 21).map(c => parseFloat(c[5])).reduce((s, v) => s + v, 0) / 20;
-  if (parseFloat(cur5m[5]) < avgVol * 1.5) return null;
-
-  if (prev5m[4] <= res20 && currentPrice > res20 * 1.001) {
-    const sl = prev5m[3];
-    const d = (currentPrice - sl) / currentPrice;
-    if (d < 0.003 || d > 0.08) return null;
-    return { type: 'long', level: res20, grade: 'S', stopLoss: sl, strategy: 'breakout' };
-  }
-  if (prev5m[4] >= sup20 && currentPrice < sup20 * 0.999) {
-    const sl = prev5m[2];  // prev candle high is SL for short breakdown
-    const d = (sl - currentPrice) / currentPrice;
-    if (d < 0.003 || d > 0.08) return null;
-    return { type: 'short', level: sup20, grade: 'S', stopLoss: sl, strategy: 'breakout' };
-  }
-  return null;
-}
 
 function detectSignalMARibbon(candles1H, currentPrice) {
   const closes = candles1H.map(c => parseFloat(c[4]));
@@ -2201,157 +1874,6 @@ function detectSignalMARibbon(candles1H, currentPrice) {
     : { type: 'short', level: sorted[0].v, grade: 'A', stopLoss: sl, strategy: 'ma_ribbon' };
 }
 
-function detectSignalMACDDiv(candles1H, candles5m, currentPrice) {
-  const macdData = calcMACD(candles1H);
-  const rsi = calcRSI(candles1H, 14);
-  if (!macdData || !rsi) return null;
-  const lows  = candles1H.slice(0, 10).map(c => parseFloat(c[3]));
-  const highs = candles1H.slice(0, 10).map(c => parseFloat(c[2]));
-  const nearLow  = Math.abs(currentPrice - Math.min(...lows))  / currentPrice <= 0.02;
-  const nearHigh = Math.abs(currentPrice - Math.max(...highs)) / currentPrice <= 0.02;
-  if (nearLow && macdData.histogram > macdData.prevHistogram && rsi > 40) {
-    const sl = Math.min(...candles5m.slice(0, 4).map(c => parseFloat(c[3])));
-    const d = (currentPrice - sl) / currentPrice;
-    if (d < 0.005 || d > 0.12) return null;
-    return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'macd_div' };
-  }
-  if (nearHigh && macdData.histogram < macdData.prevHistogram && rsi < 60) {
-    const sl = Math.max(...candles5m.slice(0, 4).map(c => parseFloat(c[2])));
-    const d = (sl - currentPrice) / currentPrice;
-    if (d < 0.005 || d > 0.12) return null;
-    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'macd_div' };
-  }
-  return null;
-}
-
-function detectSignalFundingRate(fr, currentPrice, levels) {
-  if (fr === null || fr === undefined) return null;
-  if (fr >= 0.001) {
-    const sl = currentPrice * 1.025;
-    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'funding_rate' };
-  }
-  if (fr <= -0.0005) {
-    const sl = currentPrice * 0.975;
-    return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'funding_rate' };
-  }
-  return null;
-}
-
-function detectSignalATRTrend(candles1H, candles5m, currentPrice) {
-  if (candles1H.length < 60) return null;
-  const adxData = calcADX(candles1H, 14);
-  if (!adxData || adxData.adx < 25) return null;
-  const closes = candles1H.map(c => parseFloat(c[4]));
-  const sma50  = _sma(closes, 50);
-  const atr    = calcATR(candles1H, 14);
-  if (!sma50 || !atr) return null;
-
-  if (currentPrice > sma50 && adxData.plusDI > adxData.minusDI) {
-    const recentHigh = Math.max(...candles1H.slice(0, 5).map(c => parseFloat(c[2])));
-    const pullback = recentHigh - currentPrice;
-    if (pullback < atr * 0.5 || pullback > atr * 2.0) return null;
-    const sl = currentPrice - atr * 1.5;
-    const d = (currentPrice - sl) / currentPrice;
-    if (d < 0.005 || d > 0.12) return null;
-    return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'atr_trend' };
-  }
-  if (currentPrice < sma50 && adxData.minusDI > adxData.plusDI) {
-    const recentLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
-    const bounce = currentPrice - recentLow;
-    if (bounce < atr * 0.5 || bounce > atr * 2.0) return null;
-    const sl = currentPrice + atr * 1.5;
-    const d = (sl - currentPrice) / currentPrice;
-    if (d < 0.005 || d > 0.12) return null;
-    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'atr_trend' };
-  }
-  return null;
-}
-
-// ── DAILY TREND FILTER (EMA20 / EMA50) ───────────────────────
-function detectTrend(candles, currentPrice) {
-  if (candles.length < 55) return { dir: 'neutral', strong: false };
-  const closes   = candles.slice(0, 55).map(c => parseFloat(c[4])).reverse();
-  const closes5  = candles.slice(5, 60).map(c => parseFloat(c[4])).reverse();
-  const ema20    = calcEMA(closes, 20);
-  const ema50    = calcEMA(closes, 50);
-  if (!ema20 || !ema50) return { dir: 'neutral', strong: false };
-  const ema20_5  = closes5.length >= 20 ? calcEMA(closes5, 20) : ema20;
-
-  const slope  = Math.abs(ema20 - ema20_5) / (ema20_5 || 1);
-  const spread = Math.abs(ema20 - ema50)   / (ema50   || 1);
-  const strong = slope > 0.002 && spread > 0.008;
-
-  let dir;
-  if (currentPrice > ema20 && ema20 > ema50)      dir = 'up';
-  else if (currentPrice < ema20 && ema20 < ema50) dir = 'down';
-  else                                              dir = 'neutral';
-
-  return { dir, strong };
-}
-
-function calcEMA(closes, period) {
-  if (!closes.length || closes.length < period) return null;
-  const k = 2 / (period + 1);
-  let ema = closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
-  for (let i = period; i < closes.length; i++) {
-    ema = closes[i] * k + ema * (1 - k);
-  }
-  return ema;
-}
-
-// ── HA + EMA + StochRSI STRATEGY HELPERS ──────────────────────
-// ── NY OPEN FVG HELPERS ───────────────────────────────────────
-function getNYOpenUTCHour() {
-  const now = new Date();
-  const m = now.getUTCMonth() + 1, d = now.getUTCDate();
-  const isEDT = (m > 3 && m < 11) || (m === 3 && d >= 8) || (m === 11 && d <= 7);
-  return isEDT ? 13 : 14; // EDT=13:30 UTC, EST=14:30 UTC
-}
-
-function getTodayEST() {
-  const offset = getNYOpenUTCHour() === 13 ? -4 : -5;
-  return new Date(Date.now() + offset * 3600000).toISOString().slice(0, 10);
-}
-
-function detectSignalNYOpenFVG(candles5m, currentPrice, nyRef) {
-  if (!nyRef || candles5m.length < 6) return null;
-
-  // LONG: a recent candle closed above nyRef.high
-  const brokenUp = candles5m.slice(1, 20).some(c => parseFloat(c[4]) > nyRef.high);
-  if (brokenUp) {
-    // Scan for bullish FVG: C3.low > C1.high (candles newest-first: C3=i-1, C2=i, C1=i+1)
-    for (let i = 1; i < Math.min(candles5m.length - 1, 16); i++) {
-      const c1High = parseFloat(candles5m[i + 1][2]); // older candle's high
-      const c3Low  = parseFloat(candles5m[i - 1][3]); // newer candle's low
-      if (c3Low > c1High) {
-        if (currentPrice >= c1High && currentPrice <= c3Low) {
-          const sl = parseFloat(candles5m[1][3]); // prev candle low
-          if (sl >= currentPrice) continue;
-          return { type: 'long', level: currentPrice, grade: 'S', stopLoss: sl, strategy: 'ny_open_fvg' };
-        }
-      }
-    }
-  }
-
-  // SHORT: a recent candle closed below nyRef.low
-  const brokenDown = candles5m.slice(1, 20).some(c => parseFloat(c[4]) < nyRef.low);
-  if (brokenDown) {
-    // Scan for bearish FVG: C3.high < C1.low
-    for (let i = 1; i < Math.min(candles5m.length - 1, 16); i++) {
-      const c1Low  = parseFloat(candles5m[i + 1][3]); // older candle's low
-      const c3High = parseFloat(candles5m[i - 1][2]); // newer candle's high
-      if (c3High < c1Low) {
-        if (currentPrice >= c3High && currentPrice <= c1Low) {
-          const sl = parseFloat(candles5m[1][2]); // prev candle high
-          if (sl <= currentPrice) continue;
-          return { type: 'short', level: currentPrice, grade: 'S', stopLoss: sl, strategy: 'ny_open_fvg' };
-        }
-      }
-    }
-  }
-
-  return null;
-}
 
 function calcHACandles(candles) {
   // candles: newest first [ts, open, high, low, close, vol]
@@ -2470,253 +1992,6 @@ function detectSignalHAEmaSRSI(candles, currentPrice) {
   return null;
 }
 
-// ── MA + RSI SCALP STRATEGY ───────────────────────────────────
-// 5min chart: MA(10)/MA(34) golden/dead cross + RSI(14) filter
-// Long:  golden cross (MA10 crosses above MA34) AND RSI > 55
-// Short: dead cross   (MA10 crosses below MA34) AND RSI < 45
-// SL:    previous candle's low (long) / high (short)
-function detectSignalMARSIScalp(c5, currentPrice) {
-  if (c5.length < 36) return null;
-  const closes = c5.slice(0, 36).map(c => parseFloat(c[4]));
-  const ma10Curr = closes.slice(0, 10).reduce((s, v) => s + v, 0) / 10;
-  const ma10Prev = closes.slice(1, 11).reduce((s, v) => s + v, 0) / 10;
-  const ma34Curr = closes.slice(0, 34).reduce((s, v) => s + v, 0) / 34;
-  const ma34Prev = closes.slice(1, 35).reduce((s, v) => s + v, 0) / 34;
-  const rsi = calcRSI(c5.slice(0, 30), 14);
-  if (rsi === null) return null;
-  const goldenCross = ma10Prev <= ma34Prev && ma10Curr > ma34Curr;
-  const deadCross   = ma10Prev >= ma34Prev && ma10Curr < ma34Curr;
-  if (goldenCross && rsi > 55) {
-    const sl = parseFloat(c5[1][3]); // previous candle low
-    if (sl >= currentPrice) return null;
-    return { type: 'long',  level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'ma_rsi_scalp' };
-  }
-  if (deadCross && rsi < 45) {
-    const sl = parseFloat(c5[1][2]); // previous candle high
-    if (sl <= currentPrice) return null;
-    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'ma_rsi_scalp' };
-  }
-  return null;
-}
-
-// ── S/R DETECTION ─────────────────────────────────────────────
-function detectSR(candles) {
-  const RECENT_N = 20;
-  const MAX_AGE  = 100;
-  const TOL      = 0.003;
-
-  const activeCandles = candles.slice(0, MAX_AGE);
-  const currentPrice  = parseFloat(candles[0][4]);
-  const levels        = [];
-  const seen          = new Set();
-
-  const priceStep = currentPrice * TOL;
-  const prices = activeCandles.flatMap(c => [parseFloat(c[2]), parseFloat(c[3])]);
-
-  for (const p of prices) {
-    const bucket = Math.round(p / priceStep);
-    if (seen.has(bucket)) continue;
-    seen.add(bucket);
-
-    let sup = 0, res = 0, recentTouches = 0;
-    activeCandles.forEach((c, idx) => {
-      const hi = parseFloat(c[2]), lo = parseFloat(c[3]);
-      const touchedSup = Math.abs(lo - p) / p <= TOL;
-      const touchedRes = Math.abs(hi - p) / p <= TOL;
-      if (touchedSup) { sup++; if (idx < RECENT_N) recentTouches++; }
-      if (touchedRes) { res++; if (idx < RECENT_N) recentTouches++; }
-    });
-
-    if (sup + res >= 2) {
-      // Fix: a level with nearly equal sup/res touches is a flip zone — include in both
-      const type = sup >= res ? 'support' : 'resistance';
-      levels.push({ price: p, touches: sup + res, recentTouches, type });
-      // If touches are close (flip level), add as both types
-      if (sup > 0 && res > 0 && Math.abs(sup - res) <= 1) {
-        levels.push({ price: p, touches: sup + res, recentTouches, type: type === 'support' ? 'resistance' : 'support' });
-      }
-    }
-  }
-
-  return {
-    supports:    levels.filter(l => l.type === 'support'    && l.price <= currentPrice * 1.005)
-                       .sort((a, b) => b.price - a.price).slice(0, 4),
-    resistances: levels.filter(l => l.type === 'resistance' && l.price >= currentPrice * 0.995)
-                       .sort((a, b) => a.price - b.price).slice(0, 4)
-  };
-}
-
-// ── GRADE LEVELS: S/A/B tier ──────────────────────────────────
-function gradeLevels(sr1H, sr4H) {
-  const CONFLUENT_TOL = 0.005;
-  const result = [];
-
-  for (const lv4 of [...sr4H.supports, ...sr4H.resistances]) {
-    const match1H = [...sr1H.supports, ...sr1H.resistances].find(
-      l => Math.abs(l.price - lv4.price) / lv4.price <= CONFLUENT_TOL && l.type === lv4.type
-    );
-    let grade;
-    if (match1H) {
-      grade = 'S';
-    } else if (lv4.touches >= 4 || lv4.recentTouches >= 1) {
-      grade = 'A';
-    } else {
-      grade = 'B';
-    }
-    result.push({ ...lv4, grade });
-  }
-
-  for (const lv1 of [...sr1H.supports, ...sr1H.resistances]) {
-    const already = result.some(
-      r => Math.abs(r.price - lv1.price) / lv1.price <= CONFLUENT_TOL && r.type === lv1.type
-    );
-    if (already) continue;
-    const grade = lv1.recentTouches >= 1 ? 'A' : 'B';
-    result.push({ ...lv1, grade });
-  }
-
-  return {
-    supports:    result.filter(l => l.type === 'support').sort((a, b) => b.price - a.price).slice(0, 5),
-    resistances: result.filter(l => l.type === 'resistance').sort((a, b) => a.price - b.price).slice(0, 5)
-  };
-}
-
-// ── FILTER VOLUME ZONES ───────────────────────────────────────
-function filterVolBySR(volZones, srLevels) {
-  const TOL = 0.01;
-  const allSR = [...srLevels.supports, ...srLevels.resistances];
-  function nearSR(zones) {
-    return zones.filter(z => allSR.some(sr => Math.abs(sr.price - z.price) / z.price <= TOL));
-  }
-  return { supports: nearSR(volZones.supports), resistances: nearSR(volZones.resistances) };
-}
-
-// ── MERGE LEVELS ──────────────────────────────────────────────
-function mergeLevels(a, b) {
-  const tol = 0.005;
-  function dedup(arr) {
-    const out = [];
-    for (const lv of arr) {
-      if (!out.some(o => Math.abs(o.price - lv.price) / lv.price <= tol)) {
-        out.push({ grade: 'B', ...lv });
-      }
-    }
-    return out;
-  }
-  return {
-    supports: dedup([...a.supports, ...b.supports]).sort((x, y) => y.price - x.price).slice(0, 5),
-    resistances: dedup([...a.resistances, ...b.resistances]).sort((x, y) => x.price - y.price).slice(0, 5)
-  };
-}
-
-// ── ENTRY SIGNAL ──────────────────────────────────────────────
-// LONG:  prev candle touches support → current candle bouncing (bullish close)
-// SHORT: bearish impulse + high volume → price retraces to 50% or resistance → enter short
-function detectSignal(c5, levels) {
-  if (c5.length < 4) return null;
-
-  // Fix: only use confirmed (closed) candles — index 8 is OKX confirm field
-  if (c5[1][8] !== '1' || c5[2][8] !== '1' || c5[3][8] !== '1') return null;
-
-  const cur   = c5[0].map(parseFloat); // current forming candle
-  const prev1 = c5[1].map(parseFloat);
-  const prev2 = c5[2].map(parseFloat);
-  const prev3 = c5[3].map(parseFloat);
-
-  const curPrice = cur[4];
-
-  // 80th-percentile volume threshold
-  const allClosedVols = c5.slice(1).map(c => parseFloat(c[5])).sort((a, b) => a - b);
-  const vol80th = allClosedVols[Math.floor(allClosedVols.length * 0.80)] ?? 0;
-
-  const swingLow  = Math.min(prev1[3], prev2[3], prev3[3]);
-  const swingHigh = Math.max(prev1[2], prev2[2], prev3[2]);
-
-  const TOUCH_TOL = 0.006;
-  const SL_MIN    = 0.008;
-  const SL_MAX    = 0.08;
-
-  // ── LONG: support touch → bounce entry ───────────────────────
-  for (const s of levels.supports) {
-    const byWick  = Math.abs(prev1[3] - s.price) / s.price <= TOUCH_TOL;
-    const byClose = Math.abs(prev1[4] - s.price) / s.price <= TOUCH_TOL;
-    if (!byWick && !byClose) continue;
-    if (curPrice < s.price * 0.997) continue;
-
-    // Fix: require current candle to be bullish (close > open) — bounce confirmation
-    if (curPrice <= cur[1]) continue; // still falling, no bounce
-
-    const slDist = Math.abs(curPrice - swingLow) / curPrice;
-    if (slDist < SL_MIN || slDist > SL_MAX) continue;
-    return { type: 'long', level: s.price, grade: s.grade || 'B', stopLoss: swingLow };
-  }
-
-  // ── SHORT: resistance touch → rejection entry ─────────────────
-  for (const r of levels.resistances) {
-    const byWick  = Math.abs(prev1[2] - r.price) / r.price <= TOUCH_TOL;
-    const byClose = Math.abs(prev1[4] - r.price) / r.price <= TOUCH_TOL;
-    if (!byWick && !byClose) continue;
-    if (curPrice > r.price * 1.003) continue;
-    if (curPrice >= cur[1]) continue; // still rising, no rejection
-    const slDist = Math.abs(swingHigh - curPrice) / curPrice;
-    if (slDist < SL_MIN || slDist > SL_MAX) continue;
-    return { type: 'short', level: r.price, grade: r.grade || 'B', stopLoss: swingHigh };
-  }
-
-  // ── SHORT: bearish impulse + volume → retracement entry ──────
-  for (const bear of [prev1, prev2, prev3]) {
-    const bO = bear[1], bC = bear[4], bH = bear[2], bL = bear[3], bV = bear[5];
-    const range = bH - bL;
-    if (range <= 0) continue;
-    if ((bO - bC) / range < 0.35) continue;  // loosened from 0.40
-    if (bV < vol80th * 0.8) continue;         // loosened from vol80th
-
-    const mid50 = bH - range * 0.50;
-    if (curPrice < mid50 * 0.998) continue;
-    if (curPrice > swingHigh * 1.003) continue;
-
-    const slDist = Math.abs(swingHigh - curPrice) / curPrice;
-    if (slDist < SL_MIN || slDist > SL_MAX) continue;
-
-    const atMid50 = Math.abs(curPrice - mid50) / mid50 <= TOUCH_TOL * 1.5;
-    const nearRes = levels.resistances.find(r =>
-      r.price >= mid50 * 0.998 && r.price <= swingHigh * 1.003 &&
-      Math.abs(curPrice - r.price) / r.price <= TOUCH_TOL
-    );
-    if (!atMid50 && !nearRes) continue;
-    return { type: 'short', level: bH, grade: nearRes ? nearRes.grade : 'A', stopLoss: swingHigh };
-  }
-
-  return null;
-}
-
-// ── VOLUME PROFILE ────────────────────────────────────────────
-function detectVolumeZones(candles, currentPrice) {
-  if (candles.length < 20) return { supports: [], resistances: [] };
-  const BUCKETS = 50;
-  const minP = Math.min(...candles.map(c => parseFloat(c[3])));
-  const maxP = Math.max(...candles.map(c => parseFloat(c[2])));
-  const step = (maxP - minP) / BUCKETS;
-  if (step <= 0) return { supports: [], resistances: [] };
-  const vols = new Array(BUCKETS).fill(0);
-  for (const c of candles) {
-    const lo = parseFloat(c[3]), hi = parseFloat(c[2]), vol = parseFloat(c[5]);
-    const b0 = Math.max(0, Math.floor((lo - minP) / step));
-    const b1 = Math.min(BUCKETS - 1, Math.ceil((hi - minP) / step));
-    for (let b = b0; b <= b1; b++) vols[b] += vol;
-  }
-  const avgVol = vols.reduce((s, v) => s + v, 0) / BUCKETS;
-  const zones  = [];
-  for (let b = 0; b < BUCKETS; b++) {
-    if (vols[b] < avgVol * 2) continue;
-    const zonePrice = minP + (b + 0.5) * step;
-    zones.push({ price: zonePrice, touches: Math.round(vols[b] / avgVol), type: zonePrice <= currentPrice ? 'support' : 'resistance' });
-  }
-  return {
-    supports:    zones.filter(z => z.type === 'support').sort((a, b) => b.price - a.price).slice(0, 3),
-    resistances: zones.filter(z => z.type === 'resistance').sort((a, b) => a.price - b.price).slice(0, 3)
-  };
-}
 
 // ── NATIVE ALGO ORDERS ────────────────────────────────────────
 async function placeSLAlgo(apiKey, secret, pass, pair, direction, slPrice, sz, demo = false, isOneWayMode = false) {
