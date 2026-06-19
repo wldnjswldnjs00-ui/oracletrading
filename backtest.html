@@ -41,7 +41,7 @@ tr:last-child td{border-bottom:none;}
 </head>
 <body>
 <h1>AYILON 전략 백테스팅</h1>
-<p class="sub">최근 1년 · 5분봉 실행 · 1H 집계 신호 · 진입가 = 다음 캔들 시가 · 수수료 0.1%/거래 반영</p>
+<p class="sub">최근 1년 · 5분봉 실행 · 1H 집계 신호 · 진입가 = 다음 캔들 시가 · OKX 시장가 수수료 0.05%/side × 레버리지 반영</p>
 
 <div class="card">
   <div class="card-title">설정</div>
@@ -313,23 +313,22 @@ function aggregate1H(c5_of) {
 // ════════════════════════════════════════════════════════════
 // SCALP: 100% TP close (no trailing)
 // SWING: 50% TP → SL locked at entry+50%*dist → trailing TP (same dist again)
-// Fee: 0.05% per side = 0.1% round-trip
+// Fee: OKX 시장가 taker 0.05%/side on notional. notional = equity×notionalFrac
+//      where notionalFrac = min(riskFrac/slDist, posSize%/100×leverage)
+//      → fee scales with leverage automatically via notionalFrac
 
 var SCALP_STRATS = { ma50_bounce: 1 };
 
-// Mirrors actual bot position sizing:
-//   notionalFrac = min(riskFrac / slDist, posSize/100 * leverage)
-//   pnl = equity * notionalFrac * priceRet
-//   fee = equity * notionalFrac * 0.001 per side
-// When slDist is small → risk-limited (always risks riskFrac of equity on SL)
-// When slDist is large → position-limited (capped by posSize * leverage)
+// Position-based win rate: a position is a WIN only if it reached the first TP.
+// SCALP: win = TP hit. SWING: win = TP50 hit (regardless of trailing outcome).
+// This avoids SWING strategies falsely inflating win rate by counting trailing closes as extra wins.
 function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
   var isScalp = !!SCALP_STRATS[strategy];
   var RR = 1.5;
   var maxNotionalFrac = (posSizePct / 100) * leverage;
 
   var equity = 10000, pos = null, pending = null;
-  var trades = [], curve = [], lastDay = -1;
+  var trades = [], positions = [], curve = [], lastDay = -1;
   var WARMUP = 2520;
 
   for (var i = WARMUP; i < c5_of.length - 1; i++) {
@@ -346,12 +345,11 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
       var actualSlDist = Math.abs(entryPx - pending.sl) / entryPx;
       if (actualSlDist < 0.001) { pending = null; continue; }
       var actualTp = pending.dir==='long' ? entryPx*(1+actualSlDist*RR) : entryPx*(1-actualSlDist*RR);
-      // notionalFrac: capped by posSize*leverage, floored by risk constraint
       var notionalFrac = Math.min(riskFrac / actualSlDist, maxNotionalFrac);
       pos = { dir:pending.dir, entry:entryPx, sl:pending.sl, tp:actualTp,
                slDist:actualSlDist, notionalFrac:notionalFrac,
-               halfClosed:false, idx:i };
-      equity = Math.max(100, equity - equity * notionalFrac * 0.0005); // entry fee (0.05% of notional)
+               halfClosed:false, reachedTP:false, idx:i };
+      equity = Math.max(100, equity - equity * notionalFrac * 0.0005);
       pending = null;
     }
 
@@ -365,6 +363,8 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
         var pnl = equity * pos.notionalFrac * exitRet * mul;
         equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005 * mul);
         trades.push({ts:ts, type:'SL', pnl:pnl, eq:equity});
+        // Position closed: win only if we already hit TP once
+        positions.push({isWin: pos.reachedTP});
         pos = null;
       } else if (tpHit) {
         if (isScalp || pos.halfClosed) {
@@ -373,14 +373,17 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
           var pnl = equity * pos.notionalFrac * exitRet * mul;
           equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005 * mul);
           trades.push({ts:ts, type:'TP', pnl:pnl, eq:equity});
+          // Position closed at TP = always a win
+          positions.push({isWin: true});
           pos = null;
         } else {
-          // SWING: 50% close at TP1, lock in 50% of TP1 profit as SL
+          // SWING: 50% close at TP1 — mark as reached TP
           var exitRet = pos.dir==='long' ? (pos.tp - pos.entry) / pos.entry : (pos.entry - pos.tp) / pos.entry;
           var pnl = equity * pos.notionalFrac * exitRet * 0.5;
           equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005 * 0.5);
           trades.push({ts:ts, type:'TP50', pnl:pnl, eq:equity});
           pos.halfClosed = true;
+          pos.reachedTP = true;
           var dist = Math.abs(pos.tp - pos.entry);
           pos.sl = pos.dir==='long' ? pos.entry + dist * 0.5 : pos.entry - dist * 0.5;
           pos.tp = pos.dir==='long' ? pos.tp + dist : pos.tp - dist;
@@ -393,7 +396,8 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
       var is1HClose = (i % 12 === 11);
       if (!is1HClose) continue;
 
-      var h1Done = Math.floor(i / 12);
+      // Fix: use (i+1)/12 to include the just-completed 1H bar
+      var h1Done = Math.floor((i + 1) / 12);
       var c1h_nf = h1Done > 0 ? c1h_of.slice(0, h1Done).reverse() : [];
       var sig = null;
 
@@ -410,15 +414,16 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
       if (sig && sig.stopLoss) {
         var slDist = Math.abs(cl5 - sig.stopLoss) / cl5;
         if (slDist >= 0.002 && slDist <= 0.15) {
-          var tpDist = slDist * RR;
-          var tp = sig.type==='long' ? cl5*(1+tpDist) : cl5*(1-tpDist);
+          var tp = sig.type==='long' ? cl5*(1+slDist*RR) : cl5*(1-slDist*RR);
           pending = { dir:sig.type, sl:sig.stopLoss, tp:tp };
         }
       }
     }
   }
 
-  var wins = trades.filter(function(t){return t.pnl>0;});
+  var posWins = positions.filter(function(p){return p.isWin;}).length;
+  var posTotal = positions.length;
+  var winRate = posTotal > 0 ? posWins / posTotal : 0;
   var actualDays = curve.length || 365;
   var totalRet = (equity - 10000) / 10000;
   var annRet = Math.pow(1 + totalRet, 365 / actualDays) - 1;
@@ -427,7 +432,7 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
   var peak = 0, maxDD = 0;
   curve.forEach(function(p){ if(p.equity>peak)peak=p.equity; var dd=(peak-p.equity)/peak; if(dd>maxDD)maxDD=dd; });
   return { equity:equity, totalRet:totalRet, annRet:annRet, monRet:monRet, dayRet:dayRet,
-           totalTrades:trades.length, winRate:trades.length?wins.length/trades.length:0,
+           totalTrades:posTotal, winRate:winRate,
            maxDD:maxDD, curve:curve, trades:trades };
 }
 
