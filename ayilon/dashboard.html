@@ -661,8 +661,11 @@
           <div class="d-form-group">
             <label class="d-form-label">Leverage</label>
             <div style="display:flex;align-items:center;gap:12px;">
-              <input type="range" id="botLeverage" min="1" max="20" value="10" oninput="document.getElementById('botLeverageVal').textContent=this.value+'x'" style="flex:1;">
+              <input type="range" id="botLeverage" min="1" max="20" value="10" oninput="updateLeverageDisplay(this.value)" style="flex:1;">
               <span id="botLeverageVal" style="font-size:13px;font-weight:600;min-width:36px;">10x</span>
+            </div>
+            <div id="botLeverageInfo" style="margin-top:6px;padding:8px 10px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:6px;font-size:11px;color:#f59e0b;line-height:1.5;">
+              ⚡ 보통 — 스캘핑·단타 전략(MA Cross, NY Open 등)에 적합
             </div>
           </div>
           <div class="d-form-group">
@@ -684,24 +687,37 @@
           </div>
           <div class="d-form-group">
             <label class="d-form-label">Trading Pair</label>
-            <select class="d-form-input" id="botTradingPair" style="background:#111;color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;">
-              <option value="BTC-USDT-SWAP">BTC-USDT-SWAP</option>
-              <option value="ETH-USDT-SWAP">ETH-USDT-SWAP</option>
-            </select>
+            <input type="text" id="botTradingPair" list="pairDatalist" class="d-form-input"
+              placeholder="검색: BTC, ETH, SOL..."
+              value="BTC-USDT-SWAP"
+              oninput="onTradingPairChange(this.value)"
+              autocomplete="off"
+              style="background:#111;color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;width:100%;box-sizing:border-box;">
+            <datalist id="pairDatalist">
+              <option value="BTC-USDT-SWAP">
+              <option value="ETH-USDT-SWAP">
+            </datalist>
+            <div id="botPairLoading" style="display:none;margin-top:5px;font-size:11px;color:rgba(255,255,255,0.4);">페어 목록 불러오는 중...</div>
+            <div id="botAltcoinWarn" style="display:none;margin-top:6px;padding:8px 10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:6px;font-size:11px;color:#f59e0b;line-height:1.6;">
+              ⚠️ 알트코인은 변동성이 크기 때문에 레버리지 <strong>2~3배</strong>, 포지션 사이즈 <strong>5~10%</strong>를 권장합니다. 레버리지가 높을수록 청산 위험도 높아집니다.
+            </div>
           </div>
           <div class="d-form-group">
             <label class="d-form-label">API Mode</label>
             <div style="display:flex;gap:8px;">
               <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;" id="bot-mode-live-label">
-                <input type="radio" name="botMode" value="live" id="bot-mode-live" checked style="accent-color:#fff;"> Live
+                <input type="radio" name="botMode" value="live" id="bot-mode-live" checked onchange="onModeChange()" style="accent-color:#fff;"> Live
               </label>
               <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:13px;" id="bot-mode-demo-label">
-                <input type="radio" name="botMode" value="demo" id="bot-mode-demo" style="accent-color:#fff;"> Demo
+                <input type="radio" name="botMode" value="demo" id="bot-mode-demo" onchange="onModeChange()" style="accent-color:#fff;"> Demo
               </label>
             </div>
           </div>
           <div id="botConfigMsg" style="font-size:12px;min-height:16px;margin-bottom:12px;"></div>
-          <button class="btn-primary" style="width:100%;padding:12px;" onclick="startBot()" data-i18n="db.bots.start_btn">+ 봇 시작하기</button>
+          <div id="botPositionWarn" style="display:none;margin-bottom:10px;padding:8px 10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:6px;font-size:11px;color:#f59e0b;line-height:1.5;">
+            ⚠️ 포지션 진행 중 — 레버리지·페어 변경은 다음 거래부터 적용됩니다
+          </div>
+          <button id="botActionBtn" class="btn-primary" style="width:100%;padding:12px;" onclick="startBot()">+ 봇 시작하기</button>
         </div>
       </div>
     </div>
@@ -1263,7 +1279,7 @@
     if (name !== 'terminal')     stopTermPosRefresh();
     if (name === 'dashboard')    initDashboard();
     if (name === 'terminal')     initTerminal();
-    if (name === 'bots')         { renderStrategyList(); loadMyBots(); }
+    if (name === 'bots')         { renderStrategyList(); loadMyBots(); loadOKXPairs(false); }
     if (name === 'subscription') initSubscriptionPage();
     if (name === 'settings')     initSettingsPage();
     if (name === 'guide')        renderGuide();
@@ -2055,10 +2071,150 @@
     modal.style.display = 'none';
   }
 
+  var _botIsRunning = false;
+  var _botHasOpenPosition = false;
+  var _pairsCache = {};
+
+  function updateLeverageDisplay(val) {
+    document.getElementById('botLeverageVal').textContent = val + 'x';
+    var infoEl = document.getElementById('botLeverageInfo');
+    if (!infoEl) return;
+    var v = parseInt(val);
+    // Check if altcoin selected
+    var pairVal = (document.getElementById('botTradingPair') || {}).value || 'BTC-USDT-SWAP';
+    var isAlt = pairVal !== 'BTC-USDT-SWAP' && pairVal !== 'ETH-USDT-SWAP';
+    if (isAlt) {
+      if (v <= 3) {
+        infoEl.textContent = '✅ 안전 — 알트코인에서 권장하는 레버리지입니다';
+        infoEl.style.color = '#22c55e'; infoEl.style.background = 'rgba(34,197,94,0.06)'; infoEl.style.borderColor = 'rgba(34,197,94,0.15)';
+      } else if (v <= 5) {
+        infoEl.textContent = '⚡ 보통 — 알트코인 5배 이상은 변동성 위험이 큽니다';
+        infoEl.style.color = '#f59e0b'; infoEl.style.background = 'rgba(245,158,11,0.06)'; infoEl.style.borderColor = 'rgba(245,158,11,0.15)';
+      } else {
+        infoEl.textContent = '⚠️ 고위험 — 알트코인 고레버리지는 청산 위험이 매우 높습니다';
+        infoEl.style.color = '#ef4444'; infoEl.style.background = 'rgba(239,68,68,0.06)'; infoEl.style.borderColor = 'rgba(239,68,68,0.15)';
+      }
+      return;
+    }
+    if (v <= 5) {
+      infoEl.textContent = '✅ 안전 — 중장기 추세 전략(HA+EMA, ATR Trend 등)에 권장';
+      infoEl.style.color = '#22c55e'; infoEl.style.background = 'rgba(34,197,94,0.06)'; infoEl.style.borderColor = 'rgba(34,197,94,0.15)';
+    } else if (v <= 10) {
+      infoEl.textContent = '⚡ 보통 — 스캘핑·단타 전략(MA Cross, NY Open 등)에 적합';
+      infoEl.style.color = '#f59e0b'; infoEl.style.background = 'rgba(245,158,11,0.06)'; infoEl.style.borderColor = 'rgba(245,158,11,0.15)';
+    } else {
+      infoEl.textContent = '⚠️ 고위험 — 충분한 경험 후 사용 권장. 손실 시 청산 속도가 빠릅니다';
+      infoEl.style.color = '#ef4444'; infoEl.style.background = 'rgba(239,68,68,0.06)'; infoEl.style.borderColor = 'rgba(239,68,68,0.15)';
+    }
+  }
+
   function updatePosSizeDisplay(val) {
     document.getElementById('botPosSizeVal').textContent = val + '%';
     var warnEl = document.getElementById('botPosSizeWarn');
     if (warnEl) warnEl.style.display = parseInt(val) >= 35 ? 'block' : 'none';
+  }
+
+  function onTradingPairChange(val) {
+    var warnEl = document.getElementById('botAltcoinWarn');
+    var pair = (val || '').toUpperCase().trim();
+    var isMajor = pair === 'BTC-USDT-SWAP' || pair === 'ETH-USDT-SWAP';
+    if (warnEl) warnEl.style.display = (pair && !isMajor) ? 'block' : 'none';
+    // Re-evaluate leverage info with altcoin context
+    var levVal = (document.getElementById('botLeverage') || {}).value;
+    if (levVal) updateLeverageDisplay(levVal);
+  }
+
+  function onModeChange() {
+    var mode = (document.querySelector('input[name=botMode]:checked') || {}).value;
+    loadOKXPairs(mode === 'demo');
+  }
+
+  async function loadOKXPairs(demo) {
+    var cacheKey = demo ? 'demo' : 'live';
+    if (_pairsCache[cacheKey]) { populatePairDatalist(_pairsCache[cacheKey]); return; }
+    var loadingEl = document.getElementById('botPairLoading');
+    if (loadingEl) loadingEl.style.display = 'block';
+    try {
+      var token = getSessionToken();
+      var res = await fetch(WORKER_URL + '/okx-instruments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ demoMode: demo })
+      });
+      var data = await res.json();
+      var pairs = data.pairs || ['BTC-USDT-SWAP', 'ETH-USDT-SWAP'];
+      _pairsCache[cacheKey] = pairs;
+      populatePairDatalist(pairs);
+    } catch(e) {
+      populatePairDatalist(['BTC-USDT-SWAP', 'ETH-USDT-SWAP']);
+    }
+    if (loadingEl) loadingEl.style.display = 'none';
+  }
+
+  function populatePairDatalist(pairs) {
+    var dl = document.getElementById('pairDatalist');
+    if (!dl) return;
+    dl.innerHTML = pairs.map(function(p) { return '<option value="' + p + '">'; }).join('');
+  }
+
+  function updateBotBtn() {
+    var btn = document.getElementById('botActionBtn');
+    var posWarn = document.getElementById('botPositionWarn');
+    if (!btn) return;
+    if (_botIsRunning) {
+      btn.textContent = '✓ 설정 업데이트';
+      btn.onclick = updateBotSettings;
+      if (posWarn) posWarn.style.display = _botHasOpenPosition ? 'block' : 'none';
+    } else {
+      btn.textContent = '+ 봇 시작하기';
+      btn.onclick = startBot;
+      if (posWarn) posWarn.style.display = 'none';
+    }
+  }
+
+  async function updateBotSettings() {
+    if (!selectedStrategies.length) return;
+    var token    = getSessionToken();
+    var leverage = document.getElementById('botLeverage').value;
+    var posSize  = document.getElementById('botPosSize').value;
+    var risk     = document.getElementById('botRisk').value;
+    var mode     = (document.querySelector('input[name=botMode]:checked') || {}).value || 'live';
+    var msgEl    = document.getElementById('botConfigMsg');
+    var strategyNames  = selectedStrategies.map(stratIdToWorkerName);
+    var primaryStrategy = strategyNames[0];
+    var pairInput = document.getElementById('botTradingPair');
+    var pair = pairInput ? pairInput.value.toUpperCase().trim() : 'BTC-USDT-SWAP';
+    msgEl.style.color = 'var(--gray-400)';
+    msgEl.textContent = '저장 중...';
+    try {
+      var res = await fetch(WORKER_URL + '/save-bot-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionToken: token,
+          strategy: primaryStrategy,
+          strategies: strategyNames,
+          leverage: parseInt(leverage),
+          posSize: parseFloat(posSize),
+          riskPerTrade: parseFloat(risk),
+          tradingPair: pair,
+          mode: mode,
+          demoMode: mode === 'demo'
+        })
+      });
+      var data = await res.json();
+      if (data.ok) {
+        msgEl.style.color = 'var(--green)';
+        msgEl.textContent = '✓ 설정이 업데이트되었습니다. 다음 거래부터 적용됩니다.';
+        loadMyBots();
+      } else {
+        msgEl.style.color = 'var(--red)';
+        msgEl.textContent = data.error || '저장 실패';
+      }
+    } catch(e) {
+      msgEl.style.color = 'var(--red)';
+      msgEl.textContent = '오류: ' + (e.message || '네트워크 오류');
+    }
   }
 
   function renderStrategyList() {
@@ -2216,12 +2372,57 @@
       var data = await res.json();
       renderBotLogs(data.logs || [], data.lastScan);
       if (!data.running) {
+        _botIsRunning = false; _botHasOpenPosition = false;
+        updateBotBtn();
         listEl.innerHTML = '<div class="empty-state" style="padding:32px 0;">' + (window.__t ? window.__t('db.bots.no_bots') : '실행 중인 봇이 없습니다') + '</div>';
         var dashActive = document.getElementById('dashActiveBots');
         if (dashActive) dashActive.textContent = '0';
         return;
       }
       var cfg        = data.config || {};
+      // Track running state & pre-fill config form
+      _botIsRunning = true;
+      _botHasOpenPosition = Object.keys(data.positionSummary || {}).length > 0;
+      updateBotBtn();
+      // Pre-fill form with current config
+      var cfgLev = cfg.leverage || 10;
+      var cfgPos = cfg.posSize || 10;
+      var cfgRisk = cfg.riskPerTrade || 2;
+      var cfgPair = cfg.tradingPair || 'BTC-USDT-SWAP';
+      var cfgMode = cfg.mode || 'live';
+      var levEl = document.getElementById('botLeverage');
+      var levValEl = document.getElementById('botLeverageVal');
+      var posEl = document.getElementById('botPosSize');
+      var posValEl = document.getElementById('botPosSizeVal');
+      var riskEl = document.getElementById('botRisk');
+      var pairEl = document.getElementById('botTradingPair');
+      var liveRad = document.getElementById('bot-mode-live');
+      var demoRad = document.getElementById('bot-mode-demo');
+      if (levEl) { levEl.value = cfgLev; if (levValEl) levValEl.textContent = cfgLev + 'x'; updateLeverageDisplay(cfgLev); }
+      if (posEl) { posEl.value = cfgPos; if (posValEl) posValEl.textContent = cfgPos + '%'; updatePosSizeDisplay(cfgPos); }
+      if (riskEl) riskEl.value = cfgRisk;
+      if (pairEl) { pairEl.value = cfgPair; onTradingPairChange(cfgPair); }
+      if (cfgMode === 'demo') { if (demoRad) demoRad.checked = true; if (liveRad) liveRad.checked = false; }
+      else { if (liveRad) liveRad.checked = true; if (demoRad) demoRad.checked = false; }
+      // Auto-select running strategies in the list
+      var workerStrats = (Array.isArray(cfg.strategies) && cfg.strategies.length) ? cfg.strategies : (cfg.strategy ? [cfg.strategy] : []);
+      if (workerStrats.length) {
+        selectedStrategies = workerStrats.map(function(s) { return s.replace(/_/g, '-'); });
+        renderStrategyList();
+        var firstStrat = STRATEGIES.filter(function(s){ return s.id === selectedStrategies[0]; })[0];
+        if (firstStrat) {
+          document.getElementById('botGuideSteps').style.display = 'none';
+          document.getElementById('botStratConfig').style.display = 'block';
+          var namesStr = selectedStrategies.map(function(sid){
+            var s = STRATEGIES.filter(function(x){ return x.id === sid; })[0];
+            return s ? s.name : sid;
+          }).join(', ');
+          document.getElementById('configStratName').textContent = namesStr;
+          document.getElementById('configStratDesc').textContent = selectedStrategies.length > 1
+            ? selectedStrategies.length + ' strategies selected — will run simultaneously'
+            : (firstStrat.desc || '');
+        }
+      }
       var modeLabel  = cfg.mode === 'demo' ? 'Demo' : 'Live';
       var pairLabel  = cfg.tradingPair || 'BTC-USDT-SWAP';
       var levLabel   = (cfg.leverage || 20) + 'x';

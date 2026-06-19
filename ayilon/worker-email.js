@@ -32,6 +32,7 @@ export default {
       if (path === '/confirm-2fa')       return handleConfirm2FA(request, env);
       if (path === '/2fa-status')        return handle2FAStatus(request, env);
       if (path === '/equity-history')    return handleEquityHistory(request, env);
+      if (path === '/okx-instruments')   return handleOKXInstruments(request, env);
       if (path === '/reset-password')    return handleResetPassword(request, env);
       if (path === '/update-profile')    return handleUpdateProfile(request, env);
       if (path === '/save-bot-settings') return handleSaveBotSettings(request, env);
@@ -812,7 +813,6 @@ async function handleSaveBotSettings(request, env) {
 
   // Sanitize numeric config fields — prevent invalid/extreme values reaching runBotForUser
   const VALID_STRATS = ['ha_ema_srsi','ny_open_fvg','ma_rsi_scalp','rsi_dca','ma_support','ma_crossover','bb_reversion','breakout','ma_ribbon','macd_div','atr_trend'];
-  const VALID_PAIRS  = ['BTC-USDT-SWAP','ETH-USDT-SWAP'];
   if (body.leverage     !== undefined) body.leverage     = Math.min(Math.max(parseInt(body.leverage)       || 20,   1), 125);
   if (body.posSize      !== undefined) body.posSize      = Math.min(Math.max(parseFloat(body.posSize)      || 40,   1), 100);
   if (body.riskPerTrade !== undefined) body.riskPerTrade = Math.min(Math.max(parseFloat(body.riskPerTrade) ||  2, 0.1),  10);
@@ -824,13 +824,34 @@ async function handleSaveBotSettings(request, env) {
     body.strategies = body.strategies.filter(s => VALID_STRATS.includes(s));
     if (body.strategies.length === 0) delete body.strategies;
   }
-  if (body.tradingPair && !VALID_PAIRS.includes(body.tradingPair)) body.tradingPair = 'BTC-USDT-SWAP';
+  if (body.tradingPair) {
+    const p = String(body.tradingPair).toUpperCase().trim();
+    body.tradingPair = /^[A-Z0-9]{2,15}-USDT-SWAP$/.test(p) ? p : 'BTC-USDT-SWAP';
+  }
   if (body.entrySizing && !['equal','weighted','martingale'].includes(body.entrySizing)) body.entrySizing = 'equal';
 
   const { sessionToken: _, ...configBody } = body;
   // Merge: existing config as base so no field is accidentally wiped
   await env.USERS_KV.put('bot:config:' + session.email, JSON.stringify({ ...existing, ...configBody, clientToken, updatedAt: Date.now() }));
   return json({ ok: true, clientToken });
+}
+
+async function handleOKXInstruments(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const demo = body.demoMode === true;
+  try {
+    const hdrs = { 'Content-Type': 'application/json' };
+    if (demo) hdrs['x-simulated-trading'] = '1';
+    const res  = await fetch(`${OKX_BASE}/api/v5/public/instruments?instType=SWAP`, { headers: hdrs });
+    const data = await res.json();
+    const pairs = (data.data || [])
+      .filter(inst => inst.instId.endsWith('-USDT-SWAP') && inst.state === 'live')
+      .map(inst => inst.instId)
+      .sort();
+    return json({ pairs: pairs.length ? pairs : ['BTC-USDT-SWAP', 'ETH-USDT-SWAP'] });
+  } catch(e) {
+    return json({ pairs: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP'] });
+  }
 }
 
 async function handleBotStatus(request, env) {
