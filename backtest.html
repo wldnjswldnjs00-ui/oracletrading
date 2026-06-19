@@ -56,7 +56,7 @@ tr:last-child td{border-bottom:none;}
       <span style="font-size:11px;color:rgba(255,255,255,0.3);">실제 봇 포지션 = min(리스크%/SL거리, 포지션크기%×레버리지) × 자산 — SL거리 넓을수록 계약수 감소</span>
     </div>
   </div>
-  <button class="btn" id="btStartBtn" onclick="startBacktest()">백테스팅 시작 (20개 전략 · 약 3분 소요)</button>
+  <button class="btn" id="btStartBtn" onclick="startBacktest()">백테스팅 시작 (14개 전략 · 약 2분 소요)</button>
   <div class="progress-wrap" id="btProg">
     <div class="progress-msg" id="btMsg">준비 중...</div>
     <div class="progress-bg"><div class="progress-bar" id="btBar"></div></div>
@@ -747,14 +747,16 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
     }
 
     if (pos) {
-      // 트레일링 SL: price가 step만큼 유리하게 움직일 때마다 SL을 step씩 이동
+      // 트레일링 SL: price가 stepPrice 이동마다 SL을 stepPrice씩 올림
+      // steps=1 → SL = entry+stepPrice (+1R 잠금), steps=2 → +2R, ...
+      // 즉 WIN이면 최소 +1R 보장 (0R 본전 WIN 제거)
       var steps = pos.dir==='long'
         ? Math.floor((hi5 - pos.entry) / pos.stepPrice)
         : Math.floor((pos.entry - lo5) / pos.stepPrice);
       if (steps > 0) {
         var newSL = pos.dir==='long'
-          ? pos.entry + (steps - 1) * pos.stepPrice
-          : pos.entry - (steps - 1) * pos.stepPrice;
+          ? pos.entry + steps * pos.stepPrice
+          : pos.entry - steps * pos.stepPrice;
         if (pos.dir==='long' && newSL > pos.sl) pos.sl = newSL;
         if (pos.dir==='short' && newSL < pos.sl) pos.sl = newSL;
       }
@@ -804,6 +806,15 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
       else if (strategy==='ha_supertrend' && c1h_nf.length>=55)  sig=detectSignalHASupertrend(c1h_nf,cl5);
       else if (strategy==='rsi_bb'        && c1h_nf.length>=25)  sig=detectSignalRSIBB(c1h_nf,cl5);
 
+      if (sig && sig.stopLoss) {
+        // ── 글로벌 필터: EMA200 추세 방향 + ADX 최소 강도 ──
+        var closes1h = c1h_nf.map(function(c){return parseFloat(c[4]);});
+        var ema200f  = c1h_nf.length >= 200 ? calcEMA200(closes1h) : null;
+        var adxf     = c1h_nf.length >= 45  ? calcADX(c1h_nf, 14) : null;
+        if (ema200f && sig.type === 'long'  && cl5 < ema200f) sig = null;
+        if (ema200f && sig && sig.type === 'short' && cl5 > ema200f) sig = null;
+        if (sig && adxf && adxf.adx < 20) sig = null;
+      }
       if (sig && sig.stopLoss) {
         var slDist = Math.abs(cl5 - sig.stopLoss) / cl5;
         if (slDist >= 0.002 && slDist <= 0.15) {
@@ -856,6 +867,8 @@ async function fetchCandles5m(pair, onProgress) {
 // UI
 // ════════════════════════════════════════════════════════════
 
+// SCALP 전략 제거 (고빈도 = 수수료 드래그로 구조적 손실)
+// EMA200+ADX 글로벌 필터 적용으로 14개 SWING만 운영
 var BT_STRATS = [
   {id:'ha_ema_srsi',   name:'HA+EMA+StochRSI',   type:'SWING'},
   {id:'ma_ribbon',     name:'MA Ribbon',           type:'SWING'},
@@ -873,10 +886,7 @@ var BT_STRATS = [
   {id:'ichimoku',      name:'Ichimoku TK+Cloud',   type:'SWING'},
   {id:'hull_cross',    name:'Hull MA Cross',        type:'SWING'},
   {id:'chandelier',    name:'Chandelier Exit',      type:'SWING'},
-  {id:'fisher',        name:'Fisher Transform',     type:'SCALP'},
-  {id:'cci_100',       name:'CCI ±100',       type:'SCALP'},
-  {id:'ha_supertrend', name:'HA+SuperTrend',        type:'SWING'},
-  {id:'rsi_bb',        name:'RSI+BB Combo',        type:'SCALP'}
+  {id:'ha_supertrend', name:'HA+SuperTrend',        type:'SWING'}
 ];
 
 var _c5of = null, _c1hof = null, _results = {}, _chart = null, _loadedPair = '';
@@ -884,7 +894,7 @@ var _c5of = null, _c1hof = null, _results = {}, _chart = null, _loadedPair = '';
 function onPairChange() {
   var p = (document.getElementById('btPair').value||'').toUpperCase().trim();
   document.getElementById('btStartBtn').textContent =
-    p !== _loadedPair ? '백테스팅 시작 (20개 전략 · 약 3분 소요)' : '다시 실행 (캐시 재사용)';
+    p !== _loadedPair ? '백테스팅 시작 (14개 전략 · 약 2분 소요)' : '다시 실행 (캐시 재사용)';
 }
 
 function pct(v,d){d=d==null?2:d; return (v>=0?'+':'')+(v*100).toFixed(d)+'%';}
@@ -921,7 +931,7 @@ async function startBacktest() {
       _loadedPair = pair;
     } catch(e) {
       msg.textContent='데이터 수집 실패: '+(e.message||e);
-      btn.disabled=false; btn.textContent='백테스팅 시작 (20개 전략 · 약 3분 소요)';
+      btn.disabled=false; btn.textContent='백테스팅 시작 (14개 전략 · 약 2분 소요)';
       return;
     }
   }
