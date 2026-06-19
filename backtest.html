@@ -41,7 +41,7 @@ tr:last-child td{border-bottom:none;}
 </head>
 <body>
 <h1>AYILON 전략 백테스팅</h1>
-<p class="sub">최근 1년 · 5분봉 실행 · 1H 집계 신호 · 진입가 = 다음 캔들 시가 · OKX 시장가 수수료 0.05%/side × 레버리지 반영</p>
+<p class="sub">최근 1년 · 5분봉 실행 · 1H 집계 신호 · 진입가 = 다음 캔들 시가 · TP 없음 · 계단식 트레일링 SL · OKX 수수료 0.05%/side</p>
 
 <div class="card">
   <div class="card-title">설정</div>
@@ -713,15 +713,11 @@ function aggregate1H(c5_of) {
 // ════════════════════════════════════════════════════════════
 // BACKTEST ENGINE
 // ════════════════════════════════════════════════════════════
-// SCALP: 100% TP close (no trailing)
-// SWING: 50% TP → SL locked at entry+50%*dist → trailing TP (same dist again)
-// Fee: OKX 시장가 taker 0.05%/side on notional. notional = equity×notionalFrac
-//      where notionalFrac = min(riskFrac/slDist, posSize%/100×leverage)
-//      → fee scales with leverage automatically via notionalFrac
-
-// 모든 전략: TP 도달 시 100% 즉시 청산, SL 도달 시 100% 손절
+// TP 없음 — 진입 SL 거리를 step으로 계단식 트레일링 SL
+// 가격이 step(=SL거리) 만큼 유리하게 움직일 때마다 SL을 step씩 올림(롱) / 내림(숏)
+// step 1회: SL → 본전 / step 2회: SL → +1R 잠금 / step N회: SL → +(N-1)R 잠금
+// Fee: OKX 시장가 taker 0.05%/side on notional
 function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
-  var RR = 1.5;
   var maxNotionalFrac = (posSizePct / 100) * leverage;
 
   var equity = 10000, pos = null, pending = null;
@@ -742,30 +738,38 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
       var entryPx = parseFloat(c5_of[i][1]);
       var actualSlDist = Math.abs(entryPx - pending.sl) / entryPx;
       if (actualSlDist < 0.001) { pending = null; continue; }
-      var actualTp = pending.dir==='long' ? entryPx*(1+actualSlDist*RR) : entryPx*(1-actualSlDist*RR);
       var notionalFrac = Math.min(riskFrac / actualSlDist, maxNotionalFrac);
-      pos = { dir:pending.dir, entry:entryPx, sl:pending.sl, tp:actualTp,
-               slDist:actualSlDist, notionalFrac:notionalFrac, idx:i };
+      var stepPrice = Math.abs(entryPx - pending.sl); // 1 step = 초기 SL 거리 (가격)
+      pos = { dir:pending.dir, entry:entryPx, sl:pending.sl,
+               slDist:actualSlDist, stepPrice:stepPrice, notionalFrac:notionalFrac, idx:i };
       equity = Math.max(100, equity - equity * notionalFrac * 0.0005);
       pending = null;
     }
 
     if (pos) {
-      var slHit = pos.dir==='long' ? lo5<=pos.sl : hi5>=pos.sl;
-      var tpHit = pos.dir==='long' ? hi5>=pos.tp : lo5<=pos.tp;
+      // 트레일링 SL: price가 step만큼 유리하게 움직일 때마다 SL을 step씩 이동
+      var steps = pos.dir==='long'
+        ? Math.floor((hi5 - pos.entry) / pos.stepPrice)
+        : Math.floor((pos.entry - lo5) / pos.stepPrice);
+      if (steps > 0) {
+        var newSL = pos.dir==='long'
+          ? pos.entry + (steps - 1) * pos.stepPrice
+          : pos.entry - (steps - 1) * pos.stepPrice;
+        if (pos.dir==='long' && newSL > pos.sl) pos.sl = newSL;
+        if (pos.dir==='short' && newSL < pos.sl) pos.sl = newSL;
+      }
 
+      // SL 체크
+      var slHit = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
       if (slHit) {
-        var exitRet = pos.dir==='long' ? (pos.sl - pos.entry) / pos.entry : (pos.entry - pos.sl) / pos.entry;
+        var exitRet = pos.dir==='long'
+          ? (pos.sl - pos.entry) / pos.entry
+          : (pos.entry - pos.sl) / pos.entry;
         var pnl = equity * pos.notionalFrac * exitRet;
         equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005);
-        trades.push({ts:ts, type:'SL', pnl:pnl, eq:equity});
+        trades.push({ts:ts, type: exitRet >= 0 ? 'WIN' : 'LOSS', pnl:pnl, eq:equity});
+        if (exitRet >= 0) wins++;
         total++; pos = null;
-      } else if (tpHit) {
-        var exitRet = pos.dir==='long' ? (pos.tp - pos.entry) / pos.entry : (pos.entry - pos.tp) / pos.entry;
-        var pnl = equity * pos.notionalFrac * exitRet;
-        equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005);
-        trades.push({ts:ts, type:'TP', pnl:pnl, eq:equity});
-        wins++; total++; pos = null;
       }
     }
 
@@ -803,8 +807,7 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct) {
       if (sig && sig.stopLoss) {
         var slDist = Math.abs(cl5 - sig.stopLoss) / cl5;
         if (slDist >= 0.002 && slDist <= 0.15) {
-          var tp = sig.type==='long' ? cl5*(1+slDist*RR) : cl5*(1-slDist*RR);
-          pending = { dir:sig.type, sl:sig.stopLoss, tp:tp };
+          pending = { dir:sig.type, sl:sig.stopLoss };
         }
       }
     }
