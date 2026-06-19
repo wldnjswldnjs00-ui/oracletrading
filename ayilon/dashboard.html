@@ -1005,7 +1005,10 @@
         <span style="color:var(--gray-500);" data-i18n="db.set.tg_help_3">자세한 방법은 사용 가이드 → "텔레그램 알림 설정 가이드"를 참고하세요.</span>
       </div>
       <div id="tgMsg" style="font-size:12px;margin-bottom:12px;min-height:16px;"></div>
-      <button class="btn-secondary" onclick="saveTelegramSettings()" data-i18n="db.save">저장</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="saveTelegramSettings()" data-i18n="db.save">저장</button>
+        <button class="btn-secondary" id="tgTestBtn" onclick="sendTelegramTest()" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.3);color:#60a5fa;" data-i18n="db.set.tg_test">테스트 전송</button>
+      </div>
     </div>
 
     <!-- 5. Email Alerts -->
@@ -2636,6 +2639,38 @@
       });
     } catch(e) {}
     if (msgEl) { msgEl.style.color = 'var(--green)'; msgEl.textContent = _t('db.set.telegram_saved'); }
+  }
+
+  async function sendTelegramTest() {
+    var token  = (document.getElementById('tgBotToken') || {}).value || '';
+    var chatId = (document.getElementById('tgChatId')   || {}).value || '';
+    var msgEl  = document.getElementById('tgMsg');
+    var btn    = document.getElementById('tgTestBtn');
+    if (!token || !chatId) {
+      if (msgEl) { msgEl.style.color = 'var(--red)'; msgEl.textContent = _t('db.set.tg_fill_first'); }
+      return;
+    }
+    var lang = localStorage.getItem('ayilon_lang') || 'en';
+    var text = lang === 'ko'
+      ? '✅ 안녕하세요! AYILON 자동 매매 봇입니다.\n텔레그램 알림이 정상적으로 연결되었습니다.'
+      : '✅ Hello! This is AYILON Trading Bot.\nTelegram alerts are now connected successfully.';
+    if (btn) btn.disabled = true;
+    try {
+      var res = await fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: text })
+      });
+      var data = await res.json();
+      if (data.ok) {
+        if (msgEl) { msgEl.style.color = 'var(--green)'; msgEl.textContent = _t('db.set.tg_test_ok'); }
+      } else {
+        if (msgEl) { msgEl.style.color = 'var(--red)'; msgEl.textContent = _t('db.set.tg_test_fail') + ' ' + (data.description || ''); }
+      }
+    } catch(e) {
+      if (msgEl) { msgEl.style.color = 'var(--red)'; msgEl.textContent = _t('db.set.tg_test_fail'); }
+    }
+    if (btn) btn.disabled = false;
   }
 
   var _2faMethod = null;
