@@ -655,8 +655,8 @@
           <div class="d-form-group">
             <label class="d-form-label">Leverage</label>
             <div style="display:flex;align-items:center;gap:12px;">
-              <input type="range" id="botLeverage" min="1" max="20" value="5" oninput="document.getElementById('botLeverageVal').textContent=this.value+'x'" style="flex:1;">
-              <span id="botLeverageVal" style="font-size:13px;font-weight:600;min-width:36px;">5x</span>
+              <input type="range" id="botLeverage" min="1" max="20" value="10" oninput="document.getElementById('botLeverageVal').textContent=this.value+'x'" style="flex:1;">
+              <span id="botLeverageVal" style="font-size:13px;font-weight:600;min-width:36px;">10x</span>
             </div>
           </div>
           <div class="d-form-group">
@@ -1843,6 +1843,7 @@
 
   var STRATEGIES = [
     { id: 'ha-ema-srsi',    name: 'HA + EMA + StochRSI', tier: 'STARTER', desc: 'Heikin Ashi + 200 EMA + Stochastic RSI 복합 추세 전략 (권장)' },
+    { id: 'ny-open-fvg',    name: 'NY Open FVG',        tier: 'STARTER', desc: '뉴욕 오픈(09:30 EST) 15분봉 고저 기준, 5분봉 돌파 후 FVG 되돌림 진입 전략' },
     { id: 'rsi-dca',         name: 'RSI DCA',          tier: 'STARTER', desc: 'RSI 과매도 구간에서 진입하는 전략' },
     { id: 'ma-crossover',    name: 'MA Crossover',     tier: 'PRO',   desc: '이동평균 골든크로스/데드크로스 기반 추세 추종 전략' },
     { id: 'bb-reversion',    name: 'BB Reversion',     tier: 'PRO',   desc: '볼린저밴드 상/하단 이탈 후 평균회귀 전략' },
@@ -1931,7 +1932,7 @@
 
   function stratIdToWorkerName(id) {
     var map = {
-      'ha-ema-srsi': 'ha_ema_srsi', 'rsi-dca': 'rsi_dca',
+      'ha-ema-srsi': 'ha_ema_srsi', 'ny-open-fvg': 'ny_open_fvg', 'rsi-dca': 'rsi_dca',
       'ma-crossover': 'ma_crossover', 'bb-reversion': 'bb_reversion',
       'breakout': 'breakout', 'ma-ribbon': 'ma_ribbon',
       'macd-divergence': 'macd_div', 'atr-trend': 'atr_trend'
@@ -1945,7 +1946,6 @@
     var leverage = document.getElementById('botLeverage').value;
     var posSize  = document.getElementById('botPosSize').value;
     var risk     = document.getElementById('botRisk').value;
-    var entries  = document.getElementById('botEntries').value;
     var mode     = document.querySelector('input[name=botMode]:checked').value;
     var msgEl    = document.getElementById('botConfigMsg');
     var strategyNames = selectedStrategies.map(stratIdToWorkerName);
@@ -1964,7 +1964,6 @@
           leverage: parseInt(leverage),
           posSize: parseFloat(posSize),
           riskPerTrade: parseFloat(risk),
-          numEntries: parseInt(entries),
           tradingPair: (document.getElementById('botTradingPair') || {}).value || 'BTC-USDT-SWAP',
           mode: mode,
           demoMode: mode === 'demo'
@@ -2002,7 +2001,7 @@
   }
 
   var STRAT_DISPLAY_NAMES = {
-    'ha_ema_srsi': 'HA+EMA+StochRSI', 'rsi_dca': 'RSI DCA',
+    'ha_ema_srsi': 'HA+EMA+StochRSI', 'ny_open_fvg': 'NY Open FVG', 'rsi_dca': 'RSI DCA',
     'ma_support': 'MA Support', 'ma_crossover': 'MA Crossover',
     'bb_reversion': 'BB Reversion', 'breakout': 'Breakout',
     'ma_ribbon': 'MA Ribbon', 'macd_div': 'MACD Divergence',

@@ -811,7 +811,7 @@ async function handleSaveBotSettings(request, env) {
   }
 
   // Sanitize numeric config fields — prevent invalid/extreme values reaching runBotForUser
-  const VALID_STRATS = ['ha_ema_srsi','rsi_dca','ma_support','ma_crossover','bb_reversion','breakout','ma_ribbon','macd_div','atr_trend'];
+  const VALID_STRATS = ['ha_ema_srsi','ny_open_fvg','rsi_dca','ma_support','ma_crossover','bb_reversion','breakout','ma_ribbon','macd_div','atr_trend'];
   const VALID_PAIRS  = ['BTC-USDT-SWAP','ETH-USDT-SWAP'];
   if (body.leverage     !== undefined) body.leverage     = Math.min(Math.max(parseInt(body.leverage)       || 20,   1), 125);
   if (body.posSize      !== undefined) body.posSize      = Math.min(Math.max(parseFloat(body.posSize)      || 40,   1), 100);
@@ -1147,6 +1147,7 @@ async function initDB(env) {
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN loss_count INTEGER DEFAULT 0`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN total_win_pnl REAL DEFAULT 0`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN total_loss_pnl REAL DEFAULT 0`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN ny_ref TEXT DEFAULT NULL`).run().catch(() => {});
     _dbReady = true;
   } catch(e) {}
 }
@@ -1246,7 +1247,7 @@ async function runBot(env) {
       const stoppedViaD1 = JSON.parse(botStateCheck.stopped_strategies || 'null') || [];
       const allStrategies = Array.isArray(cfg.strategies) && cfg.strategies.length > 0
         ? cfg.strategies
-        : [cfg.strategy || 'sr_bounce'];
+        : [cfg.strategy || 'ha_ema_srsi'];
       const strategiesToRun = allStrategies.filter(s => !stoppedViaD1.includes(s));
       if (strategiesToRun.length === 0) continue;
       // Register log buffer — botLog writes here instead of KV during this cron tick
@@ -1511,9 +1512,33 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     }
 
     // ── Entry signal (strategy routing) ──────────────────────
+    // NY Open FVG: compute/refresh daily reference high/low
+    let nyRef = null;
+    if (strategy === 'ny_open_fvg') {
+      const todayEST = getTodayEST();
+      try { nyRef = JSON.parse(botStateRow.ny_ref || 'null'); } catch(_) {}
+      if (!nyRef || nyRef.date !== todayEST) {
+        const nyHour = getNYOpenUTCHour();
+        const now = new Date();
+        const nyOpenMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), nyHour, 30, 0);
+        const nyEndMs  = nyOpenMs + 15 * 60 * 1000;
+        const nyC = c5.filter(c => { const ts = parseInt(c[0]); return ts >= nyOpenMs && ts < nyEndMs; });
+        if (nyC.length > 0) {
+          nyRef = {
+            date: todayEST,
+            high: Math.max(...nyC.map(c => parseFloat(c[2]))),
+            low:  Math.min(...nyC.map(c => parseFloat(c[3])))
+          };
+          await upsertBotState(env, email, { ny_ref: JSON.stringify(nyRef) });
+          await botLog(env, email, `[ny_open_fvg] NY ref updated: H=${nyRef.high.toFixed(2)} L=${nyRef.low.toFixed(2)}`);
+        }
+      }
+    }
+
     let signal = null;
     switch (strategy) {
       case 'ha_ema_srsi':  signal = detectSignalHAEmaSRSI(candles1H, currentPrice);                 break;
+      case 'ny_open_fvg':  signal = detectSignalNYOpenFVG(c5, currentPrice, nyRef);                  break;
       case 'rsi_dca':      signal = detectSignalRSIDCA(candles1H, levels, currentPrice);             break;
       case 'ma_support':   signal = detectSignalMASupport(candles1H, currentPrice);                 break;
       case 'ma_crossover': signal = detectSignalMACrossover(c5, candles1H, currentPrice);           break;
@@ -1522,7 +1547,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       case 'ma_ribbon':    signal = detectSignalMARibbon(candles1H, currentPrice);                  break;
       case 'macd_div':     signal = detectSignalMACDDiv(candles1H, c5, currentPrice);               break;
       case 'atr_trend':    signal = detectSignalATRTrend(candles1H, c5, currentPrice);              break;
-      default:             signal = detectSignal(c5, levels); // legacy 'daytrading'
+      default:             signal = detectSignal(c5, levels);
     }
     if (!signal) {
       // Heartbeat: log once per 5 min so user can confirm bot is alive
@@ -2180,6 +2205,59 @@ function calcEMA(closes, period) {
 }
 
 // ── HA + EMA + StochRSI STRATEGY HELPERS ──────────────────────
+// ── NY OPEN FVG HELPERS ───────────────────────────────────────
+function getNYOpenUTCHour() {
+  const now = new Date();
+  const m = now.getUTCMonth() + 1, d = now.getUTCDate();
+  const isEDT = (m > 3 && m < 11) || (m === 3 && d >= 8) || (m === 11 && d <= 7);
+  return isEDT ? 13 : 14; // EDT=13:30 UTC, EST=14:30 UTC
+}
+
+function getTodayEST() {
+  const offset = getNYOpenUTCHour() === 13 ? -4 : -5;
+  return new Date(Date.now() + offset * 3600000).toISOString().slice(0, 10);
+}
+
+function detectSignalNYOpenFVG(candles5m, currentPrice, nyRef) {
+  if (!nyRef || candles5m.length < 6) return null;
+
+  // LONG: a recent candle closed above nyRef.high
+  const brokenUp = candles5m.slice(1, 20).some(c => parseFloat(c[4]) > nyRef.high);
+  if (brokenUp) {
+    // Scan for bullish FVG: C3.low > C1.high (candles newest-first: C3=i-1, C2=i, C1=i+1)
+    for (let i = 1; i < Math.min(candles5m.length - 1, 16); i++) {
+      const c1High = parseFloat(candles5m[i + 1][2]); // older candle's high
+      const c3Low  = parseFloat(candles5m[i - 1][3]); // newer candle's low
+      if (c3Low > c1High) {
+        if (currentPrice >= c1High && currentPrice <= c3Low) {
+          const sl = parseFloat(candles5m[1][3]); // prev candle low
+          if (sl >= currentPrice) continue;
+          return { type: 'long', level: currentPrice, grade: 'S', stopLoss: sl, strategy: 'ny_open_fvg' };
+        }
+      }
+    }
+  }
+
+  // SHORT: a recent candle closed below nyRef.low
+  const brokenDown = candles5m.slice(1, 20).some(c => parseFloat(c[4]) < nyRef.low);
+  if (brokenDown) {
+    // Scan for bearish FVG: C3.high < C1.low
+    for (let i = 1; i < Math.min(candles5m.length - 1, 16); i++) {
+      const c1Low  = parseFloat(candles5m[i + 1][3]); // older candle's low
+      const c3High = parseFloat(candles5m[i - 1][2]); // newer candle's high
+      if (c3High < c1Low) {
+        if (currentPrice >= c3High && currentPrice <= c1Low) {
+          const sl = parseFloat(candles5m[1][2]); // prev candle high
+          if (sl <= currentPrice) continue;
+          return { type: 'short', level: currentPrice, grade: 'S', stopLoss: sl, strategy: 'ny_open_fvg' };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 function calcHACandles(candles) {
   // candles: newest first [ts, open, high, low, close, vol]
   const rev = [...candles].reverse();
