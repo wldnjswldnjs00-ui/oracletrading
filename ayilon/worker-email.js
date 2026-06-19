@@ -1,32 +1,13 @@
 const WALLET = 'TBvtft3H8B4Rv4cEHTotyak3Ds2mLur99E';
 const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
-const ALLOWED_ORIGINS = [
-  'https://oracletrading-01o.pages.dev',
-  'https://claude-trading-bot-website-plan-2tjg13.oracletrading-01o.pages.dev',
-  'http://localhost',
-  'http://127.0.0.1'
-];
-function isAllowedOrigin(origin) {
-  if (!origin) return true;
-  return ALLOWED_ORIGINS.includes(origin);
-}
-
 export default {
   async fetch(request, env) {
-    const origin = request.headers.get('Origin') || '';
-    if (origin && !isAllowedOrigin(origin)) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    const corsOrigin = origin || ALLOWED_ORIGINS[0];
     if (request.method === 'OPTIONS') {
       return new Response('', { status: 204, headers: {
-        'Access-Control-Allow-Origin': corsOrigin,
+        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Vary': 'Origin'
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       }});
     }
     const url = new URL(request.url);
