@@ -119,11 +119,10 @@ async function handleRegisterUser(request, env) {
     const usernameExists = await env.USERS_KV.get(usernameKey);
     if (usernameExists) return json({ success: false, error: 'username_taken' });
 
-    // Fix: hash password with SHA-256 before storing (never store plaintext)
-    const hashedPw = password ? await hashPassword(password) : null;
+    const pwData = password ? await hashPassword(password) : { hash: null, salt: null };
     await env.USERS_KV.put(emailKey, JSON.stringify({
       email, username, name, country: country || '',
-      password: hashedPw,
+      password: pwData.hash, passwordSalt: pwData.salt,
       createdAt: Date.now()
     }));
     await env.USERS_KV.put(usernameKey, email.toLowerCase());
@@ -149,7 +148,8 @@ async function handleVerifyCode(request, env) {
   const valid = stored === String(code);
   if (!valid) {
     const newCount = (attempts?.count || 0) + 1;
-    await env.USERS_KV.put(attemptsKey, JSON.stringify({ count: newCount }), { expirationTtl: 300 });
+    const ttl = newCount >= 5 ? 3600 : newCount >= 3 ? 900 : 300;
+    await env.USERS_KV.put(attemptsKey, JSON.stringify({ count: newCount }), { expirationTtl: ttl });
   } else {
     await env.USERS_KV.delete(attemptsKey);
   }
@@ -387,10 +387,16 @@ function corsResponse(body, status) {
   });
 }
 
-// Fix: SHA-256 password hash — never store plaintext passwords
-async function hashPassword(password) {
-  const data = new TextEncoder().encode(password + ':ayilon_2025');
-  const buf  = await crypto.subtle.digest('SHA-256', data);
+// PBKDF2 password hash with random per-user salt
+async function hashPassword(password, existingSalt = null) {
+  const salt   = existingSalt || btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+  const keyMat = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits   = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: new TextEncoder().encode(salt), iterations: 100000, hash: 'SHA-256' }, keyMat, 256);
+  return { hash: btoa(String.fromCharCode(...new Uint8Array(bits))), salt };
+}
+// Legacy SHA-256 — only used for verifying pre-migration accounts
+async function _hashPasswordLegacy(password) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password + ':ayilon_2025'));
   return btoa(String.fromCharCode(...new Uint8Array(buf)));
 }
 
@@ -444,8 +450,23 @@ async function handleLogin(request, env) {
       return json({ ok: false, error: 'invalid_credentials' }, 401);
     }
 
-    const hashedPw = await hashPassword(password);
-    if (!user.password || user.password !== hashedPw) {
+    // Verify password — support both PBKDF2 (new) and legacy SHA-256
+    let passwordMatch = false;
+    if (user.passwordSalt) {
+      const { hash } = await hashPassword(password, user.passwordSalt);
+      passwordMatch = user.password === hash;
+    } else {
+      passwordMatch = user.password === await _hashPasswordLegacy(password);
+      if (passwordMatch && env.USERS_KV) {
+        // Silently upgrade legacy hash to PBKDF2 on successful login
+        try {
+          const { hash: newHash, salt: newSalt } = await hashPassword(password);
+          user.password = newHash; user.passwordSalt = newSalt;
+          await env.USERS_KV.put('user:' + email.toLowerCase(), JSON.stringify(user));
+        } catch(e) {}
+      }
+    }
+    if (!passwordMatch) {
       try { await env.USERS_KV.put(loginRateKey, JSON.stringify({ count: (loginRate?.count || 0) + 1 }), { expirationTtl: 900 }); } catch(e) {}
       return json({ ok: false, error: 'invalid_credentials' }, 401);
     }
@@ -498,10 +519,16 @@ async function handleChangePassword(request, env) {
   const user = await env.USERS_KV.get('user:' + session.email.toLowerCase(), { type: 'json' });
   if (!user) return json({ ok: false, error: 'user_not_found' }, 404);
 
-  if (user.password !== await hashPassword(currentPassword)) {
-    return json({ ok: false, error: 'invalid_current_password' }, 401);
+  let currentMatch = false;
+  if (user.passwordSalt) {
+    const { hash } = await hashPassword(currentPassword, user.passwordSalt);
+    currentMatch = user.password === hash;
+  } else {
+    currentMatch = user.password === await _hashPasswordLegacy(currentPassword);
   }
-  user.password = await hashPassword(newPassword);
+  if (!currentMatch) return json({ ok: false, error: 'invalid_current_password' }, 401);
+  const { hash: newHash, salt: newSalt } = await hashPassword(newPassword);
+  user.password = newHash; user.passwordSalt = newSalt;
   await env.USERS_KV.put('user:' + session.email.toLowerCase(), JSON.stringify(user));
   return json({ ok: true });
 }
@@ -528,7 +555,8 @@ async function handleResetPassword(request, env) {
 
   const user = await env.USERS_KV.get('user:' + email.toLowerCase(), { type: 'json' });
   if (!user) return json({ ok: false, error: 'user_not_found' });
-  user.password = await hashPassword(newPassword);
+  const { hash: resetHash, salt: resetSalt } = await hashPassword(newPassword);
+  user.password = resetHash; user.passwordSalt = resetSalt;
   await env.USERS_KV.put('user:' + email.toLowerCase(), JSON.stringify(user));
   return json({ ok: true });
 }
@@ -805,9 +833,12 @@ async function handleGetHistory(request, env) {
   const demo = config?.demoMode === true || mode === 'demo';
 
   try {
-    const data = await okxGet(apiKey, apiSecret, apiPassphrase, `/api/v5/trade/fills?instType=SWAP&limit=50`, demo);
-    return json({ history: data?.data || [] });
-  } catch(e) { return json({ history: [], error: e.message }); }
+    const { before } = body;
+    const qs = before ? `/api/v5/trade/fills?instType=SWAP&limit=50&before=${encodeURIComponent(before)}` : `/api/v5/trade/fills?instType=SWAP&limit=50`;
+    const data = await okxGet(apiKey, apiSecret, apiPassphrase, qs, demo);
+    const rows = data?.data || [];
+    return json({ history: rows, hasMore: rows.length >= 50 });
+  } catch(e) { return json({ history: [], hasMore: false, error: e.message }); }
 }
 
 async function handleGetAccount(request, env) {
@@ -1187,14 +1218,15 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       const frData = await frRes.json();
       if (!frData?.data?.[0]) throw new Error('empty funding rate response');
       capturedFR = parseFloat(frData.data[0].fundingRate);
-      // Skip only if funding rate is truly extreme (> 0.3%/8h)
-      if (strategy !== 'funding_rate' && Math.abs(capturedFR) > 0.003) {
-        await botLog(env, email, `Skip: funding rate ${(capturedFR * 100).toFixed(4)}%/8h > 0.3% — no new entries`);
-        return;
-      }
     } catch(frErr) {
-      // Don't block on funding rate fetch failure — log and continue
-      await botLog(env, email, `Warn: could not fetch funding rate (${frErr.message}) — proceeding`);
+      await botLog(env, email, `Warn: could not fetch funding rate (${frErr.message}) — skipping entry`);
+      if (strategy === 'funding_rate') return; // funding_rate strategy requires it
+      return; // be cautious — skip entry when FR is unknown
+    }
+    // Skip only if funding rate is truly extreme (> 0.3%/8h)
+    if (strategy !== 'funding_rate' && Math.abs(capturedFR) > 0.003) {
+      await botLog(env, email, `Skip: funding rate ${(capturedFR * 100).toFixed(4)}%/8h > 0.3% — no new entries`);
+      return;
     }
 
     // ── Plan-based strategy gate ──────────────────────────────
@@ -1314,8 +1346,12 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     if (entrySizing === 'martingale' && entryNum > 1) {
       const base = Math.max(1, Math.floor(totalCts / nEntries));
       szContracts = base * Math.pow(2, entryNum - 1);
-      szContracts = Math.min(szContracts, Math.floor(equity * 0.40 * safeLeverage / (currentPrice * ctVal)));
-      await botLog(env, email, `⚠️ MARTINGALE #${entryNum}: ${Math.pow(2, entryNum-1)}× size (${szContracts} cts) — high risk`);
+      // Hard caps: single entry ≤ 20% equity, total accumulated ≤ original posSize cap
+      const maxPerEntry = Math.floor(equity * 0.20 * safeLeverage / (currentPrice * ctVal));
+      const alreadyHeld = state.entries.reduce((s, e) => s + parseInt(e.sz || '0'), 0);
+      const remainingRoom = Math.max(1, capCts - alreadyHeld);
+      szContracts = Math.min(szContracts, maxPerEntry, remainingRoom);
+      await botLog(env, email, `⚠️ MARTINGALE #${entryNum}: ${Math.pow(2, entryNum-1)}× size → capped at ${szContracts} cts — high risk`);
     } else if (entrySizing === 'weighted' && nEntries >= 2) {
       const weights = Array.from({ length: nEntries }, (_, i) => i === 0 ? 1 : 2);
       const totalW  = weights.reduce((a, b) => a + b, 0);
@@ -1360,7 +1396,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     // If hedge mode rejected (position mode mismatch), retry without posSide (one-way mode)
     if (orderRes?.code !== '0' && !orderRes?.data?.[0]?.ordId) {
       const sCode = orderRes?.data?.[0]?.sCode || orderRes?.code;
-      if (sCode === '51000' || sCode === '51006' || sCode === 1 || sCode === '1') {
+      if (sCode === '51000' || sCode === '51006' || String(sCode) === '1') {
         orderRes = await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/order', {
           instId: tradingPair, tdMode: 'cross',
           side: signal.type === 'long' ? 'buy' : 'sell',
@@ -1380,10 +1416,14 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
         await botLog(env, email, `Fill unconfirmed — position closed for safety`);
         return;
       }
-      // Partial fill guard: if less than 90% filled, don't track — state mismatch risk
+      // Partial fill guard: if less than 90% filled, close for safety to avoid orphan position
       if (filledSz < szContracts * 0.90) {
         await releaseEntryLock(env, lockKey);
-        await botLog(env, email, `Partial fill: ${filledSz}/${szContracts} contracts — skipping state update`);
+        await okxPost(apiKey, apiSecret, apiPassphrase, '/api/v5/trade/close-position', {
+          instId: tradingPair, mgnMode: 'cross',
+          posSide: isOneWayMode ? 'net' : (signal.type === 'long' ? 'long' : 'short')
+        }, demoMode);
+        await botLog(env, email, `Partial fill: ${filledSz}/${szContracts} contracts — position closed for safety`);
         return;
       }
       const actualSz = String(Math.floor(filledSz));
@@ -2458,7 +2498,10 @@ async function botLog(env, email, msg) {
     const stateRow = await getBotState(env, email);
     const logs = JSON.parse(stateRow.logs || '[]');
     logs.unshift({ time: new Date().toISOString(), msg });
-    if (logs.length > 100) logs.splice(100);
+    if (logs.length > 200) {
+      logs.splice(199);
+      logs.push({ time: new Date().toISOString(), msg: '— older entries removed (200 log limit) —' });
+    }
     await upsertBotState(env, email, { logs: JSON.stringify(logs) });
   } catch(e) {}
 }
