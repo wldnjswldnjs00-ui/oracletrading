@@ -811,15 +811,15 @@ async function handleSaveBotSettings(request, env) {
   }
 
   // Sanitize numeric config fields — prevent invalid/extreme values reaching runBotForUser
-  const VALID_STRATS = ['sr_bounce','rsi_dca','ma_support','ma_crossover','bb_reversion','breakout','ma_ribbon','macd_div','funding_rate','atr_trend'];
+  const VALID_STRATS = ['ha_ema_srsi','rsi_dca','ma_support','ma_crossover','bb_reversion','breakout','ma_ribbon','macd_div','atr_trend'];
   const VALID_PAIRS  = ['BTC-USDT-SWAP','ETH-USDT-SWAP'];
   if (body.leverage     !== undefined) body.leverage     = Math.min(Math.max(parseInt(body.leverage)       || 20,   1), 125);
   if (body.posSize      !== undefined) body.posSize      = Math.min(Math.max(parseFloat(body.posSize)      || 40,   1), 100);
   if (body.riskPerTrade !== undefined) body.riskPerTrade = Math.min(Math.max(parseFloat(body.riskPerTrade) ||  2, 0.1),  10);
-  if (body.numEntries   !== undefined) body.numEntries   = Math.min(Math.max(parseInt(body.numEntries)     ||  3,   1),  10);
+  if (body.numEntries   !== undefined) body.numEntries   = 1; // single entry only
   if (body.lossLimit    !== undefined) body.lossLimit    = Math.min(Math.max(parseFloat(body.lossLimit)    ||  5, 0.1),  50);
   if (body.mddLimit     !== undefined) body.mddLimit     = Math.min(Math.max(parseFloat(body.mddLimit)     || 30,   5), 100);
-  if (body.strategy    && !VALID_STRATS.includes(body.strategy))   body.strategy    = 'sr_bounce';
+  if (body.strategy    && !VALID_STRATS.includes(body.strategy))   body.strategy    = 'ha_ema_srsi';
   if (Array.isArray(body.strategies)) {
     body.strategies = body.strategies.filter(s => VALID_STRATS.includes(s));
     if (body.strategies.length === 0) delete body.strategies;
@@ -924,7 +924,7 @@ async function handleBotControl(request, env) {
       if (!currentStopped.includes(stopStrat)) currentStopped.push(stopStrat);
       const cfg = await env.USERS_KV.get('bot:config:' + session.email, { type: 'json' }) || {};
       const allStrats = Array.isArray(cfg.strategies) && cfg.strategies.length > 0
-        ? cfg.strategies : [cfg.strategy || 'sr_bounce'];
+        ? cfg.strategies : [cfg.strategy || 'ha_ema_srsi'];
       const remaining = allStrats.filter(s => !currentStopped.includes(s));
       if (remaining.length === 0) {
         await upsertBotState(env, session.email, { running: 0, stopped_strategies: null });
@@ -1271,10 +1271,10 @@ async function runBot(env) {
 
 async function runBotForUser(env, email, cfg, strategyOverride) {
   try {
-    const strategy = strategyOverride || cfg.strategy || 'sr_bounce';
+    const strategy = strategyOverride || cfg.strategy || 'ha_ema_srsi';
     const { apiKey, apiSecret, apiPassphrase, tradingPair = 'BTC-USDT-SWAP',
       demoMode = false,
-      numEntries = 3, entrySizing = 'equal',
+      numEntries = 1, entrySizing = 'equal',
       posSize = 40, riskPerTrade = 2, leverage = 20,
       lossLimitEnabled = true, lossLimit = 2,
       notifyEmail = true, notifyTelegram = false,
@@ -1498,27 +1498,9 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       if ((h1High - h1Low) / (h1Low || 1) < 0.010) return;
     }
 
-    // ── Funding rate gate + capture ──────────────────────────
-    let capturedFR = null;
-    try {
-      const frRes  = await fetch(`${OKX_BASE}/api/v5/public/funding-rate?instId=${tradingPair}`);
-      const frData = await frRes.json();
-      if (!frData?.data?.[0]) throw new Error('empty funding rate response');
-      capturedFR = parseFloat(frData.data[0].fundingRate);
-    } catch(frErr) {
-      await botLog(env, email, `Warn: could not fetch funding rate (${frErr.message}) — skipping entry`);
-      if (strategy === 'funding_rate') return; // funding_rate strategy requires it
-      return; // be cautious — skip entry when FR is unknown
-    }
-    // Skip only if funding rate is truly extreme (> 0.3%/8h)
-    if (strategy !== 'funding_rate' && Math.abs(capturedFR) > 0.003) {
-      await botLog(env, email, `Skip: funding rate ${(capturedFR * 100).toFixed(4)}%/8h > 0.3% — no new entries`);
-      return;
-    }
-
     // ── Plan-based strategy gate ──────────────────────────────
     const midStrategies     = ['ma_crossover', 'bb_reversion', 'breakout', 'ma_ribbon'];
-    const premiumStrategies = ['macd_div', 'funding_rate', 'atr_trend'];
+    const premiumStrategies = ['macd_div', 'atr_trend'];
     if (midStrategies.includes(strategy) && plan === 'starter') {
       await botLog(env, email, `Skip: strategy '${strategy}' requires Pro plan or higher`);
       return;
@@ -1531,6 +1513,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     // ── Entry signal (strategy routing) ──────────────────────
     let signal = null;
     switch (strategy) {
+      case 'ha_ema_srsi':  signal = detectSignalHAEmaSRSI(candles1H, currentPrice);                 break;
       case 'rsi_dca':      signal = detectSignalRSIDCA(candles1H, levels, currentPrice);             break;
       case 'ma_support':   signal = detectSignalMASupport(candles1H, currentPrice);                 break;
       case 'ma_crossover': signal = detectSignalMACrossover(c5, candles1H, currentPrice);           break;
@@ -1538,9 +1521,8 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       case 'breakout':     signal = detectSignalBreakout(candles1H, c5, currentPrice);              break;
       case 'ma_ribbon':    signal = detectSignalMARibbon(candles1H, currentPrice);                  break;
       case 'macd_div':     signal = detectSignalMACDDiv(candles1H, c5, currentPrice);               break;
-      case 'funding_rate': signal = detectSignalFundingRate(capturedFR, currentPrice, levels);      break;
       case 'atr_trend':    signal = detectSignalATRTrend(candles1H, c5, currentPrice);              break;
-      default:             signal = detectSignal(c5, levels); // 'sr_bounce' or legacy 'daytrading'
+      default:             signal = detectSignal(c5, levels); // legacy 'daytrading'
     }
     if (!signal) {
       // Heartbeat: log once per 5 min so user can confirm bot is alive
@@ -1554,8 +1536,8 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     }
 
     // ── Trend strength + direction filter ────────────────────
-    // funding_rate and rsi_dca are contrarian/mean-reversion — skip trend direction filter
-    const skipTrendFilter = strategy === 'funding_rate' || strategy === 'rsi_dca';
+    // rsi_dca is contrarian/mean-reversion — skip trend direction filter
+    const skipTrendFilter = strategy === 'rsi_dca';
     if (!skipTrendFilter) {
       if (trend.dir === 'up'   && signal.type === 'short') { await botLog(env, email, `[${strategy}] Skip: trend UP but signal is SHORT`); return; }
       if (trend.dir === 'down' && signal.type === 'long')  { await botLog(env, email, `[${strategy}] Skip: trend DOWN but signal is LONG`); return; }
@@ -1573,23 +1555,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     if (state.direction && state.direction !== signal.type) return;
 
     const entryNum = (state.entries || []).length + 1;
-    if (entryNum > parseInt(numEntries)) return;
-
-    if (entryNum > 1 && state.entries.length > 0) {
-      const firstEntry = state.entries[0].price;
-      const storedSL   = state.stopLoss || signal.stopLoss;
-      const totalZone  = Math.abs(firstEntry - storedSL);
-      if (totalZone > 0) {
-        const gap = totalZone / Math.max(parseInt(numEntries) - 1, 1);
-        const expectedPx = signal.type === 'long'
-          ? firstEntry - gap * (entryNum - 1)
-          : firstEntry + gap * (entryNum - 1);
-        if (Math.abs(currentPrice - expectedPx) > gap * 0.6) {
-          await botLog(env, email, `DCA #${entryNum} skip: price ${currentPrice.toFixed(2)} not near expected ${expectedPx.toFixed(2)} (±${(gap * 0.6).toFixed(2)})`);
-          return;
-        }
-      }
-    }
+    if (entryNum > 1) return; // single entry only
 
     // ── TP = next S/R level in trade direction (RSI DCA uses fixed 1.5% fallback) ────
     let tp = signal.type === 'long'
@@ -1617,7 +1583,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     if (riskPct > 0.05 || safeLeverage > 20) {
       await botLog(env, email, `⚠️ Risk warning: riskPerTrade=${(riskPct*100).toFixed(1)}% lev=${safeLeverage}x`);
     }
-    const nEntries  = parseInt(numEntries);
+    const nEntries  = 1; // single entry only
     const slDist    = Math.abs(currentPrice - signal.stopLoss);        // price distance to SL
     const riskPerCt = slDist * ctVal;                                  // USD loss per contract if SL hit (leverage-independent)
     let totalCts    = riskPerCt > 0 ? Math.floor((equity * riskPct) / riskPerCt) : 0;
@@ -1627,25 +1593,9 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       await botLog(env, email, `Skip: insufficient equity for 1 contract (equity=${equity.toFixed(0)} USDT, need ≥${(currentPrice * ctVal / safeLeverage).toFixed(0)} USDT margin/ct)`);
       return;
     }
-    totalCts        = Math.max(nEntries, Math.min(totalCts, capCts));  // at least 1 per entry, capped by posSize
+    totalCts        = Math.max(1, Math.min(totalCts, capCts));  // at least 1 contract, capped by posSize
 
-    let szContracts;
-    if (entrySizing === 'martingale' && entryNum > 1) {
-      const base = Math.max(1, Math.floor(totalCts / nEntries));
-      szContracts = base * Math.pow(2, entryNum - 1);
-      // Hard caps: single entry ≤ 20% equity, total accumulated ≤ original posSize cap
-      const maxPerEntry = Math.floor(equity * 0.20 * safeLeverage / (currentPrice * ctVal));
-      const alreadyHeld = state.entries.reduce((s, e) => s + parseInt(e.sz || '0'), 0);
-      const remainingRoom = Math.max(1, capCts - alreadyHeld);
-      szContracts = Math.min(szContracts, maxPerEntry, remainingRoom);
-      await botLog(env, email, `⚠️ MARTINGALE #${entryNum}: ${Math.pow(2, entryNum-1)}× size → capped at ${szContracts} cts — high risk`);
-    } else if (entrySizing === 'weighted' && nEntries >= 2) {
-      const weights = Array.from({ length: nEntries }, (_, i) => i === 0 ? 1 : 2);
-      const totalW  = weights.reduce((a, b) => a + b, 0);
-      szContracts   = Math.max(1, Math.floor(totalCts * weights[entryNum - 1] / totalW));
-    } else {
-      szContracts = Math.max(1, Math.floor(totalCts / nEntries));
-    }
+    const szContracts = Math.max(1, Math.floor(totalCts / nEntries));
     if (szContracts < 1) {
       await botLog(env, email, `Skip: position too small (< 1 contract): risk=${(riskPct*100).toFixed(1)}% SL-dist=${slDist.toFixed(2)}`);
       return;
@@ -1838,7 +1788,7 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
 
   // ── Loss-limit SL: activates only after all entries placed ─
   if (!lossLimitEnabled || !openPos.length) return;
-  if ((state.entries?.length || 0) < parseInt(numEntries)) return;
+  if ((state.entries?.length || 0) < 1) return;
 
   const floatPnl     = openPos.reduce((s, p) => s + parseFloat(p.upl || '0'), 0);
   const floatLossPct = floatPnl < 0 ? Math.abs(floatPnl) / (equity || 1) : 0;
@@ -2227,6 +2177,124 @@ function calcEMA(closes, period) {
     ema = closes[i] * k + ema * (1 - k);
   }
   return ema;
+}
+
+// ── HA + EMA + StochRSI STRATEGY HELPERS ──────────────────────
+function calcHACandles(candles) {
+  // candles: newest first [ts, open, high, low, close, vol]
+  const rev = [...candles].reverse();
+  const ha = [];
+  for (let i = 0; i < rev.length; i++) {
+    const o = parseFloat(rev[i][1]), h = parseFloat(rev[i][2]);
+    const l = parseFloat(rev[i][3]), c = parseFloat(rev[i][4]);
+    const haClose = (o + h + l + c) / 4;
+    const haOpen  = i === 0 ? (o + c) / 2 : (ha[i-1][1] + ha[i-1][4]) / 2;
+    const haHigh  = Math.max(h, haOpen, haClose);
+    const haLow   = Math.min(l, haOpen, haClose);
+    ha.push([rev[i][0], haOpen, haHigh, haLow, haClose, rev[i][5]]);
+  }
+  ha.reverse();
+  return ha;
+}
+
+function calcEMA200(closes) {
+  // closes: newest first, returns most recent EMA value
+  if (closes.length < 200) return null;
+  const rev = [...closes].reverse();
+  const k = 2 / 201;
+  let ema = rev.slice(0, 200).reduce((s, v) => s + v, 0) / 200;
+  for (let i = 200; i < rev.length; i++) {
+    ema = rev[i] * k + ema * (1 - k);
+  }
+  return ema;
+}
+
+function calcStochRSI(closes, rsiLen = 14, stochLen = 14, kSmooth = 3, dSmooth = 3) {
+  // closes: newest first. Need enough candles.
+  if (closes.length < rsiLen + stochLen + kSmooth + dSmooth + 5) return null;
+  const rev = [...closes].reverse(); // oldest first
+  // Compute RSI series (oldest first)
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= rsiLen; i++) {
+    const d = rev[i] - rev[i-1];
+    if (d > 0) gains += d; else losses -= d;
+  }
+  let ag = gains / rsiLen, al = losses / rsiLen;
+  const rsiSeries = [];
+  for (let i = rsiLen; i < rev.length; i++) {
+    const rs = al === 0 ? 100 : ag / al;
+    rsiSeries.push(100 - 100 / (1 + rs));
+    if (i < rev.length - 1) {
+      const d = rev[i+1] - rev[i];
+      ag = (ag * (rsiLen - 1) + Math.max(d, 0)) / rsiLen;
+      al = (al * (rsiLen - 1) + Math.max(-d, 0)) / rsiLen;
+    }
+  }
+  if (rsiSeries.length < stochLen) return null;
+  // Stochastic of RSI
+  const stochSeries = [];
+  for (let i = stochLen - 1; i < rsiSeries.length; i++) {
+    const slice = rsiSeries.slice(i - stochLen + 1, i + 1);
+    const hi = Math.max(...slice), lo = Math.min(...slice);
+    stochSeries.push(hi === lo ? 50 : (rsiSeries[i] - lo) / (hi - lo) * 100);
+  }
+  if (stochSeries.length < kSmooth + dSmooth) return null;
+  // K line = SMA(stoch, kSmooth)
+  const kSeries = [];
+  for (let i = kSmooth - 1; i < stochSeries.length; i++) {
+    kSeries.push(stochSeries.slice(i - kSmooth + 1, i + 1).reduce((s,v) => s+v, 0) / kSmooth);
+  }
+  if (kSeries.length < dSmooth + 1) return null;
+  // D line = SMA(K, dSmooth)
+  const dSeries = [];
+  for (let i = dSmooth - 1; i < kSeries.length; i++) {
+    dSeries.push(kSeries.slice(i - dSmooth + 1, i + 1).reduce((s,v) => s+v, 0) / dSmooth);
+  }
+  // Return most recent 2 values (newest = last in series)
+  const k0 = kSeries[kSeries.length - 1], k1 = kSeries[kSeries.length - 2];
+  const d0 = dSeries[dSeries.length - 1], d1 = dSeries[dSeries.length - 2];
+  return { k: k0, kPrev: k1, d: d0, dPrev: d1 };
+}
+
+function detectSignalHAEmaSRSI(candles, currentPrice) {
+  if (candles.length < 210) return null;
+  const closes = candles.map(c => parseFloat(c[4]));
+  const ema200  = calcEMA200(closes);
+  if (!ema200) return null;
+  const srsi = calcStochRSI(closes);
+  if (!srsi) return null;
+  const ha = calcHACandles(candles);
+  if (ha.length < 3) return null;
+
+  const haC  = ha[0]; // current HA candle
+  const haP  = ha[1]; // previous HA candle
+  const haOpen  = haC[1], haHigh = haC[2], haLow = haC[3], haClose = haC[4];
+  const pOpen   = haP[1], pClose = haP[4];
+  const haBody  = Math.abs(haClose - haOpen);
+  const pBody   = Math.abs(pClose - pOpen);
+  const range   = haHigh - haLow;
+  const lowerWick = Math.min(haOpen, haClose) - haLow;
+  const upperWick = haHigh - Math.max(haOpen, haClose);
+
+  // LONG: price above 200 EMA, StochRSI K crosses above D from oversold (<20), strong HA bullish candle
+  const kCrossUp = srsi.kPrev < srsi.dPrev && srsi.k >= srsi.d && srsi.kPrev < 30;
+  const strongBull = haClose > haOpen && haBody > pBody * 0.8 && lowerWick < haBody * 0.15;
+  if (currentPrice > ema200 && kCrossUp && strongBull) {
+    const swingLow = Math.min(...candles.slice(1, 8).map(c => parseFloat(c[3])));
+    if (swingLow >= currentPrice) return null;
+    return { type: 'long', level: currentPrice, grade: 'S', stopLoss: swingLow, strategy: 'ha_ema_srsi' };
+  }
+
+  // SHORT: price below 200 EMA, StochRSI K crosses below D from overbought (>70), strong HA bearish candle
+  const kCrossDown = srsi.kPrev > srsi.dPrev && srsi.k <= srsi.d && srsi.kPrev > 70;
+  const strongBear = haClose < haOpen && haBody > pBody * 0.8 && upperWick < haBody * 0.15;
+  if (currentPrice < ema200 && kCrossDown && strongBear) {
+    const swingHigh = Math.max(...candles.slice(1, 8).map(c => parseFloat(c[2])));
+    if (swingHigh <= currentPrice) return null;
+    return { type: 'short', level: currentPrice, grade: 'S', stopLoss: swingHigh, strategy: 'ha_ema_srsi' };
+  }
+
+  return null;
 }
 
 // ── S/R DETECTION ─────────────────────────────────────────────

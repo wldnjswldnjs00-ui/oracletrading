@@ -671,10 +671,6 @@
             <input type="number" class="d-form-input" id="botRisk" value="2" min="0.1" max="10" step="0.1" />
           </div>
           <div class="d-form-group">
-            <label class="d-form-label">Number of Entries</label>
-            <input type="number" class="d-form-input" id="botEntries" value="3" min="2" max="5" />
-          </div>
-          <div class="d-form-group">
             <label class="d-form-label">Trading Pair</label>
             <select class="d-form-input" id="botTradingPair" style="background:#111;color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;">
               <option value="BTC-USDT-SWAP">BTC-USDT-SWAP</option>
@@ -1846,14 +1842,13 @@
   var _algoOrdersCacheRenderedTs = 0;
 
   var STRATEGIES = [
-    { id: 'sr-bounce',       name: 'SR Bounce',       tier: 'STARTER', desc: 'Support & Resistance Bounce — 지지/저항 레벨에서 반등 진입 전략' },
-    { id: 'rsi-dca',         name: 'RSI DCA',          tier: 'STARTER', desc: 'RSI 과매도 구간에서 분할 매수하는 DCA 전략' },
+    { id: 'ha-ema-srsi',    name: 'HA + EMA + StochRSI', tier: 'STARTER', desc: 'Heikin Ashi + 200 EMA + Stochastic RSI 복합 추세 전략 (권장)' },
+    { id: 'rsi-dca',         name: 'RSI DCA',          tier: 'STARTER', desc: 'RSI 과매도 구간에서 진입하는 전략' },
     { id: 'ma-crossover',    name: 'MA Crossover',     tier: 'PRO',   desc: '이동평균 골든크로스/데드크로스 기반 추세 추종 전략' },
     { id: 'bb-reversion',    name: 'BB Reversion',     tier: 'PRO',   desc: '볼린저밴드 상/하단 이탈 후 평균회귀 전략' },
     { id: 'breakout',        name: 'Breakout',         tier: 'PRO',   desc: '주요 레벨 돌파 시 모멘텀 추종 전략' },
     { id: 'ma-ribbon',       name: 'MA Ribbon',        tier: 'PRO',   desc: '다중 이동평균 리본 컨플루언스 기반 진입 전략' },
     { id: 'macd-divergence', name: 'MACD Divergence',  tier: 'ELITE', desc: 'MACD 다이버전스 감지 기반 반전 전략' },
-    { id: 'funding-rate',    name: 'Funding Rate',     tier: 'ELITE', desc: '펀딩비 극값에서 역추세 진입 전략' },
     { id: 'atr-trend',       name: 'ATR Trend',        tier: 'ELITE', desc: 'ATR 기반 동적 스탑로스를 활용한 추세 추종 전략' }
   ];
 
@@ -1936,11 +1931,10 @@
 
   function stratIdToWorkerName(id) {
     var map = {
-      'sr-bounce': 'sr_bounce', 'rsi-dca': 'rsi_dca',
+      'ha-ema-srsi': 'ha_ema_srsi', 'rsi-dca': 'rsi_dca',
       'ma-crossover': 'ma_crossover', 'bb-reversion': 'bb_reversion',
       'breakout': 'breakout', 'ma-ribbon': 'ma_ribbon',
-      'macd-divergence': 'macd_div', 'funding-rate': 'funding_rate',
-      'atr-trend': 'atr_trend'
+      'macd-divergence': 'macd_div', 'atr-trend': 'atr_trend'
     };
     return map[id] || id.replace(/-/g, '_');
   }
@@ -2008,11 +2002,11 @@
   }
 
   var STRAT_DISPLAY_NAMES = {
-    'sr_bounce': 'SR Bounce', 'rsi_dca': 'RSI DCA',
+    'ha_ema_srsi': 'HA+EMA+StochRSI', 'rsi_dca': 'RSI DCA',
     'ma_support': 'MA Support', 'ma_crossover': 'MA Crossover',
     'bb_reversion': 'BB Reversion', 'breakout': 'Breakout',
     'ma_ribbon': 'MA Ribbon', 'macd_div': 'MACD Divergence',
-    'funding_rate': 'Funding Rate', 'atr_trend': 'ATR Trend'
+    'atr_trend': 'ATR Trend'
   };
 
   async function loadMyBots() {
