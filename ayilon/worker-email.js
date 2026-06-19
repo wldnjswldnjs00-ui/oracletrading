@@ -31,6 +31,7 @@ export default {
       if (path === '/initiate-2fa')      return handleInitiate2FA(request, env);
       if (path === '/confirm-2fa')       return handleConfirm2FA(request, env);
       if (path === '/2fa-status')        return handle2FAStatus(request, env);
+      if (path === '/equity-history')    return handleEquityHistory(request, env);
       if (path === '/reset-password')    return handleResetPassword(request, env);
       if (path === '/update-profile')    return handleUpdateProfile(request, env);
       if (path === '/save-bot-settings') return handleSaveBotSettings(request, env);
@@ -1058,15 +1059,32 @@ async function handleGetAccount(request, env) {
     if (data?.code && data.code !== '0') return json({ balance: null, error: `OKX: ${data.msg || data.code}` });
     const details = data?.data?.[0]?.details || [];
     const usdt = details.find(d => d.ccy === 'USDT') || {};
+    const equity = parseFloat(usdt.eq || 0);
+    await ensureDB(env);
+    await saveEquitySnapshot(env, session.email, equity);
     return json({
       balance: {
-        equity:    parseFloat(usdt.eq    || 0),
+        equity,
         available: parseFloat(usdt.availEq || 0),
         unrealPnl: parseFloat(usdt.upl   || 0),
         mgnRatio:  parseFloat(data?.data?.[0]?.mgnRatio || 0)
       }
     });
   } catch(e) { return json({ balance: null, error: e.message }); }
+}
+
+async function handleEquityHistory(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ points: [], error: 'unauthorized' }, 401);
+  await ensureDB(env);
+  const rangeHours = { '1D': 24, '3D': 72, '1W': 168, '1M': 720, '3M': 2160, '1Y': 8760 };
+  const hours = rangeHours[body.range || '1M'] || 720;
+  const since = Date.now() - hours * 3600 * 1000;
+  const rows = await env.BOT_DB.prepare(
+    'SELECT date_hour, equity, ts FROM equity_history WHERE email = ? AND ts >= ? ORDER BY ts ASC'
+  ).bind(session.email.toLowerCase(), since).all().catch(() => ({ results: [] }));
+  return json({ points: (rows.results || []).map(r => ({ ts: r.ts, equity: r.equity, label: r.date_hour })) });
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1113,6 +1131,13 @@ async function initDB(env) {
       code TEXT,
       expires_at INTEGER NOT NULL
     )`).run();
+    await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS equity_history (
+      email TEXT NOT NULL,
+      date_hour TEXT NOT NULL,
+      equity REAL NOT NULL,
+      ts INTEGER NOT NULL,
+      PRIMARY KEY (email, date_hour)
+    )`).run();
     // Add new columns to existing tables (no-op if already present)
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN running INTEGER DEFAULT 1`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN stopped_strategies TEXT DEFAULT NULL`).run().catch(() => {});
@@ -1120,6 +1145,14 @@ async function initDB(env) {
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN loss_count INTEGER DEFAULT 0`).run().catch(() => {});
     _dbReady = true;
   } catch(e) {}
+}
+
+async function saveEquitySnapshot(env, email, equity) {
+  if (!equity || equity <= 0 || !env.BOT_DB) return;
+  const dateHour = new Date().toISOString().slice(0, 13);
+  await env.BOT_DB.prepare(
+    'INSERT OR REPLACE INTO equity_history (email, date_hour, equity, ts) VALUES (?, ?, ?, ?)'
+  ).bind(email.toLowerCase(), dateHour, equity, Date.now()).run().catch(() => {});
 }
 
 async function ensureDB(env) {
@@ -1290,6 +1323,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       await botLog(env, email, `Skip: USDT equity=0 in trading account. ${demoMode ? 'Demo: check OKX demo unified account has funds.' : 'Transfer USDT to trading account on OKX.'}`);
       return;
     }
+    await saveEquitySnapshot(env, email, equity);
 
     // ── Fix: Max drawdown stop ────────────────────────────────
     // Track peak equity and halt bot if overall drawdown exceeds mddLimit (default 30%)

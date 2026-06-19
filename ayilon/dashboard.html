@@ -482,6 +482,9 @@
       </div>
       <div style="position:relative;height:200px;">
         <canvas id="dashEquityChart"></canvas>
+        <div id="dashEquityNoData" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:6px;">
+          <div style="color:var(--gray-500);font-size:13px;" data-i18n="db.dash.no_equity_data">데이터 수집 중입니다. 봇이 실행되면 자동으로 기록됩니다.</div>
+        </div>
       </div>
     </div>
 
@@ -1427,28 +1430,61 @@
     loadDashAssets();
     loadDashBotStatus();
 
-    if (_dashEquityChart) return;
     var eqCtx = document.getElementById('dashEquityChart');
     var poCtx = document.getElementById('dashPortfolioChart');
     if (!eqCtx || !poCtx) return;
-    var days = 90;
-    var labels = genDateLabels(days);
-    var data   = genEquityData(days, 10000);
-    _dashEquityChart    = makeLineChart('dashEquityChart', data, labels);
-    _dashPortfolioChart = makeLineChart('dashPortfolioChart', genEquityData(30, 10000), genDateLabels(30));
+    if (!_dashEquityChart)    _dashEquityChart    = makeLineChart('dashEquityChart',    [], []);
+    if (!_dashPortfolioChart) _dashPortfolioChart = makeLineChart('dashPortfolioChart', [], []);
+    loadEquityChart('3M');
+    loadPortfolioChart('1M');
+  }
+
+  async function loadEquityChart(range) {
+    var token = getSessionToken();
+    if (!token || !_dashEquityChart) return;
+    try {
+      var res  = await fetch(WORKER_URL + '/equity-history', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token, range: range }) });
+      var data = await res.json();
+      var pts  = data.points || [];
+      if (pts.length < 2) {
+        _dashEquityChart.data.labels = [];
+        _dashEquityChart.data.datasets[0].data = [];
+        _dashEquityChart.update();
+        var noDataEl = document.getElementById('dashEquityNoData');
+        if (noDataEl) noDataEl.style.display = 'flex';
+        return;
+      }
+      var noDataEl = document.getElementById('dashEquityNoData');
+      if (noDataEl) noDataEl.style.display = 'none';
+      _dashEquityChart.data.labels = pts.map(function(p) { return p.label.replace('T', ' ') + ':00'; });
+      _dashEquityChart.data.datasets[0].data = pts.map(function(p) { return p.equity; });
+      _dashEquityChart.update();
+    } catch(e) {}
+  }
+
+  async function loadPortfolioChart(range) {
+    var token = getSessionToken();
+    if (!token || !_dashPortfolioChart) return;
+    try {
+      var res  = await fetch(WORKER_URL + '/equity-history', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token, range: range }) });
+      var data = await res.json();
+      var pts  = data.points || [];
+      if (pts.length < 2) {
+        _dashPortfolioChart.data.labels = [];
+        _dashPortfolioChart.data.datasets[0].data = [];
+        _dashPortfolioChart.update();
+        return;
+      }
+      _dashPortfolioChart.data.labels = pts.map(function(p) { return p.label.replace('T', ' ') + ':00'; });
+      _dashPortfolioChart.data.datasets[0].data = pts.map(function(p) { return p.equity; });
+      _dashPortfolioChart.update();
+    } catch(e) {}
   }
 
   function setDashTimeRange(range, btn) {
     document.querySelectorAll('#dashTimeRange .tr-btn').forEach(function(b){ b.classList.remove('active'); });
     if (btn) btn.classList.add('active');
-    if (!_dashEquityChart) return;
-    var daysMap = { '1D':1, '3D':3, '1W':7, '1M':30, '3M':90, '1Y':365, 'custom':90 };
-    var days = daysMap[range] || 30;
-    var labels = genDateLabels(days);
-    var data   = genEquityData(days, 10000);
-    _dashEquityChart.data.labels   = labels;
-    _dashEquityChart.data.datasets[0].data = data;
-    _dashEquityChart.update();
+    loadEquityChart(range);
   }
 
   function setPortfolioRange(range, btn) {
@@ -1456,12 +1492,7 @@
       btn.closest('.time-range').querySelectorAll('.tr-btn').forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
     }
-    if (!_dashPortfolioChart) return;
-    var daysMap = { '1M':30, '3M':90, '1Y':365 };
-    var days = daysMap[range] || 30;
-    _dashPortfolioChart.data.labels = genDateLabels(days);
-    _dashPortfolioChart.data.datasets[0].data = genEquityData(days, 10000);
-    _dashPortfolioChart.update();
+    loadPortfolioChart(range);
   }
 
   /* ════════════════════════════════════════
