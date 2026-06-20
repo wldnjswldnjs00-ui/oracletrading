@@ -396,60 +396,71 @@ function agg(c5, factor) {
 // Signal functions
 // ─────────────────────────────────────────────
 function scalpSig(stratId, i, ind) {
-  if (i < 1) return null;
-  if (ind.adx14[i] < 15) return null;
+  if (i < 2) return null;
+  if (ind.adx14[i] < 20) return null;
   var atr = ind.atr14[i];
   if (!atr || atr <= 0) return null;
+  var bull = ind.c[i] > ind.ema200[i];
+  var bear = ind.c[i] < ind.ema200[i];
 
   if (stratId === 's_ema38') {
+    // 추세 정렬: 롱은 ema8>ema21 + EMA200 위, 숏은 반대
+    var trendUp = ind.ema8[i] > ind.ema21[i] && bull;
+    var trendDn = ind.ema8[i] < ind.ema21[i] && bear;
     var crossUp = ind.ema3[i] > ind.ema8[i] && ind.ema3[i - 1] <= ind.ema8[i - 1];
     var crossDn = ind.ema3[i] < ind.ema8[i] && ind.ema3[i - 1] >= ind.ema8[i - 1];
-    if (crossUp && ind.rsi14[i] < 70) return { type: 'long', stopLoss: ind.c[i] - atr * 1.2 };
-    if (crossDn && ind.rsi14[i] > 30) return { type: 'short', stopLoss: ind.c[i] + atr * 1.2 };
+    if (crossUp && trendUp && ind.rsi14[i] < 65) return { type: 'long', stopLoss: ind.c[i] - atr * 1.2 };
+    if (crossDn && trendDn && ind.rsi14[i] > 35) return { type: 'short', stopLoss: ind.c[i] + atr * 1.2 };
   }
 
   if (stratId === 's_bb') {
+    // BB 반등 + EMA200 방향 + RSI 과매도/과매수 확인
     var prevBelow = ind.c[i - 1] < ind.bbL[i - 1];
     var nowAbove = ind.c[i] >= ind.bbL[i];
     var prevAbove = ind.c[i - 1] > ind.bbU[i - 1];
     var nowBelow = ind.c[i] <= ind.bbU[i];
-    if (prevBelow && nowAbove) return { type: 'long', stopLoss: ind.c[i] - atr * 1.0 };
-    if (prevAbove && nowBelow) return { type: 'short', stopLoss: ind.c[i] + atr * 1.0 };
+    if (prevBelow && nowAbove && bull && ind.rsi14[i] < 45) return { type: 'long', stopLoss: ind.c[i] - atr * 1.5 };
+    if (prevAbove && nowBelow && bear && ind.rsi14[i] > 55) return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 };
   }
 
   if (stratId === 's_stoch') {
+    // StochRSI + EMA200 + EMA21 추세 확인
     var kCrossUp = ind.srsiK[i] > ind.srsiD[i] && ind.srsiK[i - 1] <= ind.srsiD[i - 1] && ind.srsiK[i] < 30;
     var kCrossDn = ind.srsiK[i] < ind.srsiD[i] && ind.srsiK[i - 1] >= ind.srsiD[i - 1] && ind.srsiK[i] > 70;
-    if (kCrossUp) return { type: 'long', stopLoss: ind.c[i] - atr * 1.2 };
-    if (kCrossDn) return { type: 'short', stopLoss: ind.c[i] + atr * 1.2 };
+    if (kCrossUp && bull && ind.c[i] > ind.ema21[i]) return { type: 'long', stopLoss: ind.c[i] - atr * 1.2 };
+    if (kCrossDn && bear && ind.c[i] < ind.ema21[i]) return { type: 'short', stopLoss: ind.c[i] + atr * 1.2 };
   }
 
   return null;
 }
 
 function daySig(stratId, i, ind) {
-  if (i < 1) return null;
-  if (ind.adx14[i] < 18) return null;
+  if (i < 2) return null;
+  if (ind.adx14[i] < 20) return null;
   var atr = ind.atr14[i];
   if (!atr || atr <= 0) return null;
+  var bull = ind.c[i] > ind.ema200[i];
+  var bear = ind.c[i] < ind.ema200[i];
 
   if (stratId === 'd_macd') {
+    // MACD 크로스 + EMA200 방향 필터
     var crossUp = ind.macdL[i] > ind.macdS[i] && ind.macdL[i - 1] <= ind.macdS[i - 1] && ind.macdL[i] < 0;
     var crossDn = ind.macdL[i] < ind.macdS[i] && ind.macdL[i - 1] >= ind.macdS[i - 1] && ind.macdL[i] > 0;
-    if (crossUp) return { type: 'long', stopLoss: ind.c[i] - atr * 1.5 };
-    if (crossDn) return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 };
+    if (crossUp && bull) return { type: 'long', stopLoss: ind.c[i] - atr * 1.5 };
+    if (crossDn && bear) return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 };
   }
 
   if (stratId === 'd_st') {
+    // 슈퍼트렌드 전환 + EMA200 방향 필터
     var flipUp = ind.stTrend[i] === 1 && ind.stTrend[i - 1] === -1;
     var flipDn = ind.stTrend[i] === -1 && ind.stTrend[i - 1] === 1;
-    if (flipUp) return { type: 'long', stopLoss: ind.stSl[i] };
-    if (flipDn) return { type: 'short', stopLoss: ind.stSl[i] };
+    if (flipUp && bull) return { type: 'long', stopLoss: ind.stSl[i] };
+    if (flipDn && bear) return { type: 'short', stopLoss: ind.stSl[i] };
   }
 
   if (stratId === 'd_rsi') {
-    var cross50Up = ind.rsi14[i] > 50 && ind.rsi14[i - 1] <= 50 && ind.c[i] > ind.ema200[i];
-    var cross50Dn = ind.rsi14[i] < 50 && ind.rsi14[i - 1] >= 50 && ind.c[i] < ind.ema200[i];
+    var cross50Up = ind.rsi14[i] > 50 && ind.rsi14[i - 1] <= 50 && bull;
+    var cross50Dn = ind.rsi14[i] < 50 && ind.rsi14[i - 1] >= 50 && bear;
     if (cross50Up) return { type: 'long', stopLoss: ind.c[i] - atr * 1.5 };
     if (cross50Dn) return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 };
   }
