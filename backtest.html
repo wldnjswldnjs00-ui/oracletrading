@@ -19,10 +19,13 @@ h1{text-align:center;font-size:1.6rem;margin-bottom:20px;color:#fff;}
 .tier-SCALP{background:#78350f;color:#fbbf24;}
 .tier-DAY{background:#1e3a5f;color:#60a5fa;}
 .tier-SWING{background:#14532d;color:#4ade80;}
-button{padding:8px 22px;border:none;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:600;}
+button{padding:12px 28px;border:none;border-radius:8px;cursor:pointer;font-size:1rem;font-weight:700;touch-action:manipulation;-webkit-tap-highlight-color:rgba(99,102,241,.3);user-select:none;}
 .btn-primary{background:#6366f1;color:#fff;}
+.btn-primary:active{background:#4f46e5;}
 .btn-secondary{background:#374151;color:#e0e0e0;}
-button:disabled{opacity:.5;cursor:not-allowed;}
+.btn-secondary:active{background:#4b5563;}
+button:disabled{opacity:.4;cursor:not-allowed;}
+#runOverlay{display:none;position:fixed;top:0;left:0;width:100%;z-index:9999;background:#6366f1;color:#fff;text-align:center;padding:14px;font-size:1.1rem;font-weight:700;letter-spacing:.03em;}
 .progress-wrap{height:8px;background:#1f1f2e;border-radius:4px;overflow:hidden;margin:10px 0;}
 .progress-bar{height:100%;background:#6366f1;transition:width .2s;border-radius:4px;}
 #statusMsg{font-size:.82rem;color:#888;min-height:18px;}
@@ -42,6 +45,7 @@ canvas{width:100%;height:220px;display:block;}
 </style>
 </head>
 <body>
+<div id="runOverlay">⏳ 백테스트 실행 중... 잠시 기다려 주세요</div>
 <h1>Oracle Trading Backtest — 3-Tier Strategy</h1>
 
 <div class="card">
@@ -829,16 +833,29 @@ function drawEquityCurve(stratId) {
 // ─────────────────────────────────────────────
 // Run functions
 // ─────────────────────────────────────────────
+function _setBusy(busy, label) {
+  var btnFull = document.getElementById('btnFull');
+  var btnQuick = document.getElementById('btnQuick');
+  var overlay = document.getElementById('runOverlay');
+  if (busy) {
+    if (btnFull) { btnFull.disabled = true; btnFull.textContent = label || '실행 중...'; }
+    if (btnQuick) { btnQuick.disabled = true; }
+    if (overlay) overlay.style.display = 'block';
+  } else {
+    if (btnFull) { btnFull.disabled = false; btnFull.textContent = '전체 백테스트 실행'; }
+    if (btnQuick) { btnQuick.disabled = false; }
+    if (overlay) overlay.style.display = 'none';
+  }
+}
+
 async function runAll() {
   if (_running) return;
   _running = true;
-  var btnFull = document.getElementById('btnFull');
-  var btnQuick = document.getElementById('btnQuick');
-  if (btnFull) { btnFull.disabled = true; btnFull.textContent = '실행 중...'; }
-  if (btnQuick) { btnQuick.disabled = true; }
+  _setBusy(true, '⏳ 전체 실행 중...');
   var statusEl = document.getElementById('statusMsg');
-  if (statusEl) { statusEl.style.cssText = 'font-size:1rem;color:#a5b4fc;font-weight:600;min-height:18px;'; }
+  if (statusEl) statusEl.style.cssText = 'font-size:1rem;color:#a5b4fc;font-weight:600;min-height:18px;';
   setProgress(5, '시작됨 — OKX 데이터 수집 중...');
+  await new Promise(function(r) { setTimeout(r, 80); }); // force render before fetch
 
   try {
     var cfg = getConfig();
@@ -860,30 +877,27 @@ async function runAll() {
       await new Promise(function(resolve) { setTimeout(resolve, 0); });
     }
 
-    setProgress(100, '완료! ' + STRATS.length + '개 전략 백테스트 완료.');
-    if (statusEl) { statusEl.style.cssText = 'font-size:1rem;color:#4ade80;font-weight:600;min-height:18px;'; }
+    setProgress(100, '✅ 완료! ' + STRATS.length + '개 전략 백테스트 완료.');
+    if (statusEl) statusEl.style.cssText = 'font-size:1rem;color:#4ade80;font-weight:700;min-height:18px;';
     renderResults();
   } catch (e) {
-    if (statusEl) { statusEl.style.cssText = 'font-size:1rem;color:#f87171;font-weight:700;min-height:18px;'; }
-    setProgress(0, '오류: ' + e.message);
+    if (statusEl) statusEl.style.cssText = 'font-size:1.1rem;color:#f87171;font-weight:700;min-height:18px;';
+    setProgress(0, '❌ 오류: ' + e.message);
     console.error(e);
   } finally {
     _running = false;
-    if (btnFull) { btnFull.disabled = false; btnFull.textContent = '전체 백테스트 실행'; }
-    if (btnQuick) { btnQuick.disabled = false; }
+    _setBusy(false);
   }
 }
 
 async function runQuick() {
   if (_running) return;
   _running = true;
-  var btnFull = document.getElementById('btnFull');
-  var btnQuick = document.getElementById('btnQuick');
-  if (btnFull) { btnFull.disabled = true; }
-  if (btnQuick) { btnQuick.disabled = true; btnQuick.textContent = '실행 중...'; }
+  _setBusy(true, '⏳ 빠른 실행 중...');
   var statusEl = document.getElementById('statusMsg');
-  if (statusEl) { statusEl.style.cssText = 'font-size:1rem;color:#a5b4fc;font-weight:600;min-height:18px;'; }
+  if (statusEl) statusEl.style.cssText = 'font-size:1rem;color:#a5b4fc;font-weight:600;min-height:18px;';
   setProgress(5, '빠른 실행 시작됨 — OKX 데이터 수집 중...');
+  await new Promise(function(r) { setTimeout(r, 80); }); // force render before fetch
 
   try {
     var cfg = getConfig();
@@ -905,17 +919,16 @@ async function runQuick() {
       await new Promise(function(resolve) { setTimeout(resolve, 0); });
     }
 
-    setProgress(100, '빠른 실행 완료!');
-    if (statusEl) { statusEl.style.cssText = 'font-size:1rem;color:#4ade80;font-weight:600;min-height:18px;'; }
+    setProgress(100, '✅ 빠른 실행 완료!');
+    if (statusEl) statusEl.style.cssText = 'font-size:1rem;color:#4ade80;font-weight:700;min-height:18px;';
     renderResults();
   } catch (e) {
-    if (statusEl) { statusEl.style.cssText = 'font-size:1rem;color:#f87171;font-weight:700;min-height:18px;'; }
-    setProgress(0, '오류: ' + e.message);
+    if (statusEl) statusEl.style.cssText = 'font-size:1.1rem;color:#f87171;font-weight:700;min-height:18px;';
+    setProgress(0, '❌ 오류: ' + e.message);
     console.error(e);
   } finally {
     _running = false;
-    if (btnFull) { btnFull.disabled = false; }
-    if (btnQuick) { btnQuick.disabled = false; btnQuick.textContent = '빠른 실행 (ADX≥20 고정)'; }
+    _setBusy(false);
   }
 }
 
