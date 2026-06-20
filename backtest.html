@@ -7,80 +7,76 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',system-ui,sans-serif;background:#000;color:#fff;min-height:100vh;padding:32px;}
+body{font-family:'Inter',system-ui,sans-serif;background:#000;color:#fff;min-height:100vh;padding:32px 24px;}
 h1{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;}
 .sub{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:28px;}
 .card{background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:24px;margin-bottom:20px;}
 .card-title{font-size:14px;font-weight:600;margin-bottom:16px;}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;}
+@media(max-width:600px){.grid3{grid-template-columns:1fr 1fr;}}
 label{display:block;font-size:11px;color:rgba(255,255,255,0.45);font-weight:500;margin-bottom:6px;letter-spacing:.04em;}
-input{width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit;}
-input:focus{outline:none;border-color:rgba(255,255,255,0.25);}
+input[type=text],input[type=number]{width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit;}
+input:focus{outline:none;border-color:rgba(255,255,255,0.3);}
 .btn{display:block;width:100%;padding:13px;background:#fff;color:#000;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;}
 .btn:hover{opacity:.85;}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
-.progress-wrap{display:none;margin-top:14px;}
-.progress-msg{font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:6px;}
-.progress-bg{background:rgba(255,255,255,0.07);border-radius:4px;height:4px;overflow:hidden;}
-.progress-bar{height:100%;background:#22c55e;width:0%;transition:width .3s;border-radius:4px;}
+.btn-sec{background:#1a1a1a;color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.15);}
+.prog-wrap{display:none;margin-top:14px;}
+.prog-msg{font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;}
+.prog-bg{background:rgba(255,255,255,0.07);border-radius:4px;height:4px;overflow:hidden;}
+.prog-bar{height:100%;background:#22c55e;width:0%;transition:width .3s;border-radius:4px;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead tr{border-bottom:1px solid rgba(255,255,255,0.07);}
 th{text-align:right;padding:10px 12px;color:rgba(255,255,255,0.4);font-weight:500;font-size:12px;white-space:nowrap;}
 th:first-child{text-align:left;}
-td{padding:12px 12px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:right;font-size:13px;}
+td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:right;font-size:13px;}
 td:first-child{text-align:left;font-weight:500;}
 tr:last-child td{border-bottom:none;}
 .chart-wrap{position:relative;height:280px;}
-.hidden{display:none;}
+.hidden{display:none!important;}
 .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
 .tab{padding:5px 14px;border-radius:100px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.5);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;}
 .tab:hover{border-color:rgba(255,255,255,0.3);color:#fff;}
 .tab.active{background:#fff;color:#000;border-color:#fff;}
-.note{font-size:11px;color:rgba(255,255,255,0.3);margin-top:10px;}
+.note{font-size:11px;color:rgba(255,255,255,0.3);margin-top:12px;line-height:1.6;}
+.hint{font-size:11px;color:rgba(255,255,255,0.28);line-height:1.5;}
 </style>
 </head>
 <body>
 <h1>AYILON 전략 백테스팅</h1>
-<p class="sub">최근 1년 · 5분봉 실행 · 1H 집계 신호 · 진입가 = 다음 캔들 시가 · 고정 TP/SL (R:R 배율) · OKX 수수료 0.05%/side</p>
+<p class="sub">최근 1년 · 5분봉 · 1H 신호 · 고정 TP/SL (R:R 배율) · OKX 수수료 0.05%/side · 보수적: SL/TP 동일 캔들 → SL 우선</p>
 
-<div class="card">
+<!-- 설정 카드 -->
+<div class="card" id="settingsCard">
   <div class="card-title">설정</div>
   <div class="grid3">
-    <div><label>Trading Pair</label><input id="btPair" value="BTC-USDT-SWAP" oninput="onPairChange()"></div>
-    <div><label>리스크/트레이드 (%)</label><input id="btRisk" type="number" value="2" min="0.5" max="5" step="0.5"></div>
-    <div><label>레버리지</label><input id="btLev" type="number" value="10" min="1" max="50"></div>
+    <div><label>Trading Pair</label><input type="text" id="btPair" value="BTC-USDT-SWAP"></div>
+    <div><label>리스크/트레이드 (%)</label><input type="number" id="btRisk" value="2" min="0.5" max="5" step="0.5"></div>
+    <div><label>레버리지</label><input type="number" id="btLev" value="10" min="1" max="50"></div>
   </div>
-  <div class="grid3" style="margin-top:0;">
-    <div><label>최대 포지션 크기 (%)</label><input id="btPos" type="number" value="10" min="1" max="100"></div>
-    <div style="grid-column:span 2;display:flex;align-items:flex-end;padding-bottom:2px;">
-      <span style="font-size:11px;color:rgba(255,255,255,0.3);">실제 봇 포지션 = min(리스크%/SL거리, 포지션크기%×레버리지) × 자산 — SL거리 넓을수록 계약수 감소</span>
+  <div class="grid3">
+    <div><label>최대 포지션 크기 (%)</label><input type="number" id="btPos" value="10" min="1" max="100"></div>
+    <div><label>TP/SL 배율 (R:R)</label><input type="number" id="btRR" value="2.5" min="1.0" max="5.0" step="0.5"></div>
+    <div style="display:flex;align-items:flex-end;padding-bottom:2px;">
+      <span class="hint">TP = SL거리×배율 | R:R=2.5 → 손익분기 WR 28.6%</span>
     </div>
   </div>
-  <div class="grid3" style="margin-top:0;">
-    <div>
-      <label>TP/SL 배율 (R:R)</label>
-      <input id="btRR" type="number" value="2.5" min="1.0" max="5.0" step="0.5">
-    </div>
-    <div style="grid-column:span 2;display:flex;align-items:flex-end;padding-bottom:2px;">
-      <span style="font-size:11px;color:rgba(255,255,255,0.3);">
-        TP = SL거리 × 배율 | R:R=2.5 → 손익분기 WR=28.6% | R:R=3 → 25% | 어떤 전략이든 WR>30%이면 수익 구조
-      </span>
-    </div>
+  <button type="button" class="btn" id="btnFull">백테스팅 최적화 시작 (17개 전략 × 8 ADX 임계값 · 약 5분)</button>
+  <button type="button" class="btn btn-sec" id="btnQuick" style="margin-top:8px;">⚡ 빠른 실행 — 모바일 · ADX≥20 고정 · 약 30초</button>
+  <div class="prog-wrap" id="btProg">
+    <div class="prog-msg" id="btMsg">준비 중...</div>
+    <div class="prog-bg"><div class="prog-bar" id="btBar"></div></div>
   </div>
-  <button class="btn" id="btStartBtn" onclick="startBacktest()">백테스팅 최적화 시작 (14개 전략 × 8 ADX 임계값 · 약 5분 소요)</button>
-  <button class="btn" id="btQuickBtn" onclick="startBacktestQuick()" style="margin-top:8px;background:#1a1a1a;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);">⚡ 빠른 실행 — 모바일 · ADX≥20 고정 · 약 30초</button>
-  <div class="progress-wrap" id="btProg">
-    <div class="progress-msg" id="btMsg">준비 중...</div>
-    <div class="progress-bg"><div class="progress-bar" id="btBar"></div></div>
-  </div>
-  <p class="note">⚠ 슬리피지·펀딩비 미반영. SL/TP 동일 캔들 내 충돌 시 SL 우선 처리(보수적). 백테스트 ≠ 실제 수익 보장.</p>
+  <p class="note">⚠ 슬리피지·펀딩비 미반영. 백테스트 ≠ 실제 수익 보장.</p>
 </div>
 
+<!-- 수익 구조 분석 -->
 <div class="card hidden" id="mathCard">
-  <div class="card-title">수익 구조 분석</div>
+  <div class="card-title">수익 구조 분석 — EV × WR × R:R</div>
   <div id="mathContent"></div>
 </div>
 
+<!-- 결과 테이블 -->
 <div class="card hidden" id="btResultCard">
   <div class="card-title">전략별 성과 비교</div>
   <div style="overflow-x:auto;">
@@ -96,6 +92,7 @@ tr:last-child td{border-bottom:none;}
   </div>
 </div>
 
+<!-- 차트 카드 -->
 <div class="card hidden" id="btChartCard">
   <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
     <div id="btChartTitle" style="font-size:14px;font-weight:600;flex:1 1 auto;"></div>
@@ -104,26 +101,30 @@ tr:last-child td{border-bottom:none;}
   <div class="chart-wrap"><canvas id="btCanvas"></canvas></div>
 </div>
 
+<!-- 포트폴리오 설정 -->
 <div class="card hidden" id="pfCard">
-  <div class="card-title">포트폴리오 시뮬레이션 <span style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.35);">— 수익 전략 동시 운영 합산 성과</span></div>
+  <div class="card-title">포트폴리오 시뮬레이션
+    <span style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.35);">— 수익 전략 동시 운영 합산 성과</span>
+  </div>
   <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
     <span style="font-size:12px;color:rgba(255,255,255,0.4);">전략 선택:</span>
-    <button onclick="pfSelectProfitable()" style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#22c55e;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">수익 전략만</button>
-    <button onclick="pfSelectAll()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">전체 선택</button>
-    <button onclick="pfSelectNone()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">전체 해제</button>
+    <button type="button" id="pfBtnProfit" style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#22c55e;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">수익 전략만</button>
+    <button type="button" id="pfBtnAll"    style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">전체 선택</button>
+    <button type="button" id="pfBtnNone"   style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">전체 해제</button>
   </div>
   <div id="pfCheckboxes" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;"></div>
   <div style="max-width:200px;margin-bottom:16px;">
     <label>최대 동시 포지션</label>
-    <input id="pfMaxPos" type="number" value="6" min="1" max="17">
+    <input type="number" id="pfMaxPos" value="6" min="1" max="17">
   </div>
-  <button class="btn" id="pfBtn" onclick="startPortfolioBacktest()">포트폴리오 시뮬레이션 실행</button>
-  <div class="progress-wrap" id="pfProg">
-    <div class="progress-msg" id="pfMsg">실행 중...</div>
-    <div class="progress-bg"><div class="progress-bar" id="pfBar"></div></div>
+  <button type="button" class="btn" id="btnPf">포트폴리오 시뮬레이션 실행</button>
+  <div class="prog-wrap" id="pfProg">
+    <div class="prog-msg" id="pfMsg">실행 중...</div>
+    <div class="prog-bg"><div class="prog-bar" id="pfBar"></div></div>
   </div>
 </div>
 
+<!-- 포트폴리오 결과 -->
 <div class="card hidden" id="pfResultCard">
   <div class="card-title" id="pfResultTitle">포트폴리오 결과</div>
   <div id="pfSummary" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;"></div>
@@ -132,8 +133,7 @@ tr:last-child td{border-bottom:none;}
   <div style="overflow-x:auto;">
     <table>
       <thead><tr>
-        <th style="text-align:left;">전략</th>
-        <th>거래수</th><th>승률</th><th>수익 기여</th>
+        <th style="text-align:left;">전략</th><th>거래수</th><th>승률</th><th>수익 기여</th>
       </tr></thead>
       <tbody id="pfStratTbody"></tbody>
     </table>
@@ -141,423 +141,353 @@ tr:last-child td{border-bottom:none;}
 </div>
 
 <script>
-// ════════════════════════════════════════════════════════════
-// INDICATOR FUNCTIONS — newest-first candles convention
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// INDICATOR UTILITIES  (newest-first candle convention)
+// ═══════════════════════════════════════════════════════
 
-function _sma(closes, period) {
-  if (closes.length < period) return null;
-  return closes.slice(0, period).reduce(function(s,v){return s+v;}, 0) / period;
+function _sma(cl, p) {
+  if (cl.length < p) return null;
+  var s = 0; for (var i = 0; i < p; i++) s += cl[i]; return s / p;
+}
+function _ema(cl, p) {
+  if (cl.length < p) return null;
+  var rev = cl.slice().reverse(), k = 2 / (p + 1);
+  var e = rev.slice(0, p).reduce(function(s, v) { return s + v; }, 0) / p;
+  for (var i = p; i < rev.length; i++) e = rev[i] * k + e * (1 - k);
+  return e;
+}
+function _wma(arr, p) {
+  if (arr.length < p) return null;
+  var s = 0, w = 0;
+  for (var i = 0; i < p; i++) { s += arr[i] * (p - i); w += p - i; }
+  return s / w;
 }
 
-function _ema(closes, period) {
-  if (closes.length < period) return null;
-  var rev = closes.slice().reverse(); // oldest-first
-  var k = 2 / (period + 1);
-  var e = rev.slice(0, period).reduce(function(s,v){return s+v;}, 0) / period;
-  for (var i = period; i < rev.length; i++) e = rev[i] * k + e * (1 - k);
+function calcRSI(candles, p) {
+  p = p || 14;
+  var cl = candles.map(function(c) { return parseFloat(c[4]); }).reverse();
+  if (cl.length < p + 1) return null;
+  var g = 0, l = 0;
+  for (var i = 1; i <= p; i++) { var d = cl[i] - cl[i-1]; if (d > 0) g += d; else l -= d; }
+  var ag = g / p, al = l / p;
+  for (var i = p + 1; i < cl.length; i++) {
+    var d = cl[i] - cl[i-1];
+    ag = (ag * (p - 1) + Math.max(0, d)) / p;
+    al = (al * (p - 1) + Math.max(0, -d)) / p;
+  }
+  return al === 0 ? 100 : 100 - 100 / (1 + ag / al);
+}
+
+function calcHACandles(candles) {
+  var rev = candles.slice().reverse(), ha = [];
+  for (var i = 0; i < rev.length; i++) {
+    var o = parseFloat(rev[i][1]), h = parseFloat(rev[i][2]);
+    var l = parseFloat(rev[i][3]), c = parseFloat(rev[i][4]);
+    var hc = (o + h + l + c) / 4;
+    var ho = i === 0 ? (o + c) / 2 : (ha[i-1][1] + ha[i-1][4]) / 2;
+    ha.push([rev[i][0], ho, Math.max(h, ho, hc), Math.min(l, ho, hc), hc, rev[i][5]]);
+  }
+  ha.reverse(); return ha;
+}
+
+function calcEMA200(cl) {
+  if (cl.length < 200) return null;
+  var rev = cl.slice().reverse(), k = 2/201;
+  var e = rev.slice(0, 200).reduce(function(s, v) { return s + v; }, 0) / 200;
+  for (var i = 200; i < rev.length; i++) e = rev[i] * k + e * (1 - k);
   return e;
 }
 
-// candles: newest-first
-function calcRSI(candles, period) {
-  period = period || 14;
-  var closes = candles.map(function(c){return parseFloat(c[4]);}).reverse();
-  if (closes.length < period + 1) return null;
-  var gains = 0, losses = 0;
-  for (var i = 1; i <= period; i++) {
-    var d = closes[i] - closes[i-1];
-    if (d > 0) gains += d; else losses -= d;
+function calcStochRSI(cl, rl, sl, ks, ds) {
+  rl=rl||14; sl=sl||14; ks=ks||3; ds=ds||3;
+  if (cl.length < rl + sl + ks + ds + 5) return null;
+  var rev = cl.slice().reverse();
+  var g = 0, l = 0;
+  for (var i = 1; i <= rl; i++) { var d = rev[i] - rev[i-1]; if (d > 0) g += d; else l -= d; }
+  var ag = g / rl, al = l / rl, rs = [];
+  for (var i = rl; i < rev.length; i++) {
+    rs.push(100 - 100 / (1 + (al === 0 ? 999 : ag / al)));
+    if (i < rev.length - 1) {
+      var d = rev[i+1] - rev[i];
+      ag = (ag * (rl-1) + Math.max(d, 0)) / rl;
+      al = (al * (rl-1) + Math.max(-d, 0)) / rl;
+    }
   }
-  var avgG = gains / period, avgL = losses / period;
-  for (var i = period + 1; i < closes.length; i++) {
-    var d = closes[i] - closes[i-1];
-    avgG = (avgG * (period - 1) + Math.max(0, d)) / period;
-    avgL = (avgL * (period - 1) + Math.max(0, -d)) / period;
+  if (rs.length < sl) return null;
+  var stoch = [];
+  for (var i = sl - 1; i < rs.length; i++) {
+    var w = rs.slice(i - sl + 1, i + 1), hi = Math.max.apply(null, w), lo = Math.min.apply(null, w);
+    stoch.push(hi === lo ? 50 : (rs[i] - lo) / (hi - lo) * 100);
   }
-  if (avgL === 0) return 100;
-  return 100 - 100 / (1 + avgG / avgL);
+  if (stoch.length < ks + ds) return null;
+  var kArr = [];
+  for (var i = ks - 1; i < stoch.length; i++)
+    kArr.push(stoch.slice(i - ks + 1, i + 1).reduce(function(a, v) { return a + v; }, 0) / ks);
+  if (kArr.length < ds + 1) return null;
+  var dArr = [];
+  for (var i = ds - 1; i < kArr.length; i++)
+    dArr.push(kArr.slice(i - ds + 1, i + 1).reduce(function(a, v) { return a + v; }, 0) / ds);
+  return { k: kArr[kArr.length-1], kPrev: kArr[kArr.length-2], d: dArr[dArr.length-1], dPrev: dArr[dArr.length-2] };
 }
 
-// candles: newest-first → returns newest-first HA candles
-function calcHACandles(candles) {
-  var rev = candles.slice().reverse();
-  var ha = [];
-  for (var i = 0; i < rev.length; i++) {
-    var o=parseFloat(rev[i][1]),h=parseFloat(rev[i][2]),l=parseFloat(rev[i][3]),cl=parseFloat(rev[i][4]);
-    var haClose=(o+h+l+cl)/4;
-    var haOpen = i===0 ? (o+cl)/2 : (ha[i-1][1]+ha[i-1][4])/2;
-    ha.push([rev[i][0], haOpen, Math.max(h,haOpen,haClose), Math.min(l,haOpen,haClose), haClose, rev[i][5]]);
+function calcATR(candles, p) {
+  p = p || 14;
+  if (candles.length < p + 2) return null;
+  var rev = candles.slice().reverse(), trs = [];
+  for (var i = 1; i < rev.length; i++) {
+    var h = parseFloat(rev[i][2]), l = parseFloat(rev[i][3]), pc = parseFloat(rev[i-1][4]);
+    trs.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
   }
-  ha.reverse();
-  return ha;
+  if (trs.length < p) return null;
+  var atr = trs.slice(0, p).reduce(function(s, v) { return s + v; }, 0) / p;
+  for (var i = p; i < trs.length; i++) atr = (atr * (p - 1) + trs[i]) / p;
+  return atr;
 }
 
-// closes: newest-first
-function calcEMA200(closes) {
-  if (closes.length < 200) return null;
-  var rev = closes.slice().reverse();
-  var k = 2/201, ema = rev.slice(0,200).reduce(function(s,v){return s+v;},0)/200;
-  for (var i = 200; i < rev.length; i++) ema = rev[i]*k + ema*(1-k);
-  return ema;
+function calcMACDFull(cl, fast, slow, sig) {
+  fast=fast||12; slow=slow||26; sig=sig||9;
+  if (cl.length < slow + sig + 10) return null;
+  var rev = cl.slice().reverse();
+  var kF = 2/(fast+1), kS = 2/(slow+1), kSig = 2/(sig+1);
+  var eF = rev.slice(0,fast).reduce(function(s,v){return s+v;},0)/fast;
+  var eS = rev.slice(0,slow).reduce(function(s,v){return s+v;},0)/slow;
+  for (var i = fast; i < slow; i++) eF = rev[i]*kF + eF*(1-kF);
+  var macdArr = [];
+  for (var i = slow; i < rev.length; i++) {
+    eF = rev[i]*kF + eF*(1-kF); eS = rev[i]*kS + eS*(1-kS);
+    macdArr.push(eF - eS);
+  }
+  if (macdArr.length < sig + 2) return null;
+  var sl = macdArr.slice(0,sig).reduce(function(s,v){return s+v;},0)/sig;
+  var out = [];
+  for (var i = sig; i < macdArr.length; i++) { sl = macdArr[i]*kSig + sl*(1-kSig); out.push({m:macdArr[i],s:sl}); }
+  if (out.length < 2) return null;
+  var cur = out[out.length-1], prv = out[out.length-2];
+  return { macd:cur.m, signal:cur.s, hist:cur.m-cur.s, macdPrev:prv.m, sigPrev:prv.s, histPrev:prv.m-prv.s };
 }
 
-// closes: newest-first
-function calcStochRSI(closes, rsiLen, stochLen, kSmooth, dSmooth) {
-  rsiLen=rsiLen||14; stochLen=stochLen||14; kSmooth=kSmooth||3; dSmooth=dSmooth||3;
-  if (closes.length < rsiLen+stochLen+kSmooth+dSmooth+5) return null;
-  var rev = closes.slice().reverse();
-  var gains=0, losses=0;
-  for (var i=1; i<=rsiLen; i++) { var d=rev[i]-rev[i-1]; if(d>0)gains+=d; else losses-=d; }
-  var ag=gains/rsiLen, al=losses/rsiLen, rsiSeries=[];
-  for (var i=rsiLen; i<rev.length; i++) {
-    var rs=al===0?100:ag/al;
-    rsiSeries.push(100-100/(1+rs));
-    if (i<rev.length-1) { var d=rev[i+1]-rev[i]; ag=(ag*(rsiLen-1)+Math.max(d,0))/rsiLen; al=(al*(rsiLen-1)+Math.max(-d,0))/rsiLen; }
+function calcBB(cl, p, m) {
+  p=p||20; m=m||2;
+  if (cl.length < p + 1) return null;
+  function bb(arr) {
+    var sl = arr.slice(0, p), mid = sl.reduce(function(s,v){return s+v;},0)/p;
+    var std = Math.sqrt(sl.reduce(function(s,v){return s+Math.pow(v-mid,2);},0)/p);
+    return { upper:mid+m*std, mid:mid, lower:mid-m*std };
   }
-  if (rsiSeries.length < stochLen) return null;
-  var stochSeries=[];
-  for (var i=stochLen-1; i<rsiSeries.length; i++) {
-    var win=rsiSeries.slice(i-stochLen+1,i+1), hi=Math.max.apply(null,win), lo=Math.min.apply(null,win);
-    stochSeries.push(hi===lo?50:(rsiSeries[i]-lo)/(hi-lo)*100);
-  }
-  if (stochSeries.length < kSmooth+dSmooth) return null;
-  var kSeries=[];
-  for (var i=kSmooth-1; i<stochSeries.length; i++) kSeries.push(stochSeries.slice(i-kSmooth+1,i+1).reduce(function(s,v){return s+v;},0)/kSmooth);
-  if (kSeries.length < dSmooth+1) return null;
-  var dSeries=[];
-  for (var i=dSmooth-1; i<kSeries.length; i++) dSeries.push(kSeries.slice(i-dSmooth+1,i+1).reduce(function(s,v){return s+v;},0)/dSmooth);
-  return { k:kSeries[kSeries.length-1], kPrev:kSeries[kSeries.length-2], d:dSeries[dSeries.length-1], dPrev:dSeries[dSeries.length-2] };
+  var cur = bb(cl), prv = bb(cl.slice(1));
+  return { upper:cur.upper, mid:cur.mid, lower:cur.lower,
+           upperPrev:prv.upper, midPrev:prv.mid, lowerPrev:prv.lower };
 }
 
-// ATR — candles newest-first
-function calcATR(candles, period) {
-  period = period || 14;
-  if (candles.length < period + 2) return null;
-  var rev = candles.slice().reverse();
-  var trs = [];
+function calcSupertrend(candles, p, m) {
+  p=p||10; m=m||3;
+  if (candles.length < p + 20) return null;
+  var rev = candles.slice().reverse(), trs = [];
   for (var i = 1; i < rev.length; i++) {
     var h=parseFloat(rev[i][2]),l=parseFloat(rev[i][3]),pc=parseFloat(rev[i-1][4]);
     trs.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));
   }
-  if (trs.length < period) return null;
-  var atr = trs.slice(0,period).reduce(function(s,v){return s+v;},0)/period;
-  for (var i=period;i<trs.length;i++) atr=(atr*(period-1)+trs[i])/period;
-  return atr;
-}
-
-// MACD — closes newest-first, returns {macd,signal,hist,macdPrev,sigPrev,histPrev}
-function calcMACDFull(closes, fast, slow, sig) {
-  fast=fast||12; slow=slow||26; sig=sig||9;
-  if (closes.length < slow+sig+10) return null;
-  var rev=closes.slice().reverse();
-  var kF=2/(fast+1),kS=2/(slow+1),kSig=2/(sig+1);
-  var emaF=rev.slice(0,fast).reduce(function(s,v){return s+v;},0)/fast;
-  var emaS=rev.slice(0,slow).reduce(function(s,v){return s+v;},0)/slow;
-  for(var i=fast;i<slow;i++) emaF=rev[i]*kF+emaF*(1-kF);
-  var macdArr=[];
-  for(var i=slow;i<rev.length;i++){
-    emaF=rev[i]*kF+emaF*(1-kF); emaS=rev[i]*kS+emaS*(1-kS);
-    macdArr.push(emaF-emaS);
-  }
-  if(macdArr.length<sig+2) return null;
-  var sigL=macdArr.slice(0,sig).reduce(function(s,v){return s+v;},0)/sig;
-  var out=[];
-  for(var i=sig;i<macdArr.length;i++){sigL=macdArr[i]*kSig+sigL*(1-kSig);out.push({m:macdArr[i],s:sigL});}
-  if(out.length<2) return null;
-  var c=out[out.length-1],p=out[out.length-2];
-  return {macd:c.m,signal:c.s,hist:c.m-c.s,macdPrev:p.m,sigPrev:p.s,histPrev:p.m-p.s};
-}
-
-// Bollinger Bands — closes newest-first
-function calcBB(closes, period, mult) {
-  period=period||20; mult=mult||2;
-  if(closes.length<period+1) return null;
-  function bb(arr) {
-    var sl=arr.slice(0,period);
-    var mid=sl.reduce(function(s,v){return s+v;},0)/period;
-    var std=Math.sqrt(sl.reduce(function(s,v){return s+Math.pow(v-mid,2);},0)/period);
-    return {upper:mid+mult*std,mid:mid,lower:mid-mult*std,std:std,width:2*mult*std/mid};
-  }
-  var cur=bb(closes),prv=bb(closes.slice(1));
-  return {upper:cur.upper,mid:cur.mid,lower:cur.lower,std:cur.std,width:cur.width,
-          upperPrev:prv.upper,midPrev:prv.mid,lowerPrev:prv.lower,widthPrev:prv.width};
-}
-
-// SuperTrend — candles newest-first, returns {trend,trendPrev,sl}
-function calcSupertrend(candles, period, mult) {
-  period=period||10; mult=mult||3;
-  if(candles.length<period+20) return null;
-  var rev=candles.slice().reverse();
-  var trs=[];
-  for(var i=1;i<rev.length;i++){
-    var h=parseFloat(rev[i][2]),l=parseFloat(rev[i][3]),pc=parseFloat(rev[i-1][4]);
-    trs.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));
-  }
-  var atrS=[];
-  var a=trs.slice(0,period).reduce(function(s,v){return s+v;},0)/period;
-  for(var i=0;i<period;i++) atrS.push(null);
-  atrS.push(a);
-  for(var i=period;i<trs.length;i++){a=(a*(period-1)+trs[i])/period;atrS.push(a);}
-  var dirs=[],ups=[],lows=[];
-  for(var i=period;i<rev.length-1;i++){
-    if(!atrS[i]) continue;
+  var atrS = [], a = trs.slice(0,p).reduce(function(s,v){return s+v;},0)/p;
+  for (var i = 0; i < p; i++) atrS.push(null); atrS.push(a);
+  for (var i = p; i < trs.length; i++) { a=(a*(p-1)+trs[i])/p; atrS.push(a); }
+  var dirs=[], ups=[], lows=[];
+  for (var i = p; i < rev.length - 1; i++) {
+    if (!atrS[i]) continue;
     var hi=parseFloat(rev[i][2]),lo=parseFloat(rev[i][3]),cl=parseFloat(rev[i][4]);
-    var mid=(hi+lo)/2;
-    var rawU=mid+mult*atrS[i],rawL=mid-mult*atrS[i];
-    var pU=ups.length>0?ups[ups.length-1]:rawU;
-    var pL=lows.length>0?lows[lows.length-1]:rawL;
+    var mid=(hi+lo)/2, rawU=mid+m*atrS[i], rawL=mid-m*atrS[i];
+    var pU=ups.length>0?ups[ups.length-1]:rawU, pL=lows.length>0?lows[lows.length-1]:rawL;
     var pCl=parseFloat(rev[i-1][4]);
-    var fU=rawU<pU||pCl>pU?rawU:pU;
-    var fL=rawL>pL||pCl<pL?rawL:pL;
+    var fU=rawU<pU||pCl>pU?rawU:pU, fL=rawL>pL||pCl<pL?rawL:pL;
     ups.push(fU); lows.push(fL);
     var pd=dirs.length>0?dirs[dirs.length-1]:1;
-    var d=pd===1?(cl<fL?-1:1):(cl>fU?1:-1);
-    dirs.push(d);
+    dirs.push(pd===1?(cl<fL?-1:1):(cl>fU?1:-1));
   }
-  if(dirs.length<2) return null;
-  var last=dirs.length-1;
-  return {trend:dirs[last],trendPrev:dirs[last-1],
-          sl:dirs[last]===1?lows[last]:ups[last]};
+  if (dirs.length < 2) return null;
+  var n = dirs.length - 1;
+  return { trend:dirs[n], trendPrev:dirs[n-1], sl:dirs[n]===1?lows[n]:ups[n] };
 }
 
-// ADX + DI — candles newest-first
-function calcADX(candles, period) {
-  period=period||14;
-  if(candles.length<period*3) return null;
-  var rev=candles.slice().reverse();
-  var trs=[],pdms=[],ndms=[];
-  for(var i=1;i<rev.length;i++){
+function calcADX(candles, p) {
+  p=p||14;
+  if (candles.length < p*3) return null;
+  var rev = candles.slice().reverse(), trs=[], pdms=[], ndms=[];
+  for (var i = 1; i < rev.length; i++) {
     var h=parseFloat(rev[i][2]),l=parseFloat(rev[i][3]),pc=parseFloat(rev[i-1][4]);
     var ph=parseFloat(rev[i-1][2]),pl=parseFloat(rev[i-1][3]);
     trs.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));
-    var up=h-ph,dn=pl-l;
+    var up=h-ph, dn=pl-l;
     pdms.push(up>dn&&up>0?up:0); ndms.push(dn>up&&dn>0?dn:0);
   }
-  if(trs.length<period*2) return null;
-  var smT=trs.slice(0,period).reduce(function(s,v){return s+v;},0);
-  var smP=pdms.slice(0,period).reduce(function(s,v){return s+v;},0);
-  var smN=ndms.slice(0,period).reduce(function(s,v){return s+v;},0);
-  var dxArr=[];
-  for(var i=period;i<trs.length;i++){
-    smT=smT-smT/period+trs[i]; smP=smP-smP/period+pdms[i]; smN=smN-smN/period+ndms[i];
-    var pdi=smT>0?100*smP/smT:0,ndi=smT>0?100*smN/smT:0;
-    dxArr.push({dx:(pdi+ndi)>0?100*Math.abs(pdi-ndi)/(pdi+ndi):0,pdi:pdi,ndi:ndi});
+  if (trs.length < p*2) return null;
+  var smT=trs.slice(0,p).reduce(function(s,v){return s+v;},0);
+  var smP=pdms.slice(0,p).reduce(function(s,v){return s+v;},0);
+  var smN=ndms.slice(0,p).reduce(function(s,v){return s+v;},0);
+  var dxArr = [];
+  for (var i = p; i < trs.length; i++) {
+    smT=smT-smT/p+trs[i]; smP=smP-smP/p+pdms[i]; smN=smN-smN/p+ndms[i];
+    var pdi=smT>0?100*smP/smT:0, ndi=smT>0?100*smN/smT:0;
+    dxArr.push({ dx:(pdi+ndi)>0?100*Math.abs(pdi-ndi)/(pdi+ndi):0, pdi:pdi, ndi:ndi });
   }
-  if(dxArr.length<period+1) return null;
-  var adx=dxArr.slice(0,period).reduce(function(s,v){return s+v.dx;},0)/period;
-  for(var i=period;i<dxArr.length;i++) adx=(adx*(period-1)+dxArr[i].dx)/period;
-  var c=dxArr[dxArr.length-1],p=dxArr[dxArr.length-2];
-  return {adx:adx,pdi:c.pdi,ndi:c.ndi,pdiPrev:p.pdi,ndiPrev:p.ndi};
+  if (dxArr.length < p + 1) return null;
+  var adx = dxArr.slice(0,p).reduce(function(s,v){return s+v.dx;},0)/p;
+  for (var i = p; i < dxArr.length; i++) adx = (adx*(p-1)+dxArr[i].dx)/p;
+  var c=dxArr[dxArr.length-1], pv=dxArr[dxArr.length-2];
+  return { adx:adx, pdi:c.pdi, ndi:c.ndi, pdiPrev:pv.pdi, ndiPrev:pv.ndi };
 }
 
-// Ichimoku — candles newest-first
 function calcIchimoku(candles) {
-  if(candles.length<80) return null;
-  function HL(arr,s,n){
-    var sl=arr.slice(s,s+n);
-    return{h:Math.max.apply(null,sl.map(function(c){return parseFloat(c[2]);})),
-           l:Math.min.apply(null,sl.map(function(c){return parseFloat(c[3]);}))};
+  if (candles.length < 80) return null;
+  function HL(arr, s, n) {
+    var sl = arr.slice(s, s + n);
+    return { h:Math.max.apply(null,sl.map(function(c){return parseFloat(c[2]);})),
+             l:Math.min.apply(null,sl.map(function(c){return parseFloat(c[3]);})) };
   }
-  var tk=HL(candles,0,9),kj=HL(candles,0,26);
-  var tenkan=(tk.h+tk.l)/2,kijun=(kj.h+kj.l)/2;
-  var tkP=HL(candles,1,9),kjP=HL(candles,1,26);
-  var tenkanPrev=(tkP.h+tkP.l)/2,kijunPrev=(kjP.h+kjP.l)/2;
-  var sa26=HL(candles,26,9),sk26=HL(candles,26,26),sb26=HL(candles,26,52);
-  var spA=((sa26.h+sa26.l)/2+(sk26.h+sk26.l)/2)/2;
-  var spB=(sb26.h+sb26.l)/2;
-  var cloudTop=Math.max(spA,spB),cloudBot=Math.min(spA,spB);
+  var tk=HL(candles,0,9), kj=HL(candles,0,26);
+  var tenkan=(tk.h+tk.l)/2, kijun=(kj.h+kj.l)/2;
+  var tkP=HL(candles,1,9), kjP=HL(candles,1,26);
+  var tenkanPrev=(tkP.h+tkP.l)/2, kijunPrev=(kjP.h+kjP.l)/2;
+  var sa=HL(candles,26,9), sk=HL(candles,26,26), sb=HL(candles,26,52);
+  var spA=((sa.h+sa.l)/2+(sk.h+sk.l)/2)/2, spB=(sb.h+sb.l)/2;
+  var cloudTop=Math.max(spA,spB), cloudBot=Math.min(spA,spB);
   var price=parseFloat(candles[0][4]);
-  return{tenkan:tenkan,kijun:kijun,tenkanPrev:tenkanPrev,kijunPrev:kijunPrev,cloudTop:cloudTop,cloudBot:cloudBot,
-         aboveCloud:price>cloudTop,belowCloud:price<cloudBot};
+  return { tenkan:tenkan, kijun:kijun, tenkanPrev:tenkanPrev, kijunPrev:kijunPrev,
+           cloudTop:cloudTop, cloudBot:cloudBot, aboveCloud:price>cloudTop, belowCloud:price<cloudBot };
 }
 
-// WMA helper
-function _wma(arr,period){
-  if(arr.length<period) return null;
-  var sum=0,w=0;
-  for(var i=0;i<period;i++){sum+=arr[i]*(period-i);w+=period-i;}
-  return sum/w;
-}
-
-// Hull MA — closes newest-first
-function calcHullMA(closes, period) {
-  period=period||9;
-  var sp=Math.round(Math.sqrt(period)),hp=Math.floor(period/2);
-  if(closes.length<period+sp+5) return null;
-  function hma(arr,offset){
-    var raw=[];
-    for(var j=0;j<=sp;j++){
-      var a=_wma(arr.slice(offset+j),hp),b=_wma(arr.slice(offset+j),period);
-      if(!a||!b) return null;
-      raw.push(2*a-b);
+function calcHullMA(cl, p) {
+  p=p||9;
+  var sp=Math.round(Math.sqrt(p)), hp=Math.floor(p/2);
+  if (cl.length < p + sp + 5) return null;
+  function hma(arr, offset) {
+    var raw = [];
+    for (var j = 0; j <= sp; j++) {
+      var a=_wma(arr.slice(offset+j),hp), b=_wma(arr.slice(offset+j),p);
+      if (!a || !b) return null;
+      raw.push(2*a - b);
     }
-    return _wma(raw,sp);
+    return _wma(raw, sp);
   }
-  var cur=hma(closes,0),prev=hma(closes,1);
-  if(cur==null||prev==null) return null;
-  return{value:cur,prev:prev};
+  var cur=hma(cl,0), prev=hma(cl,1);
+  if (cur==null || prev==null) return null;
+  return { value:cur, prev:prev };
 }
 
-// CCI — candles newest-first
-function calcCCI(candles, period) {
-  period=period||20;
-  if(candles.length<period+1) return null;
-  function cci(arr){
-    var tps=arr.slice(0,period).map(function(c){return(parseFloat(c[2])+parseFloat(c[3])+parseFloat(c[4]))/3;});
-    var sma=tps.reduce(function(s,v){return s+v;},0)/period;
-    var md=tps.reduce(function(s,v){return s+Math.abs(v-sma);},0)/period;
-    return md>0?(tps[0]-sma)/(0.015*md):0;
+function calcChandelier(candles, p, m) {
+  p=p||22; m=m||3;
+  if (candles.length < p + 15) return null;
+  var atr=calcATR(candles,p), atrP=calcATR(candles.slice(1),p);
+  if (!atr||!atrP) return null;
+  function stops(arr, off, a) {
+    var hh=Math.max.apply(null,arr.slice(off,off+p).map(function(c){return parseFloat(c[2]);}));
+    var ll=Math.min.apply(null,arr.slice(off,off+p).map(function(c){return parseFloat(c[3]);}));
+    return { longStop:hh-m*a, shortStop:ll+m*a };
   }
-  return{value:cci(candles),prev:cci(candles.slice(1))};
-}
-
-// Fisher Transform — candles newest-first
-function calcFisher(candles, period) {
-  period=period||9;
-  if(candles.length<period+2) return null;
-  function fish(arr,offset){
-    var h=Math.max.apply(null,arr.slice(offset,offset+period).map(function(c){return parseFloat(c[2]);}));
-    var l=Math.min.apply(null,arr.slice(offset,offset+period).map(function(c){return parseFloat(c[3]);}));
-    var cl=parseFloat(arr[offset][4]);
-    var r=(h-l)>0?(2*(cl-l)/(h-l))-1:0;
-    r=Math.max(-0.999,Math.min(0.999,r));
-    return 0.5*Math.log((1+r)/(1-r));
-  }
-  return{value:fish(candles,0),prev:fish(candles,1)};
-}
-
-// Chandelier Exit — candles newest-first
-function calcChandelier(candles, period, mult) {
-  period=period||22; mult=mult||3;
-  if(candles.length<period+15) return null;
-  var atr=calcATR(candles,period),atrP=calcATR(candles.slice(1),period);
-  if(!atr||!atrP) return null;
-  function chanStops(arr,offset,a){
-    var hh=Math.max.apply(null,arr.slice(offset,offset+period).map(function(c){return parseFloat(c[2]);}));
-    var ll=Math.min.apply(null,arr.slice(offset,offset+period).map(function(c){return parseFloat(c[3]);}));
-    return{longStop:hh-mult*a,shortStop:ll+mult*a};
-  }
-  var s=chanStops(candles,0,atr),sP=chanStops(candles,1,atrP);
-  var price=parseFloat(candles[0][4]),pricePrev=parseFloat(candles[1][4]);
+  var s=stops(candles,0,atr), sP=stops(candles,1,atrP);
+  var price=parseFloat(candles[0][4]), pricePrev=parseFloat(candles[1][4]);
   var dir=price>s.longStop?1:price<s.shortStop?-1:0;
   var dirPrev=pricePrev>sP.longStop?1:pricePrev<sP.shortStop?-1:0;
-  return{dir:dir,dirPrev:dirPrev,longStop:s.longStop,shortStop:s.shortStop};
+  return { dir:dir, dirPrev:dirPrev, longStop:s.longStop, shortStop:s.shortStop };
 }
 
-// ════════════════════════════════════════════════════════════
-// SIGNAL FUNCTIONS — candles: newest-first
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// SIGNAL DETECTION  (candles: newest-first, 1H)
+// ═══════════════════════════════════════════════════════
 
-function detectSignalHAEmaSRSI(candles, currentPrice) {
+function detectSignalHAEmaSRSI(candles, price) {
   if (candles.length < 210) return null;
-  var closes = candles.map(function(c){return parseFloat(c[4]);});
-  var ema200 = calcEMA200(closes); if (!ema200) return null;
-  var srsi = calcStochRSI(closes); if (!srsi) return null;
-  var ha = calcHACandles(candles); if (ha.length < 3) return null;
-  var haC=ha[0], haP=ha[1];
-  var haOpen=haC[1], haHigh=haC[2], haLow=haC[3], haClose=haC[4];
-  var pOpen=haP[1], pClose=haP[4];
-  var haBody=Math.abs(haClose-haOpen), pBody=Math.abs(pClose-pOpen);
-  var lowerWick=Math.min(haOpen,haClose)-haLow, upperWick=haHigh-Math.max(haOpen,haClose);
-  var kCrossUp   = srsi.kPrev<srsi.dPrev && srsi.k>=srsi.d && srsi.kPrev<30;
-  var strongBull = haClose>haOpen && haBody>pBody*0.8 && lowerWick<haBody*0.15;
-  if (currentPrice>ema200 && kCrossUp && strongBull) {
-    var swingLow=Math.min.apply(null, candles.slice(1,8).map(function(c){return parseFloat(c[3]);}));
-    if (swingLow>=currentPrice) return null;
-    return { type:'long', stopLoss:swingLow };
+  var cl = candles.map(function(c){return parseFloat(c[4]);});
+  var ema200=calcEMA200(cl); if (!ema200) return null;
+  var srsi=calcStochRSI(cl); if (!srsi) return null;
+  var ha=calcHACandles(candles); if (ha.length < 3) return null;
+  var haC=ha[0],haP=ha[1];
+  var haOpen=haC[1],haHigh=haC[2],haLow=haC[3],haClose=haC[4];
+  var pOpen=haP[1],pClose=haP[4];
+  var haBody=Math.abs(haClose-haOpen),pBody=Math.abs(pClose-pOpen);
+  var lowerWick=Math.min(haOpen,haClose)-haLow,upperWick=haHigh-Math.max(haOpen,haClose);
+  var kCrossUp=srsi.kPrev<srsi.dPrev&&srsi.k>=srsi.d&&srsi.kPrev<30;
+  var strongBull=haClose>haOpen&&haBody>pBody*0.8&&lowerWick<haBody*0.15;
+  if (price>ema200&&kCrossUp&&strongBull) {
+    var sw=Math.min.apply(null,candles.slice(1,8).map(function(c){return parseFloat(c[3]);}));
+    if (sw>=price) return null;
+    return {type:'long',stopLoss:sw};
   }
-  var kCrossDown = srsi.kPrev>srsi.dPrev && srsi.k<=srsi.d && srsi.kPrev>70;
-  var strongBear = haClose<haOpen && haBody>pBody*0.8 && upperWick<haBody*0.15;
-  if (currentPrice<ema200 && kCrossDown && strongBear) {
-    var swingHigh=Math.max.apply(null, candles.slice(1,8).map(function(c){return parseFloat(c[2]);}));
-    if (swingHigh<=currentPrice) return null;
-    return { type:'short', stopLoss:swingHigh };
+  var kCrossDown=srsi.kPrev>srsi.dPrev&&srsi.k<=srsi.d&&srsi.kPrev>70;
+  var strongBear=haClose<haOpen&&haBody>pBody*0.8&&upperWick<haBody*0.15;
+  if (price<ema200&&kCrossDown&&strongBear) {
+    var sw=Math.max.apply(null,candles.slice(1,8).map(function(c){return parseFloat(c[2]);}));
+    if (sw<=price) return null;
+    return {type:'short',stopLoss:sw};
   }
   return null;
 }
 
-function detectSignalMARibbon(candles1H, currentPrice) {
-  var closes=candles1H.map(function(c){return parseFloat(c[4]);});
-  var mas=[10,20,50,100].map(function(p){return {p:p,v:_sma(closes,p)};}).filter(function(m){return m.v;});
+function detectSignalMARibbon(candles, price) {
+  var cl=candles.map(function(c){return parseFloat(c[4]);});
+  var mas=[10,20,50,100].map(function(p){return{p:p,v:_sma(cl,p)};}).filter(function(m){return m.v;});
   if (mas.length<4) return null;
   var sorted=mas.slice().sort(function(a,b){return a.p-b.p;});
-  var bullish=currentPrice>sorted[0].v && sorted.every(function(m,i){return i===0||sorted[i-1].v>m.v;});
-  var bearish=currentPrice<sorted[0].v && sorted.every(function(m,i){return i===0||sorted[i-1].v<m.v;});
+  var bullish=price>sorted[0].v&&sorted.every(function(m,i){return i===0||sorted[i-1].v>m.v;});
+  var bearish=price<sorted[0].v&&sorted.every(function(m,i){return i===0||sorted[i-1].v<m.v;});
   if (!bullish&&!bearish) return null;
-  if (Math.abs(currentPrice-sorted[0].v)/currentPrice>0.010) return null;
+  if (Math.abs(price-sorted[0].v)/price>0.010) return null;
   var sl=bullish
-    ? Math.min.apply(null,candles1H.slice(0,5).map(function(c){return parseFloat(c[3]);}))
-    : Math.max.apply(null,candles1H.slice(0,5).map(function(c){return parseFloat(c[2]);}));
-  var d=Math.abs(currentPrice-sl)/currentPrice;
+    ?Math.min.apply(null,candles.slice(0,5).map(function(c){return parseFloat(c[3]);}))
+    :Math.max.apply(null,candles.slice(0,5).map(function(c){return parseFloat(c[2]);}));
+  var d=Math.abs(price-sl)/price;
   if (d<0.005||d>0.12) return null;
-  return bullish ? {type:'long',stopLoss:sl} : {type:'short',stopLoss:sl};
+  return bullish?{type:'long',stopLoss:sl}:{type:'short',stopLoss:sl};
 }
 
-function detectSignalMA50Bounce(candles1H, currentPrice) {
-  var closes = candles1H.map(function(c){return parseFloat(c[4]);});
-  if (closes.length < 205) return null;
-  var sma50 = _sma(closes, 50);
-  var sma200 = _sma(closes, 200);
-  if (!sma50 || !sma200) return null;
-  var distTo50 = Math.abs(currentPrice - sma50) / currentPrice;
-  if (distTo50 > 0.012) return null;
-  var recentAbove = 0, recentBelow = 0;
-  for (var i = 1; i <= 10; i++) {
-    if (parseFloat(candles1H[i][4]) > sma50) recentAbove++;
-    else recentBelow++;
+function detectSignalMA50Bounce(candles, price) {
+  var cl=candles.map(function(c){return parseFloat(c[4]);});
+  if (cl.length<205) return null;
+  var sma50=_sma(cl,50),sma200=_sma(cl,200);
+  if (!sma50||!sma200) return null;
+  if (Math.abs(price-sma50)/price>0.012) return null;
+  var above=0,below=0;
+  for (var i=1;i<=10;i++) { if(parseFloat(candles[i][4])>sma50)above++; else below++; }
+  var bodies=candles.slice(0,3).map(function(c){return Math.abs(parseFloat(c[4])-parseFloat(c[1]))/parseFloat(c[1]);});
+  var isNarrow=bodies.every(function(b){return b<=0.008;});
+  var rsi=calcRSI(candles,14);
+  if (!rsi||rsi<35||rsi>65) return null;
+  if (sma50>sma200&&above>=7&&price>=sma50&&isNarrow) {
+    var sl=Math.min.apply(null,candles.slice(0,5).map(function(c){return parseFloat(c[3]);}));
+    var d=(price-sl)/price; if(d<0.003||d>0.08) return null;
+    return{type:'long',stopLoss:sl};
   }
-  var bodies = candles1H.slice(0,3).map(function(c){return Math.abs(parseFloat(c[4])-parseFloat(c[1]))/parseFloat(c[1]);});
-  var isNarrow = bodies.every(function(b){return b <= 0.008;});
-  var rsi = calcRSI(candles1H, 14);
-  if (!rsi || rsi < 35 || rsi > 65) return null;
-  if (sma50 > sma200 && recentAbove >= 7 && currentPrice >= sma50 && isNarrow) {
-    var sl = Math.min.apply(null, candles1H.slice(0,5).map(function(c){return parseFloat(c[3]);}));
-    var d = (currentPrice - sl) / currentPrice;
-    if (d < 0.003 || d > 0.08) return null;
-    return { type:'long', stopLoss:sl };
-  }
-  if (sma50 < sma200 && recentBelow >= 7 && currentPrice <= sma50 && isNarrow) {
-    var sl = Math.max.apply(null, candles1H.slice(0,5).map(function(c){return parseFloat(c[2]);}));
-    var d = (sl - currentPrice) / currentPrice;
-    if (d < 0.003 || d > 0.08) return null;
-    return { type:'short', stopLoss:sl };
+  if (sma50<sma200&&below>=7&&price<=sma50&&isNarrow) {
+    var sl=Math.max.apply(null,candles.slice(0,5).map(function(c){return parseFloat(c[2]);}));
+    var d=(sl-price)/price; if(d<0.003||d>0.08) return null;
+    return{type:'short',stopLoss:sl};
   }
   return null;
 }
 
-function detectSignalICTFibOTE(candles1H, currentPrice) {
-  if (candles1H.length < 55) return null;
-  var swing = candles1H.slice(1, 51);
-  var swingHigh = Math.max.apply(null, swing.map(function(c){return parseFloat(c[2]);}));
-  var swingLow  = Math.min.apply(null, swing.map(function(c){return parseFloat(c[3]);}));
-  var range = swingHigh - swingLow;
-  if (range <= 0) return null;
-  var oteBot = swingLow  + range * 0.21;
-  var oteTop = swingLow  + range * 0.38;
-  var prBot  = swingHigh - range * 0.38;
-  var prTop  = swingHigh - range * 0.21;
-  var curCandle = candles1H[0];
-  var isBullish = parseFloat(curCandle[4]) > parseFloat(curCandle[1]);
-  var isBearish = parseFloat(curCandle[4]) < parseFloat(curCandle[1]);
-  var rsi = calcRSI(candles1H, 14);
-  if (!rsi) return null;
-  if (currentPrice >= oteBot && currentPrice <= oteTop && isBullish && rsi < 55) {
-    var sl = swingLow * 0.999;
-    var d = (currentPrice - sl) / currentPrice;
-    if (d < 0.005 || d > 0.15) return null;
-    return { type:'long', stopLoss:sl };
+function detectSignalICTFibOTE(candles, price) {
+  if (candles.length<55) return null;
+  var swing=candles.slice(1,51);
+  var swH=Math.max.apply(null,swing.map(function(c){return parseFloat(c[2]);}));
+  var swL=Math.min.apply(null,swing.map(function(c){return parseFloat(c[3]);}));
+  var range=swH-swL; if(range<=0) return null;
+  var oteBot=swL+range*0.21,oteTop=swL+range*0.38;
+  var prBot=swH-range*0.38,prTop=swH-range*0.21;
+  var cur=candles[0];
+  var isBull=parseFloat(cur[4])>parseFloat(cur[1]);
+  var isBear=parseFloat(cur[4])<parseFloat(cur[1]);
+  var rsi=calcRSI(candles,14); if(!rsi) return null;
+  if(price>=oteBot&&price<=oteTop&&isBull&&rsi<55){
+    var sl=swL*0.999,d=(price-sl)/price;
+    if(d<0.005||d>0.15) return null;
+    return{type:'long',stopLoss:sl};
   }
-  if (currentPrice >= prBot && currentPrice <= prTop && isBearish && rsi > 45) {
-    var sl = swingHigh * 1.001;
-    var d = (sl - currentPrice) / currentPrice;
-    if (d < 0.005 || d > 0.15) return null;
-    return { type:'short', stopLoss:sl };
+  if(price>=prBot&&price<=prTop&&isBear&&rsi>45){
+    var sl=swH*1.001,d=(sl-price)/price;
+    if(d<0.005||d>0.15) return null;
+    return{type:'short',stopLoss:sl};
   }
   return null;
 }
 
-// 5. EMA 9/21 Cross (SCALP)
 function detectSignalEMA921(candles, price) {
   if(candles.length<30) return null;
   var cl=candles.map(function(c){return parseFloat(c[4]);});
@@ -571,7 +501,6 @@ function detectSignalEMA921(candles, price) {
   return null;
 }
 
-// 6. EMA 21/55 Cross (SWING)
 function detectSignalEMA2155(candles, price) {
   if(candles.length<65) return null;
   var cl=candles.map(function(c){return parseFloat(c[4]);});
@@ -585,7 +514,6 @@ function detectSignalEMA2155(candles, price) {
   return null;
 }
 
-// 7. MACD Signal Cross (SWING)
 function detectSignalMACDSignal(candles, price) {
   if(candles.length<55) return null;
   var cl=candles.map(function(c){return parseFloat(c[4]);});
@@ -596,7 +524,6 @@ function detectSignalMACDSignal(candles, price) {
   return null;
 }
 
-// 8. MACD Zero Cross (SWING)
 function detectSignalMACDZero(candles, price) {
   if(candles.length<55) return null;
   var cl=candles.map(function(c){return parseFloat(c[4]);});
@@ -607,7 +534,6 @@ function detectSignalMACDZero(candles, price) {
   return null;
 }
 
-// 9. SuperTrend Flip (SWING)
 function detectSignalSupertrend(candles, price) {
   if(candles.length<50) return null;
   var st=calcSupertrend(candles,10,3); if(!st) return null;
@@ -617,7 +543,6 @@ function detectSignalSupertrend(candles, price) {
   return null;
 }
 
-// 10. Bollinger Band Bounce (SCALP)
 function detectSignalBBBounce(candles, price) {
   if(candles.length<25) return null;
   var cl=candles.map(function(c){return parseFloat(c[4]);});
@@ -630,7 +555,6 @@ function detectSignalBBBounce(candles, price) {
   return null;
 }
 
-// 11. Bollinger Breakout (SWING)
 function detectSignalBBBreakout(candles, price) {
   if(candles.length<25) return null;
   var cl=candles.map(function(c){return parseFloat(c[4]);});
@@ -642,7 +566,6 @@ function detectSignalBBBreakout(candles, price) {
   return null;
 }
 
-// 12. RSI 50 Cross + EMA200 (SWING)
 function detectSignalRSITrend(candles, price) {
   if(candles.length<220) return null;
   var cl=candles.map(function(c){return parseFloat(c[4]);});
@@ -655,7 +578,6 @@ function detectSignalRSITrend(candles, price) {
   return null;
 }
 
-// 13. ADX + DI Cross (SWING)
 function detectSignalADXDI(candles, price) {
   if(candles.length<55) return null;
   var adx=calcADX(candles,14); if(!adx) return null;
@@ -666,7 +588,6 @@ function detectSignalADXDI(candles, price) {
   return null;
 }
 
-// 14. Ichimoku TK Cross + Cloud (SWING)
 function detectSignalIchimoku(candles, price) {
   if(candles.length<85) return null;
   var ich=calcIchimoku(candles); if(!ich) return null;
@@ -676,7 +597,6 @@ function detectSignalIchimoku(candles, price) {
   return null;
 }
 
-// 15. Hull MA Cross (SWING)
 function detectSignalHullCross(candles, price) {
   if(candles.length<45) return null;
   var cl=candles.map(function(c){return parseFloat(c[4]);});
@@ -689,7 +609,6 @@ function detectSignalHullCross(candles, price) {
   return null;
 }
 
-// 16. Chandelier Exit Flip (SWING)
 function detectSignalChandelier(candles, price) {
   if(candles.length<45) return null;
   var ch=calcChandelier(candles,22,3); if(!ch) return null;
@@ -698,28 +617,6 @@ function detectSignalChandelier(candles, price) {
   return null;
 }
 
-// 17. Fisher Transform Cross Zero (SCALP)
-function detectSignalFisher(candles, price) {
-  if(candles.length<20) return null;
-  var f=calcFisher(candles,9); if(!f) return null;
-  var atr=calcATR(candles,14); if(!atr) return null;
-  var rsi=calcRSI(candles,14); if(!rsi) return null;
-  if(f.prev<=0&&f.value>0&&rsi<70) return{type:'long',stopLoss:price-atr*1.5};
-  if(f.prev>=0&&f.value<0&&rsi>30) return{type:'short',stopLoss:price+atr*1.5};
-  return null;
-}
-
-// 18. CCI ±100 (SCALP)
-function detectSignalCCI100(candles, price) {
-  if(candles.length<25) return null;
-  var cci=calcCCI(candles,20); if(!cci) return null;
-  var atr=calcATR(candles,14); if(!atr) return null;
-  if(cci.prev<=-100&&cci.value>-100) return{type:'long',stopLoss:price-atr*1.0};
-  if(cci.prev>=100&&cci.value<100) return{type:'short',stopLoss:price+atr*1.0};
-  return null;
-}
-
-// 19. HA + SuperTrend (SWING)
 function detectSignalHASupertrend(candles, price) {
   if(candles.length<55) return null;
   var st=calcSupertrend(candles,10,3); if(!st) return null;
@@ -731,28 +628,42 @@ function detectSignalHASupertrend(candles, price) {
   return null;
 }
 
-// 20. RSI + Bollinger Combo (SCALP)
-function detectSignalRSIBB(candles, price) {
-  if(candles.length<25) return null;
-  var cl=candles.map(function(c){return parseFloat(c[4]);});
-  var bb=calcBB(cl,20,2); if(!bb) return null;
-  var rsi=calcRSI(candles,14); if(!rsi) return null;
-  var atr=calcATR(candles,14); if(!atr) return null;
-  if(rsi<35&&price<=bb.lower*1.005) return{type:'long',stopLoss:price-atr*1.0};
-  if(rsi>65&&price>=bb.upper*0.995) return{type:'short',stopLoss:price+atr*1.0};
+// ═══════════════════════════════════════════════════════
+// SIGNAL ROUTER
+// ═══════════════════════════════════════════════════════
+
+function getSignal(stratId, c1h, price) {
+  var n = c1h.length;
+  if (stratId==='ha_ema_srsi'  && n>=210) return detectSignalHAEmaSRSI(c1h, price);
+  if (stratId==='ma_ribbon'    && n>=105) return detectSignalMARibbon(c1h, price);
+  if (stratId==='ma50_bounce'  && n>=210) return detectSignalMA50Bounce(c1h, price);
+  if (stratId==='ict_fib_ote'  && n>=60)  return detectSignalICTFibOTE(c1h, price);
+  if (stratId==='ema_9_21'     && n>=30)  return detectSignalEMA921(c1h, price);
+  if (stratId==='ema_21_55'    && n>=65)  return detectSignalEMA2155(c1h, price);
+  if (stratId==='macd_signal'  && n>=55)  return detectSignalMACDSignal(c1h, price);
+  if (stratId==='macd_zero'    && n>=55)  return detectSignalMACDZero(c1h, price);
+  if (stratId==='supertrend'   && n>=50)  return detectSignalSupertrend(c1h, price);
+  if (stratId==='bb_bounce'    && n>=25)  return detectSignalBBBounce(c1h, price);
+  if (stratId==='bb_breakout'  && n>=25)  return detectSignalBBBreakout(c1h, price);
+  if (stratId==='rsi_trend'    && n>=220) return detectSignalRSITrend(c1h, price);
+  if (stratId==='adx_di'       && n>=55)  return detectSignalADXDI(c1h, price);
+  if (stratId==='ichimoku'     && n>=85)  return detectSignalIchimoku(c1h, price);
+  if (stratId==='hull_cross'   && n>=45)  return detectSignalHullCross(c1h, price);
+  if (stratId==='chandelier'   && n>=45)  return detectSignalChandelier(c1h, price);
+  if (stratId==='ha_supertrend'&& n>=55)  return detectSignalHASupertrend(c1h, price);
   return null;
 }
 
-// ════════════════════════════════════════════════════════════
-// DATA HELPERS
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// 1H AGGREGATION
+// ═══════════════════════════════════════════════════════
 
-function aggregate1H(c5_of) {
+function aggregate1H(c5) {
   var hours = {}, order = [];
-  for (var i = 0; i < c5_of.length; i++) {
-    var h = Math.floor(parseInt(c5_of[i][0]) / 3600000) * 3600000;
+  for (var i = 0; i < c5.length; i++) {
+    var h = Math.floor(parseInt(c5[i][0]) / 3600000) * 3600000;
     if (!hours[h]) { hours[h] = []; order.push(h); }
-    hours[h].push(c5_of[i]);
+    hours[h].push(c5[i]);
   }
   return order.map(function(h) {
     var b = hours[h];
@@ -763,148 +674,118 @@ function aggregate1H(c5_of) {
   });
 }
 
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // BACKTEST ENGINE
-// ════════════════════════════════════════════════════════════
-// 고정 TP/SL: TP = SL거리 × rrMult, WIN = TP 도달, LOSS = SL 도달
-// adxMin: ADX 최소 임계값 (0 = 필터 없음)
-function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct, adxMin, rrMult) {
-  adxMin = adxMin !== undefined ? adxMin : 20;
-  rrMult = rrMult !== undefined ? rrMult : 2.5;
-  var maxNotionalFrac = (posSizePct / 100) * leverage;
+// Fixed TP = SL거리 × rrMult  |  Conservative: SL wins on same-candle collision
+// ═══════════════════════════════════════════════════════
 
+function runBacktest(c5, c1h, stratId, riskFrac, leverage, posSizePct, adxMin, rrMult) {
+  adxMin  = adxMin  !== undefined ? adxMin  : 20;
+  rrMult  = rrMult  !== undefined ? rrMult  : 2.5;
+  var maxNF = (posSizePct / 100) * leverage;
   var equity = 10000, pos = null, pending = null;
   var trades = [], curve = [], lastDay = -1;
   var wins = 0, total = 0;
   var WARMUP = 2520;
 
-  for (var i = WARMUP; i < c5_of.length - 1; i++) {
-    var c   = c5_of[i];
-    var ts  = parseInt(c[0]);
-    var hi5 = parseFloat(c[2]);
-    var lo5 = parseFloat(c[3]);
-    var cl5 = parseFloat(c[4]);
-    var dayKey = Math.floor(ts / 86400000);
-    if (dayKey !== lastDay) { curve.push({ts:ts, equity:equity}); lastDay = dayKey; }
+  for (var i = WARMUP; i < c5.length - 1; i++) {
+    var ts  = parseInt(c5[i][0]);
+    var op5 = parseFloat(c5[i][1]);
+    var hi5 = parseFloat(c5[i][2]);
+    var lo5 = parseFloat(c5[i][3]);
+    var cl5 = parseFloat(c5[i][4]);
+    var day = Math.floor(ts / 86400000);
+    if (day !== lastDay) { curve.push({ts:ts, equity:equity}); lastDay = day; }
 
+    // Enter pending at next candle open
     if (pending && !pos) {
-      var entryPx = parseFloat(c5_of[i][1]);
-      var actualSlDist = Math.abs(entryPx - pending.sl) / entryPx;
-      if (actualSlDist < 0.001) { pending = null; continue; }
-      var notionalFrac = Math.min(riskFrac / actualSlDist, maxNotionalFrac);
-      var slPrice = Math.abs(entryPx - pending.sl);
-      var tpPx = pending.dir === 'long' ? entryPx + slPrice * rrMult : entryPx - slPrice * rrMult;
-      pos = { dir:pending.dir, entry:entryPx, sl:pending.sl, tp:tpPx,
-               slDist:actualSlDist, notionalFrac:notionalFrac, idx:i };
-      equity = Math.max(100, equity - equity * notionalFrac * 0.0005);
-      pending = null;
+      var slDist = Math.abs(op5 - pending.sl) / op5;
+      if (slDist < 0.001) { pending = null; }
+      else {
+        var nf   = Math.min(riskFrac / slDist, maxNF);
+        var slAmt = Math.abs(op5 - pending.sl);
+        var tp   = pending.dir === 'long' ? op5 + slAmt * rrMult : op5 - slAmt * rrMult;
+        pos = { dir:pending.dir, entry:op5, sl:pending.sl, tp:tp, nf:nf };
+        equity = Math.max(100, equity - equity * nf * 0.0005);
+        pending = null;
+      }
     }
 
+    // Check fixed TP / SL exit
     if (pos) {
-      // Conservative: if both SL and TP hit same candle, SL wins (worst case)
       var slHit = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
       var tpHit = pos.dir==='long' ? hi5 >= pos.tp : lo5 <= pos.tp;
       if (slHit || tpHit) {
-        var isWin = tpHit && !slHit;
-        var exitPx = isWin ? pos.tp : pos.sl;
-        var exitRet = pos.dir==='long'
-          ? (exitPx - pos.entry) / pos.entry
-          : (pos.entry - exitPx) / pos.entry;
-        var pnl = equity * pos.notionalFrac * exitRet;
-        equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005);
-        trades.push({ts:ts, type: isWin ? 'WIN' : 'LOSS', pnl:pnl, eq:equity});
-        if (isWin) wins++;
+        var win    = tpHit && !slHit;
+        var exitPx = win ? pos.tp : pos.sl;
+        var ret    = pos.dir==='long' ? (exitPx-pos.entry)/pos.entry : (pos.entry-exitPx)/pos.entry;
+        var pnl    = equity * pos.nf * ret;
+        equity = Math.max(100, equity + pnl - equity * pos.nf * 0.0005);
+        trades.push({ts:ts, type:win?'WIN':'LOSS', pnl:pnl, eq:equity});
+        if (win) wins++;
         total++; pos = null;
       }
     }
 
-    // Detect new signal — 1H close only
-    if (!pos && !pending) {
-      var is1HClose = (i % 12 === 11);
-      if (!is1HClose) continue;
-
-      // Fix: use (i+1)/12 to include the just-completed 1H bar
+    // Signal detection — only on 1H close candle
+    if (!pos && !pending && (i % 12 === 11)) {
       var h1Done = Math.floor((i + 1) / 12);
-      var c1h_nf = h1Done > 0 ? c1h_of.slice(0, h1Done).reverse() : [];
-      var sig = null;
-
-      if      (strategy==='ha_ema_srsi'   && c1h_nf.length>=210) sig=detectSignalHAEmaSRSI(c1h_nf,cl5);
-      else if (strategy==='ma_ribbon'     && c1h_nf.length>=105) sig=detectSignalMARibbon(c1h_nf,cl5);
-      else if (strategy==='ma50_bounce'   && c1h_nf.length>=210) sig=detectSignalMA50Bounce(c1h_nf,cl5);
-      else if (strategy==='ict_fib_ote'   && c1h_nf.length>=60)  sig=detectSignalICTFibOTE(c1h_nf,cl5);
-      else if (strategy==='ema_9_21'      && c1h_nf.length>=30)  sig=detectSignalEMA921(c1h_nf,cl5);
-      else if (strategy==='ema_21_55'     && c1h_nf.length>=65)  sig=detectSignalEMA2155(c1h_nf,cl5);
-      else if (strategy==='macd_signal'   && c1h_nf.length>=55)  sig=detectSignalMACDSignal(c1h_nf,cl5);
-      else if (strategy==='macd_zero'     && c1h_nf.length>=55)  sig=detectSignalMACDZero(c1h_nf,cl5);
-      else if (strategy==='supertrend'    && c1h_nf.length>=50)  sig=detectSignalSupertrend(c1h_nf,cl5);
-      else if (strategy==='bb_bounce'     && c1h_nf.length>=25)  sig=detectSignalBBBounce(c1h_nf,cl5);
-      else if (strategy==='bb_breakout'   && c1h_nf.length>=25)  sig=detectSignalBBBreakout(c1h_nf,cl5);
-      else if (strategy==='rsi_trend'     && c1h_nf.length>=220) sig=detectSignalRSITrend(c1h_nf,cl5);
-      else if (strategy==='adx_di'        && c1h_nf.length>=55)  sig=detectSignalADXDI(c1h_nf,cl5);
-      else if (strategy==='ichimoku'      && c1h_nf.length>=85)  sig=detectSignalIchimoku(c1h_nf,cl5);
-      else if (strategy==='hull_cross'    && c1h_nf.length>=45)  sig=detectSignalHullCross(c1h_nf,cl5);
-      else if (strategy==='chandelier'    && c1h_nf.length>=45)  sig=detectSignalChandelier(c1h_nf,cl5);
-      else if (strategy==='fisher'        && c1h_nf.length>=20)  sig=detectSignalFisher(c1h_nf,cl5);
-      else if (strategy==='cci_100'       && c1h_nf.length>=25)  sig=detectSignalCCI100(c1h_nf,cl5);
-      else if (strategy==='ha_supertrend' && c1h_nf.length>=55)  sig=detectSignalHASupertrend(c1h_nf,cl5);
-      else if (strategy==='rsi_bb'        && c1h_nf.length>=25)  sig=detectSignalRSIBB(c1h_nf,cl5);
+      var c1h_nf = h1Done > 0 ? c1h.slice(0, h1Done).reverse() : [];
+      var sig = getSignal(stratId, c1h_nf, cl5);
 
       if (sig && sig.stopLoss) {
-        // ── 글로벌 필터: EMA200 추세 방향 + ADX 최소 강도 ──
         var closes1h = c1h_nf.map(function(c){return parseFloat(c[4]);});
         var ema200f  = c1h_nf.length >= 200 ? calcEMA200(closes1h) : null;
         var adxf     = c1h_nf.length >= 45  ? calcADX(c1h_nf, 14) : null;
-        if (ema200f && sig.type === 'long'  && cl5 < ema200f) sig = null;
-        if (ema200f && sig && sig.type === 'short' && cl5 > ema200f) sig = null;
+        if (ema200f && sig.type==='long'  && cl5 < ema200f) sig = null;
+        if (ema200f && sig && sig.type==='short' && cl5 > ema200f) sig = null;
         if (sig && adxf && adxf.adx < adxMin) sig = null;
       }
       if (sig && sig.stopLoss) {
-        var slDist = Math.abs(cl5 - sig.stopLoss) / cl5;
-        if (slDist >= 0.002 && slDist <= 0.15) {
-          pending = { dir:sig.type, sl:sig.stopLoss };
-        }
+        var d = Math.abs(cl5 - sig.stopLoss) / cl5;
+        if (d >= 0.002 && d <= 0.15) pending = { dir:sig.type, sl:sig.stopLoss };
       }
     }
   }
 
-  var winRate = total > 0 ? wins / total : 0;
-  var actualDays = curve.length || 365;
+  var wr  = total > 0 ? wins / total : 0;
+  var nDays = curve.length || 365;
   var totalRet = (equity - 10000) / 10000;
-  var annRet = Math.pow(1 + totalRet, 365 / actualDays) - 1;
-  var monRet = Math.pow(1 + annRet, 1/12) - 1;
-  var dayRet = Math.pow(1 + annRet, 1/365) - 1;
+  var annRet   = Math.pow(1 + totalRet, 365 / nDays) - 1;
+  var monRet   = Math.pow(1 + annRet, 1/12) - 1;
   var peak = 0, maxDD = 0;
-  curve.forEach(function(p){ if(p.equity>peak)peak=p.equity; var dd=(peak-p.equity)/peak; if(dd>maxDD)maxDD=dd; });
-  var ev = total > 0 ? (winRate * rrMult - (1 - winRate) * 1) : 0;
-  return { equity:equity, totalRet:totalRet, annRet:annRet, monRet:monRet, dayRet:dayRet,
-           totalTrades:total, winRate:winRate, ev:ev, rrMult:rrMult,
-           maxDD:maxDD, curve:curve, trades:trades };
+  for (var j = 0; j < curve.length; j++) {
+    if (curve[j].equity > peak) peak = curve[j].equity;
+    var dd = (peak - curve[j].equity) / peak;
+    if (dd > maxDD) maxDD = dd;
+  }
+  var ev = total > 0 ? wr * rrMult - (1 - wr) : 0;
+  return { equity:equity, totalRet:totalRet, annRet:annRet, monRet:monRet,
+           totalTrades:total, winRate:wr, ev:ev, rrMult:rrMult, maxDD:maxDD, curve:curve, trades:trades };
 }
 
-// runPortfolioBacktest: multiple strategies share one equity pool
-function runPortfolioBacktest(c5_of, c1h_of, stratConfigs, riskFrac, leverage, posSizePct, maxPositions, rrMult) {
-  rrMult = rrMult !== undefined ? rrMult : 2.5;
+// Portfolio backtest — multiple strategies share one equity pool
+function runPortfolioBacktest(c5, c1h, stratConfigs, riskFrac, leverage, posSizePct, maxPositions, rrMult) {
+  rrMult       = rrMult !== undefined ? rrMult : 2.5;
   maxPositions = maxPositions || stratConfigs.length;
-  var maxNotionalFrac = (posSizePct / 100) * leverage;
+  var maxNF    = (posSizePct / 100) * leverage;
   var equity = 10000, lastDay = -1;
   var positions = {}, pendings = {};
-  var trades = [], curve = [];
-  var wins = 0, total = 0;
+  var trades = [], curve = [], wins = 0, total = 0;
   var stratStats = {};
-  stratConfigs.forEach(function(sc){ stratStats[sc.id] = {wins:0, total:0, name:sc.name}; });
+  stratConfigs.forEach(function(sc){ stratStats[sc.id] = {wins:0,total:0,name:sc.name}; });
   var WARMUP = 2520;
 
-  for (var i = WARMUP; i < c5_of.length - 1; i++) {
-    var c   = c5_of[i];
-    var ts  = parseInt(c[0]);
-    var op5 = parseFloat(c[1]);
-    var hi5 = parseFloat(c[2]);
-    var lo5 = parseFloat(c[3]);
-    var cl5 = parseFloat(c[4]);
-    var dayKey = Math.floor(ts / 86400000);
-    if (dayKey !== lastDay) { curve.push({ts:ts, equity:equity}); lastDay = dayKey; }
+  for (var i = WARMUP; i < c5.length - 1; i++) {
+    var ts  = parseInt(c5[i][0]);
+    var op5 = parseFloat(c5[i][1]);
+    var hi5 = parseFloat(c5[i][2]);
+    var lo5 = parseFloat(c5[i][3]);
+    var cl5 = parseFloat(c5[i][4]);
+    var day = Math.floor(ts / 86400000);
+    if (day !== lastDay) { curve.push({ts:ts, equity:equity}); lastDay = day; }
 
-    // 1. Enter pending positions at current candle open
+    // Enter pending positions
     var activeCount = Object.keys(positions).length;
     var pKeys = Object.keys(pendings);
     for (var pi = 0; pi < pKeys.length; pi++) {
@@ -912,111 +793,89 @@ function runPortfolioBacktest(c5_of, c1h_of, stratConfigs, riskFrac, leverage, p
       if (positions[psid]) { delete pendings[psid]; continue; }
       if (activeCount >= maxPositions) continue;
       var pend = pendings[psid];
-      var slD = Math.abs(op5 - pend.sl) / op5;
+      var slD  = Math.abs(op5 - pend.sl) / op5;
       if (slD < 0.001) { delete pendings[psid]; continue; }
-      var nf = Math.min(riskFrac / slD, maxNotionalFrac);
-      var slPriceP = Math.abs(op5 - pend.sl);
-      var tpPxP = pend.dir === 'long' ? op5 + slPriceP * rrMult : op5 - slPriceP * rrMult;
-      positions[psid] = { dir:pend.dir, entry:op5, sl:pend.sl, tp:tpPxP, stepPrice:slPriceP, notionalFrac:nf };
-      equity = Math.max(100, equity - equity * nf * 0.0005);
+      var nf   = Math.min(riskFrac / slD, maxNF);
+      var slAmt = Math.abs(op5 - pend.sl);
+      var tp   = pend.dir==='long' ? op5+slAmt*rrMult : op5-slAmt*rrMult;
+      positions[psid] = { dir:pend.dir, entry:op5, sl:pend.sl, tp:tp, nf:nf };
+      equity = Math.max(100, equity - equity*nf*0.0005);
       delete pendings[psid]; activeCount++;
     }
 
-    // 2. Check fixed TP/SL exits
+    // Check exits
     var pIds = Object.keys(positions);
     for (var ki = 0; ki < pIds.length; ki++) {
-      var sid = pIds[ki];
-      var pos = positions[sid];
-      var hit_sl = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
-      var hit_tp = pos.tp !== undefined ? (pos.dir==='long' ? hi5 >= pos.tp : lo5 <= pos.tp) : false;
-      var hit = hit_sl || hit_tp;
-      var isWinP = hit_tp && !hit_sl;
-      if (hit) {
-        var exitPxP = isWinP ? pos.tp : pos.sl;
-        var er = pos.dir==='long' ? (exitPxP - pos.entry)/pos.entry : (pos.entry - exitPxP)/pos.entry;
-        var pnl = equity * pos.notionalFrac * er;
-        equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005);
-        trades.push({ts:ts, strat:sid, type:isWinP?'WIN':'LOSS', pnl:pnl, eq:equity});
-        if (isWinP) { wins++; stratStats[sid].wins++; }
+      var sid = pIds[ki], p = positions[sid];
+      var slHit = p.dir==='long' ? lo5<=p.sl : hi5>=p.sl;
+      var tpHit = p.dir==='long' ? hi5>=p.tp : lo5<=p.tp;
+      if (slHit || tpHit) {
+        var win    = tpHit && !slHit;
+        var exitPx = win ? p.tp : p.sl;
+        var ret    = p.dir==='long' ? (exitPx-p.entry)/p.entry : (p.entry-exitPx)/p.entry;
+        var pnl    = equity * p.nf * ret;
+        equity = Math.max(100, equity + pnl - equity*p.nf*0.0005);
+        trades.push({ts:ts, strat:sid, type:win?'WIN':'LOSS', pnl:pnl, eq:equity});
+        if (win) { wins++; stratStats[sid].wins++; }
         total++; stratStats[sid].total++;
         delete positions[sid];
       }
     }
 
-    // 3. Detect signals — 1H close only
+    // Signal detection — 1H close only
     if (i % 12 !== 11) continue;
     var h1Done = Math.floor((i + 1) / 12);
-    var c1h_nf = h1Done > 0 ? c1h_of.slice(0, h1Done).reverse() : [];
-    var cl5h = c1h_nf.length >= 45 ? c1h_nf.map(function(x){return parseFloat(x[4]);}) : null;
-    var ema200f = (cl5h && c1h_nf.length >= 200) ? calcEMA200(cl5h) : null;
-    var adxf    = c1h_nf.length >= 45 ? calcADX(c1h_nf, 14) : null;
-
-    activeCount = Object.keys(positions).length;
+    var c1h_nf = h1Done > 0 ? c1h.slice(0, h1Done).reverse() : [];
+    var closes1h = c1h_nf.length >= 45 ? c1h_nf.map(function(x){return parseFloat(x[4]);}) : null;
+    var ema200f  = (closes1h && c1h_nf.length >= 200) ? calcEMA200(closes1h) : null;
+    var adxf     = c1h_nf.length >= 45 ? calcADX(c1h_nf, 14) : null;
+    activeCount  = Object.keys(positions).length;
     var pendCount = Object.keys(pendings).length;
 
     for (var sci = 0; sci < stratConfigs.length; sci++) {
       var sc = stratConfigs[sci];
       if (positions[sc.id] || pendings[sc.id]) continue;
       if (activeCount + pendCount >= maxPositions) continue;
-
-      var sig = null, n = c1h_nf.length;
-      if      (sc.id==='ha_ema_srsi'   && n>=210) sig=detectSignalHAEmaSRSI(c1h_nf,cl5);
-      else if (sc.id==='ma_ribbon'     && n>=105) sig=detectSignalMARibbon(c1h_nf,cl5);
-      else if (sc.id==='ma50_bounce'   && n>=210) sig=detectSignalMA50Bounce(c1h_nf,cl5);
-      else if (sc.id==='ict_fib_ote'   && n>=60)  sig=detectSignalICTFibOTE(c1h_nf,cl5);
-      else if (sc.id==='ema_9_21'      && n>=30)  sig=detectSignalEMA921(c1h_nf,cl5);
-      else if (sc.id==='ema_21_55'     && n>=65)  sig=detectSignalEMA2155(c1h_nf,cl5);
-      else if (sc.id==='macd_signal'   && n>=55)  sig=detectSignalMACDSignal(c1h_nf,cl5);
-      else if (sc.id==='macd_zero'     && n>=55)  sig=detectSignalMACDZero(c1h_nf,cl5);
-      else if (sc.id==='supertrend'    && n>=50)  sig=detectSignalSupertrend(c1h_nf,cl5);
-      else if (sc.id==='bb_bounce'     && n>=25)  sig=detectSignalBBBounce(c1h_nf,cl5);
-      else if (sc.id==='bb_breakout'   && n>=25)  sig=detectSignalBBBreakout(c1h_nf,cl5);
-      else if (sc.id==='rsi_trend'     && n>=220) sig=detectSignalRSITrend(c1h_nf,cl5);
-      else if (sc.id==='adx_di'        && n>=55)  sig=detectSignalADXDI(c1h_nf,cl5);
-      else if (sc.id==='ichimoku'      && n>=85)  sig=detectSignalIchimoku(c1h_nf,cl5);
-      else if (sc.id==='hull_cross'    && n>=45)  sig=detectSignalHullCross(c1h_nf,cl5);
-      else if (sc.id==='chandelier'    && n>=45)  sig=detectSignalChandelier(c1h_nf,cl5);
-      else if (sc.id==='ha_supertrend' && n>=55)  sig=detectSignalHASupertrend(c1h_nf,cl5);
-
+      var sig = getSignal(sc.id, c1h_nf, cl5);
       if (sig && sig.stopLoss) {
         if (ema200f && sig.type==='long'  && cl5 < ema200f) sig = null;
         if (ema200f && sig && sig.type==='short' && cl5 > ema200f) sig = null;
         if (sig && adxf && adxf.adx < sc.adxMin) sig = null;
       }
       if (sig && sig.stopLoss) {
-        var slDist = Math.abs(cl5 - sig.stopLoss) / cl5;
-        if (slDist >= 0.002 && slDist <= 0.15) {
-          pendings[sc.id] = { dir:sig.type, sl:sig.stopLoss };
-          pendCount++;
-        }
+        var d = Math.abs(cl5 - sig.stopLoss) / cl5;
+        if (d >= 0.002 && d <= 0.15) { pendings[sc.id] = {dir:sig.type,sl:sig.stopLoss}; pendCount++; }
       }
     }
   }
 
-  var winRate = total > 0 ? wins / total : 0;
-  var actualDays = curve.length || 365;
+  var wr = total > 0 ? wins / total : 0;
+  var nDays = curve.length || 365;
   var totalRet = (equity - 10000) / 10000;
-  var annRet = Math.pow(1 + totalRet, 365 / actualDays) - 1;
-  var monRet = Math.pow(1 + annRet, 1/12) - 1;
-  var dayRet = Math.pow(1 + annRet, 1/365) - 1;
+  var annRet   = Math.pow(1 + totalRet, 365 / nDays) - 1;
+  var monRet   = Math.pow(1 + annRet, 1/12) - 1;
   var peak = 0, maxDD = 0;
-  curve.forEach(function(p){ if(p.equity>peak)peak=p.equity; var dd=(peak-p.equity)/peak; if(dd>maxDD)maxDD=dd; });
-  return { equity:equity, totalRet:totalRet, annRet:annRet, monRet:monRet, dayRet:dayRet,
-           totalTrades:total, winRate:winRate, maxDD:maxDD, curve:curve, trades:trades, stratStats:stratStats };
+  for (var j = 0; j < curve.length; j++) {
+    if (curve[j].equity > peak) peak = curve[j].equity;
+    var dd = (peak - curve[j].equity) / peak;
+    if (dd > maxDD) maxDD = dd;
+  }
+  return { equity:equity, totalRet:totalRet, annRet:annRet, monRet:monRet,
+           totalTrades:total, winRate:wr, maxDD:maxDD, curve:curve, trades:trades, stratStats:stratStats };
 }
 
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // DATA FETCH
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 
 async function fetchCandles5m(pair, onProgress) {
-  var ONE_YEAR_AGO = Math.floor(Date.now() / 3600000) * 3600000 - 365*24*3600*1000;
+  var ONE_YEAR_AGO = Math.floor(Date.now()/3600000)*3600000 - 365*24*3600*1000;
   var all = [], after = '';
   for (var iter = 0; iter < 1200; iter++) {
     var qs = 'instId='+encodeURIComponent(pair)+'&bar=5m&limit=100'+(after?'&after='+after:'');
     try {
       var res = await fetch('https://www.okx.com/api/v5/market/history-candles?'+qs);
-      var j = await res.json();
+      var j   = await res.json();
       var batch = j.data || [];
       if (!batch.length) break;
       all.push.apply(all, batch);
@@ -1027,16 +886,14 @@ async function fetchCandles5m(pair, onProgress) {
     } catch(e) { break; }
   }
   var seen = {}, deduped = [];
-  all.forEach(function(c){ if(!seen[c[0]]){seen[c[0]]=1;deduped.push(c);} });
+  all.forEach(function(c){ if(!seen[c[0]]){ seen[c[0]]=1; deduped.push(c); } });
   return deduped.filter(function(c){return parseInt(c[0])>=ONE_YEAR_AGO;}).reverse();
 }
 
-// ════════════════════════════════════════════════════════════
-// UI
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// STRATEGY LIST
+// ═══════════════════════════════════════════════════════
 
-// SCALP 전략 제거 (고빈도 = 수수료 드래그로 구조적 손실)
-// EMA200+ADX 글로벌 필터 적용으로 14개 SWING만 운영
 var BT_STRATS = [
   {id:'ha_ema_srsi',   name:'HA+EMA+StochRSI',   type:'SWING'},
   {id:'ma_ribbon',     name:'MA Ribbon',           type:'SWING'},
@@ -1057,241 +914,219 @@ var BT_STRATS = [
   {id:'ha_supertrend', name:'HA+SuperTrend',        type:'SWING'}
 ];
 
-var _c5of = null, _c1hof = null, _results = {}, _chart = null, _loadedPair = '';
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
 
-function onPairChange() {
-  var p = (document.getElementById('btPair').value||'').toUpperCase().trim();
-  document.getElementById('btStartBtn').textContent =
-    p !== _loadedPair ? '백테스팅 시작 (14개 전략 · 약 2분 소요)' : '다시 실행 (캐시 재사용)';
+var _c5 = null, _c1h = null, _results = {}, _chart = null, _pfChart = null, _loadedPair = '';
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+
+function pct(v, d) { d = d==null?2:d; return (v>=0?'+':'')+(v*100).toFixed(d)+'%'; }
+function clr(v) { return v >= 0 ? '#22c55e' : '#ef4444'; }
+
+function setProgress(id, width, text) {
+  var bar = document.getElementById(id+'Bar');
+  var msg = document.getElementById(id+'Msg');
+  var wrap= document.getElementById(id+'Prog');
+  if (bar)  bar.style.width  = width + '%';
+  if (msg)  msg.textContent  = text;
+  if (wrap) wrap.style.display = 'block';
 }
 
-function pct(v,d){d=d==null?2:d; return (v>=0?'+':'')+(v*100).toFixed(d)+'%';}
-function clr(v){return v>=0?'#22c55e':'#ef4444';}
+function showCard(id) { var el=document.getElementById(id); if(el) el.classList.remove('hidden'); }
+function hideCard(id) { var el=document.getElementById(id); if(el) el.classList.add('hidden'); }
 
-async function startBacktestQuick() {
-  var pair    = (document.getElementById('btPair').value||'BTC-USDT-SWAP').toUpperCase().trim();
-  var riskPct = parseFloat(document.getElementById('btRisk').value) || 2;
-  var lev     = parseFloat(document.getElementById('btLev').value)  || 10;
-  var posSz   = parseFloat(document.getElementById('btPos').value)  || 10;
-  var rrMult  = parseFloat(document.getElementById('btRR').value) || 2.5;
+// ═══════════════════════════════════════════════════════
+// MAIN BACKTEST RUNNERS
+// ═══════════════════════════════════════════════════════
 
-  var btn=document.getElementById('btQuickBtn'), startBtn=document.getElementById('btStartBtn');
-  var prog=document.getElementById('btProg'), bar=document.getElementById('btBar'), msg=document.getElementById('btMsg');
-  btn.disabled=true; startBtn.disabled=true; prog.style.display='block';
-
-  if (_c5of && _loadedPair === pair) {
-    bar.style.width='42%'; msg.textContent='캐시 재사용 중...';
+async function loadData(pair, progId) {
+  if (_c5 && _loadedPair === pair) {
+    setProgress(progId, 42, '캐시 재사용: '+_c5.length.toLocaleString()+'개 5분봉');
     await new Promise(function(r){setTimeout(r,10);});
-  } else {
-    btn.textContent='데이터 수집 중...'; bar.style.width='0%';
-    msg.textContent='OKX 5분봉 데이터 수집 중...';
-    try {
-      _c5of = await fetchCandles5m(pair, function(n){
-        bar.style.width=Math.min(40, n/2625)+'%';
-        msg.textContent='5분봉 수집: '+n.toLocaleString()+'개...';
-      });
-      _loadedPair = pair;
-    } catch(e) {
-      msg.textContent='수집 실패: '+(e.message||e);
-      btn.disabled=false; startBtn.disabled=false;
-      btn.textContent='⚡ 빠른 실행 — 모바일 · ADX≥20 고정 · 약 30초'; return;
-    }
+    return true;
   }
-
-  bar.style.width='42%'; msg.textContent='1H 집계 중...';
-  await new Promise(function(r){setTimeout(r,10);});
-  _c1hof = aggregate1H(_c5of);
-
-  _results = {};
-  for (var si = 0; si < BT_STRATS.length; si++) {
-    var s = BT_STRATS[si];
-    bar.style.width=(42 + (si+1)/BT_STRATS.length*56)+'%';
-    msg.textContent='['+(si+1)+'/'+BT_STRATS.length+'] '+s.name+'...';
-    await new Promise(function(r){setTimeout(r,0);});
-    var r = runBacktest(_c5of, _c1hof, s.id, riskPct/100, lev, posSz, 20, rrMult);
-    _results[s.id] = Object.assign({}, r, { optimalAdx: 20 });
+  setProgress(progId, 0, 'OKX 5분봉 데이터 수집 중...');
+  try {
+    _c5 = await fetchCandles5m(pair, function(n) {
+      setProgress(progId, Math.min(40, n/2625), '5분봉 수집: '+n.toLocaleString()+'개...');
+    });
+    _loadedPair = pair;
+    return true;
+  } catch(e) {
+    setProgress(progId, 0, '수집 실패: '+(e.message||e));
+    return false;
   }
-
-  bar.style.width='100%'; msg.textContent='완료! (ADX≥20 고정 · 최적화 없음)';
-  btn.disabled=false; startBtn.disabled=false;
-  btn.textContent='⚡ 다시 실행 (캐시 재사용)';
-  renderTable(); buildTabs(); showChart(BT_STRATS[0].id);
 }
 
 async function startBacktest() {
   var pair    = (document.getElementById('btPair').value||'BTC-USDT-SWAP').toUpperCase().trim();
-  var riskPct = parseFloat(document.getElementById('btRisk').value) || 2;
-  var lev     = parseFloat(document.getElementById('btLev').value)  || 10;
-  var posSz   = parseFloat(document.getElementById('btPos').value)  || 10;
-  var rrMult  = parseFloat(document.getElementById('btRR').value) || 2.5;
+  var riskPct = parseFloat(document.getElementById('btRisk').value)||2;
+  var lev     = parseFloat(document.getElementById('btLev').value)||10;
+  var posSz   = parseFloat(document.getElementById('btPos').value)||10;
+  var rrMult  = parseFloat(document.getElementById('btRR').value)||2.5;
+  var btnFull = document.getElementById('btnFull');
+  var btnQuick= document.getElementById('btnQuick');
 
-  var btn=document.getElementById('btStartBtn');
-  var prog=document.getElementById('btProg');
-  var bar=document.getElementById('btBar');
-  var msg=document.getElementById('btMsg');
+  btnFull.disabled = true; btnQuick.disabled = true;
+  btnFull.textContent = '실행 중...';
 
-  btn.disabled=true;
-  prog.style.display='block';
+  var ok = await loadData(pair, 'bt');
+  if (!ok) { btnFull.disabled=false; btnQuick.disabled=false; btnFull.textContent='백테스팅 최적화 시작 (17개 전략 × 8 ADX 임계값 · 약 5분)'; return; }
 
-  if (_c5of && _loadedPair === pair) {
-    bar.style.width='42%';
-    msg.textContent='캐시 데이터 재사용: '+_c5of.length.toLocaleString()+'개 5분봉 (동일 결과 보장)';
-    btn.textContent='실행 중...';
-    await new Promise(function(r){setTimeout(r,10);});
-  } else {
-    btn.textContent='데이터 수집 중...';
-    bar.style.width='0%';
-    msg.textContent='OKX 5분봉 데이터 수집 중 (약 10만 개)...';
-    try {
-      _c5of = await fetchCandles5m(pair, function(n){
-        bar.style.width=Math.min(40, n/2625)+'%';
-        msg.textContent='5분봉 수집: '+n.toLocaleString()+'개...';
-      });
-      _loadedPair = pair;
-    } catch(e) {
-      msg.textContent='데이터 수집 실패: '+(e.message||e);
-      btn.disabled=false; btn.textContent='백테스팅 최적화 시작 (14개 전략 × 8 ADX 임계값 · 약 5분 소요)';
-      return;
-    }
-  }
-
-  bar.style.width='42%';
-  msg.textContent='1H 집계 중... ('+_c5of.length.toLocaleString()+'개 5분봉)';
+  setProgress('bt', 42, '1H 집계 중...');
   await new Promise(function(r){setTimeout(r,10);});
-  _c1hof = aggregate1H(_c5of);
-
-  msg.textContent='5분봉 '+_c5of.length.toLocaleString()+'개 / 1H '+_c1hof.length.toLocaleString()+'개 → 백테스팅 실행 중';
+  _c1h = aggregate1H(_c5);
 
   var ADX_THRESHOLDS = [0, 15, 18, 20, 22, 25, 28, 30];
   _results = {};
-  var totalSteps = BT_STRATS.length * ADX_THRESHOLDS.length;
-  var stepsDone = 0;
+  var totalSteps = BT_STRATS.length * ADX_THRESHOLDS.length, stepsDone = 0;
+
   for (var si = 0; si < BT_STRATS.length; si++) {
     var s = BT_STRATS[si];
-    var bestResult = null, bestAdx = 20;
+    var best = null, bestAdx = 20;
     for (var ai = 0; ai < ADX_THRESHOLDS.length; ai++) {
       var adxThr = ADX_THRESHOLDS[ai];
-      bar.style.width=(42 + stepsDone/totalSteps*56)+'%';
-      msg.textContent='['+(si+1)+'/'+BT_STRATS.length+'] '+s.name+' ADX≥'+adxThr+' 최적화 중...';
+      setProgress('bt', 42 + stepsDone/totalSteps*56,
+        '['+(si+1)+'/'+BT_STRATS.length+'] '+s.name+' ADX≥'+adxThr);
       await new Promise(function(r){setTimeout(r,0);});
-      var r = runBacktest(_c5of, _c1hof, s.id, riskPct / 100, lev, posSz, adxThr, rrMult);
-      if (!bestResult || r.annRet > bestResult.annRet) {
-        bestResult = r; bestAdx = adxThr;
-      }
+      var res = runBacktest(_c5, _c1h, s.id, riskPct/100, lev, posSz, adxThr, rrMult);
+      if (!best || res.annRet > best.annRet) { best = res; bestAdx = adxThr; }
       stepsDone++;
     }
-    _results[s.id] = Object.assign({}, bestResult, { optimalAdx: bestAdx });
+    _results[s.id] = Object.assign({}, best, {optimalAdx: bestAdx});
   }
 
-  bar.style.width='100%';
-  msg.textContent='최적화 완료! 5분봉 '+_c5of.length.toLocaleString()+'개 · 1H '+_c1hof.length.toLocaleString()+'개 (캐시 보존)';
-  btn.disabled=false; btn.textContent='다시 최적화 (캐시 재사용)';
-
-  renderTable();
-  buildTabs();
-  showChart(BT_STRATS[0].id);
+  setProgress('bt', 100, '최적화 완료! '+_c5.length.toLocaleString()+'개 5분봉 / '+_c1h.length.toLocaleString()+'개 1H (캐시 보존)');
+  btnFull.disabled=false; btnQuick.disabled=false;
+  btnFull.textContent = '다시 최적화 (캐시 재사용)';
+  renderAll(rrMult);
 }
 
-function renderTable() {
-  var rrMult = parseFloat(document.getElementById('btRR').value) || 2.5;
-  var tbody = document.getElementById('btTbody');
-  var rows = BT_STRATS.map(function(s){
-    var r = _results[s.id];
-    if (!r) return '';
-    var isNA = r.totalTrades === 0;
-    var typeColor = s.type==='SCALP' ? '#f59e0b' : '#22c55e';
-    var typeBg    = s.type==='SCALP' ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)';
-    var typeBadge = '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:'+typeBg+';color:'+typeColor+';margin-left:6px;">'+s.type+'</span>';
-    var adxBadge = r.optimalAdx !== undefined ? '<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(99,102,241,0.15);color:#818cf8;margin-left:4px;">ADX≥'+(r.optimalAdx===0?'없음':r.optimalAdx)+'</span>' : '';
-    var mr = isNA?'N/A':'<span style="color:'+clr(r.monRet)+'">'+pct(r.monRet)+'</span>';
-    var ar = isNA?'N/A':'<span style="color:'+clr(r.annRet)+'">'+pct(r.annRet,1)+'</span>';
-    var dd = isNA?'N/A':'<span style="color:#ef4444">-'+pct(r.maxDD,1).replace('+','')+'</span>';
-    var wr = isNA?'N/A':'<span style="color:'+clr(r.winRate-0.5)+'">'+Math.round(r.winRate*100)+'%</span>';
-    var evVal = r.ev !== undefined ? r.ev : 0;
-    var evColor = evVal >= 0 ? '#22c55e' : '#ef4444';
-    var evStr = isNA ? 'N/A' : '<span style="color:'+evColor+';">'+(evVal>=0?'+':'')+evVal.toFixed(3)+'R</span>';
-    return '<tr>'+
-      '<td>'+s.name+typeBadge+adxBadge+'</td>'+
-      '<td>'+r.totalTrades+'</td>'+
-      '<td>'+wr+'</td>'+
-      '<td>'+evStr+'</td>'+
-      '<td>'+mr+'</td>'+
-      '<td>'+ar+'</td>'+
-      '<td>'+dd+'</td>'+
-      '<td style="text-align:center;"><button onclick="showChart(\''+s.id+'\')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">차트</button></td>'+
-    '</tr>';
-  }).join('');
-  tbody.innerHTML = rows;
-  document.getElementById('btResultCard').classList.remove('hidden');
-  buildPfCheckboxes();
+async function startBacktestQuick() {
+  var pair    = (document.getElementById('btPair').value||'BTC-USDT-SWAP').toUpperCase().trim();
+  var riskPct = parseFloat(document.getElementById('btRisk').value)||2;
+  var lev     = parseFloat(document.getElementById('btLev').value)||10;
+  var posSz   = parseFloat(document.getElementById('btPos').value)||10;
+  var rrMult  = parseFloat(document.getElementById('btRR').value)||2.5;
+  var btnFull = document.getElementById('btnFull');
+  var btnQuick= document.getElementById('btnQuick');
+
+  btnFull.disabled=true; btnQuick.disabled=true;
+  btnQuick.textContent = '실행 중...';
+
+  var ok = await loadData(pair, 'bt');
+  if (!ok) { btnFull.disabled=false; btnQuick.disabled=false; btnQuick.textContent='⚡ 빠른 실행 — 모바일 · ADX≥20 고정 · 약 30초'; return; }
+
+  setProgress('bt', 42, '1H 집계 중...');
+  await new Promise(function(r){setTimeout(r,10);});
+  _c1h = aggregate1H(_c5);
+
+  _results = {};
+  for (var si = 0; si < BT_STRATS.length; si++) {
+    var s = BT_STRATS[si];
+    setProgress('bt', 42 + (si+1)/BT_STRATS.length*56, '['+(si+1)+'/'+BT_STRATS.length+'] '+s.name+'...');
+    await new Promise(function(r){setTimeout(r,0);});
+    var res = runBacktest(_c5, _c1h, s.id, riskPct/100, lev, posSz, 20, rrMult);
+    _results[s.id] = Object.assign({}, res, {optimalAdx: 20});
+  }
+
+  setProgress('bt', 100, '완료! (ADX≥20 고정)');
+  btnFull.disabled=false; btnQuick.disabled=false;
+  btnQuick.textContent = '⚡ 다시 실행 (캐시 재사용)';
+  renderAll(rrMult);
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+
+function renderAll(rrMult) {
+  renderTable(rrMult);
   renderMathCard(rrMult);
+  buildTabs();
+  showChart(BT_STRATS[0].id);
+  buildPfCheckboxes();
+}
+
+function renderTable(rrMult) {
+  rrMult = rrMult || parseFloat(document.getElementById('btRR').value) || 2.5;
+  var rows = BT_STRATS.map(function(s) {
+    var r = _results[s.id]; if (!r) return '';
+    var na = r.totalTrades === 0;
+    var tcol = s.type==='SCALP' ? '#f59e0b' : '#22c55e';
+    var tbg  = s.type==='SCALP' ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)';
+    var typeBadge = '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:'+tbg+';color:'+tcol+';margin-left:6px;">'+s.type+'</span>';
+    var adxLabel = r.optimalAdx === 0 ? '없음' : '≥'+r.optimalAdx;
+    var adxBadge = '<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(99,102,241,0.15);color:#818cf8;margin-left:4px;">ADX'+adxLabel+'</span>';
+    var ev  = r.ev !== undefined ? r.ev : 0;
+    var evStr = na ? 'N/A' : '<span style="color:'+(ev>=0?'#22c55e':'#ef4444')+';">'+(ev>=0?'+':'')+ev.toFixed(3)+'R</span>';
+    var wr  = na ? 'N/A' : '<span style="color:'+clr(r.winRate-0.5)+';">'+Math.round(r.winRate*100)+'%</span>';
+    var mr  = na ? 'N/A' : '<span style="color:'+clr(r.monRet)+';">'+pct(r.monRet)+'</span>';
+    var ar  = na ? 'N/A' : '<span style="color:'+clr(r.annRet)+';">'+pct(r.annRet,1)+'</span>';
+    var dd  = na ? 'N/A' : '<span style="color:#ef4444;">-'+pct(r.maxDD,1).replace('+','')+'</span>';
+    var btn = '<button type="button" onclick="showChart(\''+s.id+'\')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">차트</button>';
+    return '<tr><td>'+s.name+typeBadge+adxBadge+'</td><td>'+r.totalTrades+'</td><td>'+wr+'</td><td>'+evStr+'</td><td>'+mr+'</td><td>'+ar+'</td><td>'+dd+'</td><td style="text-align:center;">'+btn+'</td></tr>';
+  }).join('');
+  document.getElementById('btTbody').innerHTML = rows;
+  showCard('btResultCard');
 }
 
 function renderMathCard(rrMult) {
+  rrMult = rrMult || 2.5;
   var rrs = [1.5, 2.0, 2.5, 3.0, 4.0];
   var wrs = [0.35, 0.40, 0.45, 0.50, 0.55, 0.60];
-  var rows = wrs.map(function(wr) {
+  var headers = rrs.map(function(rr) {
+    var hl = Math.abs(rr-rrMult)<0.01 ? 'background:rgba(255,255,255,0.08);' : '';
+    return '<th style="text-align:center;'+hl+'">R:R='+rr+'</th>';
+  }).join('');
+  var bodyRows = wrs.map(function(wr) {
     var cols = rrs.map(function(rr) {
-      var ev = wr * rr - (1-wr) * 1;
-      var ann40 = (Math.pow(1 + ev * 0.02, 40) - 1) * 100;
-      var color = ev >= 0 ? (ann40 >= 30 ? '#22c55e' : '#86efac') : '#ef4444';
-      var bg = (Math.abs(rr - rrMult) < 0.01) ? 'rgba(255,255,255,0.08)' : 'transparent';
-      return '<td style="text-align:center;background:'+bg+';color:'+color+';">'+(ev>=0?'+':'')+ev.toFixed(3)+'R<br><span style="font-size:10px;opacity:0.7;">'+(ann40>=0?'+':'')+ann40.toFixed(0)+'%/년</span></td>';
+      var ev  = wr*rr - (1-wr);
+      var ann = (Math.pow(1+ev*0.02,40)-1)*100;
+      var col = ev>=0?(ann>=30?'#22c55e':'#86efac'):'#ef4444';
+      var hl  = Math.abs(rr-rrMult)<0.01 ? 'background:rgba(255,255,255,0.08);' : '';
+      return '<td style="text-align:center;'+hl+'color:'+col+';">'+(ev>=0?'+':'')+ev.toFixed(3)+'R<br><span style="font-size:10px;opacity:0.7;">'+(ann>=0?'+':'')+ann.toFixed(0)+'%/년</span></td>';
     }).join('');
     return '<tr><td style="color:rgba(255,255,255,0.5);">WR='+Math.round(wr*100)+'%</td>'+cols+'</tr>';
   }).join('');
-  var headers = rrs.map(function(rr){
-    var bg = (Math.abs(rr - rrMult) < 0.01) ? 'rgba(255,255,255,0.08)' : 'transparent';
-    return '<th style="text-align:center;background:'+bg+';">R:R='+rr+'</th>';
-  }).join('');
-
-  var beWR = Math.round(100 / (1 + rrMult) * 10) / 10;
+  var beWR = Math.round(100/(1+rrMult)*10)/10;
   document.getElementById('mathContent').innerHTML =
-    '<p style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:10px;">현재 R:R='+rrMult+' | 손익분기 WR='+beWR+'% | 초록=연수익 30%+ | 40회/년 · 리스크2% 기준</p>'+
-    '<div style="overflow-x:auto;"><table style="font-size:12px;"><thead><tr><th></th>'+headers+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
-  document.getElementById('mathCard').classList.remove('hidden');
+    '<p style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:10px;">현재 R:R='+rrMult+' | 손익분기 WR='+beWR+'% | 초록=연수익 30%+ | 40회/년·리스크2% 기준</p>'+
+    '<div style="overflow-x:auto;"><table style="font-size:12px;"><thead><tr><th></th>'+headers+'</tr></thead><tbody>'+bodyRows+'</tbody></table></div>';
+  showCard('mathCard');
 }
 
 function buildTabs() {
-  var el = document.getElementById('btTabs');
-  el.innerHTML = BT_STRATS.map(function(s){
-    return '<button class="tab" id="tab_'+s.id+'" onclick="showChart(\''+s.id+'\')">'+s.name+'</button>';
+  document.getElementById('btTabs').innerHTML = BT_STRATS.map(function(s) {
+    return '<button type="button" class="tab" id="tab_'+s.id+'" onclick="showChart(\''+s.id+'\')">'+s.name+'</button>';
   }).join('');
 }
 
 function showChart(id) {
-  var s = BT_STRATS.find(function(x){return x.id===id;});
-  var r = _results[id];
+  var s = BT_STRATS.find(function(x){return x.id===id;}), r = _results[id];
   if (!s||!r) return;
-
   BT_STRATS.forEach(function(x){
-    var t=document.getElementById('tab_'+x.id);
-    if(t) t.classList.toggle('active', x.id===id);
+    var t = document.getElementById('tab_'+x.id);
+    if (t) t.classList.toggle('active', x.id===id);
   });
-
-  var t = s.name+' | 연 복리: '+pct(r.annRet,1)+
-    ' | 승률: '+Math.round(r.winRate*100)+'%'+
-    ' | 거래: '+r.totalTrades+'건'+
-    ' | 최대낙폭: -'+pct(r.maxDD,1).replace('+','');
-  document.getElementById('btChartTitle').textContent = t;
-
+  document.getElementById('btChartTitle').textContent =
+    s.name+' | 연 복리: '+pct(r.annRet,1)+' | 승률: '+Math.round(r.winRate*100)+'% | 거래: '+r.totalTrades+'건 | 최대낙폭: -'+pct(r.maxDD,1).replace('+','');
   var ctx = document.getElementById('btCanvas').getContext('2d');
   if (_chart) _chart.destroy();
-
   var labels = r.curve.map(function(p){return new Date(p.ts).toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'});});
   var data   = r.curve.map(function(p){return p.equity;});
-  var isPos  = r.annRet >= 0;
-  var col    = isPos ? '#22c55e' : '#ef4444';
-  var grd    = ctx.createLinearGradient(0,0,0,280);
+  var isPos  = r.annRet >= 0, col = isPos?'#22c55e':'#ef4444';
+  var grd = ctx.createLinearGradient(0,0,0,280);
   grd.addColorStop(0, isPos?'rgba(34,197,94,0.25)':'rgba(239,68,68,0.25)');
   grd.addColorStop(1,'rgba(0,0,0,0)');
-
   _chart = new Chart(ctx, {
     type:'line',
-    data:{labels:labels,datasets:[{label:'자산($)',data:data,borderColor:col,borderWidth:1.5,
-          pointRadius:0,fill:true,backgroundColor:grd,tension:0.3}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
+    data:{labels:labels,datasets:[{label:'자산($)',data:data,borderColor:col,borderWidth:1.5,pointRadius:0,fill:true,backgroundColor:grd,tension:0.3}]},
+    options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '$'+c.parsed.y.toFixed(0);}}}},
       scales:{
         x:{ticks:{color:'rgba(255,255,255,0.3)',maxTicksLimit:12,font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
@@ -1299,107 +1134,93 @@ function showChart(id) {
       }
     }
   });
-  document.getElementById('btChartCard').classList.remove('hidden');
+  showCard('btChartCard');
   document.getElementById('btChartCard').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-var _pfChart = null;
+// ═══════════════════════════════════════════════════════
+// PORTFOLIO UI
+// ═══════════════════════════════════════════════════════
 
 function buildPfCheckboxes() {
-  var el = document.getElementById('pfCheckboxes');
-  if (!el) return;
+  var el = document.getElementById('pfCheckboxes'); if (!el) return;
   el.innerHTML = BT_STRATS.map(function(s) {
-    var r = _results[s.id];
-    var isProfit = r && r.annRet > 0;
-    var checked = isProfit ? 'checked' : '';
+    var r = _results[s.id], isProfit = r && r.annRet > 0;
     var col = isProfit ? '#22c55e' : 'rgba(255,255,255,0.3)';
     var annText = r ? pct(r.annRet, 1) : 'N/A';
     return '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;font-size:12px;">'+
-      '<input type="checkbox" id="pf_'+s.id+'" '+checked+' style="width:auto;cursor:pointer;accent-color:#22c55e;">'+
-      '<span style="color:#fff;">'+s.name+'</span>'+
+      '<input type="checkbox" id="pf_'+s.id+'" '+(isProfit?'checked':'')+' style="width:auto;cursor:pointer;accent-color:#22c55e;">'+
+      '<span>'+s.name+'</span>'+
       '<span style="color:'+col+';margin-left:4px;font-size:11px;">'+annText+'</span>'+
     '</label>';
   }).join('');
-  document.getElementById('pfCard').classList.remove('hidden');
+  showCard('pfCard');
 }
 
 function pfSelectProfitable() {
   BT_STRATS.forEach(function(s) {
-    var r = _results[s.id];
-    var cb = document.getElementById('pf_'+s.id);
+    var r=_results[s.id], cb=document.getElementById('pf_'+s.id);
     if (cb) cb.checked = !!(r && r.annRet > 0);
   });
 }
-
-function pfSelectAll() {
-  BT_STRATS.forEach(function(s) { var cb=document.getElementById('pf_'+s.id); if(cb) cb.checked=true; });
-}
-
-function pfSelectNone() {
-  BT_STRATS.forEach(function(s) { var cb=document.getElementById('pf_'+s.id); if(cb) cb.checked=false; });
-}
+function pfSelectAll()  { BT_STRATS.forEach(function(s){ var cb=document.getElementById('pf_'+s.id); if(cb) cb.checked=true; }); }
+function pfSelectNone() { BT_STRATS.forEach(function(s){ var cb=document.getElementById('pf_'+s.id); if(cb) cb.checked=false; }); }
 
 async function startPortfolioBacktest() {
-  if (!_c5of || !_c1hof) { alert('먼저 개별 전략 백테스팅을 실행하세요.'); return; }
-  var riskPct = parseFloat(document.getElementById('btRisk').value) || 2;
-  var lev     = parseFloat(document.getElementById('btLev').value)  || 10;
-  var posSz   = parseFloat(document.getElementById('btPos').value)  || 10;
-  var maxPos  = parseInt(document.getElementById('pfMaxPos').value) || 6;
-  var rrMult  = parseFloat(document.getElementById('btRR').value) || 2.5;
+  if (!_c5||!_c1h) { alert('먼저 개별 전략 백테스팅을 실행하세요.'); return; }
+  var riskPct = parseFloat(document.getElementById('btRisk').value)||2;
+  var lev     = parseFloat(document.getElementById('btLev').value)||10;
+  var posSz   = parseFloat(document.getElementById('btPos').value)||10;
+  var maxPos  = parseInt(document.getElementById('pfMaxPos').value)||6;
+  var rrMult  = parseFloat(document.getElementById('btRR').value)||2.5;
 
-  var selected = BT_STRATS.filter(function(s) {
-    var cb = document.getElementById('pf_'+s.id); return cb && cb.checked;
-  }).map(function(s) {
-    var r = _results[s.id];
-    return { id:s.id, name:s.name, adxMin:(r && r.optimalAdx !== undefined) ? r.optimalAdx : 20 };
+  var selected = BT_STRATS.filter(function(s){
+    var cb=document.getElementById('pf_'+s.id); return cb&&cb.checked;
+  }).map(function(s){
+    var r=_results[s.id];
+    return {id:s.id, name:s.name, adxMin:(r&&r.optimalAdx!=null)?r.optimalAdx:20};
   });
   if (!selected.length) { alert('전략을 최소 1개 선택하세요.'); return; }
 
-  var btn=document.getElementById('pfBtn'), prog=document.getElementById('pfProg');
-  var bar=document.getElementById('pfBar'), msg=document.getElementById('pfMsg');
-  btn.disabled=true; prog.style.display='block';
-  bar.style.width='10%'; msg.textContent=selected.length+'개 전략 포트폴리오 시뮬레이션 중...';
+  var btnPf = document.getElementById('btnPf');
+  btnPf.disabled = true;
+  setProgress('pf', 10, selected.length+'개 전략 포트폴리오 시뮬레이션 중...');
   await new Promise(function(r){setTimeout(r,10);});
 
-  bar.style.width='50%';
-  var result = runPortfolioBacktest(_c5of, _c1hof, selected, riskPct/100, lev, posSz, maxPos, rrMult);
-  bar.style.width='100%'; msg.textContent='완료!';
-  btn.disabled=false; btn.textContent='다시 실행';
-
+  setProgress('pf', 50, '계산 중...');
+  var result = runPortfolioBacktest(_c5, _c1h, selected, riskPct/100, lev, posSz, maxPos, rrMult);
+  setProgress('pf', 100, '완료!');
+  btnPf.disabled = false; btnPf.textContent = '다시 실행';
   renderPortfolioResult(result, selected);
 }
 
 function renderPortfolioResult(r, selected) {
-  var card = document.getElementById('pfResultCard');
-  card.classList.remove('hidden');
+  showCard('pfResultCard');
   document.getElementById('pfResultTitle').textContent = '포트폴리오 결과 ('+selected.length+'개 전략 동시 운영)';
-
   var stats = [
-    {label:'연 복리', val:pct(r.annRet,1), color:clr(r.annRet)},
-    {label:'월 평균', val:pct(r.monRet),   color:clr(r.monRet)},
-    {label:'총 거래', val:r.totalTrades+'건', color:'#fff'},
-    {label:'승률',   val:Math.round(r.winRate*100)+'%', color:clr(r.winRate-0.5)},
-    {label:'최대낙폭',val:'-'+pct(r.maxDD,1).replace('+',''), color:'#ef4444'},
-    {label:'최종자산',val:'$'+r.equity.toFixed(0), color:clr(r.totalRet)},
+    {label:'연 복리',  val:pct(r.annRet,1),                           color:clr(r.annRet)},
+    {label:'월 평균',  val:pct(r.monRet),                             color:clr(r.monRet)},
+    {label:'총 거래',  val:r.totalTrades+'건',                         color:'#fff'},
+    {label:'승률',     val:Math.round(r.winRate*100)+'%',             color:clr(r.winRate-0.5)},
+    {label:'최대낙폭', val:'-'+pct(r.maxDD,1).replace('+',''),         color:'#ef4444'},
+    {label:'최종자산', val:'$'+r.equity.toFixed(0),                   color:clr(r.totalRet)}
   ];
   document.getElementById('pfSummary').innerHTML = stats.map(function(s){
     return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 18px;">'+
       '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;">'+s.label+'</div>'+
-      '<div style="font-size:18px;font-weight:700;color:'+s.color+';">'+s.val+'</div>'+
-    '</div>';
+      '<div style="font-size:18px;font-weight:700;color:'+s.color+';">'+s.val+'</div></div>';
   }).join('');
 
   var pnlByStrat = {};
-  r.trades.forEach(function(t){ pnlByStrat[t.strat] = (pnlByStrat[t.strat]||0) + t.pnl; });
-  document.getElementById('pfStratTbody').innerHTML = selected.map(function(sc) {
-    var ss = r.stratStats[sc.id] || {wins:0, total:0};
-    var wr = ss.total > 0 ? ss.wins/ss.total : 0;
-    var contrib = pnlByStrat[sc.id] || 0;
-    return '<tr>'+
-      '<td>'+sc.name+'</td>'+
+  r.trades.forEach(function(t){ pnlByStrat[t.strat]=(pnlByStrat[t.strat]||0)+t.pnl; });
+  document.getElementById('pfStratTbody').innerHTML = selected.map(function(sc){
+    var ss=r.stratStats[sc.id]||{wins:0,total:0};
+    var wr=ss.total>0?ss.wins/ss.total:0;
+    var contrib=pnlByStrat[sc.id]||0;
+    return '<tr><td>'+sc.name+'</td>'+
       '<td>'+ss.total+'</td>'+
-      '<td><span style="color:'+clr(wr-0.5)+'">'+Math.round(wr*100)+'%</span></td>'+
-      '<td><span style="color:'+clr(contrib)+'">'+pct(contrib/10000,1)+'</span></td>'+
+      '<td><span style="color:'+clr(wr-0.5)+';">'+Math.round(wr*100)+'%</span></td>'+
+      '<td><span style="color:'+clr(contrib)+';">'+pct(contrib/10000,1)+'</span></td>'+
     '</tr>';
   }).join('');
 
@@ -1407,26 +1228,36 @@ function renderPortfolioResult(r, selected) {
   if (_pfChart) _pfChart.destroy();
   var labels = r.curve.map(function(p){return new Date(p.ts).toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'});});
   var data   = r.curve.map(function(p){return p.equity;});
-  var isPos  = r.annRet >= 0;
-  var col    = isPos ? '#22c55e' : '#ef4444';
+  var isPos  = r.annRet>=0, col=isPos?'#22c55e':'#ef4444';
   var grd    = ctx.createLinearGradient(0,0,0,280);
-  grd.addColorStop(0, isPos?'rgba(34,197,94,0.3)':'rgba(239,68,68,0.3)');
+  grd.addColorStop(0,isPos?'rgba(34,197,94,0.3)':'rgba(239,68,68,0.3)');
   grd.addColorStop(1,'rgba(0,0,0,0)');
   _pfChart = new Chart(ctx, {
     type:'line',
-    data:{labels:labels, datasets:[{label:'포트폴리오 자산($)', data:data,
-      borderColor:col, borderWidth:2, pointRadius:0, fill:true, backgroundColor:grd, tension:0.3}]},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return '$'+c.parsed.y.toFixed(0);}}}},
+    data:{labels:labels,datasets:[{label:'포트폴리오 자산($)',data:data,borderColor:col,borderWidth:2,pointRadius:0,fill:true,backgroundColor:grd,tension:0.3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '$'+c.parsed.y.toFixed(0);}}}},
       scales:{
-        x:{ticks:{color:'rgba(255,255,255,0.3)',maxTicksLimit:12,font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'}},
-        y:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:10},callback:function(v){return '$'+v.toFixed(0);}}, grid:{color:'rgba(255,255,255,0.06)'}}
+        x:{ticks:{color:'rgba(255,255,255,0.3)',maxTicksLimit:12,font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:10},callback:function(v){return '$'+v.toFixed(0);}},grid:{color:'rgba(255,255,255,0.06)'}}
       }
     }
   });
-  card.scrollIntoView({behavior:'smooth', block:'start'});
+  document.getElementById('pfResultCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
+
+// ═══════════════════════════════════════════════════════
+// EVENT WIRING  (runs after DOM ready)
+// ═══════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('btnFull').addEventListener('click',  function(){ startBacktest(); });
+  document.getElementById('btnQuick').addEventListener('click', function(){ startBacktestQuick(); });
+  document.getElementById('btnPf').addEventListener('click',    function(){ startPortfolioBacktest(); });
+  document.getElementById('pfBtnProfit').addEventListener('click', pfSelectProfitable);
+  document.getElementById('pfBtnAll').addEventListener('click',    pfSelectAll);
+  document.getElementById('pfBtnNone').addEventListener('click',   pfSelectNone);
+});
 </script>
 </body>
 </html>
