@@ -41,7 +41,7 @@ tr:last-child td{border-bottom:none;}
 </head>
 <body>
 <h1>AYILON 전략 백테스팅</h1>
-<p class="sub">최근 1년 · 5분봉 실행 · 1H 집계 신호 · 진입가 = 다음 캔들 시가 · TP 없음 · 계단식 트레일링 SL · OKX 수수료 0.05%/side</p>
+<p class="sub">최근 1년 · 5분봉 실행 · 1H 집계 신호 · 진입가 = 다음 캔들 시가 · 고정 TP/SL (R:R 배율) · OKX 수수료 0.05%/side</p>
 
 <div class="card">
   <div class="card-title">설정</div>
@@ -56,6 +56,17 @@ tr:last-child td{border-bottom:none;}
       <span style="font-size:11px;color:rgba(255,255,255,0.3);">실제 봇 포지션 = min(리스크%/SL거리, 포지션크기%×레버리지) × 자산 — SL거리 넓을수록 계약수 감소</span>
     </div>
   </div>
+  <div class="grid3" style="margin-top:0;">
+    <div>
+      <label>TP/SL 배율 (R:R)</label>
+      <input id="btRR" type="number" value="2.5" min="1.0" max="5.0" step="0.5">
+    </div>
+    <div style="grid-column:span 2;display:flex;align-items:flex-end;padding-bottom:2px;">
+      <span style="font-size:11px;color:rgba(255,255,255,0.3);">
+        TP = SL거리 × 배율 | R:R=2.5 → 손익분기 WR=28.6% | R:R=3 → 25% | 어떤 전략이든 WR>30%이면 수익 구조
+      </span>
+    </div>
+  </div>
   <button class="btn" id="btStartBtn" onclick="startBacktest()">백테스팅 최적화 시작 (14개 전략 × 8 ADX 임계값 · 약 5분 소요)</button>
   <button class="btn" id="btQuickBtn" onclick="startBacktestQuick()" style="margin-top:8px;background:#1a1a1a;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);">⚡ 빠른 실행 — 모바일 · ADX≥20 고정 · 약 30초</button>
   <div class="progress-wrap" id="btProg">
@@ -65,13 +76,18 @@ tr:last-child td{border-bottom:none;}
   <p class="note">⚠ 슬리피지·펀딩비 미반영. SL/TP 동일 캔들 내 충돌 시 SL 우선 처리(보수적). 백테스트 ≠ 실제 수익 보장.</p>
 </div>
 
+<div class="card hidden" id="mathCard">
+  <div class="card-title">수익 구조 분석</div>
+  <div id="mathContent"></div>
+</div>
+
 <div class="card hidden" id="btResultCard">
   <div class="card-title">전략별 성과 비교</div>
   <div style="overflow-x:auto;">
     <table>
       <thead><tr>
         <th style="text-align:left;">전략</th>
-        <th>유형</th><th>거래수</th><th>승률</th><th>일 평균</th>
+        <th>거래수</th><th>승률</th><th>EV/거래(R)</th>
         <th>월 평균</th><th>연 복리</th><th>최대낙폭</th>
         <th style="text-align:center;">차트</th>
       </tr></thead>
@@ -750,10 +766,11 @@ function aggregate1H(c5_of) {
 // ════════════════════════════════════════════════════════════
 // BACKTEST ENGINE
 // ════════════════════════════════════════════════════════════
-// TP 없음 — 계단식 트레일링 SL, WIN = 최소 +1R 보장
+// 고정 TP/SL: TP = SL거리 × rrMult, WIN = TP 도달, LOSS = SL 도달
 // adxMin: ADX 최소 임계값 (0 = 필터 없음)
-function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct, adxMin) {
+function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct, adxMin, rrMult) {
   adxMin = adxMin !== undefined ? adxMin : 20;
+  rrMult = rrMult !== undefined ? rrMult : 2.5;
   var maxNotionalFrac = (posSizePct / 100) * leverage;
 
   var equity = 10000, pos = null, pending = null;
@@ -775,39 +792,28 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct, ad
       var actualSlDist = Math.abs(entryPx - pending.sl) / entryPx;
       if (actualSlDist < 0.001) { pending = null; continue; }
       var notionalFrac = Math.min(riskFrac / actualSlDist, maxNotionalFrac);
-      var stepPrice = Math.abs(entryPx - pending.sl); // 1 step = 초기 SL 거리 (가격)
-      pos = { dir:pending.dir, entry:entryPx, sl:pending.sl,
-               slDist:actualSlDist, stepPrice:stepPrice, notionalFrac:notionalFrac, idx:i };
+      var slPrice = Math.abs(entryPx - pending.sl);
+      var tpPx = pending.dir === 'long' ? entryPx + slPrice * rrMult : entryPx - slPrice * rrMult;
+      pos = { dir:pending.dir, entry:entryPx, sl:pending.sl, tp:tpPx,
+               slDist:actualSlDist, notionalFrac:notionalFrac, idx:i };
       equity = Math.max(100, equity - equity * notionalFrac * 0.0005);
       pending = null;
     }
 
     if (pos) {
-      // 보수적 처리: 원래 SL 먼저 확인 → 원래 SL 안 닿은 경우에만 트레일링
-      var origSlHit = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
-      if (!origSlHit) {
-        var steps = pos.dir==='long'
-          ? Math.floor((hi5 - pos.entry) / pos.stepPrice)
-          : Math.floor((pos.entry - lo5) / pos.stepPrice);
-        if (steps > 0) {
-          var newSL = pos.dir==='long'
-            ? pos.entry + steps * pos.stepPrice
-            : pos.entry - steps * pos.stepPrice;
-          if (pos.dir==='long' && newSL > pos.sl) pos.sl = newSL;
-          if (pos.dir==='short' && newSL < pos.sl) pos.sl = newSL;
-        }
-      }
-
-      // SL 체크 (원래 SL 또는 트레일링 SL)
+      // Conservative: if both SL and TP hit same candle, SL wins (worst case)
       var slHit = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
-      if (slHit) {
+      var tpHit = pos.dir==='long' ? hi5 >= pos.tp : lo5 <= pos.tp;
+      if (slHit || tpHit) {
+        var isWin = tpHit && !slHit;
+        var exitPx = isWin ? pos.tp : pos.sl;
         var exitRet = pos.dir==='long'
-          ? (pos.sl - pos.entry) / pos.entry
-          : (pos.entry - pos.sl) / pos.entry;
+          ? (exitPx - pos.entry) / pos.entry
+          : (pos.entry - exitPx) / pos.entry;
         var pnl = equity * pos.notionalFrac * exitRet;
         equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005);
-        trades.push({ts:ts, type: exitRet >= 0 ? 'WIN' : 'LOSS', pnl:pnl, eq:equity});
-        if (exitRet >= 0) wins++;
+        trades.push({ts:ts, type: isWin ? 'WIN' : 'LOSS', pnl:pnl, eq:equity});
+        if (isWin) wins++;
         total++; pos = null;
       }
     }
@@ -869,13 +875,15 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct, ad
   var dayRet = Math.pow(1 + annRet, 1/365) - 1;
   var peak = 0, maxDD = 0;
   curve.forEach(function(p){ if(p.equity>peak)peak=p.equity; var dd=(peak-p.equity)/peak; if(dd>maxDD)maxDD=dd; });
+  var ev = total > 0 ? (winRate * rrMult - (1 - winRate) * 1) : 0;
   return { equity:equity, totalRet:totalRet, annRet:annRet, monRet:monRet, dayRet:dayRet,
-           totalTrades:total, winRate:winRate,
+           totalTrades:total, winRate:winRate, ev:ev, rrMult:rrMult,
            maxDD:maxDD, curve:curve, trades:trades };
 }
 
 // runPortfolioBacktest: multiple strategies share one equity pool
-function runPortfolioBacktest(c5_of, c1h_of, stratConfigs, riskFrac, leverage, posSizePct, maxPositions) {
+function runPortfolioBacktest(c5_of, c1h_of, stratConfigs, riskFrac, leverage, posSizePct, maxPositions, rrMult) {
+  rrMult = rrMult !== undefined ? rrMult : 2.5;
   maxPositions = maxPositions || stratConfigs.length;
   var maxNotionalFrac = (posSizePct / 100) * leverage;
   var equity = 10000, lastDay = -1;
@@ -907,34 +915,29 @@ function runPortfolioBacktest(c5_of, c1h_of, stratConfigs, riskFrac, leverage, p
       var slD = Math.abs(op5 - pend.sl) / op5;
       if (slD < 0.001) { delete pendings[psid]; continue; }
       var nf = Math.min(riskFrac / slD, maxNotionalFrac);
-      positions[psid] = { dir:pend.dir, entry:op5, sl:pend.sl, stepPrice:Math.abs(op5 - pend.sl), notionalFrac:nf };
+      var slPriceP = Math.abs(op5 - pend.sl);
+      var tpPxP = pend.dir === 'long' ? op5 + slPriceP * rrMult : op5 - slPriceP * rrMult;
+      positions[psid] = { dir:pend.dir, entry:op5, sl:pend.sl, tp:tpPxP, stepPrice:slPriceP, notionalFrac:nf };
       equity = Math.max(100, equity - equity * nf * 0.0005);
       delete pendings[psid]; activeCount++;
     }
 
-    // 2. Update trailing SL and check exits
+    // 2. Check fixed TP/SL exits
     var pIds = Object.keys(positions);
     for (var ki = 0; ki < pIds.length; ki++) {
       var sid = pIds[ki];
       var pos = positions[sid];
-      var origSlHitP = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
-      if (!origSlHitP) {
-        var steps = pos.dir==='long'
-          ? Math.floor((hi5 - pos.entry) / pos.stepPrice)
-          : Math.floor((pos.entry - lo5) / pos.stepPrice);
-        if (steps > 0) {
-          var nsl = pos.dir==='long' ? pos.entry + steps*pos.stepPrice : pos.entry - steps*pos.stepPrice;
-          if (pos.dir==='long' && nsl > pos.sl) pos.sl = nsl;
-          if (pos.dir==='short' && nsl < pos.sl) pos.sl = nsl;
-        }
-      }
-      var hit = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
+      var hit_sl = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
+      var hit_tp = pos.tp !== undefined ? (pos.dir==='long' ? hi5 >= pos.tp : lo5 <= pos.tp) : false;
+      var hit = hit_sl || hit_tp;
+      var isWinP = hit_tp && !hit_sl;
       if (hit) {
-        var er = pos.dir==='long' ? (pos.sl - pos.entry)/pos.entry : (pos.entry - pos.sl)/pos.entry;
+        var exitPxP = isWinP ? pos.tp : pos.sl;
+        var er = pos.dir==='long' ? (exitPxP - pos.entry)/pos.entry : (pos.entry - exitPxP)/pos.entry;
         var pnl = equity * pos.notionalFrac * er;
         equity = Math.max(100, equity + pnl - equity * pos.notionalFrac * 0.0005);
-        trades.push({ts:ts, strat:sid, type:er>=0?'WIN':'LOSS', pnl:pnl, eq:equity});
-        if (er >= 0) { wins++; stratStats[sid].wins++; }
+        trades.push({ts:ts, strat:sid, type:isWinP?'WIN':'LOSS', pnl:pnl, eq:equity});
+        if (isWinP) { wins++; stratStats[sid].wins++; }
         total++; stratStats[sid].total++;
         delete positions[sid];
       }
@@ -1070,6 +1073,7 @@ async function startBacktestQuick() {
   var riskPct = parseFloat(document.getElementById('btRisk').value) || 2;
   var lev     = parseFloat(document.getElementById('btLev').value)  || 10;
   var posSz   = parseFloat(document.getElementById('btPos').value)  || 10;
+  var rrMult  = parseFloat(document.getElementById('btRR').value) || 2.5;
 
   var btn=document.getElementById('btQuickBtn'), startBtn=document.getElementById('btStartBtn');
   var prog=document.getElementById('btProg'), bar=document.getElementById('btBar'), msg=document.getElementById('btMsg');
@@ -1104,7 +1108,7 @@ async function startBacktestQuick() {
     bar.style.width=(42 + (si+1)/BT_STRATS.length*56)+'%';
     msg.textContent='['+(si+1)+'/'+BT_STRATS.length+'] '+s.name+'...';
     await new Promise(function(r){setTimeout(r,0);});
-    var r = runBacktest(_c5of, _c1hof, s.id, riskPct/100, lev, posSz, 20);
+    var r = runBacktest(_c5of, _c1hof, s.id, riskPct/100, lev, posSz, 20, rrMult);
     _results[s.id] = Object.assign({}, r, { optimalAdx: 20 });
   }
 
@@ -1119,6 +1123,7 @@ async function startBacktest() {
   var riskPct = parseFloat(document.getElementById('btRisk').value) || 2;
   var lev     = parseFloat(document.getElementById('btLev').value)  || 10;
   var posSz   = parseFloat(document.getElementById('btPos').value)  || 10;
+  var rrMult  = parseFloat(document.getElementById('btRR').value) || 2.5;
 
   var btn=document.getElementById('btStartBtn');
   var prog=document.getElementById('btProg');
@@ -1169,7 +1174,7 @@ async function startBacktest() {
       bar.style.width=(42 + stepsDone/totalSteps*56)+'%';
       msg.textContent='['+(si+1)+'/'+BT_STRATS.length+'] '+s.name+' ADX≥'+adxThr+' 최적화 중...';
       await new Promise(function(r){setTimeout(r,0);});
-      var r = runBacktest(_c5of, _c1hof, s.id, riskPct / 100, lev, posSz, adxThr);
+      var r = runBacktest(_c5of, _c1hof, s.id, riskPct / 100, lev, posSz, adxThr, rrMult);
       if (!bestResult || r.annRet > bestResult.annRet) {
         bestResult = r; bestAdx = adxThr;
       }
@@ -1188,6 +1193,7 @@ async function startBacktest() {
 }
 
 function renderTable() {
+  var rrMult = parseFloat(document.getElementById('btRR').value) || 2.5;
   var tbody = document.getElementById('btTbody');
   var rows = BT_STRATS.map(function(s){
     var r = _results[s.id];
@@ -1197,17 +1203,18 @@ function renderTable() {
     var typeBg    = s.type==='SCALP' ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)';
     var typeBadge = '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:'+typeBg+';color:'+typeColor+';margin-left:6px;">'+s.type+'</span>';
     var adxBadge = r.optimalAdx !== undefined ? '<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(99,102,241,0.15);color:#818cf8;margin-left:4px;">ADX≥'+(r.optimalAdx===0?'없음':r.optimalAdx)+'</span>' : '';
-    var dr = isNA?'N/A':'<span style="color:'+clr(r.dayRet)+'">'+pct(r.dayRet)+'</span>';
     var mr = isNA?'N/A':'<span style="color:'+clr(r.monRet)+'">'+pct(r.monRet)+'</span>';
     var ar = isNA?'N/A':'<span style="color:'+clr(r.annRet)+'">'+pct(r.annRet,1)+'</span>';
     var dd = isNA?'N/A':'<span style="color:#ef4444">-'+pct(r.maxDD,1).replace('+','')+'</span>';
     var wr = isNA?'N/A':'<span style="color:'+clr(r.winRate-0.5)+'">'+Math.round(r.winRate*100)+'%</span>';
+    var evVal = r.ev !== undefined ? r.ev : 0;
+    var evColor = evVal >= 0 ? '#22c55e' : '#ef4444';
+    var evStr = isNA ? 'N/A' : '<span style="color:'+evColor+';">'+(evVal>=0?'+':'')+evVal.toFixed(3)+'R</span>';
     return '<tr>'+
       '<td>'+s.name+typeBadge+adxBadge+'</td>'+
-      '<td style="text-align:center;">'+s.type+'</td>'+
       '<td>'+r.totalTrades+'</td>'+
       '<td>'+wr+'</td>'+
-      '<td>'+dr+'</td>'+
+      '<td>'+evStr+'</td>'+
       '<td>'+mr+'</td>'+
       '<td>'+ar+'</td>'+
       '<td>'+dd+'</td>'+
@@ -1217,6 +1224,32 @@ function renderTable() {
   tbody.innerHTML = rows;
   document.getElementById('btResultCard').classList.remove('hidden');
   buildPfCheckboxes();
+  renderMathCard(rrMult);
+}
+
+function renderMathCard(rrMult) {
+  var rrs = [1.5, 2.0, 2.5, 3.0, 4.0];
+  var wrs = [0.35, 0.40, 0.45, 0.50, 0.55, 0.60];
+  var rows = wrs.map(function(wr) {
+    var cols = rrs.map(function(rr) {
+      var ev = wr * rr - (1-wr) * 1;
+      var ann40 = (Math.pow(1 + ev * 0.02, 40) - 1) * 100;
+      var color = ev >= 0 ? (ann40 >= 30 ? '#22c55e' : '#86efac') : '#ef4444';
+      var bg = (Math.abs(rr - rrMult) < 0.01) ? 'rgba(255,255,255,0.08)' : 'transparent';
+      return '<td style="text-align:center;background:'+bg+';color:'+color+';">'+(ev>=0?'+':'')+ev.toFixed(3)+'R<br><span style="font-size:10px;opacity:0.7;">'+(ann40>=0?'+':'')+ann40.toFixed(0)+'%/년</span></td>';
+    }).join('');
+    return '<tr><td style="color:rgba(255,255,255,0.5);">WR='+Math.round(wr*100)+'%</td>'+cols+'</tr>';
+  }).join('');
+  var headers = rrs.map(function(rr){
+    var bg = (Math.abs(rr - rrMult) < 0.01) ? 'rgba(255,255,255,0.08)' : 'transparent';
+    return '<th style="text-align:center;background:'+bg+';">R:R='+rr+'</th>';
+  }).join('');
+
+  var beWR = Math.round(100 / (1 + rrMult) * 10) / 10;
+  document.getElementById('mathContent').innerHTML =
+    '<p style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:10px;">현재 R:R='+rrMult+' | 손익분기 WR='+beWR+'% | 초록=연수익 30%+ | 40회/년 · 리스크2% 기준</p>'+
+    '<div style="overflow-x:auto;"><table style="font-size:12px;"><thead><tr><th></th>'+headers+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  document.getElementById('mathCard').classList.remove('hidden');
 }
 
 function buildTabs() {
@@ -1312,6 +1345,7 @@ async function startPortfolioBacktest() {
   var lev     = parseFloat(document.getElementById('btLev').value)  || 10;
   var posSz   = parseFloat(document.getElementById('btPos').value)  || 10;
   var maxPos  = parseInt(document.getElementById('pfMaxPos').value) || 6;
+  var rrMult  = parseFloat(document.getElementById('btRR').value) || 2.5;
 
   var selected = BT_STRATS.filter(function(s) {
     var cb = document.getElementById('pf_'+s.id); return cb && cb.checked;
@@ -1328,7 +1362,7 @@ async function startPortfolioBacktest() {
   await new Promise(function(r){setTimeout(r,10);});
 
   bar.style.width='50%';
-  var result = runPortfolioBacktest(_c5of, _c1hof, selected, riskPct/100, lev, posSz, maxPos);
+  var result = runPortfolioBacktest(_c5of, _c1hof, selected, riskPct/100, lev, posSz, maxPos, rrMult);
   bar.style.width='100%'; msg.textContent='완료!';
   btn.disabled=false; btn.textContent='다시 실행';
 
