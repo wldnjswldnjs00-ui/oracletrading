@@ -1546,11 +1546,11 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     const entryNum = (state.entries || []).length + 1;
     if (entryNum > 1) return; // single entry only
 
-    // ── TP = SL거리 × 1.5 (동적 R:R 1.5:1 고정) ─────────────
+    // ── TP = SL거리 × 2.5 (동적 R:R 2.5:1 고정 — 수학적 손익분기 WR 28.6%) ──
     const slDistRR = Math.abs(currentPrice - signal.stopLoss) / currentPrice;
     const tp = signal.type === 'long'
-      ? currentPrice * (1 + slDistRR * 1.5)
-      : currentPrice * (1 - slDistRR * 1.5);
+      ? currentPrice * (1 + slDistRR * 2.5)
+      : currentPrice * (1 - slDistRR * 2.5);
     const useTP = true;
 
     // ── R:R 항상 1.5:1 보장 — 범위 외 SL만 필터 ─────────────
@@ -1756,51 +1756,24 @@ async function checkSL(env, email, apiKey, secret, pass, pair, openPos, equity, 
           return;
         }
 
-        // Swing strategies: close 50%, lock in 50% of TP1 profit as SL, start trailing
-        const halfContracts = Math.max(1, Math.floor(totalSz / 2));
+        // Swing strategies: close 100% at TP (R:R=2.5, matches backtest logic)
         const tpCloseRes = await okxPost(apiKey, secret, pass, '/api/v5/trade/order', {
           instId: pair, tdMode: 'cross',
           side:    state.direction === 'long' ? 'sell' : 'buy',
           ...(isOneWayMode ? {} : { posSide: state.direction === 'long' ? 'long' : 'short' }),
-          ordType: 'market', sz: String(halfContracts)
+          ordType: 'market', sz: String(totalSz)
         }, demo);
         if (!tpCloseRes?.data?.[0]?.ordId) {
           await botLog(env, email, `TP close FAILED [${tpCloseRes?.code}]: ${tpCloseRes?.msg} — algos preserved`);
           return;
         }
-
         if (state.tpAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.tpAlgoId, demo);
         if (state.slAlgoId) await cancelSLAlgo(apiKey, secret, pass, pair, state.slAlgoId, demo);
-        const remContracts = Math.max(0, totalSz - halfContracts);
-
-        const avgEntry = state.entries.reduce((s, e) => s + parseFloat(e.price) * parseInt(e.sz), 0) /
-                         state.entries.reduce((s, e) => s + parseInt(e.sz), 0);
-        const dist = Math.abs(price - avgEntry);
-        const lockedSL = state.direction === 'long' ? avgEntry + dist * 0.5 : avgEntry - dist * 0.5;
-
-        state.halfClosed         = true;
-        state.takeProfit         = null;
-        state.lastTPLevel        = price;
-        state.remainingContracts = remContracts;
-        state.remainingFrac      = remContracts > 0 ? remContracts / totalSz : 0;
-        state.tpAlgoId           = null;
-        state.slAlgoId           = null;
-
-        if (remContracts > 0 && avgEntry > 0) {
-          const beSlRes = await placeSLAlgo(apiKey, secret, pass, pair, state.direction, lockedSL, String(remContracts), demo, isOneWayMode);
-          state.slAlgoId = beSlRes?.data?.[0]?.algoId ? String(beSlRes.data[0].algoId) : null;
-          if (state.slAlgoId) {
-            await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 50% closed | locked SL @ ${lockedSL.toFixed(2)} (+50% TP1 profit) | trailing active`);
-          } else {
-            await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 50% closed | ⚠️ locked SL failed | trailing active (no SL protection)`);
-          }
-        } else {
-          await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 50% closed | trailing active`);
-        }
-
-        ps[actualKey] = state;
+        await botLog(env, email, `[${state.strategy}] TP hit @ ${price} — 100% closed (R:R 2.5:1)`);
+        delete ps[actualKey];
         psModifiedRef.modified = true;
         return;
+
       }
     }
   }
