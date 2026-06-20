@@ -783,21 +783,22 @@ function runBacktest(c5_of, c1h_of, strategy, riskFrac, leverage, posSizePct, ad
     }
 
     if (pos) {
-      // 트레일링 SL: price가 stepPrice 이동마다 SL을 stepPrice씩 올림
-      // steps=1 → SL = entry+stepPrice (+1R 잠금), steps=2 → +2R, ...
-      // 즉 WIN이면 최소 +1R 보장 (0R 본전 WIN 제거)
-      var steps = pos.dir==='long'
-        ? Math.floor((hi5 - pos.entry) / pos.stepPrice)
-        : Math.floor((pos.entry - lo5) / pos.stepPrice);
-      if (steps > 0) {
-        var newSL = pos.dir==='long'
-          ? pos.entry + steps * pos.stepPrice
-          : pos.entry - steps * pos.stepPrice;
-        if (pos.dir==='long' && newSL > pos.sl) pos.sl = newSL;
-        if (pos.dir==='short' && newSL < pos.sl) pos.sl = newSL;
+      // 보수적 처리: 원래 SL 먼저 확인 → 원래 SL 안 닿은 경우에만 트레일링
+      var origSlHit = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
+      if (!origSlHit) {
+        var steps = pos.dir==='long'
+          ? Math.floor((hi5 - pos.entry) / pos.stepPrice)
+          : Math.floor((pos.entry - lo5) / pos.stepPrice);
+        if (steps > 0) {
+          var newSL = pos.dir==='long'
+            ? pos.entry + steps * pos.stepPrice
+            : pos.entry - steps * pos.stepPrice;
+          if (pos.dir==='long' && newSL > pos.sl) pos.sl = newSL;
+          if (pos.dir==='short' && newSL < pos.sl) pos.sl = newSL;
+        }
       }
 
-      // SL 체크
+      // SL 체크 (원래 SL 또는 트레일링 SL)
       var slHit = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
       if (slHit) {
         var exitRet = pos.dir==='long'
@@ -916,13 +917,16 @@ function runPortfolioBacktest(c5_of, c1h_of, stratConfigs, riskFrac, leverage, p
     for (var ki = 0; ki < pIds.length; ki++) {
       var sid = pIds[ki];
       var pos = positions[sid];
-      var steps = pos.dir==='long'
-        ? Math.floor((hi5 - pos.entry) / pos.stepPrice)
-        : Math.floor((pos.entry - lo5) / pos.stepPrice);
-      if (steps > 0) {
-        var nsl = pos.dir==='long' ? pos.entry + steps*pos.stepPrice : pos.entry - steps*pos.stepPrice;
-        if (pos.dir==='long' && nsl > pos.sl) pos.sl = nsl;
-        if (pos.dir==='short' && nsl < pos.sl) pos.sl = nsl;
+      var origSlHitP = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
+      if (!origSlHitP) {
+        var steps = pos.dir==='long'
+          ? Math.floor((hi5 - pos.entry) / pos.stepPrice)
+          : Math.floor((pos.entry - lo5) / pos.stepPrice);
+        if (steps > 0) {
+          var nsl = pos.dir==='long' ? pos.entry + steps*pos.stepPrice : pos.entry - steps*pos.stepPrice;
+          if (pos.dir==='long' && nsl > pos.sl) pos.sl = nsl;
+          if (pos.dir==='short' && nsl < pos.sl) pos.sl = nsl;
+        }
       }
       var hit = pos.dir==='long' ? lo5 <= pos.sl : hi5 >= pos.sl;
       if (hit) {
