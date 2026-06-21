@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AYILON — Virtual Office</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #000; --s1: #080808; --s2: #111;
+      --b1: #1c1c1c; --b2: #2a2a2a;
+      --t1: #fff; --t2: #888; --t3: #383838;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--t1); font-family: 'Inter', sans-serif; overflow: hidden; }
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; height: 50px;
+      border-bottom: 1px solid var(--b1);
+      background: rgba(0,0,0,0.97); backdrop-filter: blur(16px);
+    }
+    .logo { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.16em; }
+    .logo em { font-style: normal; color: var(--t2); font-weight: 400; margin-left: 8px; font-size: 10px; letter-spacing: 0.08em; }
+    .hdr-r { display: flex; align-items: center; gap: 14px; }
+    .live { display: flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; color: var(--t2); }
+    .ld { width: 5px; height: 5px; background: #fff; border-radius: 50%; animation: blink 2s infinite; }
+    @keyframes blink { 0%,100%{opacity:1}50%{opacity:.15} }
+    .online { font-size: 9px; color: var(--t3); letter-spacing: 0.05em; }
+    #t-map, #t-feed { display: none; }
+    .shell {
+      position: fixed; top: 50px; left: 0; right: 0; bottom: 0;
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      grid-template-rows: 1fr 60px;
+    }
+    .map-col { grid-row: 1; grid-column: 1; overflow-y: auto; border-right: 1px solid var(--b1); padding: 18px; }
+    .map-col::-webkit-scrollbar { width: 2px; }
+    .map-col::-webkit-scrollbar-thumb { background: var(--b2); }
+    .feed-col { grid-row: 1; grid-column: 2; display: flex; flex-direction: column; overflow: hidden; }
+    .cmd-row { grid-row: 2; grid-column: 1 / -1; border-top: 1px solid var(--b1); display: flex; align-items: center; padding: 0 18px; gap: 10px; background: var(--bg); }
+    .tab-bar { display: none; }
+    @media (max-width: 700px) {
+      .shell { grid-template-columns: 1fr; grid-template-rows: 40px 1fr 56px; }
+      .tab-bar { display: flex; grid-row: 1; grid-column: 1; border-bottom: 1px solid var(--b1); background: var(--bg); }
+      .tab-lbl { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--t3); border-bottom: 2px solid transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+      #t-map:checked ~ .shell .tab-lbl[for="t-map"] { color: #fff; border-bottom-color: #fff; }
+      #t-feed:checked ~ .shell .tab-lbl[for="t-feed"] { color: #fff; border-bottom-color: #fff; }
+      .map-col { grid-row: 2; grid-column: 1; border-right: none; }
+      .feed-col { grid-row: 2; grid-column: 1; }
+      .cmd-row { grid-row: 3; grid-column: 1; }
+      #t-map:checked ~ .shell .map-col  { display: block; }
+      #t-map:checked ~ .shell .feed-col { display: none; }
+      #t-feed:checked ~ .shell .map-col  { display: none; }
+      #t-feed:checked ~ .shell .feed-col { display: flex; }
+      .office { grid-template-columns: repeat(2, 1fr) !important; }
+      .span2 { grid-column: 1 / -1 !important; }
+    }
+    .map-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.14em; color: var(--t3); text-transform: uppercase; margin-bottom: 14px; }
+    .office { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .span3 { grid-column: 1 / -1; }
+    .span2 { grid-column: span 2; }
+    .zone { border: 1px solid var(--b1); border-radius: 10px; padding: 13px 15px; background: var(--s1); }
+    .zn { font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--t3); margin-bottom: 13px; }
+    .zag { display: flex; gap: 14px; flex-wrap: wrap; }
+    .ag { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; user-select: none; }
+    .av { width: 46px; height: 46px; border-radius: 50%; background: var(--s2); border: 1.5px solid var(--b2); display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.02em; color: var(--t3); position: relative; transition: border-color .35s, color .35s, box-shadow .35s; }
+    .ag.ceo .av { width: 60px; height: 60px; font-size: 12px; }
+    .ag.on .av { border-color: #fff; color: #fff; box-shadow: 0 0 18px rgba(255,255,255,.1); }
+    .ag.on .av::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 1px solid rgba(255,255,255,.14); animation: ring 2.2s ease-in-out infinite; }
+    @keyframes ring { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:0;transform:scale(1.3)} }
+    .dot { position: absolute; bottom: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%; background: var(--b2); border: 1.5px solid var(--bg); transition: background .3s; }
+    .ag.on .dot { background: #fff; }
+    .an { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; color: var(--t3); transition: color .3s; }
+    .ar { font-size: 7px; color: var(--t3); opacity: .6; }
+    .ag.on .an { color: var(--t2); }
+    .bub { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); background: #fff; color: #000; font-size: 10px; font-weight: 500; line-height: 1.5; padding: 8px 11px; border-radius: 8px; white-space: normal; text-align: center; max-width: 160px; min-width: 70px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 100; box-shadow: 0 6px 28px rgba(0,0,0,.6); }
+    .bub::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #fff; }
+    .ag.say .bub { opacity: 1; }
+    .feed-hd { padding: 13px 16px 11px; border-bottom: 1px solid var(--b1); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .fh-l { font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--t3); }
+    .fh-c { font-size: 8px; color: var(--t3); }
+    .feed-list { flex: 1; overflow-y: auto; }
+    .feed-list::-webkit-scrollbar { width: 2px; }
+    .feed-list::-webkit-scrollbar-thumb { background: var(--b2); }
+    .fi { padding: 11px 16px; border-bottom: 1px solid var(--b1); animation: sli .25s ease; }
+    @keyframes sli { from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)} }
+    .fi:last-child { border-bottom: none; }
+    .fi-top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .fi-av { width: 20px; height: 20px; border-radius: 50%; background: var(--s2); border: 1px solid var(--b2); display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 6px; font-weight: 700; color: var(--t2); flex-shrink: 0; }
+    .fi-av.own { background: #fff; color: #000; }
+    .fi-nm { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; }
+    .fi-tm { font-size: 8px; color: var(--t3); flex: 1; }
+    .fi-ts { font-size: 8px; color: var(--t3); }
+    .fi-msg { font-size: 11px; color: var(--t2); line-height: 1.6; padding-left: 26px; }
+    .fi-msg.own { color: #fff; }
+    .cmd-to { font-size: 9px; color: var(--t3); white-space: nowrap; }
+    .cmd-to b { color: var(--t2); }
+    .cmd-inp { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-family: 'Inter', sans-serif; font-size: 13px; }
+    .cmd-inp::placeholder { color: var(--t3); }
+    .cmd-btn { padding: 7px 14px; background: #fff; color: #000; border: none; border-radius: 6px; font-size: 10px; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; letter-spacing: 0.05em; transition: opacity .2s; }
+    .cmd-btn:hover { opacity: .8; }
+  </style>
+</head>
+<body>
+<input type="radio" name="tab" id="t-map" checked />
+<input type="radio" name="tab" id="t-feed" />
+<header>
+  <div class="logo">AYILON <em>VIRTUAL OFFICE</em></div>
+  <div class="hdr-r">
+    <div class="live"><div class="ld"></div>LIVE</div>
+    <div class="online">12 / 12 ONLINE</div>
+  </div>
+</header>
+<div class="shell">
+  <div class="tab-bar">
+    <label class="tab-lbl" for="t-map">Map</label>
+    <label class="tab-lbl" for="t-feed">Feed</label>
+  </div>
+  <div class="map-col">
+    <div class="map-lbl">Floor Plan — AYILON HQ</div>
+    <div class="office">
+      <div class="zone span3"><div class="zn">Executive</div><div class="zag">
+        <div class="ag ceo on" id="ag-CEO"><div class="av">CEO<div class="dot"></div></div><div class="an">CEO</div><div class="ar">최고경영자</div><div class="bub" id="bb-CEO"></div></div>
+      </div></div>
+      <div class="zone span2"><div class="zn">전략팀</div><div class="zag">
+        <div class="ag on" id="ag-IRON"><div class="av">IRN<div class="dot"></div></div><div class="an">IRON</div><div class="ar">전략팀장</div><div class="bub" id="bb-IRON"></div></div>
+        <div class="ag" id="ag-GRID"><div class="av">GRD<div class="dot"></div></div><div class="an">GRID</div><div class="ar">백테스팅</div><div class="bub" id="bb-GRID"></div></div>
+      </div></div>
+      <div class="zone"><div class="zn">리서치팀</div><div class="zag">
+        <div class="ag on" id="ag-SCOUT"><div class="av">SCT<div class="dot"></div></div><div class="an">SCOUT</div><div class="ar">리서치팀장</div><div class="bub" id="bb-SCOUT"></div></div>
+      </div></div>
+      <div class="zone"><div class="zn">리스크관리팀</div><div class="zag">
+        <div class="ag" id="ag-WARD"><div class="av">WRD<div class="dot"></div></div><div class="an">WARD</div><div class="ar">리스크팀장</div><div class="bub" id="bb-WARD"></div></div>
+      </div></div>
+      <div class="zone"><div class="zn">프로그래밍팀</div><div class="zag">
+        <div class="ag on" id="ag-FORGE"><div class="av">FRG<div class="dot"></div></div><div class="an">FORGE</div><div class="ar">프로그래밍팀장</div><div class="bub" id="bb-FORGE"></div></div>
+      </div></div>
+      <div class="zone"><div class="zn">인프라팀</div><div class="zag">
+        <div class="ag" id="ag-ATLAS"><div class="av">ATL<div class="dot"></div></div><div class="an">ATLAS</div><div class="ar">인프라팀장</div><div class="bub" id="bb-ATLAS"></div></div>
+      </div></div>
+      <div class="zone"><div class="zn">홍보마케팅팀</div><div class="zag">
+        <div class="ag" id="ag-LUNA"><div class="av">LNA<div class="dot"></div></div><div class="an">LUNA</div><div class="ar">마케팅팀장</div><div class="bub" id="bb-LUNA"></div></div>
+      </div></div>
+      <div class="zone"><div class="zn">제품팀</div><div class="zag">
+        <div class="ag" id="ag-PIXEL"><div class="av">PXL<div class="dot"></div></div><div class="an">PIXEL</div><div class="ar">제품팀장</div><div class="bub" id="bb-PIXEL"></div></div>
+      </div></div>
+      <div class="zone"><div class="zn">고객서비스팀</div><div class="zag">
+        <div class="ag" id="ag-ECHO"><div class="av">ECH<div class="dot"></div></div><div class="an">ECHO</div><div class="ar">CS팀장</div><div class="bub" id="bb-ECHO"></div></div>
+      </div></div>
+      <div class="zone"><div class="zn">법률팀</div><div class="zag">
+        <div class="ag" id="ag-REX"><div class="av">REX<div class="dot"></div></div><div class="an">REX</div><div class="ar">법률팀장</div><div class="bub" id="bb-REX"></div></div>
+      </div></div>
+      <div class="zone"><div class="zn">세무회계팀</div><div class="zag">
+        <div class="ag" id="ag-LEDGER"><div class="av">LDG<div class="dot"></div></div><div class="an">LEDGER</div><div class="ar">세무팀장</div><div class="bub" id="bb-LEDGER"></div></div>
+      </div></div>
+      <div class="zone"><div class="zn">보안팀</div><div class="zag">
+        <div class="ag" id="ag-SHIELD"><div class="av">SLD<div class="dot"></div></div><div class="an">SHIELD</div><div class="ar">보안팀장</div><div class="bub" id="bb-SHIELD"></div></div>
+      </div></div>
+    </div>
+  </div>
+  <div class="feed-col">
+    <div class="feed-hd"><span class="fh-l">Activity Feed</span><span class="fh-c" id="feedCnt">0 events</span></div>
+    <div class="feed-list" id="feedList"></div>
+  </div>
+  <div class="cmd-row">
+    <div class="cmd-to">→ <b>CEO</b></div>
+    <input class="cmd-inp" id="cmdInp" type="text" placeholder="CEO에게 지시사항 입력..." />
+    <button class="cmd-btn" id="cmdBtn">전송</button>
+  </div>
+</div>
+<script>
+const A={
+  CEO:{ab:'CEO',tm:'Executive',ms:['전체 팀 점검. 이상 없음.','오늘 목표 설정. 전략팀 우선.','리서치 보고서 수신. 분석 지시.','리스크 허용 범위 내.','주간 달성률 87%. 유지.','모든 시스템 정상.']},
+  IRON:{ab:'IRN',tm:'전략팀',ms:['RSI 28 감지. 과매도 진입.','EMA 골든크로스 형성 중.','4H 지지선 $94,200 확인.','Strategy 3 시그널 발생.','볼린저밴드 하단. 반등 분석.','펀딩레이트 -0.06%. 롱 조건.']},
+  GRID:{ab:'GRD',tm:'백테스팅팀',ms:['Strategy 4 승률 63%.','샤프지수 1.84. 양호.','MA Ribbon 상승장 우세.','Strategy 9 지연 발견. 수정 권고.']},
+  SCOUT:{ab:'SCT',tm:'리서치팀',ms:['BTC 공포지수 22. 극도 공포.','연준 금리 동결 예정. 주의.','고래 3만 BTC 이동 감지.','ETF 유입 $420M. 긍정.','OKX 미결제약정 18% 증가.']},
+  WARD:{ab:'WRD',tm:'리스크관리팀',ms:['손실 한도 34% 소진.','변동성 급등. 축소 권고.','드로우다운 -4.2%. 정상.','서킷브레이커 비활성. 정상.']},
+  FORGE:{ab:'FRG',tm:'프로그래밍팀',ms:['Strategy 5 최적화 완료.','OKX API 28ms. 정상.','DCA 로직 수정 완료.','Cron 성공률 99.97%.']},
+  ATLAS:{ab:'ATL',tm:'인프라팀',ms:['Workers 100%. 정상.','D1 쿼리 14ms. 최적.','KV 히트율 94%.','API 한도 23% 사용.']},
+  LUNA:{ab:'LNA',tm:'홍보마케팅팀',ms:['전환율 +18%.','트위터 노출 420만.','Pro 업셀 이메일 설계 중.','인터뷰 5건 완료.']},
+  PIXEL:{ab:'PXL',tm:'제품팀',ms:['Strategy 11 스펙 작성 중.','Elite 기능 3개 기획.','대시보드 개선안 준비.','모바일 최적화 상향.']},
+  ECHO:{ab:'ECH',tm:'고객서비스팀',ms:['문의 7건 처리 완료.','API 키 FAQ 업데이트.','만족도 4.8/5.0.','온보딩 열람 +32%.']},
+  REX:{ab:'REX',tm:'법률팀',ms:['금융규제 개정안 검토.','자동매매 조항 업데이트 필요.','EU MiCA 분석 중.','개인정보방침 갱신 완료.']},
+  LEDGER:{ab:'LDG',tm:'세무회계팀',ms:['이번달 구독 $12,840.','손익 집계 완료.','절세 시뮬레이션 3가지.','분기 마감 D-3.']},
+  SHIELD:{ab:'SLD',tm:'보안팀',ms:['API 키 로그 이상 없음.','D1 암호화 정상.','비정상 로그인 0건.','보안 감사 완료.']},
+};
+const keys=Object.keys(A); let cnt=0;
+function addFeed(key,msg,own=false){
+  const ag=A[key]; cnt++;
+  document.getElementById('feedCnt').textContent=cnt+' events';
+  const el=document.createElement('div'); el.className='fi';
+  el.innerHTML=`<div class="fi-top"><div class="fi-av${own?' own':''}">${own?'YOU':ag.ab}</div><div class="fi-nm">${own?'오너':key}</div><div class="fi-tm">${own?'지시사항':ag.tm}</div><div class="fi-ts">방금</div></div><div class="fi-msg${own?' own':''}">${msg}</div>`;
+  const list=document.getElementById('feedList');
+  list.insertBefore(el,list.firstChild);
+  while(list.children.length>60)list.removeChild(list.lastChild);
+}
+function go(key,msg){
+  const w=document.getElementById('ag-'+key),b=document.getElementById('bb-'+key);
+  if(!w||!b||!msg)return;
+  b.textContent=msg; w.classList.add('on','say'); addFeed(key,msg);
+  const idle=['GRID','WARD','ATLAS','LUNA','PIXEL','ECHO','REX','LEDGER','SHIELD'];
+  setTimeout(()=>{w.classList.remove('say');if(idle.includes(key))w.classList.remove('on');},4200);
+}
+function rnd(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function tick(){const k=rnd(keys);go(k,rnd(A[k].ms));setTimeout(tick,3800+Math.random()*5200);}
+['SCOUT','IRON','CEO','FORGE','ATLAS'].forEach((k,i)=>setTimeout(()=>go(k,rnd(A[k].ms)),i*1100));
+setTimeout(tick,7000);
+function send(){const inp=document.getElementById('cmdInp'),v=inp.value.trim();if(!v)return;addFeed('CEO',v,true);inp.value='';setTimeout(()=>go('CEO',rnd(A['CEO'].ms)),1200);setTimeout(()=>go('IRON',rnd(A['IRON'].ms)),2600);setTimeout(()=>go('SCOUT',rnd(A['SCOUT'].ms)),4000);}
+document.getElementById('cmdBtn').addEventListener('click',send);
+document.getElementById('cmdInp').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+</script>
+</body>
+</html>
