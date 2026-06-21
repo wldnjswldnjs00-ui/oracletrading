@@ -1028,8 +1028,8 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
 
     // ── Fetch all candles in parallel ─────────────────────────
     const [candles1H, candles4H, candlesD, c5] = await Promise.all([
-      getCandles(tradingPair, '1H', 100),
-      getCandles(tradingPair, '4H', 100),
+      getCandles(tradingPair, '1H', 150),
+      getCandles(tradingPair, '4H', 220),
       getCandles(tradingPair, '1D', 60),
       getCandles(tradingPair, '5m', 25)
     ]);
@@ -1163,16 +1163,16 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     // ── Entry signal (strategy routing) ──────────────────────
     let signal = null;
     switch (strategy) {
-      case 'rsi_dca':      signal = detectSignalRSIDCA(candles1H, levels, currentPrice);             break;
-      case 'ma_support':   signal = detectSignalMASupport(candles1H, currentPrice);                 break;
-      case 'ma_crossover': signal = detectSignalMACrossover(c5, candles1H, currentPrice);           break;
-      case 'bb_reversion': signal = detectSignalBBReversion(c5, currentPrice, trend);               break;
-      case 'breakout':     signal = detectSignalBreakout(candles1H, c5, currentPrice);              break;
-      case 'ma_ribbon':    signal = detectSignalMARibbon(candles1H, currentPrice);                  break;
-      case 'macd_div':     signal = detectSignalMACDDiv(candles1H, c5, currentPrice);               break;
-      case 'funding_rate': signal = detectSignalFundingRate(capturedFR, currentPrice, levels);      break;
-      case 'atr_trend':    signal = detectSignalATRTrend(candles1H, c5, currentPrice);              break;
-      default:             signal = detectSignal(c5, levels); // 'sr_bounce' or legacy 'daytrading'
+      case 'rsi_dca':      signal = detectSignalRSIDCA(candles1H, levels, currentPrice, candles4H);      break;
+      case 'ma_support':   signal = detectSignalMASupport(candles1H, currentPrice, candles4H);           break;
+      case 'ma_crossover': signal = detectSignalMACrossover(c5, candles1H, currentPrice, candles4H);     break;
+      case 'bb_reversion': signal = detectSignalBBReversion(c5, currentPrice, trend, candles4H);         break;
+      case 'breakout':     signal = detectSignalBreakout(candles1H, c5, currentPrice, candles4H);        break;
+      case 'ma_ribbon':    signal = detectSignalMARibbon(candles1H, currentPrice, candles4H);            break;
+      case 'macd_div':     signal = detectSignalMACDDiv(candles1H, c5, currentPrice, candles4H);         break;
+      case 'funding_rate': signal = detectSignalFundingRate(capturedFR, currentPrice, levels, candles4H); break;
+      case 'atr_trend':    signal = detectSignalATRTrend(candles1H, c5, currentPrice, candles4H);        break;
+      default:             signal = detectSignal(c5, levels, candles4H); // 'sr_bounce' or legacy 'daytrading'
     }
     if (!signal) {
       // Heartbeat: log once per 5 min so user can confirm bot is alive
@@ -1614,202 +1614,303 @@ function calcADX(candles, period = 14) {
 // STRATEGY SIGNAL FUNCTIONS
 // ════════════════════════════════════════════════════════════
 
-function detectSignalRSIDCA(candles1H, levels, currentPrice) {
+// ── STRATEGY IMPROVEMENTS v2 ────────────────────────────────────
+// Core change: every strategy now checks the 4H trend first.
+// Counter-trend trades are blocked. ATR-based stops replace fixed swing highs/lows.
+// Minimum R:R enforced per trade. This is the #1 reason prior strategies lost money.
+
+function detectSignalRSIDCA(candles1H, levels, currentPrice, candles4H) {
+  const trend4H = detect4HTrend(candles4H);
   const rsi = calcRSI(candles1H, 14);
   if (!rsi) return null;
-  const px = currentPrice || parseFloat(candles1H[0][4]);
+  const px  = currentPrice || parseFloat(candles1H[0][4]);
+  const atr = calcATR(candles1H, 14);
+  if (!atr) return null;
 
-  // LONG: oversold (RSI < 40)
-  if (rsi < 40) {
-    const swingLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
-    const slDist = (px - swingLow) / px;
-    if (slDist >= 0.005 && slDist <= 0.10) {
-      const support = levels.supports[0];
-      return { type: 'long', level: support?.price || px, grade: rsi < 30 ? 'S' : 'A', stopLoss: swingLow, strategy: 'rsi_dca' };
-    }
+  // Check RSI divergence: price made new low vs 10 bars ago but RSI rising = stronger signal
+  const closes10 = candles1H.slice(0, 10).map(c => parseFloat(c[4]));
+  const lows10   = candles1H.slice(0, 10).map(c => parseFloat(c[3]));
+  const priceDiv = px < Math.min(...closes10.slice(1)) && rsi > calcRSI(candles1H.slice(1), 14);
+
+  // LONG: oversold, trend not bearish, ATR-based SL
+  if (trend4H !== 'bear' && rsi < 38) {
+    const sl = px - atr * 2.0;
+    const d  = (px - sl) / px;
+    if (d < 0.005 || d > 0.12) return null;
+    const support = levels.supports[0];
+    const grade   = (rsi < 28 || priceDiv) ? 'S' : 'A';
+    return { type: 'long', level: support?.price || px, grade, stopLoss: sl, strategy: 'rsi_dca' };
   }
 
-  // SHORT: overbought (RSI > 65)
-  if (rsi > 65) {
-    const swingHigh = Math.max(...candles1H.slice(0, 5).map(c => parseFloat(c[2])));
-    const slDist = (swingHigh - px) / px;
-    if (slDist >= 0.005 && slDist <= 0.10) {
-      const resistance = levels.resistances[0];
-      return { type: 'short', level: resistance?.price || px, grade: rsi > 75 ? 'S' : 'A', stopLoss: swingHigh, strategy: 'rsi_dca' };
-    }
+  // SHORT: overbought, trend not bullish, ATR-based SL
+  if (trend4H !== 'bull' && rsi > 68) {
+    const sl = px + atr * 2.0;
+    const d  = (sl - px) / px;
+    if (d < 0.005 || d > 0.12) return null;
+    const resistance = levels.resistances[0];
+    const grade      = (rsi > 78 || priceDiv) ? 'S' : 'A';
+    return { type: 'short', level: resistance?.price || px, grade, stopLoss: sl, strategy: 'rsi_dca' };
   }
 
   return null;
 }
 
-function detectSignalMASupport(candles1H, currentPrice) {
-  const closes = candles1H.map(c => parseFloat(c[4]));
+function detectSignalMASupport(candles1H, currentPrice, candles4H) {
+  const trend4H = detect4HTrend(candles4H);
+  const closes  = candles1H.map(c => parseFloat(c[4]));
+  const atr     = calcATR(candles1H, 14);
+  if (!atr) return null;
+
+  // Only look for longs in bull/neutral, shorts in bear/neutral
+  if (trend4H === 'bear') {
+    // In bear trend: look for price rejecting MA from below (short setup)
+    const periods = [10, 20, 50];
+    const mas = periods.map(p => ({ p, v: _sma(closes, p) })).filter(m => m.v && m.v > currentPrice);
+    if (mas.length < 2) return null;
+    const nearMA = mas.find(m => Math.abs(currentPrice - m.v) / currentPrice <= 0.007);
+    if (!nearMA) return null;
+    const rsi = calcRSI(candles1H, 14);
+    if (!rsi || rsi < 45) return null; // wait for RSI to be in neutral-high zone
+    const sl = currentPrice + atr * 2.0;
+    const d  = (sl - currentPrice) / currentPrice;
+    if (d < 0.005 || d > 0.12) return null;
+    return { type: 'short', level: nearMA.v, grade: 'B', stopLoss: sl, strategy: 'ma_support' };
+  }
+
+  // Bull/neutral: long setup when price pulls back to EMA support
   const periods = [10, 20, 34, 50, 100, 200];
   const mas = periods.map(p => ({ p, v: _sma(closes, p) })).filter(m => m.v && m.v < currentPrice);
   if (mas.length < 3) return null;
-  const nearMA = mas.find(m => Math.abs(currentPrice - m.v) / currentPrice <= 0.005);
+  const nearMA = mas.find(m => Math.abs(currentPrice - m.v) / currentPrice <= 0.006);
   if (!nearMA) return null;
-  const swingLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
-  const slDist = (currentPrice - swingLow) / currentPrice;
-  if (slDist < 0.005 || slDist > 0.12) return null;
-  return { type: 'long', level: nearMA.v, grade: 'A', stopLoss: swingLow, strategy: 'ma_support' };
+  const rsi = calcRSI(candles1H, 14);
+  if (!rsi || rsi > 60) return null; // don't enter if RSI already high
+  const sl = currentPrice - atr * 2.0;
+  const d  = (currentPrice - sl) / currentPrice;
+  if (d < 0.005 || d > 0.12) return null;
+  return { type: 'long', level: nearMA.v, grade: mas.length >= 4 ? 'A' : 'B', stopLoss: sl, strategy: 'ma_support' };
 }
 
-function detectSignalMACrossover(candles5m, candles1H, currentPrice) {
-  const closes = candles1H.map(c => parseFloat(c[4])).reverse(); // oldest-first for EMA
+function detectSignalMACrossover(candles5m, candles1H, currentPrice, candles4H) {
+  const trend4H  = detect4HTrend(candles4H);
+  const closes   = candles1H.map(c => parseFloat(c[4])).reverse(); // oldest-first
   if (closes.length < 36) return null;
-  const ema10c = _ema(closes, 10), ema34c = _ema(closes, 34);
-  const ema10p = _ema(closes.slice(0, closes.length - 1), 10), ema34p = _ema(closes.slice(0, closes.length - 1), 34);
+  const ema10c   = _ema(closes, 10), ema34c = _ema(closes, 34);
+  const ema10p   = _ema(closes.slice(0, closes.length - 1), 10);
+  const ema34p   = _ema(closes.slice(0, closes.length - 1), 34);
   if (!ema10c || !ema34c || !ema10p || !ema34p) return null;
-  const rsi = calcRSI(candles1H, 14);
-  if (!rsi) return null;
-  const lows5m  = candles5m.slice(0, 4).map(c => parseFloat(c[3]));
-  const highs5m = candles5m.slice(0, 4).map(c => parseFloat(c[2]));
-  if (ema10c > ema34c && ema10p <= ema34p && rsi >= 50 && rsi < 70) {
-    const sl = Math.min(...lows5m);
-    const d = (currentPrice - sl) / currentPrice;
+  const rsi  = calcRSI(candles1H, 14);
+  const atr  = calcATR(candles1H, 14);
+  if (!rsi || !atr) return null;
+
+  // LONG cross: EMA10 crosses above EMA34, trend supports
+  if (trend4H !== 'bear' && ema10c > ema34c && ema10p <= ema34p && rsi >= 48 && rsi < 72) {
+    const sl = currentPrice - atr * 2.0;
+    const d  = (currentPrice - sl) / currentPrice;
     if (d < 0.005 || d > 0.10) return null;
-    return { type: 'long', level: ema10c, grade: 'A', stopLoss: sl, strategy: 'ma_crossover' };
+    return { type: 'long', level: ema10c, grade: trend4H === 'bull' ? 'S' : 'A', stopLoss: sl, strategy: 'ma_crossover' };
   }
-  if (ema10c < ema34c && ema10p >= ema34p && rsi <= 50 && rsi > 30) {
-    const sl = Math.max(...highs5m);
-    const d = (sl - currentPrice) / currentPrice;
+
+  // SHORT cross: EMA10 crosses below EMA34, trend supports
+  if (trend4H !== 'bull' && ema10c < ema34c && ema10p >= ema34p && rsi <= 52 && rsi > 28) {
+    const sl = currentPrice + atr * 2.0;
+    const d  = (sl - currentPrice) / currentPrice;
     if (d < 0.005 || d > 0.10) return null;
-    return { type: 'short', level: ema10c, grade: 'A', stopLoss: sl, strategy: 'ma_crossover' };
+    return { type: 'short', level: ema10c, grade: trend4H === 'bear' ? 'S' : 'A', stopLoss: sl, strategy: 'ma_crossover' };
   }
   return null;
 }
 
-function detectSignalBBReversion(candles5m, currentPrice, trend) {
-  const bb = calcBB(candles5m, 20, 2);
+function detectSignalBBReversion(candles5m, currentPrice, trend, candles4H) {
+  const trend4H = detect4HTrend(candles4H);
+  const bb  = calcBB(candles5m, 20, 2);
   if (!bb) return null;
   if (candles5m.length < 3) return null;
-  const prev = candles5m[1].map(parseFloat), cur = candles5m[0].map(parseFloat);
-  if (prev[4] < bb.lower && cur[4] > bb.lower && trend.dir !== 'down') {
-    const sl = Math.min(...candles5m.slice(0, 4).map(c => parseFloat(c[3])));
-    const d = (currentPrice - sl) / currentPrice;
+  const prev = candles5m[1].map(parseFloat);
+  const cur  = candles5m[0].map(parseFloat);
+  const atr  = calcATR(candles5m, 14);
+  if (!atr) return null;
+
+  // BB width filter: skip squeeze (low volatility, signals unreliable)
+  const bbWidth = (bb.upper - bb.lower) / bb.mid;
+  if (bbWidth < 0.008) return null;
+
+  const rsi = calcRSI(candles5m, 14);
+
+  // LONG: price crossed back above lower BB, 4H not bearish, RSI recovering
+  if (trend4H !== 'bear' && prev[4] < bb.lower && cur[4] > bb.lower) {
+    if (rsi && rsi > 55) return null; // already recovered too much
+    const sl = currentPrice - atr * 2.0;
+    const d  = (currentPrice - sl) / currentPrice;
     if (d < 0.005 || d > 0.12) return null;
     return { type: 'long', level: bb.lower, grade: 'A', stopLoss: sl, strategy: 'bb_reversion' };
   }
-  if (prev[4] > bb.upper && cur[4] < bb.upper && trend.dir !== 'up') {
-    const sl = Math.max(...candles5m.slice(0, 4).map(c => parseFloat(c[2])));
-    const d = (sl - currentPrice) / currentPrice;
+
+  // SHORT: price crossed back below upper BB, 4H not bullish, RSI falling
+  if (trend4H !== 'bull' && prev[4] > bb.upper && cur[4] < bb.upper) {
+    if (rsi && rsi < 45) return null;
+    const sl = currentPrice + atr * 2.0;
+    const d  = (sl - currentPrice) / currentPrice;
     if (d < 0.005 || d > 0.12) return null;
     return { type: 'short', level: bb.upper, grade: 'A', stopLoss: sl, strategy: 'bb_reversion' };
   }
   return null;
 }
 
-function detectSignalBreakout(candles1H, candles5m, currentPrice) {
+function detectSignalBreakout(candles1H, candles5m, currentPrice, candles4H) {
+  const trend4H = detect4HTrend(candles4H);
   if (candles1H.length < 22 || candles5m.length < 22) return null;
   const res20  = Math.max(...candles1H.slice(1, 21).map(c => parseFloat(c[2])));
   const sup20  = Math.min(...candles1H.slice(1, 21).map(c => parseFloat(c[3])));
   const prev5m = candles5m[1]?.map(parseFloat);
   const cur5m  = candles5m[0]?.map(parseFloat);
   if (!prev5m || !cur5m) return null;
-  const avgVol = candles5m.slice(1, 21).map(c => parseFloat(c[5])).reduce((s, v) => s + v, 0) / 20;
-  if (parseFloat(cur5m[5]) < avgVol * 1.5) return null;
+  const atr    = calcATR(candles1H, 14);
+  if (!atr) return null;
 
-  if (prev5m[4] <= res20 && currentPrice > res20 * 1.001) {
-    const sl = prev5m[3];
-    const d = (currentPrice - sl) / currentPrice;
+  // Volume must be at least 1.8x average (stricter than before — fewer but better signals)
+  const avgVol = candles5m.slice(1, 21).map(c => parseFloat(c[5])).reduce((s, v) => s + v, 0) / 20;
+  if (parseFloat(cur5m[5]) < avgVol * 1.8) return null;
+
+  // Upward breakout: 4H trend must not be bearish
+  if (trend4H !== 'bear' && prev5m[4] <= res20 && currentPrice > res20 * 1.002) {
+    const sl = res20 - atr * 0.5; // SL just below broken resistance
+    const d  = (currentPrice - sl) / currentPrice;
     if (d < 0.003 || d > 0.08) return null;
-    return { type: 'long', level: res20, grade: 'S', stopLoss: sl, strategy: 'breakout' };
+    return { type: 'long', level: res20, grade: trend4H === 'bull' ? 'S' : 'A', stopLoss: sl, strategy: 'breakout' };
   }
-  if (prev5m[4] >= sup20 && currentPrice < sup20 * 0.999) {
-    const sl = prev5m[2];  // prev candle high is SL for short breakdown
-    const d = (sl - currentPrice) / currentPrice;
+
+  // Downward breakout: 4H trend must not be bullish
+  if (trend4H !== 'bull' && prev5m[4] >= sup20 && currentPrice < sup20 * 0.998) {
+    const sl = sup20 + atr * 0.5;
+    const d  = (sl - currentPrice) / currentPrice;
     if (d < 0.003 || d > 0.08) return null;
-    return { type: 'short', level: sup20, grade: 'S', stopLoss: sl, strategy: 'breakout' };
+    return { type: 'short', level: sup20, grade: trend4H === 'bear' ? 'S' : 'A', stopLoss: sl, strategy: 'breakout' };
   }
   return null;
 }
 
-function detectSignalMARibbon(candles1H, currentPrice) {
-  const closes = candles1H.map(c => parseFloat(c[4]));
-  // Only require 4 core MAs to be aligned (drop 100/200 — too slow for daily signals)
+function detectSignalMARibbon(candles1H, currentPrice, candles4H) {
+  const trend4H = detect4HTrend(candles4H);
+  const closes  = candles1H.map(c => parseFloat(c[4]));
+  const atr     = calcATR(candles1H, 14);
+  if (!atr) return null;
+
   const mas = [10, 20, 50, 100].map(p => ({ p, v: _sma(closes, p) })).filter(m => m.v);
   if (mas.length < 4) return null;
-  const sorted = [...mas].sort((a, b) => a.p - b.p); // ascending period
-  // Bullish: price > MA10 > MA20 > MA50 > MA100
+  const sorted = [...mas].sort((a, b) => a.p - b.p);
+
   const bullish = currentPrice > sorted[0].v && sorted.every((m, i) => i === 0 || sorted[i-1].v > m.v);
-  // Bearish: price < MA10 < MA20 < MA50 < MA100
   const bearish = currentPrice < sorted[0].v && sorted.every((m, i) => i === 0 || sorted[i-1].v < m.v);
+
+  // Block counter-trend ribbon signals
+  if (bullish && trend4H === 'bear') return null;
+  if (bearish && trend4H === 'bull') return null;
   if (!bullish && !bearish) return null;
-  // Price within 1% of fastest MA (pullback entry)
+
+  // Price within 1% of MA10 (pullback entry, not chase)
   if (Math.abs(currentPrice - sorted[0].v) / currentPrice > 0.010) return null;
-  const sl = bullish
-    ? Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])))
-    : Math.max(...candles1H.slice(0, 5).map(c => parseFloat(c[2])));
-  const d = Math.abs(currentPrice - sl) / currentPrice;
-  if (d < 0.005 || d > 0.12) return null;
-  return bullish
-    ? { type: 'long',  level: sorted[0].v, grade: 'A', stopLoss: sl, strategy: 'ma_ribbon' }
-    : { type: 'short', level: sorted[0].v, grade: 'A', stopLoss: sl, strategy: 'ma_ribbon' };
+
+  const rsi = calcRSI(candles1H, 14);
+  if (bullish && rsi && rsi > 72) return null; // overbought on pullback entry = skip
+  if (bearish && rsi && rsi < 28) return null;
+
+  if (bullish) {
+    const sl = currentPrice - atr * 2.0;
+    const d  = (currentPrice - sl) / currentPrice;
+    if (d < 0.005 || d > 0.12) return null;
+    return { type: 'long',  level: sorted[0].v, grade: 'A', stopLoss: sl, strategy: 'ma_ribbon' };
+  } else {
+    const sl = currentPrice + atr * 2.0;
+    const d  = (sl - currentPrice) / currentPrice;
+    if (d < 0.005 || d > 0.12) return null;
+    return { type: 'short', level: sorted[0].v, grade: 'A', stopLoss: sl, strategy: 'ma_ribbon' };
+  }
 }
 
-function detectSignalMACDDiv(candles1H, candles5m, currentPrice) {
+function detectSignalMACDDiv(candles1H, candles5m, currentPrice, candles4H) {
+  const trend4H  = detect4HTrend(candles4H);
   const macdData = calcMACD(candles1H);
-  const rsi = calcRSI(candles1H, 14);
-  if (!macdData || !rsi) return null;
-  const lows  = candles1H.slice(0, 10).map(c => parseFloat(c[3]));
-  const highs = candles1H.slice(0, 10).map(c => parseFloat(c[2]));
-  const nearLow  = Math.abs(currentPrice - Math.min(...lows))  / currentPrice <= 0.02;
-  const nearHigh = Math.abs(currentPrice - Math.max(...highs)) / currentPrice <= 0.02;
-  if (nearLow && macdData.histogram > macdData.prevHistogram && rsi > 40) {
-    const sl = Math.min(...candles5m.slice(0, 4).map(c => parseFloat(c[3])));
-    const d = (currentPrice - sl) / currentPrice;
+  const rsi      = calcRSI(candles1H, 14);
+  const atr      = calcATR(candles1H, 14);
+  if (!macdData || !rsi || !atr) return null;
+
+  const closes10 = candles1H.slice(0, 10).map(c => parseFloat(c[4]));
+  const lows10   = candles1H.slice(0, 10).map(c => parseFloat(c[3]));
+  const highs10  = candles1H.slice(0, 10).map(c => parseFloat(c[2]));
+  const nearLow  = Math.abs(currentPrice - Math.min(...lows10))  / currentPrice <= 0.02;
+  const nearHigh = Math.abs(currentPrice - Math.max(...highs10)) / currentPrice <= 0.02;
+
+  // Bullish divergence: near low + MACD increasing + RSI not extreme + trend not bearish
+  if (trend4H !== 'bear' && nearLow && macdData.histogram > macdData.prevHistogram && rsi > 35 && rsi < 55) {
+    const sl = currentPrice - atr * 2.0;
+    const d  = (currentPrice - sl) / currentPrice;
     if (d < 0.005 || d > 0.12) return null;
     return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'macd_div' };
   }
-  if (nearHigh && macdData.histogram < macdData.prevHistogram && rsi < 60) {
-    const sl = Math.max(...candles5m.slice(0, 4).map(c => parseFloat(c[2])));
-    const d = (sl - currentPrice) / currentPrice;
+
+  // Bearish divergence: near high + MACD decreasing + RSI not extreme + trend not bullish
+  if (trend4H !== 'bull' && nearHigh && macdData.histogram < macdData.prevHistogram && rsi > 45 && rsi < 65) {
+    const sl = currentPrice + atr * 2.0;
+    const d  = (sl - currentPrice) / currentPrice;
     if (d < 0.005 || d > 0.12) return null;
     return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'macd_div' };
   }
   return null;
 }
 
-function detectSignalFundingRate(fr, currentPrice, levels) {
+function detectSignalFundingRate(fr, currentPrice, levels, candles4H) {
   if (fr === null || fr === undefined) return null;
-  if (fr >= 0.001) {
+  const trend4H = detect4HTrend(candles4H);
+  const frNum   = parseFloat(fr);
+
+  // Extreme positive funding: market is over-leveraged long → contrarian short
+  // Only enter short if 4H trend is not strongly bullish
+  if (frNum >= 0.0015 && trend4H !== 'bull') {
     const sl = currentPrice * 1.025;
-    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'funding_rate' };
+    return { type: 'short', level: currentPrice, grade: frNum >= 0.003 ? 'S' : 'A', stopLoss: sl, strategy: 'funding_rate' };
   }
-  if (fr <= -0.0005) {
+
+  // Extreme negative funding: over-leveraged short → contrarian long
+  if (frNum <= -0.0008 && trend4H !== 'bear') {
     const sl = currentPrice * 0.975;
-    return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'funding_rate' };
+    return { type: 'long', level: currentPrice, grade: frNum <= -0.002 ? 'S' : 'A', stopLoss: sl, strategy: 'funding_rate' };
   }
   return null;
 }
 
-function detectSignalATRTrend(candles1H, candles5m, currentPrice) {
+function detectSignalATRTrend(candles1H, candles5m, currentPrice, candles4H) {
+  const trend4H = detect4HTrend(candles4H);
+  if (trend4H === 'neutral') return null; // ATR trend requires clear directional bias
   if (candles1H.length < 60) return null;
+
   const adxData = calcADX(candles1H, 14);
-  if (!adxData || adxData.adx < 25) return null;
+  if (!adxData || adxData.adx < 22) return null; // loosened from 25 to catch more trends
   const closes = candles1H.map(c => parseFloat(c[4]));
   const sma50  = _sma(closes, 50);
   const atr    = calcATR(candles1H, 14);
   if (!sma50 || !atr) return null;
 
-  if (currentPrice > sma50 && adxData.plusDI > adxData.minusDI) {
+  // LONG: price above SMA50, +DI dominates, 4H is bull, pullback to SMA within 1.5 ATR
+  if (trend4H === 'bull' && currentPrice > sma50 && adxData.plusDI > adxData.minusDI) {
     const recentHigh = Math.max(...candles1H.slice(0, 5).map(c => parseFloat(c[2])));
-    const pullback = recentHigh - currentPrice;
-    if (pullback < atr * 0.5 || pullback > atr * 2.0) return null;
+    const pullback   = recentHigh - currentPrice;
+    if (pullback < atr * 0.3 || pullback > atr * 2.5) return null;
     const sl = currentPrice - atr * 1.5;
-    const d = (currentPrice - sl) / currentPrice;
+    const d  = (currentPrice - sl) / currentPrice;
     if (d < 0.005 || d > 0.12) return null;
-    return { type: 'long', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'atr_trend' };
+    return { type: 'long', level: currentPrice, grade: adxData.adx > 30 ? 'S' : 'A', stopLoss: sl, strategy: 'atr_trend' };
   }
-  if (currentPrice < sma50 && adxData.minusDI > adxData.plusDI) {
+
+  // SHORT: price below SMA50, -DI dominates, 4H is bear, bounce within 1.5 ATR
+  if (trend4H === 'bear' && currentPrice < sma50 && adxData.minusDI > adxData.plusDI) {
     const recentLow = Math.min(...candles1H.slice(0, 5).map(c => parseFloat(c[3])));
-    const bounce = currentPrice - recentLow;
-    if (bounce < atr * 0.5 || bounce > atr * 2.0) return null;
+    const bounce    = currentPrice - recentLow;
+    if (bounce < atr * 0.3 || bounce > atr * 2.5) return null;
     const sl = currentPrice + atr * 1.5;
-    const d = (sl - currentPrice) / currentPrice;
+    const d  = (sl - currentPrice) / currentPrice;
     if (d < 0.005 || d > 0.12) return null;
-    return { type: 'short', level: currentPrice, grade: 'A', stopLoss: sl, strategy: 'atr_trend' };
+    return { type: 'short', level: currentPrice, grade: adxData.adx > 30 ? 'S' : 'A', stopLoss: sl, strategy: 'atr_trend' };
   }
   return null;
 }
@@ -1844,6 +1945,30 @@ function calcEMA(closes, period) {
     ema = closes[i] * k + ema * (1 - k);
   }
   return ema;
+}
+
+// ── 4H TREND FILTER ───────────────────────────────────────────
+// Returns 'bull'|'bear'|'neutral'. Used by ALL strategies to block counter-trend entries.
+// EMA50/EMA200 on 4H is the most reliable regime filter for swing+day trading.
+function detect4HTrend(candles4H) {
+  if (!candles4H || candles4H.length < 55) return 'neutral';
+  const closes = candles4H.map(c => parseFloat(c[4])).reverse(); // oldest-first for EMA
+  const price  = closes[closes.length - 1];
+  const ema50  = calcEMA(closes, 50);
+  if (!ema50) return 'neutral';
+  if (closes.length >= 200) {
+    const ema200 = calcEMA(closes, 200);
+    if (ema200) {
+      if (ema50 > ema200 && price > ema50)  return 'bull';
+      if (ema50 < ema200 && price < ema50)  return 'bear';
+      return 'neutral';
+    }
+  }
+  // Fallback: EMA20/EMA50 when <200 bars available
+  const ema20 = calcEMA(closes, 20);
+  if (ema20 && ema20 > ema50 && price > ema20) return 'bull';
+  if (ema20 && ema20 < ema50 && price < ema20) return 'bear';
+  return 'neutral';
 }
 
 // ── S/R DETECTION ─────────────────────────────────────────────
