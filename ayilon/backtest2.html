@@ -105,13 +105,7 @@ tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:10px;}
   <div id="warnDiv" class="warn-box hidden">⚠️ 거래 수가 1,000건 미만인 전략이 있습니다. 캔들 수를 늘려보세요.</div>
   <table>
     <thead><tr>
-      <th>전략</th>
-      <th>거래수</th>
-      <th>승률</th>
-      <th>PF</th>
-      <th>총수익%</th>
-      <th>연환산%</th>
-      <th>MDD%</th>
+      <th>전략</th><th>거래수</th><th>승률</th><th>PF</th><th>총수익%</th><th>연환산%</th><th>MDD%</th>
     </tr></thead>
     <tbody id="resBody"></tbody>
   </table>
@@ -347,8 +341,13 @@ async function fetchCandles(symbol,limit){
   while(fetched<limit){
     var need=Math.min(300,limit-fetched);
     var url=base+'?instId='+encodeURIComponent(symbol)+'&bar=5m&limit='+need+(after?'&after='+after:'');
-    var r=await fetch(url);
-    if(!r.ok)throw new Error('OKX API 오류 '+r.status);
+    var r,tries=0;
+    while(tries<5){
+      r=await fetch(url);
+      if(r.status===429){tries++;await new Promise(x=>setTimeout(x,600*tries));continue;}
+      break;
+    }
+    if(!r.ok)throw new Error('OKX '+r.status);
     var j=await r.json();
     var d=j.data||[];
     if(!d.length)break;
@@ -357,10 +356,11 @@ async function fetchCandles(symbol,limit){
     fetched+=d.length;
     _setProg(Math.min(fetched/limit,0.99)*0.75,'캔들 로딩: '+fetched.toLocaleString()+'봉...');
     if(d.length<need)break;
+    await new Promise(x=>setTimeout(x,120));
   }
   return all.reverse();
 }
-var _running=false,_results=[],_chart=null;
+var _running=false,_results=[],_chart=null,_candles=null;
 function _setBusy(on,msg){
   _running=on;
   ['btnRun','btnQuick'].forEach(id=>document.getElementById(id).disabled=on);
@@ -391,21 +391,21 @@ async function _run(limit){
     var sel=document.getElementById('stratSel').value;
     var toRun=sel==='all'?STRATS:STRATS.filter(s=>s.id===sel);
     _setOvSub(sym+' 데이터 로딩 중...');
-    var candles=await fetchCandles(sym,limit);
-    if(candles.length<500)throw new Error('데이터 부족: '+candles.length+'봉');
+    _candles=await fetchCandles(sym,limit);
+    if(_candles.length<500)throw new Error('데이터 부족: '+_candles.length+'봉');
     _results=[];
     for(var i=0;i<toRun.length;i++){
       var s=toRun[i];
       document.getElementById('ovMsg').textContent=s.name+' 계산 중...';
-      _setOvSub((i+1)+'/'+toRun.length+' 전략 | 로드된 캔들: '+candles.length.toLocaleString()+'봉');
+      _setOvSub((i+1)+'/'+toRun.length+' 전략 | 로드된 캔들: '+_candles.length.toLocaleString()+'봉');
       _setProg(0.75+(i+1)/toRun.length*0.25,'');
       await new Promise(r=>setTimeout(r,20));
-      var res=runBacktest(candles,s.id,cfg);
+      var res=runBacktest(_candles,s.id,cfg);
       res.name=s.name;
       _results.push(res);
     }
     await new Promise(r=>setTimeout(r,60));
-    renderAll(_results,candles);
+    renderAll(_results,_candles);
   }catch(e){
     alert('오류: '+e.message);
     _setProg(0,'오류');
