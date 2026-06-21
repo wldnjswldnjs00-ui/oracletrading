@@ -65,7 +65,7 @@ tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:10px;}
   <div class="card-title">설정</div>
   <div class="grid3">
     <div><label>심볼</label><input type="text" id="symbol" value="BTC-USDT-SWAP"></div>
-    <div><label>목표 캔들 수</label><input type="number" id="bars" value="100000" min="10000" max="150000" step="10000"></div>
+    <div><label>목표 캔들 수</label><input type="number" id="bars" value="50000" min="10000" max="150000" step="10000"></div>
     <div><label>초기 자본 ($)</label><input type="number" id="capital" value="10000" min="100"></div>
   </div>
   <div class="grid2">
@@ -384,8 +384,7 @@ async function fetchCandles(symbol,limit){
     after=d[d.length-1][0];
     fetched+=d.length;
     if(d.length<need)break;
-    _setProg(fetched/limit*0.7,'캔들 로딩: '+fetched.toLocaleString()+' / '+limit.toLocaleString());
-    await new Promise(r=>setTimeout(r,80));
+    _setProg(fetched/limit*0.7,'캔들 로딩: '+fetched.toLocaleString()+'봉...');
   }
   return all.reverse();
 }
