@@ -402,33 +402,35 @@ function scalpSig(stratId, i, ind) {
   if (!atr || atr <= 0) return null;
   var bull = ind.c[i] > ind.ema200[i];
   var bear = ind.c[i] < ind.ema200[i];
+  var haUp = ind.haC[i] > ind.haO[i];
+  var haDn = ind.haC[i] < ind.haO[i];
 
   if (stratId === 's_ema38') {
-    // 추세 정렬: 롱은 ema8>ema21 + EMA200 위, 숏은 반대
+    // 추세 정렬 + RSI 눌림 후 회복 + HA 방향 확인
     var trendUp = ind.ema8[i] > ind.ema21[i] && bull;
     var trendDn = ind.ema8[i] < ind.ema21[i] && bear;
-    var crossUp = ind.ema3[i] > ind.ema8[i] && ind.ema3[i - 1] <= ind.ema8[i - 1];
-    var crossDn = ind.ema3[i] < ind.ema8[i] && ind.ema3[i - 1] >= ind.ema8[i - 1];
-    if (crossUp && trendUp && ind.rsi14[i] < 65) return { type: 'long', stopLoss: ind.c[i] - atr * 1.2 };
-    if (crossDn && trendDn && ind.rsi14[i] > 35) return { type: 'short', stopLoss: ind.c[i] + atr * 1.2 };
+    var rsiRecUp = ind.rsi14[i] > ind.rsi14[i - 1] && ind.rsi14[i] < 55;
+    var rsiRecDn = ind.rsi14[i] < ind.rsi14[i - 1] && ind.rsi14[i] > 45;
+    if (trendUp && rsiRecUp && haUp) return { type: 'long', stopLoss: ind.c[i] - atr * 1.5 };
+    if (trendDn && rsiRecDn && haDn) return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 };
   }
 
   if (stratId === 's_bb') {
-    // BB 반등 + EMA200 방향 + RSI 과매도/과매수 확인
+    // BB 반등 + EMA200 방향 + RSI + HA 확인
     var prevBelow = ind.c[i - 1] < ind.bbL[i - 1];
     var nowAbove = ind.c[i] >= ind.bbL[i];
     var prevAbove = ind.c[i - 1] > ind.bbU[i - 1];
     var nowBelow = ind.c[i] <= ind.bbU[i];
-    if (prevBelow && nowAbove && bull && ind.rsi14[i] < 45) return { type: 'long', stopLoss: ind.c[i] - atr * 1.5 };
-    if (prevAbove && nowBelow && bear && ind.rsi14[i] > 55) return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 };
+    if (prevBelow && nowAbove && bull && ind.rsi14[i] < 45 && haUp) return { type: 'long', stopLoss: ind.c[i] - atr * 1.5 };
+    if (prevAbove && nowBelow && bear && ind.rsi14[i] > 55 && haDn) return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 };
   }
 
   if (stratId === 's_stoch') {
-    // StochRSI + EMA200 + EMA21 추세 확인
+    // StochRSI 과매도 + EMA200 + EMA21 + HA (w_ha_srsi의 5m 버전)
     var kCrossUp = ind.srsiK[i] > ind.srsiD[i] && ind.srsiK[i - 1] <= ind.srsiD[i - 1] && ind.srsiK[i] < 30;
     var kCrossDn = ind.srsiK[i] < ind.srsiD[i] && ind.srsiK[i - 1] >= ind.srsiD[i - 1] && ind.srsiK[i] > 70;
-    if (kCrossUp && bull && ind.c[i] > ind.ema21[i]) return { type: 'long', stopLoss: ind.c[i] - atr * 1.2 };
-    if (kCrossDn && bear && ind.c[i] < ind.ema21[i]) return { type: 'short', stopLoss: ind.c[i] + atr * 1.2 };
+    if (kCrossUp && bull && ind.c[i] > ind.ema21[i] && haUp) return { type: 'long', stopLoss: ind.c[i] - atr * 1.2 };
+    if (kCrossDn && bear && ind.c[i] < ind.ema21[i] && haDn) return { type: 'short', stopLoss: ind.c[i] + atr * 1.2 };
   }
 
   return null;
@@ -441,17 +443,18 @@ function daySig(stratId, i, ind) {
   if (!atr || atr <= 0) return null;
   var bull = ind.c[i] > ind.ema200[i];
   var bear = ind.c[i] < ind.ema200[i];
+  var haUp = ind.haC[i] > ind.haO[i];
+  var haDn = ind.haC[i] < ind.haO[i];
 
   if (stratId === 'd_macd') {
-    // MACD 크로스 + EMA200 방향 필터
-    var crossUp = ind.macdL[i] > ind.macdS[i] && ind.macdL[i - 1] <= ind.macdS[i - 1] && ind.macdL[i] < 0;
-    var crossDn = ind.macdL[i] < ind.macdS[i] && ind.macdL[i - 1] >= ind.macdS[i - 1] && ind.macdL[i] > 0;
-    if (crossUp && bull) return { type: 'long', stopLoss: ind.c[i] - atr * 1.5 };
-    if (crossDn && bear) return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 };
+    // MACD 크로스 + EMA21>EMA55 추세 + EMA200 (zero 제한 제거)
+    var crossUp = ind.macdL[i] > ind.macdS[i] && ind.macdL[i - 1] <= ind.macdS[i - 1];
+    var crossDn = ind.macdL[i] < ind.macdS[i] && ind.macdL[i - 1] >= ind.macdS[i - 1];
+    if (crossUp && bull && ind.ema21[i] > ind.ema55[i]) return { type: 'long', stopLoss: ind.c[i] - atr * 1.5 };
+    if (crossDn && bear && ind.ema21[i] < ind.ema55[i]) return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 };
   }
 
   if (stratId === 'd_st') {
-    // 슈퍼트렌드 전환 + EMA200 방향 필터
     var flipUp = ind.stTrend[i] === 1 && ind.stTrend[i - 1] === -1;
     var flipDn = ind.stTrend[i] === -1 && ind.stTrend[i - 1] === 1;
     if (flipUp && bull) return { type: 'long', stopLoss: ind.stSl[i] };
@@ -459,17 +462,18 @@ function daySig(stratId, i, ind) {
   }
 
   if (stratId === 'd_rsi') {
+    // RSI 50 크로스 + EMA200 + HA 방향 확인
     var cross50Up = ind.rsi14[i] > 50 && ind.rsi14[i - 1] <= 50 && bull;
     var cross50Dn = ind.rsi14[i] < 50 && ind.rsi14[i - 1] >= 50 && bear;
-    if (cross50Up) return { type: 'long', stopLoss: ind.c[i] - atr * 1.5 };
-    if (cross50Dn) return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 };
+    if (cross50Up && haUp) return { type: 'long', stopLoss: ind.c[i] - atr * 1.5 };
+    if (cross50Dn && haDn) return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 };
   }
 
   return null;
 }
 
 function swingSig(stratId, i, ind) {
-  if (i < 1) return null;
+  if (i < 2) return null;
   if (ind.adx14[i] < 20) return null;
   var atr = ind.atr14[i];
   if (!atr || atr <= 0) return null;
@@ -488,23 +492,24 @@ function swingSig(stratId, i, ind) {
   }
 
   if (stratId === 'w_ema2155') {
-    var cross21_55Up = ind.ema21[i] > ind.ema55[i] && ind.ema21[i - 1] <= ind.ema55[i - 1] && ind.c[i] > ind.ema200[i];
-    var cross21_55Dn = ind.ema21[i] < ind.ema55[i] && ind.ema21[i - 1] >= ind.ema55[i - 1] && ind.c[i] < ind.ema200[i];
-    if (cross21_55Up) return { type: 'long', stopLoss: ind.c[i] - atr * 2.0 };
-    if (cross21_55Dn) return { type: 'short', stopLoss: ind.c[i] + atr * 2.0 };
+    // 골든크로스 성립 후 EMA21 눌림목 + StochRSI 과매도 + HA 반전
+    var bullTrend = ind.ema21[i] > ind.ema55[i] && ind.c[i] > ind.ema200[i];
+    var bearTrend = ind.ema21[i] < ind.ema55[i] && ind.c[i] < ind.ema200[i];
+    var nearEma21 = ind.c[i] >= ind.ema21[i] * 0.99 && ind.c[i] <= ind.ema21[i] * 1.01;
+    var haUp = ind.haC[i] > ind.haO[i];
+    var haDn = ind.haC[i] < ind.haO[i];
+    if (bullTrend && nearEma21 && ind.srsiK[i] < 35 && haUp) return { type: 'long', stopLoss: ind.c[i] - atr * 2.0 };
+    if (bearTrend && nearEma21 && ind.srsiK[i] > 65 && haDn) return { type: 'short', stopLoss: ind.c[i] + atr * 2.0 };
   }
 
   if (stratId === 'w_macd') {
-    var hist = ind.macdL[i] - ind.macdS[i];
-    var histPrev = ind.macdL[i - 1] - ind.macdS[i - 1];
+    // MACD 크로스 + EMA200 + HA 확인 (histogram 제한 제거)
     var crossUp = ind.macdL[i] > ind.macdS[i] && ind.macdL[i - 1] <= ind.macdS[i - 1];
     var crossDn = ind.macdL[i] < ind.macdS[i] && ind.macdL[i - 1] >= ind.macdS[i - 1];
-    var histIncr = hist > histPrev;
-    var histDecr = hist < histPrev;
-    var bull200 = ind.c[i] > ind.ema200[i];
-    var bear200 = ind.c[i] < ind.ema200[i];
-    if (crossUp && histIncr && bull200) return { type: 'long', stopLoss: ind.c[i] - atr * 2.0 };
-    if (crossDn && histDecr && bear200) return { type: 'short', stopLoss: ind.c[i] + atr * 2.0 };
+    var haUp = ind.haC[i] > ind.haO[i];
+    var haDn = ind.haC[i] < ind.haO[i];
+    if (crossUp && ind.c[i] > ind.ema200[i] && haUp) return { type: 'long', stopLoss: ind.c[i] - atr * 2.0 };
+    if (crossDn && ind.c[i] < ind.ema200[i] && haDn) return { type: 'short', stopLoss: ind.c[i] + atr * 2.0 };
   }
 
   return null;
