@@ -1,781 +1,589 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Oracle Trading Backtest v2</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle Backtest v2 — 5m Strategies</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',system-ui,sans-serif;background:#000;color:#fff;min-height:100vh;padding:32px 24px;}
-h1{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;}
-.sub{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:28px;}
-.card{background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:24px;margin-bottom:20px;}
-.card-title{font-size:14px;font-weight:600;margin-bottom:16px;color:#fff;}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
-label{display:block;font-size:11px;color:rgba(255,255,255,0.45);font-weight:500;margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase;}
-input[type=text],input[type=number]{width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit;}
-input:focus{outline:none;border-color:rgba(255,255,255,0.3);}
-.tier-block{border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:14px;background:#0d0d0d;}
-.tier-label{font-size:11px;font-weight:700;letter-spacing:.08em;margin-bottom:12px;padding:3px 8px;border-radius:4px;display:inline-block;}
-.tier-scalp{background:rgba(251,191,36,0.15);color:#fbbf24;}
-.tier-day{background:rgba(96,165,250,0.15);color:#60a5fa;}
-.tier-swing{background:rgba(74,222,128,0.15);color:#4ade80;}
-.tier-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
-.btn{padding:12px 20px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;white-space:nowrap;}
-.btn-primary{background:#fff;color:#000;}
+body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0e;color:#f0f0f0;min-height:100vh;padding:24px 16px 48px;}
+h1{font-size:20px;font-weight:700;margin-bottom:4px;}
+.sub{font-size:12px;color:#555;margin-bottom:24px;}
+.card{background:#111117;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:20px;margin-bottom:16px;}
+.card-title{font-size:13px;font-weight:600;margin-bottom:14px;color:#ccc;letter-spacing:.04em;text-transform:uppercase;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;}
+label{display:block;font-size:11px;color:#666;margin-bottom:5px;letter-spacing:.03em;text-transform:uppercase;}
+input[type=number],input[type=text]{width:100%;background:#1a1a22;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 11px;color:#fff;font-size:13px;font-family:inherit;}
+input:focus{outline:none;border-color:rgba(99,102,241,0.6);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+.btn{padding:11px 22px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;position:relative;z-index:1;}
+.btn-primary{background:#6366f1;color:#fff;}
 .btn-primary:hover{opacity:.88;}
 .btn-secondary{background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.12);}
 .btn-secondary:hover{background:rgba(255,255,255,0.13);}
-.btn:disabled{opacity:.4;cursor:not-allowed;}
-.progress-wrap{margin-top:14px;}
-.progress-msg{font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:6px;min-height:18px;}
-.progress-bg{background:rgba(255,255,255,0.07);border-radius:4px;height:4px;overflow:hidden;}
-.progress-bar{height:100%;background:#22c55e;width:0%;transition:width .3s;border-radius:4px;}
-table{width:100%;border-collapse:collapse;font-size:13px;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.prog-wrap{margin-top:12px;}
+.prog-msg{font-size:11px;color:#555;margin-bottom:5px;min-height:16px;}
+.prog-bg{background:rgba(255,255,255,0.06);border-radius:3px;height:3px;overflow:hidden;}
+.prog-bar{height:100%;background:#6366f1;width:0%;transition:width .3s;border-radius:3px;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
 thead tr{border-bottom:1px solid rgba(255,255,255,0.07);}
-th{text-align:right;padding:10px 12px;color:rgba(255,255,255,0.4);font-weight:500;font-size:12px;white-space:nowrap;}
-th:first-child,th:nth-child(2){text-align:left;}
-td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:right;font-size:13px;}
-td:first-child{text-align:left;font-weight:500;}
-td:nth-child(2){text-align:left;}
+th{text-align:right;padding:9px 10px;color:#555;font-weight:500;font-size:11px;white-space:nowrap;}
+th:first-child{text-align:left;}
+td{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:right;}
+td:first-child{text-align:left;font-weight:600;color:#ccc;}
 tr:last-child td{border-bottom:none;}
-.chart-wrap{position:relative;height:280px;}
+.pos{color:#22c55e;} .neg{color:#f87171;} .neu{color:#888;}
+.chart-wrap{position:relative;height:260px;}
 .hidden{display:none;}
-.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
-.tab{padding:5px 14px;border-radius:100px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.5);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;}
-.tab:hover{border-color:rgba(255,255,255,0.3);color:#fff;}
-.tab.active{background:#fff;color:#000;border-color:#fff;}
-.tab.scalp.active{background:#fbbf24;color:#000;border-color:#fbbf24;}
-.tab.day.active{background:#60a5fa;color:#000;border-color:#60a5fa;}
-.tab.swing.active{background:#4ade80;color:#000;border-color:#4ade80;}
-.note{font-size:11px;color:rgba(255,255,255,0.25);margin-top:12px;line-height:1.6;}
-.ev-row{display:flex;gap:32px;flex-wrap:wrap;margin-top:8px;}
-.ev-item{font-size:13px;}
-.ev-item span{color:rgba(255,255,255,0.4);margin-right:6px;font-size:12px;}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.tab{padding:4px 12px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#666;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;touch-action:manipulation;}
+.tab:hover{color:#ccc;border-color:rgba(255,255,255,0.25);}
+.tab.active{background:#6366f1;color:#fff;border-color:#6366f1;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+.overlay.show{display:flex;}
+.overlay-msg{font-size:15px;color:#fff;font-weight:600;}
+.overlay-sub{font-size:12px;color:#888;}
+.spin{width:32px;height:32px;border:3px solid rgba(255,255,255,.15);border-top-color:#6366f1;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.math-box{background:#0d0d15;border:1px solid rgba(99,102,241,.25);border-radius:10px;padding:16px;font-size:12px;color:#999;line-height:1.8;}
+.math-box code{background:rgba(255,255,255,.07);padding:2px 6px;border-radius:4px;font-size:11px;color:#a5b4fc;}
+.strat-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.05em;margin-right:4px;background:rgba(99,102,241,.2);color:#a5b4fc;}
+.warn{color:#f59e0b;font-size:11px;margin-top:6px;}
 </style>
 </head>
 <body>
 
-<h1>Oracle Trading &mdash; Backtest v2</h1>
-<p class="sub">최근 1년 &middot; OKX 5m봉 실시간 수집 &middot; 3-Tier 전략 (SCALP / DAY / SWING) &middot; 9개 신호 엔진 &middot; 수수료 반영</p>
+<h1>Oracle Backtest v2</h1>
+<p class="sub">5분봉 전용 · 5 전략 · 수수료 0.05%×nf × 양방향</p>
 
 <div class="card">
-  <div class="card-title">공통 설정</div>
+  <div class="card-title">파라미터</div>
   <div class="grid3">
-    <div><label>페어</label><input type="text" id="cfgPair" value="BTC-USDT-SWAP"/></div>
-    <div><label>레버리지</label><input type="number" id="cfgLev" value="10" min="1" max="100"/></div>
-    <div><label>R:R 배율</label><input type="number" id="cfgRR" value="2.0" step="0.1" min="0.5"/></div>
+    <div><label>심볼</label><input type="text" id="symbol" value="BTC-USDT-SWAP"></div>
+    <div><label>기간 (캔들 수)</label><input type="number" id="bars" value="20000" min="3000" max="50000"></div>
+    <div><label>초기 자본 ($)</label><input type="number" id="capital" value="10000" min="100"></div>
   </div>
-  <div class="grid3">
-    <div class="tier-block">
-      <div class="tier-label tier-scalp">SCALP 5m</div>
-      <div class="tier-grid">
-        <div><label>위험/거래 %</label><input type="number" id="riskScalp" value="0.5" step="0.1" min="0.1" max="5"/></div>
-        <div><label>최대포지션 %</label><input type="number" id="posScalp" value="5" step="0.5" min="1" max="50"/></div>
-      </div>
-    </div>
-    <div class="tier-block">
-      <div class="tier-label tier-day">DAY 15m</div>
-      <div class="tier-grid">
-        <div><label>위험/거래 %</label><input type="number" id="riskDay" value="1.0" step="0.1" min="0.1" max="5"/></div>
-        <div><label>최대포지션 %</label><input type="number" id="posDay" value="7" step="0.5" min="1" max="50"/></div>
-      </div>
-    </div>
-    <div class="tier-block">
-      <div class="tier-label tier-swing">SWING 4H</div>
-      <div class="tier-grid">
-        <div><label>위험/거래 %</label><input type="number" id="riskSwing" value="2.0" step="0.1" min="0.1" max="5"/></div>
-        <div><label>최대포지션 %</label><input type="number" id="posSwing" value="10" step="0.5" min="1" max="50"/></div>
-      </div>
-    </div>
+  <div class="grid4">
+    <div><label>레버리지</label><input type="number" id="leverage" value="10" min="1" max="50"></div>
+    <div><label>최대 포지션 (%)</label><input type="number" id="posMax" value="20" min="1" max="100"></div>
+    <div><label>리스크 (%/trade)</label><input type="number" id="risk" value="1" min="0.1" max="5" step="0.1"></div>
+    <div><label>R:R</label><input type="number" id="rr" value="2.0" min="1" step="0.1"></div>
+  </div>
+  <div class="grid2">
+    <div><label>일일 손실 한도 (%)</label><input type="number" id="dailyLoss" value="3" min="0.5" max="20" step="0.5"></div>
+    <div><label>서킷브레이커 (%낙폭)</label><input type="number" id="cbPct" value="15" min="5" max="30"></div>
   </div>
   <div class="btn-row">
-    <button class="btn btn-primary" id="btnRun" onclick="startBacktest()">백테스팅 시작</button>
-    <button class="btn btn-secondary" id="btnQuick" onclick="startQuick()">빠른 실행 (캐시 재사용)</button>
+    <button class="btn btn-primary" id="btnRun" onclick="startRun(false)">전체 백테스트 실행</button>
+    <button class="btn btn-secondary" id="btnQuick" onclick="startRun(true)">빠른 테스트 (5000봉)</button>
   </div>
-  <div class="progress-wrap">
-    <div class="progress-msg" id="progMsg">준비됨</div>
-    <div class="progress-bg"><div class="progress-bar" id="progBar"></div></div>
+  <div class="prog-wrap">
+    <div class="prog-msg" id="progMsg">대기 중</div>
+    <div class="prog-bg"><div class="prog-bar" id="progBar"></div></div>
   </div>
-  <p class="note">슬리피지 및 펀딩비 미반영. SL/TP 동일 캔들 충돌 시 SL 우선(보수적). 백테스트 결과는 실제 수익을 보장하지 않습니다.</p>
 </div>
 
-<div class="card hidden" id="cardResults">
-  <div class="card-title">전략별 성과 비교</div>
-  <div style="overflow-x:auto;">
-    <table>
-      <thead><tr>
-        <th>전략</th>
-        <th>티어</th>
-        <th>거래수</th>
-        <th>승률</th>
-        <th>EV/R</th>
-        <th>월평균</th>
-        <th>연복리</th>
-        <th>최대낙폭</th>
-        <th style="text-align:center;">차트</th>
-      </tr></thead>
-      <tbody id="resTbody"></tbody>
-    </table>
-  </div>
-  <div class="ev-row" id="evRow"></div>
+<div class="card hidden" id="resCard">
+  <div class="card-title">결과</div>
+  <div class="tabs" id="tabsEl"></div>
+  <table id="resTable">
+    <thead><tr>
+      <th>전략</th><th style="text-align:right">거래수</th><th>승률</th><th>PF</th><th>연수익%</th><th>MDD%</th><th>최종자본</th>
+    </tr></thead>
+    <tbody id="resBody"></tbody>
+  </table>
 </div>
 
-<div class="card hidden" id="cardChart">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-    <div id="chartTitle" style="font-size:14px;font-weight:600;flex:1 1 auto;color:#fff;"></div>
+<div class="card hidden" id="chartCard">
+  <div class="card-title">자본 곡선</div>
+  <div class="tabs" id="curveTabs"></div>
+  <div class="chart-wrap"><canvas id="curveChart"></canvas></div>
+</div>
+
+<div class="card">
+  <div class="card-title">수수료 계산 방식</div>
+  <div class="math-box">
+    <b>포지션 사이즈 계수 nf (leverage multiplier)</b><br>
+    <code>slD = |entry - sl| / entry</code><br>
+    <code>nf_risk = (risk% / 100) / slD</code><br>
+    <code>nf_max = (posMax% / 100) × leverage</code><br>
+    <code>nf = min(nf_risk, nf_max)</code><br><br>
+    <b>수수료</b><br>
+    <code>fee_entry = equity × nf × 0.0005</code> (진입 시)<br>
+    <code>fee_exit  = equity × nf × 0.0005</code> (청산 시)<br>
+    총 왕복 수수료: <code>equity × nf × 0.001</code><br><br>
+    <b>서킷브레이커</b>: equity &lt; peak × (1 - cb%) → nf × 0.5<br>
+    <b>일일 손실 한도</b>: 당일 손실 ≥ dailyLoss% → 당일 신규 진입 중단<br>
+    <b>SL 범위</b>: 0.1% ~ 2.0% (이 범위 밖이면 진입 건너뜀)
   </div>
-  <div class="tabs" id="chartTabs"></div>
-  <div class="chart-wrap"><canvas id="eqCanvas"></canvas></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="spin"></div>
+  <div class="overlay-msg" id="overlayMsg">백테스트 실행 중...</div>
+  <div class="overlay-sub" id="overlaySub"></div>
 </div>
 
 <script>
-// ============================================================
-// INDICATOR LIBRARY (oldest-first arrays)
-// ============================================================
-
-function emaArr(closes, p) {
-  var n = closes.length, k = 2 / (p + 1), out = new Array(n);
-  out[0] = closes[0];
-  for (var i = 1; i < n; i++) { out[i] = closes[i] * k + out[i - 1] * (1 - k); }
-  return out;
+// ─── 지표 계산 ────────────────────────────────────────────────
+function emaArr(c,p){
+  var k=2/(p+1),a=new Float64Array(c.length);
+  a[0]=c[0];
+  for(var i=1;i<c.length;i++) a[i]=c[i]*k+a[i-1]*(1-k);
+  return a;
 }
-
-function rsiArr(closes, p) {
-  var n = closes.length, out = new Array(n).fill(50);
-  if (n < p + 1) { return out; }
-  var ag = 0, al = 0;
-  for (var i = 1; i <= p; i++) {
-    var d = closes[i] - closes[i - 1];
-    if (d > 0) { ag += d; } else { al -= d; }
+function rsiArr(c,p){
+  var a=new Float64Array(c.length),g=0,l=0;
+  for(var i=1;i<=p;i++){var d=c[i]-c[i-1];if(d>0)g+=d;else l-=d;}
+  g/=p; l/=p;
+  a[p]=l===0?100:100-100/(1+g/l);
+  for(var i=p+1;i<c.length;i++){
+    var d=c[i]-c[i-1];
+    if(d>0){g=(g*(p-1)+d)/p;l=(l*(p-1))/p;}
+    else{g=(g*(p-1))/p;l=(l*(p-1)-d)/p;}
+    a[i]=l===0?100:100-100/(1+g/l);
   }
-  ag /= p; al /= p;
-  out[p] = al === 0 ? 100 : 100 - 100 / (1 + ag / al);
-  for (var i = p + 1; i < n; i++) {
-    var d = closes[i] - closes[i - 1];
-    ag = (ag * (p - 1) + (d > 0 ? d : 0)) / p;
-    al = (al * (p - 1) + (d < 0 ? -d : 0)) / p;
-    out[i] = al === 0 ? 100 : 100 - 100 / (1 + ag / al);
-  }
-  return out;
+  return a;
 }
-
-function atrArr(hi, lo, cl, p) {
-  var n = hi.length, out = new Array(n).fill(0);
-  if (n < 2) { return out; }
-  out[0] = hi[0] - lo[0];
-  var sum = out[0];
-  for (var i = 1; i < p && i < n; i++) {
-    var tr = Math.max(hi[i] - lo[i], Math.abs(hi[i] - cl[i - 1]), Math.abs(lo[i] - cl[i - 1]));
-    sum += tr; out[i] = sum / (i + 1);
+function atrArr(h,lo,c,p){
+  var a=new Float64Array(c.length),tr;
+  for(var i=1;i<c.length;i++){
+    tr=Math.max(h[i]-lo[i],Math.abs(h[i]-c[i-1]),Math.abs(lo[i]-c[i-1]));
+    a[i]=i<=p?(a[i-1]*(i-1)+tr)/i:(a[i-1]*(p-1)+tr)/p;
   }
-  if (n <= p) { return out; }
-  var prev = sum / p; out[p - 1] = prev;
-  for (var i = p; i < n; i++) {
-    var tr = Math.max(hi[i] - lo[i], Math.abs(hi[i] - cl[i - 1]), Math.abs(lo[i] - cl[i - 1]));
-    prev = (prev * (p - 1) + tr) / p; out[i] = prev;
-  }
-  return out;
+  return a;
 }
-
-function adxArr(hi, lo, cl, p) {
-  var n = hi.length, out = new Array(n).fill(0);
-  if (n < p + 2) { return out; }
-  var dmP = new Array(n).fill(0), dmM = new Array(n).fill(0), tr = new Array(n).fill(0);
-  tr[0] = hi[0] - lo[0];
-  for (var i = 1; i < n; i++) {
-    var up = hi[i] - hi[i - 1], dn = lo[i - 1] - lo[i];
-    dmP[i] = (up > dn && up > 0) ? up : 0;
-    dmM[i] = (dn > up && dn > 0) ? dn : 0;
-    tr[i] = Math.max(hi[i] - lo[i], Math.abs(hi[i] - cl[i - 1]), Math.abs(lo[i] - cl[i - 1]));
+function adxArr(h,lo,c,p){
+  var len=c.length;
+  var pdm=new Float64Array(len),ndm=new Float64Array(len),tr=new Float64Array(len);
+  for(var i=1;i<len;i++){
+    var hd=h[i]-h[i-1],ld=lo[i-1]-lo[i];
+    pdm[i]=hd>ld&&hd>0?hd:0;
+    ndm[i]=ld>hd&&ld>0?ld:0;
+    tr[i]=Math.max(h[i]-lo[i],Math.abs(h[i]-c[i-1]),Math.abs(lo[i]-c[i-1]));
   }
-  var smTR = 0, smP = 0, smM = 0;
-  for (var i = 1; i <= p; i++) { smTR += tr[i]; smP += dmP[i]; smM += dmM[i]; }
-  var dxVals = new Array(n).fill(0);
-  var diP = smTR > 0 ? 100 * smP / smTR : 0;
-  var diM = smTR > 0 ? 100 * smM / smTR : 0;
-  dxVals[p] = (diP + diM) > 0 ? 100 * Math.abs(diP - diM) / (diP + diM) : 0;
-  for (var i = p + 1; i < n; i++) {
-    smTR = smTR - smTR / p + tr[i]; smP = smP - smP / p + dmP[i]; smM = smM - smM / p + dmM[i];
-    diP = smTR > 0 ? 100 * smP / smTR : 0; diM = smTR > 0 ? 100 * smM / smTR : 0;
-    dxVals[i] = (diP + diM) > 0 ? 100 * Math.abs(diP - diM) / (diP + diM) : 0;
+  var sTR=new Float64Array(len),sPDM=new Float64Array(len),sNDM=new Float64Array(len);
+  for(var i=1;i<len;i++){
+    sTR[i]=i<=p?(sTR[i-1]*(i-1)+tr[i])/i:(sTR[i-1]*(p-1)+tr[i])/p;
+    sPDM[i]=i<=p?(sPDM[i-1]*(i-1)+pdm[i])/i:(sPDM[i-1]*(p-1)+pdm[i])/p;
+    sNDM[i]=i<=p?(sNDM[i-1]*(i-1)+ndm[i])/i:(sNDM[i-1]*(p-1)+ndm[i])/p;
   }
-  var cnt = 0, adxSum = 0;
-  for (var i = p; i < Math.min(2 * p, n); i++) { adxSum += dxVals[i]; cnt++; }
-  if (2 * p - 1 < n) { out[2 * p - 1] = cnt > 0 ? adxSum / cnt : 0; }
-  for (var i = 2 * p; i < n; i++) { out[i] = (out[i - 1] * (p - 1) + dxVals[i]) / p; }
-  return out;
+  var dx=new Float64Array(len),adx=new Float64Array(len);
+  for(var i=p;i<len;i++){
+    var pdi=sTR[i]?100*sPDM[i]/sTR[i]:0;
+    var ndi=sTR[i]?100*sNDM[i]/sTR[i]:0;
+    dx[i]=(pdi+ndi)?100*Math.abs(pdi-ndi)/(pdi+ndi):0;
+    adx[i]=i===p?dx[i]:(adx[i-1]*(p-1)+dx[i])/p;
+  }
+  return adx;
 }
-
-function bbArr(closes, p, m) {
-  var n = closes.length, upper = new Array(n).fill(0), lower = new Array(n).fill(0), mid = new Array(n).fill(0);
-  for (var i = p - 1; i < n; i++) {
-    var sum = 0;
-    for (var j = i - p + 1; j <= i; j++) { sum += closes[j]; }
-    var mn = sum / p, sq = 0;
-    for (var j = i - p + 1; j <= i; j++) { sq += (closes[j] - mn) * (closes[j] - mn); }
-    var sd = Math.sqrt(sq / p);
-    mid[i] = mn; upper[i] = mn + m * sd; lower[i] = mn - m * sd;
+function bbArr(c,p,m){
+  var U=new Float64Array(c.length),L=new Float64Array(c.length);
+  for(var i=p-1;i<c.length;i++){
+    var sum=0; for(var j=i-p+1;j<=i;j++) sum+=c[j];
+    var mn=sum/p,vr=0;
+    for(var j=i-p+1;j<=i;j++) vr+=(c[j]-mn)*(c[j]-mn);
+    var sd=Math.sqrt(vr/p);
+    U[i]=mn+m*sd; L[i]=mn-m*sd;
   }
-  return { upper: upper, lower: lower, mid: mid };
+  return {U,L};
 }
-
-function stochRsiArr(closes, rl, sl, ks, ds) {
-  var n = closes.length, rsi = rsiArr(closes, rl), rawK = new Array(n).fill(50);
-  for (var i = sl - 1; i < n; i++) {
-    var mn = Infinity, mx = -Infinity;
-    for (var j = i - sl + 1; j <= i; j++) {
-      if (rsi[j] < mn) { mn = rsi[j]; }
-      if (rsi[j] > mx) { mx = rsi[j]; }
-    }
-    rawK[i] = mx === mn ? 50 : 100 * (rsi[i] - mn) / (mx - mn);
+function srsiArr(c,rl,sl,ks,ds){
+  var rsi=rsiArr(c,rl);
+  var K=new Float64Array(c.length),D=new Float64Array(c.length);
+  for(var i=sl-1;i<c.length;i++){
+    var mn=rsi[i],mx=rsi[i];
+    for(var j=i-sl+1;j<=i;j++){if(rsi[j]<mn)mn=rsi[j];if(rsi[j]>mx)mx=rsi[j];}
+    K[i]=mx===mn?50:100*(rsi[i]-mn)/(mx-mn);
   }
-  var smoothK = emaArr(rawK, ks), smoothD = emaArr(smoothK, ds);
-  return { k: smoothK, d: smoothD };
+  var kSmooth=emaArr(Array.from(K),ks);
+  var dSmooth=emaArr(Array.from(kSmooth),ds);
+  return {K:kSmooth,D:dSmooth};
 }
-
-function macdCalc(closes, fast, slow, sig) {
-  var emaF = emaArr(closes, fast), emaS = emaArr(closes, slow);
-  var n = closes.length, line = new Array(n);
-  for (var i = 0; i < n; i++) { line[i] = emaF[i] - emaS[i]; }
-  return { macd: line, sig: emaArr(line, sig) };
+function macdArr(c,f,s,sig){
+  var eF=emaArr(c,f),eS=emaArr(c,s);
+  var line=new Float64Array(c.length);
+  for(var i=0;i<c.length;i++) line[i]=eF[i]-eS[i];
+  var signal=emaArr(Array.from(line),sig);
+  return {L:line,S:signal};
 }
-
-function supertrendArr(hi, lo, cl, p, m) {
-  var n = hi.length, trend = new Array(n).fill(1), slLine = new Array(n).fill(0);
-  var atr = atrArr(hi, lo, cl, p), upB = new Array(n), loB = new Array(n);
-  for (var i = 0; i < n; i++) {
-    var mid = (hi[i] + lo[i]) / 2;
-    upB[i] = mid + m * atr[i]; loB[i] = mid - m * atr[i];
-  }
-  slLine[0] = upB[0]; trend[0] = -1;
-  for (var i = 1; i < n; i++) {
-    var nu = upB[i], nl = loB[i];
-    if (cl[i - 1] <= slLine[i - 1]) { nu = Math.min(nu, slLine[i - 1]); }
-    if (cl[i - 1] >= slLine[i - 1]) { nl = Math.max(nl, slLine[i - 1]); }
-    if (trend[i - 1] === 1) {
-      if (cl[i] < nl) { trend[i] = -1; slLine[i] = nu; } else { trend[i] = 1; slLine[i] = nl; }
+function stArr(h,lo,c,p,m){
+  var atr=atrArr(h,lo,c,p);
+  var trend=new Int8Array(c.length),sl=new Float64Array(c.length);
+  var upBand=new Float64Array(c.length),dnBand=new Float64Array(c.length);
+  trend[0]=1;
+  for(var i=1;i<c.length;i++){
+    var mid=(h[i]+lo[i])/2;
+    upBand[i]=mid+m*atr[i];
+    dnBand[i]=mid-m*atr[i];
+    if(trend[i-1]===1){
+      dnBand[i]=Math.max(dnBand[i],dnBand[i-1]);
+      trend[i]=c[i]<dnBand[i]?-1:1;
     } else {
-      if (cl[i] > nu) { trend[i] = 1; slLine[i] = nl; } else { trend[i] = -1; slLine[i] = nu; }
+      upBand[i]=Math.min(upBand[i],upBand[i-1]);
+      trend[i]=c[i]>upBand[i]?1:-1;
     }
+    sl[i]=trend[i]===1?dnBand[i]:upBand[i];
   }
-  return { trend: trend, slLine: slLine };
+  return {trend,sl};
 }
 
-function haCalc(o, h, l, c) {
-  var n = o.length, haO = new Array(n), haH = new Array(n), haL = new Array(n), haC = new Array(n);
-  haO[0] = (o[0] + c[0]) / 2; haC[0] = (o[0] + h[0] + l[0] + c[0]) / 4; haH[0] = h[0]; haL[0] = l[0];
-  for (var i = 1; i < n; i++) {
-    haC[i] = (o[i] + h[i] + l[i] + c[i]) / 4;
-    haO[i] = (haO[i - 1] + haC[i - 1]) / 2;
-    haH[i] = Math.max(h[i], haO[i], haC[i]);
-    haL[i] = Math.min(l[i], haO[i], haC[i]);
+function buildInd(candles){
+  var n=candles.length;
+  var o=new Float64Array(n),h=new Float64Array(n);
+  var lo=new Float64Array(n),c=new Float64Array(n);
+  for(var i=0;i<n;i++){
+    o[i]=parseFloat(candles[i][1]);
+    h[i]=parseFloat(candles[i][2]);
+    lo[i]=parseFloat(candles[i][3]);
+    c[i]=parseFloat(candles[i][4]);
   }
-  return { haO: haO, haH: haH, haL: haL, haC: haC };
+  var e21=emaArr(Array.from(c),21);
+  var e55=emaArr(Array.from(c),55);
+  var e200=emaArr(Array.from(c),200);
+  var rsi=rsiArr(Array.from(c),14);
+  var atr=atrArr(h,lo,c,14);
+  var adx=adxArr(h,lo,c,14);
+  var bb=bbArr(Array.from(c),20,2.0);
+  var srsi=srsiArr(Array.from(c),14,14,3,3);
+  var macd=macdArr(Array.from(c),12,26,9);
+  var st=stArr(h,lo,c,10,3.0);
+  return {o,h,lo,c,e21,e55,e200,rsi,atr,adx,bbU:bb.U,bbL:bb.L,srK:srsi.K,srD:srsi.D,mL:macd.L,mS:macd.S,stT:st.trend,stL:st.sl};
 }
 
-function buildInd(candles) {
-  var n = candles.length;
-  var o = new Array(n), h = new Array(n), l = new Array(n), c = new Array(n);
-  for (var i = 0; i < n; i++) {
-    o[i] = parseFloat(candles[i][1]); h[i] = parseFloat(candles[i][2]);
-    l[i] = parseFloat(candles[i][3]); c[i] = parseFloat(candles[i][4]);
-  }
-  var ema8 = emaArr(c, 8), ema21 = emaArr(c, 21), ema55 = emaArr(c, 55), ema200 = emaArr(c, 200);
-  var rsi14 = rsiArr(c, 14), atr14 = atrArr(h, l, c, 14), adx14 = adxArr(h, l, c, 14);
-  var bb = bbArr(c, 20, 2);
-  var srsi = stochRsiArr(c, 14, 14, 3, 3);
-  var macd = macdCalc(c, 12, 26, 9);
-  var st = supertrendArr(h, l, c, 10, 3);
-  var ha = haCalc(o, h, l, c);
-  return {
-    n: n, o: o, h: h, l: l, c: c,
-    ema8: ema8, ema21: ema21, ema55: ema55, ema200: ema200,
-    rsi14: rsi14, atr14: atr14, adx14: adx14,
-    bbU: bb.upper, bbL: bb.lower,
-    srsiK: srsi.k, srsiD: srsi.d,
-    macdL: macd.macd, macdS: macd.sig,
-    stTrend: st.trend, stSl: st.slLine,
-    haO: ha.haO, haC: ha.haC
-  };
-}
+// ─── 신호 함수 ────────────────────────────────────────────────
+function getSig(id,i,ind){
+  if(i<2) return null;
+  var atr=ind.atr[i]; if(!atr||atr<=0) return null;
+  var bull=ind.c[i]>ind.e200[i];
+  var bear=ind.c[i]<ind.e200[i];
 
-function aggCandles(c5, factor) {
-  var result = [], n = c5.length;
-  for (var g = 0; g * factor < n; g++) {
-    var start = g * factor, end = Math.min(start + factor, n);
-    var grp = c5.slice(start, end);
-    if (!grp.length) { continue; }
-    var hiV = -Infinity, loV = Infinity, vol = 0;
-    for (var j = 0; j < grp.length; j++) {
-      var hv = parseFloat(grp[j][2]), lv = parseFloat(grp[j][3]);
-      if (hv > hiV) { hiV = hv; }
-      if (lv < loV) { loV = lv; }
-      vol += parseFloat(grp[j][5] || 0);
-    }
-    result.push([grp[0][0], grp[0][1], String(hiV), String(loV), grp[grp.length - 1][4], String(vol)]);
+  if(id==='s_ema_pb'){
+    // EMA Pullback: 정배열/역배열 + ADX + EMA21 크로스 + StochRSI
+    var upT=ind.e21[i]>ind.e55[i]&&ind.e55[i]>ind.e200[i];
+    var dnT=ind.e21[i]<ind.e55[i]&&ind.e55[i]<ind.e200[i];
+    if(upT&&ind.adx[i]>22&&ind.c[i-1]<ind.e21[i-1]&&ind.c[i]>ind.e21[i]&&ind.srK[i]<55&&ind.c[i]>ind.o[i])
+      return {dir:'long', sl:ind.c[i]-atr*1.5};
+    if(dnT&&ind.adx[i]>22&&ind.c[i-1]>ind.e21[i-1]&&ind.c[i]<ind.e21[i]&&ind.srK[i]>45&&ind.c[i]<ind.o[i])
+      return {dir:'short', sl:ind.c[i]+atr*1.5};
   }
-  return result;
-}
-
-// ============================================================
-// SIGNAL FUNCTIONS
-// ============================================================
-
-function scalpSig(stratId, i, ind) {
-  if (i < 2) { return null; }
-  if (ind.adx14[i] < 20) { return null; }
-  var atr = ind.atr14[i]; if (!atr || atr <= 0) { return null; }
-  var bull = ind.c[i] > ind.ema200[i], bear = ind.c[i] < ind.ema200[i];
-  var haUp = ind.haC[i] > ind.haO[i], haDn = ind.haC[i] < ind.haO[i];
-
-  if (stratId === 's_ema38') {
-    var tUp = ind.ema8[i] > ind.ema21[i] && bull;
-    var tDn = ind.ema8[i] < ind.ema21[i] && bear;
-    var rUp = ind.rsi14[i] > ind.rsi14[i - 1] && ind.rsi14[i] < 55;
-    var rDn = ind.rsi14[i] < ind.rsi14[i - 1] && ind.rsi14[i] > 45;
-    if (tUp && rUp && haUp) { return { type: 'long',  stopLoss: ind.c[i] - atr * 1.5 }; }
-    if (tDn && rDn && haDn) { return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 }; }
+  if(id==='s_macd_h'){
+    // MACD 히스토그램 전환 + EMA200 방향
+    var hist=ind.mL[i]-ind.mS[i];
+    var histP=ind.mL[i-1]-ind.mS[i-1];
+    if(bull&&ind.adx[i]>18&&hist>0&&histP<=0&&ind.rsi[i]<65)
+      return {dir:'long', sl:ind.c[i]-atr*1.5};
+    if(bear&&ind.adx[i]>18&&hist<0&&histP>=0&&ind.rsi[i]>35)
+      return {dir:'short', sl:ind.c[i]+atr*1.5};
   }
-  if (stratId === 's_bb') {
-    var pb = ind.c[i - 1] < ind.bbL[i - 1] && ind.c[i] >= ind.bbL[i];
-    var ps = ind.c[i - 1] > ind.bbU[i - 1] && ind.c[i] <= ind.bbU[i];
-    if (pb && bull && ind.rsi14[i] < 45 && haUp) { return { type: 'long',  stopLoss: ind.c[i] - atr * 1.5 }; }
-    if (ps && bear && ind.rsi14[i] > 55 && haDn) { return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 }; }
+  if(id==='s_rsi_c'){
+    // RSI 회복 크로스 + EMA21 방향
+    var upT=ind.e21[i]>ind.e55[i];
+    var dnT=ind.e21[i]<ind.e55[i];
+    if(bull&&upT&&ind.adx[i]>18&&ind.rsi[i]>38&&ind.rsi[i-1]<=38)
+      return {dir:'long', sl:ind.c[i]-atr*1.2};
+    if(bear&&dnT&&ind.adx[i]>18&&ind.rsi[i]<62&&ind.rsi[i-1]>=62)
+      return {dir:'short', sl:ind.c[i]+atr*1.2};
   }
-  if (stratId === 's_stoch') {
-    var kU = ind.srsiK[i] > ind.srsiD[i] && ind.srsiK[i - 1] <= ind.srsiD[i - 1] && ind.srsiK[i] < 30;
-    var kD = ind.srsiK[i] < ind.srsiD[i] && ind.srsiK[i - 1] >= ind.srsiD[i - 1] && ind.srsiK[i] > 70;
-    if (kU && bull && ind.c[i] > ind.ema21[i] && haUp) { return { type: 'long',  stopLoss: ind.c[i] - atr * 1.2 }; }
-    if (kD && bear && ind.c[i] < ind.ema21[i] && haDn) { return { type: 'short', stopLoss: ind.c[i] + atr * 1.2 }; }
+  if(id==='s_bb_m'){
+    // BB 돌파 모멘텀 + ADX강세 + RSI 확인
+    if(bull&&ind.c[i]>ind.bbU[i]&&ind.adx[i]>26&&ind.rsi[i]>60&&ind.c[i]>ind.c[i-2])
+      return {dir:'long', sl:ind.c[i]-atr*1.5};
+    if(bear&&ind.c[i]<ind.bbL[i]&&ind.adx[i]>26&&ind.rsi[i]<40&&ind.c[i]<ind.c[i-2])
+      return {dir:'short', sl:ind.c[i]+atr*1.5};
+  }
+  if(id==='s_st'){
+    // Supertrend 방향 전환 + EMA200 필터
+    if(ind.stT[i]===1&&ind.stT[i-1]===-1&&bull&&ind.rsi[i]<70)
+      return {dir:'long', sl:ind.stL[i]};
+    if(ind.stT[i]===-1&&ind.stT[i-1]===1&&bear&&ind.rsi[i]>30)
+      return {dir:'short', sl:ind.stL[i]};
   }
   return null;
 }
 
-function daySig(stratId, i, ind) {
-  if (i < 2) { return null; }
-  if (ind.adx14[i] < 20) { return null; }
-  var atr = ind.atr14[i]; if (!atr || atr <= 0) { return null; }
-  var bull = ind.c[i] > ind.ema200[i], bear = ind.c[i] < ind.ema200[i];
-  var haUp = ind.haC[i] > ind.haO[i], haDn = ind.haC[i] < ind.haO[i];
-
-  if (stratId === 'd_macd') {
-    var cU = ind.macdL[i] > ind.macdS[i] && ind.macdL[i - 1] <= ind.macdS[i - 1];
-    var cD = ind.macdL[i] < ind.macdS[i] && ind.macdL[i - 1] >= ind.macdS[i - 1];
-    if (cU && bull && ind.ema21[i] > ind.ema55[i]) { return { type: 'long',  stopLoss: ind.c[i] - atr * 1.5 }; }
-    if (cD && bear && ind.ema21[i] < ind.ema55[i]) { return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 }; }
-  }
-  if (stratId === 'd_st') {
-    var fU = ind.stTrend[i] === 1 && ind.stTrend[i - 1] === -1;
-    var fD = ind.stTrend[i] === -1 && ind.stTrend[i - 1] === 1;
-    if (fU && bull) { return { type: 'long',  stopLoss: ind.stSl[i] }; }
-    if (fD && bear) { return { type: 'short', stopLoss: ind.stSl[i] }; }
-  }
-  if (stratId === 'd_rsi') {
-    var r5U = ind.rsi14[i] > 50 && ind.rsi14[i - 1] <= 50 && bull;
-    var r5D = ind.rsi14[i] < 50 && ind.rsi14[i - 1] >= 50 && bear;
-    if (r5U && haUp) { return { type: 'long',  stopLoss: ind.c[i] - atr * 1.5 }; }
-    if (r5D && haDn) { return { type: 'short', stopLoss: ind.c[i] + atr * 1.5 }; }
-  }
-  return null;
-}
-
-function swingSig(stratId, i, ind) {
-  if (i < 2) { return null; }
-  if (ind.adx14[i] < 20) { return null; }
-  var atr = ind.atr14[i]; if (!atr || atr <= 0) { return null; }
-  var bull = ind.c[i] > ind.ema200[i], bear = ind.c[i] < ind.ema200[i];
-  var haUp = ind.haC[i] > ind.haO[i], haDn = ind.haC[i] < ind.haO[i];
-
-  if (stratId === 'w_ha_srsi') {
-    var haBull = haUp, haPrevBear = ind.haC[i - 1] <= ind.haO[i - 1];
-    var haBear = haDn, haPrevBull = ind.haC[i - 1] >= ind.haO[i - 1];
-    var kU = ind.srsiK[i] > ind.srsiD[i] && ind.srsiK[i - 1] <= ind.srsiD[i - 1] && ind.srsiK[i] < 30;
-    var kD = ind.srsiK[i] < ind.srsiD[i] && ind.srsiK[i - 1] >= ind.srsiD[i - 1] && ind.srsiK[i] > 70;
-    if (haBull && haPrevBear && kU && bull) { return { type: 'long',  stopLoss: ind.c[i] - atr * 2.5 }; }
-    if (haBear && haPrevBull && kD && bear) { return { type: 'short', stopLoss: ind.c[i] + atr * 2.5 }; }
-  }
-  if (stratId === 'w_ema2155') {
-    var bT = ind.ema21[i] > ind.ema55[i] && bull;
-    var brT = ind.ema21[i] < ind.ema55[i] && bear;
-    var near = ind.c[i] >= ind.ema21[i] * 0.99 && ind.c[i] <= ind.ema21[i] * 1.01;
-    if (bT && near && ind.srsiK[i] < 35 && haUp) { return { type: 'long',  stopLoss: ind.c[i] - atr * 2.0 }; }
-    if (brT && near && ind.srsiK[i] > 65 && haDn) { return { type: 'short', stopLoss: ind.c[i] + atr * 2.0 }; }
-  }
-  if (stratId === 'w_macd') {
-    var mU = ind.macdL[i] > ind.macdS[i] && ind.macdL[i - 1] <= ind.macdS[i - 1];
-    var mD = ind.macdL[i] < ind.macdS[i] && ind.macdL[i - 1] >= ind.macdS[i - 1];
-    if (mU && bull && haUp) { return { type: 'long',  stopLoss: ind.c[i] - atr * 2.0 }; }
-    if (mD && bear && haDn) { return { type: 'short', stopLoss: ind.c[i] + atr * 2.0 }; }
-  }
-  return null;
-}
-
-// ============================================================
-// BACKTEST ENGINE
-// ============================================================
-
-function runBacktest(c5, stratId, tier, riskFrac, leverage, posSizePct, rrMult) {
-  var ind5   = buildInd(c5);
-  var c15    = aggCandles(c5, 3),  c4h = aggCandles(c5, 48);
-  var ind15  = buildInd(c15),      ind4h = buildInd(c4h);
-
-  var equity = 10000, pos = null, pending = null;
-  var wins = 0, total = 0, trades = [], curve = [], lastDay = -1;
-
-  var WARMUP = tier === 'SCALP' ? 500 : tier === 'DAY' ? 1500 : 9600;
-  var SL_MIN = tier === 'SCALP' ? 0.001 : tier === 'DAY' ? 0.003 : 0.005;
-  var SL_MAX = tier === 'SCALP' ? 0.015 : tier === 'DAY' ? 0.030 : 0.080;
-  var FEE    = 0.0004;
-  var maxNF  = (posSizePct / 100) * leverage;
-
-  for (var i = WARMUP; i < c5.length - 1; i++) {
-    var ts   = parseInt(c5[i][0]);
-    var hi5  = parseFloat(c5[i][2]);
-    var lo5  = parseFloat(c5[i][3]);
-    var cl5  = parseFloat(c5[i][4]);
-    var day  = Math.floor(ts / 86400000);
-    if (day !== lastDay) { curve.push({ ts: ts, equity: equity }); lastDay = day; }
-
-    if (pending && !pos) {
-      var op5 = parseFloat(c5[i][1]);
-      var slD = Math.abs(op5 - pending.sl) / op5;
-      if (slD >= SL_MIN && slD <= SL_MAX) {
-        var nf   = Math.min(riskFrac / slD, maxNF);
-        var slAmt = Math.abs(op5 - pending.sl);
-        var tp   = pending.dir === 'long' ? op5 + slAmt * rrMult : op5 - slAmt * rrMult;
-        pos = { dir: pending.dir, entry: op5, sl: pending.sl, tp: tp, nf: nf };
-        equity = Math.max(100, equity * (1 - nf * FEE));
-      }
-      pending = null;
-    }
-
-    if (pos) {
-      var slHit = pos.dir === 'long' ? lo5 <= pos.sl : hi5 >= pos.sl;
-      var tpHit = pos.dir === 'long' ? hi5 >= pos.tp : lo5 <= pos.tp;
-      if (slHit || tpHit) {
-        var win    = tpHit && !slHit;
-        var exitPx = win ? pos.tp : pos.sl;
-        var ret    = pos.dir === 'long' ? (exitPx - pos.entry) / pos.entry : (pos.entry - exitPx) / pos.entry;
-        var pnl    = equity * pos.nf * ret;
-        equity = Math.max(100, equity + pnl - equity * pos.nf * FEE);
-        trades.push({ ts: ts, type: win ? 'WIN' : 'LOSS', pnl: pnl, eq: equity });
-        if (win) { wins++; }
-        total++;
-        pos = null;
-      }
-    }
-
-    if (!pos && !pending) {
-      var sig = null;
-      if (tier === 'SCALP') {
-        sig = scalpSig(stratId, i, ind5);
-      } else if (tier === 'DAY' && i % 3 === 2) {
-        var i15 = Math.floor(i / 3);
-        if (i15 >= 300) { sig = daySig(stratId, i15, ind15); }
-      } else if (tier === 'SWING' && i % 48 === 47) {
-        var i4h = Math.floor(i / 48);
-        if (i4h >= 210) { sig = swingSig(stratId, i4h, ind4h); }
-      }
-      if (sig && sig.stopLoss) {
-        var dd = Math.abs(cl5 - sig.stopLoss) / cl5;
-        if (dd >= SL_MIN && dd <= SL_MAX) {
-          pending = { dir: sig.type, sl: sig.stopLoss };
-        }
-      }
-    }
-  }
-
-  var wr = total > 0 ? wins / total : 0;
-  var nDays = curve.length || 365;
-  var totalRet = (equity - 10000) / 10000;
-  var annRet   = Math.pow(1 + totalRet, 365 / nDays) - 1;
-  var monRet   = Math.pow(1 + annRet, 1 / 12) - 1;
-  var peak = 0, maxDD = 0;
-  for (var j = 0; j < curve.length; j++) {
-    if (curve[j].equity > peak) { peak = curve[j].equity; }
-    var dd2 = (peak - curve[j].equity) / peak;
-    if (dd2 > maxDD) { maxDD = dd2; }
-  }
-  var ev = total > 0 ? wr * rrMult - (1 - wr) : 0;
-  var annTrades = Math.round(total * 365 / nDays);
-  return {
-    equity: equity, totalRet: totalRet, annRet: annRet, monRet: monRet,
-    totalTrades: total, annTrades: annTrades, winRate: wr, ev: ev, rrMult: rrMult,
-    maxDD: maxDD, curve: curve, trades: trades
-  };
-}
-
-// ============================================================
-// OKX DATA FETCH
-// ============================================================
-
-async function fetchCandles5m(pair, onProgress) {
-  var ONE_YEAR = Math.floor(Date.now() / 3600000) * 3600000 - 365 * 24 * 3600 * 1000;
-  var all = [], after = '';
-  for (var iter = 0; iter < 1200; iter++) {
-    var qs = 'instId=' + encodeURIComponent(pair) + '&bar=5m&limit=100' + (after ? '&after=' + after : '');
-    try {
-      var res = await fetch('https://www.okx.com/api/v5/market/history-candles?' + qs);
-      var j = await res.json();
-      var batch = j.data || [];
-      if (!batch.length) { break; }
-      all.push.apply(all, batch);
-      after = batch[batch.length - 1][0];
-      if (onProgress) { onProgress(all.length); }
-      if (parseInt(batch[batch.length - 1][0]) <= ONE_YEAR) { break; }
-      await new Promise(function(r) { setTimeout(r, 55); });
-    } catch (e) { break; }
-  }
-  var seen = {}, deduped = [];
-  all.forEach(function(c) { if (!seen[c[0]]) { seen[c[0]] = 1; deduped.push(c); } });
-  deduped = deduped.filter(function(c) { return parseInt(c[0]) >= ONE_YEAR; });
-  deduped.sort(function(a, b) { return parseInt(a[0]) - parseInt(b[0]); });
-  return deduped;
-}
-
-// ============================================================
-// STRATEGY REGISTRY
-// ============================================================
-
-var STRATS = [
-  { id: 's_ema38',   name: 'EMA 3/8 교차',    tier: 'SCALP'  },
-  { id: 's_bb',      name: 'BB 밴드 반등',     tier: 'SCALP'  },
-  { id: 's_stoch',   name: 'StochRSI 5m',      tier: 'SCALP'  },
-  { id: 'd_macd',    name: 'MACD 15m',         tier: 'DAY'    },
-  { id: 'd_st',      name: '슈퍼트렌드 15m',   tier: 'DAY'    },
-  { id: 'd_rsi',     name: 'RSI 50 15m',       tier: 'DAY'    },
-  { id: 'w_ha_srsi', name: 'HA+StochRSI 4H',   tier: 'SWING'  },
-  { id: 'w_ema2155', name: 'EMA 21/55 4H',     tier: 'SWING'  },
-  { id: 'w_macd',    name: 'MACD 4H',          tier: 'SWING'  }
+// ─── 백테스트 엔진 ────────────────────────────────────────────
+var STRATEGIES=[
+  {id:'s_ema_pb', name:'EMA Pullback'},
+  {id:'s_macd_h', name:'MACD Histogram'},
+  {id:'s_rsi_c',  name:'RSI Recovery'},
+  {id:'s_bb_m',   name:'BB Momentum'},
+  {id:'s_st',     name:'Supertrend'},
 ];
 
-// ============================================================
-// STATE
-// ============================================================
+async function runBacktest(candles, stratId, cfg, onProg){
+  var ind=buildInd(candles);
+  var equity=cfg.capital, peak=equity;
+  var trades=[], curve=[];
+  var pos=null, pending=null;
+  var dailyLimit=cfg.dailyLoss/100;
+  var dailyStartEq=equity, dailyHalt=false, lastDay=-1;
+  var wins=0;
+  var SL_MIN=0.001, SL_MAX=0.020;
+  var cbThresh=1-(cfg.cb/100);
 
-var _c5 = null, _loadedPair = '', _results = {}, _chart = null;
+  for(var i=200;i<candles.length-1;i++){
+    if(i%2000===0&&onProg) onProg(i/candles.length);
 
-// ============================================================
-// UI HELPERS
-// ============================================================
+    var ts=parseInt(candles[i][0]);
+    var day=Math.floor(ts/86400000);
+    if(day!==lastDay){
+      curve.push({ts,eq:equity});
+      dailyStartEq=equity; dailyHalt=false; lastDay=day;
+    }
 
-function setProgress(p, msg) {
-  document.getElementById('progBar').style.width = (p || 0) + '%';
-  if (msg !== undefined) { document.getElementById('progMsg').textContent = msg; }
-}
+    // ① 대기 신호를 현재 캔들 open으로 집행
+    if(pending&&!pos){
+      var entryPx=parseFloat(candles[i][1]);
+      var slD=Math.abs(entryPx-pending.sl)/entryPx;
+      if(slD>=SL_MIN&&slD<=SL_MAX){
+        var nf=Math.min((cfg.risk/100)/slD,(cfg.posMax/100)*cfg.leverage);
+        if(equity<peak*cbThresh) nf*=0.5;
+        var slAmt=Math.abs(entryPx-pending.sl);
+        var tp=pending.dir==='long'?entryPx+slAmt*cfg.rr:entryPx-slAmt*cfg.rr;
+        equity-=equity*nf*0.0005;
+        pos={dir:pending.dir,entry:entryPx,sl:pending.sl,tp,nf};
+      }
+      pending=null;
+    }
 
-function setBusy(busy) {
-  var r = document.getElementById('btnRun'), q = document.getElementById('btnQuick');
-  r.disabled = busy; q.disabled = busy;
-  r.textContent = busy ? '실행 중...' : '백테스팅 시작';
-}
+    // ② 현재 캔들 고/저로 SL·TP 체크
+    if(pos){
+      var cHi=parseFloat(candles[i][2]);
+      var cLo=parseFloat(candles[i][3]);
+      var slHit=pos.dir==='long'?cLo<=pos.sl:cHi>=pos.sl;
+      var tpHit=pos.dir==='long'?cHi>=pos.tp:cLo<=pos.tp;
+      if(slHit||tpHit){
+        var win=tpHit&&!slHit;
+        var exitPx=win?pos.tp:pos.sl;
+        var ret=pos.dir==='long'?(exitPx-pos.entry)/pos.entry:(pos.entry-exitPx)/pos.entry;
+        var pnl=equity*pos.nf*ret;
+        equity+=pnl;
+        equity-=equity*pos.nf*0.0005;
+        equity=Math.max(equity,1);
+        if(equity>peak) peak=equity;
+        if(win) wins++;
+        trades.push({ts,win,pnl});
+        pos=null;
+        if((dailyStartEq-equity)/dailyStartEq>=dailyLimit) dailyHalt=true;
+      }
+    }
 
-function fmtPct(v, d) { d = (d == null) ? 2 : d; return (v >= 0 ? '+' : '') + (v * 100).toFixed(d) + '%'; }
-function clr(v) { return v >= 0 ? '#22c55e' : '#ef4444'; }
-
-function tierCss(t) { return t === 'SCALP' ? 'scalp' : t === 'DAY' ? 'day' : 'swing'; }
-function tierColor(t) { return t === 'SCALP' ? '#fbbf24' : t === 'DAY' ? '#60a5fa' : '#4ade80'; }
-
-function getCfg() {
-  return {
-    pair:      (document.getElementById('cfgPair').value  || 'BTC-USDT-SWAP').trim().toUpperCase(),
-    lev:       parseFloat(document.getElementById('cfgLev').value)    || 10,
-    rr:        parseFloat(document.getElementById('cfgRR').value)     || 2.0,
-    riskScalp: parseFloat(document.getElementById('riskScalp').value) / 100 || 0.005,
-    riskDay:   parseFloat(document.getElementById('riskDay').value)   / 100 || 0.010,
-    riskSwing: parseFloat(document.getElementById('riskSwing').value) / 100 || 0.020,
-    posScalp:  parseFloat(document.getElementById('posScalp').value)  || 5,
-    posDay:    parseFloat(document.getElementById('posDay').value)    || 7,
-    posSwing:  parseFloat(document.getElementById('posSwing').value)  || 10
-  };
-}
-
-function riskForTier(cfg, tier) {
-  if (tier === 'SCALP') { return { risk: cfg.riskScalp, pos: cfg.posScalp }; }
-  if (tier === 'DAY')   { return { risk: cfg.riskDay,   pos: cfg.posDay   }; }
-  return                         { risk: cfg.riskSwing, pos: cfg.posSwing };
-}
-
-// ============================================================
-// RENDER TABLE + TABS
-// ============================================================
-
-function renderResults(cfg) {
-  var tbody = document.getElementById('resTbody');
-  var tabs  = document.getElementById('chartTabs');
-  tbody.innerHTML = '';
-  tabs.innerHTML  = '';
-
-  STRATS.forEach(function(s) {
-    var r = _results[s.id]; if (!r) { return; }
-    var na   = r.totalTrades === 0;
-    var tCls = tierCss(s.tier);
-
-    var evTxt = na ? 'N/A' : '<span style="color:' + clr(r.ev)              + '">' + r.ev.toFixed(3)                          + '</span>';
-    var wrTxt = na ? 'N/A' : '<span style="color:' + clr(r.winRate - 0.5)   + '">' + (r.winRate * 100).toFixed(1) + '%'        + '</span>';
-    var mrTxt = na ? 'N/A' : '<span style="color:' + clr(r.monRet)          + '">' + fmtPct(r.monRet)                         + '</span>';
-    var arTxt = na ? 'N/A' : '<span style="color:' + clr(r.annRet)          + '">' + fmtPct(r.annRet, 1)                      + '</span>';
-    var ddTxt = na ? 'N/A' : '<span style="color:#ef4444">-'                        + fmtPct(r.maxDD, 1).replace('+','')       + '</span>';
-    var cnt   = r.totalTrades + (r.annTrades ? ' / ~' + r.annTrades + '/y' : '');
-
-    var tr = document.createElement('tr');
-    tr.innerHTML =
-      '<td><strong>' + s.name + '</strong></td>' +
-      '<td><span class="tier-label tier-' + tCls + '" style="font-size:11px;padding:2px 7px;border-radius:4px;">' + s.tier + '</span></td>' +
-      '<td>' + cnt + '</td>' +
-      '<td>' + wrTxt + '</td>' +
-      '<td>' + evTxt + '</td>' +
-      '<td>' + mrTxt + '</td>' +
-      '<td>' + arTxt + '</td>' +
-      '<td>' + ddTxt + '</td>' +
-      '<td style="text-align:center;">' +
-        '<button onclick="showChart(\'' + s.id + '\')" ' +
-        'style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);' +
-        'color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">차트</button>' +
-      '</td>';
-    tbody.appendChild(tr);
-
-    var tab = document.createElement('button');
-    tab.className = 'tab ' + tCls;
-    tab.id        = 'tab_' + s.id;
-    tab.textContent = s.name;
-    (function(id) { tab.onclick = function() { showChart(id); }; })(s.id);
-    tabs.appendChild(tab);
-  });
-
-  var rrV = cfg.rr, bep = (1 / (rrV + 1) * 100).toFixed(1);
-  document.getElementById('evRow').innerHTML =
-    '<div class="ev-item"><span>R:R</span>' + rrV.toFixed(1) + '</div>' +
-    '<div class="ev-item"><span>손익분기 승률</span>' + bep + '%</div>' +
-    '<div class="ev-item"><span>EV 공식</span>WR &times; ' + rrV.toFixed(1) + ' &minus; (1 &minus; WR)</div>';
-
-  document.getElementById('cardResults').classList.remove('hidden');
-  document.getElementById('cardChart').classList.remove('hidden');
-}
-
-// ============================================================
-// CHART
-// ============================================================
-
-function showChart(stratId) {
-  var s = null;
-  for (var k = 0; k < STRATS.length; k++) { if (STRATS[k].id === stratId) { s = STRATS[k]; break; } }
-  var r = _results[stratId];
-  if (!s || !r) { return; }
-
-  for (var k = 0; k < STRATS.length; k++) {
-    var t = document.getElementById('tab_' + STRATS[k].id);
-    if (t) { t.classList.toggle('active', STRATS[k].id === stratId); }
+    // ③ 다음 캔들 진입을 위한 신호 생성
+    if(!pos&&!pending&&!dailyHalt){
+      var sig=getSig(stratId,i,ind);
+      if(sig) pending=sig;
+    }
   }
 
-  document.getElementById('chartTitle').textContent =
-    s.name + '  |  연 복리: ' + fmtPct(r.annRet, 1) +
-    '  |  승률: ' + (r.winRate * 100).toFixed(1) + '%' +
-    '  |  거래: ' + r.totalTrades + '건' +
-    '  |  최대낙폭: -' + fmtPct(r.maxDD, 1).replace('+', '');
+  // 마지막 포인트
+  if(candles.length>0){
+    curve.push({ts:parseInt(candles[candles.length-1][0]),eq:equity});
+  }
 
-  var ctx = document.getElementById('eqCanvas').getContext('2d');
-  if (_chart) { _chart.destroy(); _chart = null; }
+  // 통계 계산
+  var n=trades.length;
+  if(n===0) return {stratId,trades:0,wr:0,pf:0,annRet:0,mdd:0,finalEq:equity,curve};
 
-  var labels = r.curve.map(function(p) {
-    return new Date(p.ts).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
-  });
-  var data = r.curve.map(function(p) { return p.equity; });
-  var col  = tierColor(s.tier);
-  var grd  = ctx.createLinearGradient(0, 0, 0, 280);
-  grd.addColorStop(0, col + '44');
-  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  var wr=wins/n;
+  var totalWin=0,totalLoss=0;
+  for(var t of trades){
+    if(t.win) totalWin+=t.pnl;
+    else totalLoss+=Math.abs(t.pnl);
+  }
+  var pf=totalLoss>0?totalWin/totalLoss:totalWin>0?999:0;
 
-  _chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: '자산 ($)',
-        data: data,
-        borderColor: col,
-        borderWidth: 1.8,
-        pointRadius: 0,
-        fill: true,
-        backgroundColor: grd,
-        tension: 0.25
+  // MDD
+  var pk=cfg.capital,mdd=0;
+  var runEq=cfg.capital;
+  for(var t of trades){
+    runEq+=t.pnl;
+    if(runEq>pk) pk=runEq;
+    var dd=(pk-runEq)/pk;
+    if(dd>mdd) mdd=dd;
+  }
+
+  // 연수익률: 캔들 기간으로부터 연환산
+  var firstTs=parseInt(candles[200][0]);
+  var lastTs=parseInt(candles[candles.length-2][0]);
+  var years=(lastTs-firstTs)/(365.25*24*3600*1000);
+  var annRet=years>0?((equity/cfg.capital)-1)/years*100:0;
+
+  return {stratId,trades:n,wr,pf,annRet,mdd,finalEq:equity,curve};
+}
+
+// ─── OKX API ─────────────────────────────────────────────────
+async function fetchCandles(symbol, limit){
+  var all=[], after='';
+  var base='https://www.okx.com/api/v5/market/history-candles';
+  while(all.length<limit){
+    var need=Math.min(300,limit-all.length);
+    var url=base+'?instId='+symbol+'&bar=5m&limit='+need+(after?'&after='+after:'');
+    var r=await fetch(url);
+    if(!r.ok) throw new Error('OKX API '+r.status);
+    var j=await r.json();
+    var d=j.data||[];
+    if(!d.length) break;
+    all=all.concat(d);
+    after=d[d.length-1][0];
+    if(d.length<need) break;
+    await new Promise(res=>setTimeout(res,220));
+  }
+  return all.reverse();
+}
+
+// ─── UI ──────────────────────────────────────────────────────
+var _running=false;
+var _results=[];
+var _curChart=null;
+
+function _setBusy(on,msg){
+  _running=on;
+  document.getElementById('btnRun').disabled=on;
+  document.getElementById('btnQuick').disabled=on;
+  var ov=document.getElementById('overlay');
+  if(on){ ov.classList.add('show'); document.getElementById('overlayMsg').textContent=msg||'백테스트 실행 중...'; }
+  else ov.classList.remove('show');
+}
+function _setProg(r,msg){
+  document.getElementById('progBar').style.width=(r*100)+'%';
+  document.getElementById('progMsg').textContent=msg||'';
+}
+
+async function startRun(quick){
+  if(_running) return;
+  _setBusy(true,'데이터 로딩 중...');
+  _setProg(0,'데이터 가져오는 중...');
+  try{
+    var symbol=document.getElementById('symbol').value.trim()||'BTC-USDT-SWAP';
+    var bars=quick?5000:Math.max(3000,parseInt(document.getElementById('bars').value)||20000);
+    var cfg={
+      capital:parseFloat(document.getElementById('capital').value)||10000,
+      leverage:parseFloat(document.getElementById('leverage').value)||10,
+      posMax:parseFloat(document.getElementById('posMax').value)||20,
+      risk:parseFloat(document.getElementById('risk').value)||1,
+      rr:parseFloat(document.getElementById('rr').value)||2.0,
+      dailyLoss:parseFloat(document.getElementById('dailyLoss').value)||3,
+      cb:parseFloat(document.getElementById('cbPct').value)||15,
+    };
+    document.getElementById('overlaySub').textContent='심볼: '+symbol+' | '+bars+'봉 로딩 중...';
+    var candles=await fetchCandles(symbol,bars);
+    if(candles.length<500) throw new Error('캔들 수 부족: '+candles.length);
+    _setProg(0.1,'지표 계산 중...');
+    document.getElementById('overlaySub').textContent='캔들 '+candles.length+'개 로드 완료 — 전략 실행 중';
+    _results=[];
+    for(var s=0;s<STRATEGIES.length;s++){
+      var st=STRATEGIES[s];
+      document.getElementById('overlayMsg').textContent=st.name+' 백테스트 중...';
+      var frac=(s+1)/STRATEGIES.length;
+      var res=await runBacktest(candles,st.id,cfg,(p)=>{
+        _setProg(0.1+frac*0.9, st.name+' 처리 중 '+(p*100|0)+'%');
+      });
+      res.name=st.name;
+      _results.push(res);
+    }
+    await new Promise(res=>setTimeout(res,80));
+    renderResults(_results);
+    renderCurves(_results);
+  } catch(e){
+    alert('오류: '+e.message);
+    _setProg(0,'오류 발생');
+  } finally {
+    _setBusy(false);
+  }
+}
+
+function fmt(v,d){return v.toFixed(d===undefined?2:d);}
+function pct(v){var s=fmt(v*100,1); return '<span class="'+(v>=0?'pos':'neg')+'">'+s+'%</span>';}
+function pctN(v){var s=fmt(v,1); return '<span class="'+(v>=0?'pos':'neg')+'">'+s+'%</span>';}
+function money(v){return '$'+v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+
+function renderResults(results){
+  var card=document.getElementById('resCard');
+  card.classList.remove('hidden');
+  var tb=document.getElementById('resBody');
+  tb.innerHTML='';
+  // summary tabs
+  var tabs=document.getElementById('tabsEl');
+  tabs.innerHTML='<span style="font-size:11px;color:#555;align-self:center;margin-right:4px;">전략:</span>';
+  for(var r of results){
+    var t=document.createElement('button');
+    t.className='tab';
+    t.textContent=r.name+' ('+r.trades+')';
+    tabs.appendChild(t);
+  }
+  // table rows
+  for(var r of results){
+    var tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td>'+r.name+'</td>'+
+      '<td style="text-align:right">'+r.trades+'</td>'+
+      '<td>'+pct(r.wr)+'</td>'+
+      '<td><span class="'+(r.pf>=1?'pos':'neg')+'">'+fmt(r.pf)+'</span></td>'+
+      '<td>'+pctN(r.annRet)+'</td>'+
+      '<td><span class="neg">'+fmt(r.mdd*100,1)+'%</span></td>'+
+      '<td>'+money(r.finalEq)+'</td>';
+    tb.appendChild(tr);
+  }
+}
+
+function renderCurves(results){
+  var card=document.getElementById('chartCard');
+  card.classList.remove('hidden');
+  var tabs=document.getElementById('curveTabs');
+  tabs.innerHTML='';
+  var btns=[];
+  for(var i=0;i<results.length;i++){
+    var b=document.createElement('button');
+    b.className='tab'+(i===0?' active':'');
+    b.textContent=results[i].name;
+    b.dataset.idx=i;
+    b.addEventListener('click',function(){
+      btns.forEach(x=>x.classList.remove('active'));
+      this.classList.add('active');
+      drawCurve(results[parseInt(this.dataset.idx)]);
+    });
+    btns.push(b);
+    tabs.appendChild(b);
+  }
+  drawCurve(results[0]);
+}
+
+function drawCurve(res){
+  var ctx=document.getElementById('curveChart').getContext('2d');
+  if(_curChart) _curChart.destroy();
+  var labels=res.curve.map(p=>new Date(p.ts).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}));
+  var data=res.curve.map(p=>p.eq);
+  _curChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:res.name,
+        data,
+        borderColor:'#6366f1',
+        borderWidth:1.5,
+        pointRadius:0,
+        fill:true,
+        backgroundColor:'rgba(99,102,241,0.08)',
+        tension:0.2,
       }]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: function(c) { return '$' + c.parsed.y.toFixed(0); } } }
-      },
-      scales: {
-        x: {
-          ticks: { color: 'rgba(255,255,255,0.3)', maxTicksLimit: 12, font: { size: 10 } },
-          grid:  { color: 'rgba(255,255,255,0.04)' }
-        },
-        y: {
-          ticks: {
-            color: 'rgba(255,255,255,0.4)', font: { size: 10 },
-            callback: function(v) { return '$' + v.toFixed(0); }
-          },
-          grid: { color: 'rgba(255,255,255,0.06)' }
-        }
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#444',maxTicksLimit:8,font:{size:10}},grid:{color:'rgba(255,255,255,0.03)'}},
+        y:{ticks:{color:'#444',font:{size:10},callback:v=>'$'+v.toFixed(0)},grid:{color:'rgba(255,255,255,0.05)'}}
       }
     }
   });
-
-  document.getElementById('cardChart').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
-
-// ============================================================
-// MAIN FLOW
-// ============================================================
-
-async function _run(forceRefetch) {
-  setBusy(true);
-  try {
-    var cfg = getCfg();
-    setProgress(2, '시작됨...');
-
-    if (forceRefetch || !_c5 || _c5.length === 0 || _loadedPair !== cfg.pair) {
-      setProgress(3, 'OKX 5분봉 데이터 수집 중...');
-      _c5 = await fetchCandles5m(cfg.pair, function(n) {
-        setProgress(Math.min(40, Math.round(n / 2630)), '5분봉 수집: ' + n.toLocaleString() + '개...');
-      });
-      _loadedPair = cfg.pair;
-    } else {
-      setProgress(40, '캐시 재사용: ' + _c5.length.toLocaleString() + '개 5분봉');
-    }
-
-    setProgress(42, '지표 계산 및 백테스팅 실행 중 (' + _c5.length.toLocaleString() + '개 봉)...');
-    await new Promise(function(r) { setTimeout(r, 10); });
-
-    _results = {};
-    for (var i = 0; i < STRATS.length; i++) {
-      var s   = STRATS[i];
-      var rk  = riskForTier(cfg, s.tier);
-      var pct2 = 42 + Math.round((i / STRATS.length) * 56);
-      setProgress(pct2, '[' + (i + 1) + '/' + STRATS.length + '] ' + s.name + ' 실행 중...');
-      await new Promise(function(r) { setTimeout(r, 0); });
-      _results[s.id] = runBacktest(_c5, s.id, s.tier, rk.risk, cfg.lev, rk.pos, cfg.rr);
-    }
-
-    setProgress(100, '완료! ' + STRATS.length + '개 전략 · 5분봉 ' + _c5.length.toLocaleString() + '개 사용');
-    renderResults(cfg);
-    showChart(STRATS[0].id);
-  } catch (e) {
-    setProgress(0, '오류: ' + (e.message || String(e)));
-    console.error(e);
-  } finally {
-    setBusy(false);
-  }
-}
-
-function startBacktest() { _run(true); }
-function startQuick()    { _run(false); }
 </script>
 </body>
 </html>
