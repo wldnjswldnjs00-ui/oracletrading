@@ -27,13 +27,11 @@ select option{background:#1a1a22;}
 .prog-msg{font-size:11px;color:#555;margin-bottom:4px;min-height:15px;}
 .prog-bg{background:rgba(255,255,255,0.05);border-radius:3px;height:3px;}
 .prog-bar{height:100%;background:#6366f1;width:0%;transition:width .3s;border-radius:3px;}
-/* stat boxes */
 .s3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px;}
 .s4{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-bottom:10px;}
 .sbox{background:#0d0d15;border-radius:9px;padding:11px 8px;text-align:center;}
 .sval{font-size:17px;font-weight:700;margin-bottom:2px;line-height:1;}
 .slbl{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:.04em;}
-/* table */
 table{width:100%;border-collapse:collapse;}
 thead tr{border-bottom:1px solid rgba(255,255,255,0.06);}
 th{text-align:right;padding:7px 7px;color:#555;font-weight:500;font-size:10px;white-space:nowrap;}
@@ -43,23 +41,18 @@ td:first-child{text-align:left;font-weight:600;color:#ccc;font-size:12px;}
 tr:last-child td{border-bottom:none;}
 tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:9px;}
 .pos{color:#22c55e;}.neg{color:#f87171;}.neu{color:#888;}.warn{color:#f59e0b;}
-/* chart */
 .chart-wrap{position:relative;height:210px;margin-top:4px;}
-/* tabs */
 .tabs{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;}
 .tab{padding:4px 12px;border-radius:100px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#555;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:all .1s;}
 .tab.active{background:#6366f1;color:#fff;border-color:#6366f1;}
-/* overlay */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:24px;}
 .overlay.show{display:flex;}
 .ov-title{font-size:15px;color:#fff;font-weight:700;text-align:center;}
 .ov-sub{font-size:12px;color:#888;text-align:center;line-height:1.7;max-width:300px;}
 .spin{width:38px;height:38px;border:3px solid rgba(255,255,255,.1);border-top-color:#6366f1;border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-/* info */
 .info-row{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#555;margin-bottom:10px;}
 .warn-banner{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:9px 11px;font-size:11px;color:#fbbf24;margin-bottom:10px;}
-/* math box */
 .mbox{background:#0a0a12;border:1px solid rgba(99,102,241,.2);border-radius:9px;padding:14px;font-size:11px;color:#888;line-height:1.85;}
 .mbox b{color:#ccc;}
 .mbox code{background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;font-size:10px;color:#a5b4fc;font-family:monospace;}
@@ -104,7 +97,7 @@ tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:9px;}
     <span id="infoRange">-</span>
     <span id="infoN">-</span>
   </div>
-  <div class="warn-banner hidden" id="warnBanner">⚠️ 거래 수 1,000건 미만 전략 존재 — 통계 신뢰도 낮음</div>
+  <div class="warn-banner hidden" id="warnBanner">⚠️ 거래 수 1,000건 미만 전략 존재 — 통계 신뢰도 낙음</div>
   <table>
     <thead><tr>
       <th>전략</th><th>거래</th><th>승률</th><th>PF</th><th>총수익</th><th>연수익</th><th>샤프</th><th>MDD</th>
@@ -126,7 +119,7 @@ tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:9px;}
 </div>
 
 <div class="card">
-  <div class="card-title">전략 & 리스크 로직</div>
+  <div class="card-title">전략 &amp; 리스크 로직</div>
   <div class="mbox">
     <b>3 전략 (5분봉 전용)</b><br>
     <code>EMA Pullback</code> — EMA21/55/200 정배열 + EMA600 중기추세 + ADX&gt;22 + 거래량↑ + EMA21 터치반등<br>
@@ -142,7 +135,7 @@ tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:9px;}
     ① <code>SL 범위: 0.1%~2.0%</code> — 범위 밖 신호 무시<br>
     ② <code>일일 손실 한도</code> — 당일 N% 손실 시 신규 진입 중단<br>
     ③ <code>서킷브레이커</code> — equity &lt; peak×(1-CB%) → 켈리 사이즈 50% 감소<br>
-    ④ <code>최대 켈리 캡</code> — 어떤 상황에도 maxKelly% 이상 리스크 불가
+    ④ <code>최대 켈리 쫩</code> — 어떤 상황에도 maxKelly% 이상 리스크 불가
   </div>
 </div>
 
@@ -153,7 +146,6 @@ tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:9px;}
 </div>
 
 <script>
-// ═══ 지표 ═══════════════════════════════════════════════════
 function ema(c,p){
   var k=2/(p+1),a=new Float64Array(c.length);
   a[0]=c[0];
@@ -185,7 +177,7 @@ function adx(h,lo,c,p){
   var n=c.length,pm=new Float64Array(n),nm=new Float64Array(n),tr=new Float64Array(n);
   for(var i=1;i<n;i++){
     var hd=h[i]-h[i-1],ld=lo[i-1]-lo[i];
-    pm[i]=hd>ld&&hd>0?hd:0; nm[i]=ld>hd&&ld>0?ld:0;
+    pm[i]=hd>ld&&hd>0?hd:0;nm[i]=ld>hd&&ld>0?ld:0;
     tr[i]=Math.max(h[i]-lo[i],Math.abs(h[i]-c[i-1]),Math.abs(lo[i]-c[i-1]));
   }
   var sT=new Float64Array(n),sP=new Float64Array(n),sN=new Float64Array(n),dx=new Float64Array(n),ax=new Float64Array(n);
@@ -222,7 +214,7 @@ function supertrend(h,lo,c,p,m){
   T[0]=1;
   for(var i=1;i<c.length;i++){
     var mid=(h[i]+lo[i])/2;
-    up[i]=mid+m*a[i]; dn[i]=mid-m*a[i];
+    up[i]=mid+m*a[i];dn[i]=mid-m*a[i];
     if(T[i-1]===1){dn[i]=Math.max(dn[i],dn[i-1]);T[i]=c[i]<dn[i]?-1:1;}
     else{up[i]=Math.min(up[i],up[i-1]);T[i]=c[i]>up[i]?1:-1;}
     SL[i]=T[i]===1?dn[i]:up[i];
@@ -233,7 +225,6 @@ function buildInd(K){
   var n=K.length;
   var o=new Float64Array(n),h=new Float64Array(n),lo=new Float64Array(n),c=new Float64Array(n),v=new Float64Array(n);
   for(var i=0;i<n;i++){o[i]=+K[i][1];h[i]=+K[i][2];lo[i]=+K[i][3];c[i]=+K[i][4];v[i]=+K[i][5];}
-  // 거래량 20봉 이동평균
   var vAvg=new Float64Array(n);
   for(var i=20;i<n;i++){var s=0;for(var j=i-20;j<i;j++)s+=v[j];vAvg[i]=s/20;}
   var e21=ema(Array.from(c),21),e55=ema(Array.from(c),55);
@@ -245,24 +236,21 @@ function buildInd(K){
   return{o,h,lo,c,v,vAvg,e21,e55,e200,e600,rsi:r14,atr:a14,adx:d14,srK:sr.K,mL:mc.L,mS:mc.S,stT:S.T,stL:S.SL};
 }
 
-// ═══ 켈리 ═══════════════════════════════════════════════════
-function kellyRisk(trades, rr, maxK){
+function kellyRisk(trades,rr,maxK){
   var w=trades.slice(-60);
   if(w.length<15) return 0.003;
   var wins=w.filter(t=>t.win).length;
   var wr=wins/w.length;
-  var f=0.5*(wr*rr-(1-wr))/rr; // Half-Kelly
-  return Math.max(0.002, Math.min(f, maxK/100));
+  var f=0.5*(wr*rr-(1-wr))/rr;
+  return Math.max(0.002,Math.min(f,maxK/100));
 }
 
-// ═══ 신호 ═══════════════════════════════════════════════════
 function getSig(id,i,ind){
   if(i<3) return null;
-  var a=ind.atr[i]; if(!a||a<=0) return null;
+  var a=ind.atr[i];if(!a||a<=0) return null;
   var bull=ind.c[i]>ind.e200[i]&&ind.c[i]>ind.e600[i];
   var bear=ind.c[i]<ind.e200[i]&&ind.c[i]<ind.e600[i];
   var volOk=ind.vAvg[i]>0&&ind.v[i]>ind.vAvg[i]*1.15;
-
   if(id==='s_ema_pb'){
     var upT=ind.e21[i]>ind.e55[i]&&ind.e55[i]>ind.e200[i];
     var dnT=ind.e21[i]<ind.e55[i]&&ind.e55[i]<ind.e200[i];
@@ -272,10 +260,10 @@ function getSig(id,i,ind){
       return{dir:'short',sl:ind.c[i]+a*1.5};
   }
   if(id==='s_macd_h'){
-    var h=ind.mL[i]-ind.mS[i],hP=ind.mL[i-1]-ind.mS[i-1];
-    if(bull&&ind.adx[i]>20&&volOk&&h>0&&hP<=0&&ind.rsi[i]<68)
+    var hh=ind.mL[i]-ind.mS[i],hP=ind.mL[i-1]-ind.mS[i-1];
+    if(bull&&ind.adx[i]>20&&volOk&&hh>0&&hP<=0&&ind.rsi[i]<68)
       return{dir:'long',sl:ind.c[i]-a*1.5};
-    if(bear&&ind.adx[i]>20&&volOk&&h<0&&hP>=0&&ind.rsi[i]>32)
+    if(bear&&ind.adx[i]>20&&volOk&&hh<0&&hP>=0&&ind.rsi[i]>32)
       return{dir:'short',sl:ind.c[i]+a*1.5};
   }
   if(id==='s_st'){
@@ -291,11 +279,10 @@ function getSig(id,i,ind){
   return null;
 }
 
-// ═══ 백테스트 ════════════════════════════════════════════════
 var STRATS=[
   {id:'s_ema_pb',name:'EMA Pullback'},
   {id:'s_macd_h',name:'MACD Histogram'},
-  {id:'s_st',    name:'Supertrend'},
+  {id:'s_st',name:'Supertrend'},
 ];
 
 function runBacktest(K,stratId,cfg){
@@ -305,14 +292,11 @@ function runBacktest(K,stratId,cfg){
   var pos=null,pending=null;
   var dLimit=cfg.dLoss/100,dayEq=eq,dayHalt=false,lastDay=-1;
   var SL_MIN=0.001,SL_MAX=0.020,cbT=1-cfg.cb/100;
-  var START=Math.max(650,0);
-
+  var START=650;
   for(var i=START;i<K.length-1;i++){
     var ts=+K[i][0];
     var day=Math.floor(ts/86400000);
     if(day!==lastDay){curve.push({ts,eq});dayEq=eq;dayHalt=false;lastDay=day;}
-
-    // 집행
     if(pending&&!pos){
       var ep=+K[i][1];
       var slD=Math.abs(ep-pending.sl)/ep;
@@ -328,8 +312,6 @@ function runBacktest(K,stratId,cfg){
       }
       pending=null;
     }
-
-    // SL/TP
     if(pos){
       var hi=+K[i][2],lo=+K[i][3];
       var slH=pos.dir==='long'?lo<=pos.sl:hi>=pos.sl;
@@ -339,7 +321,7 @@ function runBacktest(K,stratId,cfg){
         var xp=win?pos.tp:pos.sl;
         var ret=pos.dir==='long'?(xp-pos.entry)/pos.entry:(pos.entry-xp)/pos.entry;
         var pnl=eq*pos.nf*ret;
-        eq+=pnl; eq-=eq*pos.nf*0.0005; eq=Math.max(eq,1);
+        eq+=pnl;eq-=eq*pos.nf*0.0005;eq=Math.max(eq,1);
         if(eq>peak) peak=eq;
         if(win) wins++;
         trades.push({ts,win,pnl,eq});
@@ -347,27 +329,19 @@ function runBacktest(K,stratId,cfg){
         if((dayEq-eq)/dayEq>=dLimit) dayHalt=true;
       }
     }
-
-    // 신호
     if(!pos&&!pending&&!dayHalt){
       var sig=getSig(stratId,i,ind);
       if(sig) pending=sig;
     }
   }
   curve.push({ts:+K[K.length-1][0],eq});
-
   var n=trades.length;
   if(n===0) return{stratId,n:0,wr:0,pf:0,totRet:0,annRet:0,mdd:0,sharpe:0,sortino:0,finalEq:eq,curve,kellyLog};
-
   var wr=wins/n,tw=0,tl=0;
   for(var t of trades){t.win?tw+=t.pnl:tl+=Math.abs(t.pnl);}
   var pf=tl>0?tw/tl:tw>0?99:0;
-
-  // MDD
   var pk=cfg.cap,mdd=0,re=cfg.cap;
   for(var t of trades){re+=t.pnl;if(re>pk)pk=re;var dd=(pk-re)/pk;if(dd>mdd)mdd=dd;}
-
-  // 일별 수익률 → Sharpe / Sortino
   var dRets=[];
   for(var i=1;i<curve.length;i++) dRets.push((curve[i].eq-curve[i-1].eq)/curve[i-1].eq);
   var mn=dRets.reduce((a,b)=>a+b,0)/dRets.length;
@@ -376,16 +350,13 @@ function runBacktest(K,stratId,cfg){
   var ds=dRets.filter(r=>r<0);
   var dStd=ds.length?Math.sqrt(ds.reduce((a,b)=>a+b**2,0)/ds.length):0.0001;
   var sortino=(mn/dStd)*Math.sqrt(252);
-
   var t0=+K[START][0],t1=+K[K.length-2][0];
   var yrs=(t1-t0)/(365.25*24*3600*1000);
   var totRet=(eq/cfg.cap-1)*100;
   var annRet=yrs>0?((eq/cfg.cap)**(1/yrs)-1)*100:0;
-
   return{stratId,n,wr,pf,totRet,annRet,mdd,sharpe,sortino,finalEq:eq,curve,kellyLog,yrs,t0,t1};
 }
 
-// ═══ OKX ════════════════════════════════════════════════════
 async function fetchCandles(sym,limit){
   var all=[],after='';
   var base='https://www.okx.com/api/v5/market/history-candles';
@@ -409,7 +380,6 @@ async function fetchCandles(sym,limit){
   return all.reverse();
 }
 
-// ═══ UI ═════════════════════════════════════════════════════
 var _busy=false,_results=[],_candles=null,_chart=null,_curRes=null,_chartMode='eq';
 
 function busy(on,msg){
@@ -429,13 +399,13 @@ function setOvSub(t){document.getElementById('ovSub').textContent=t;}
 async function go(quick){
   if(_busy) return;
   var cfg={
-    cap:  +document.getElementById('cap').value||10000,
-    lev:  +document.getElementById('lev').value||10,
+    cap:+document.getElementById('cap').value||10000,
+    lev:+document.getElementById('lev').value||10,
     posMax:+document.getElementById('posMax').value||20,
-    rr:   +document.getElementById('rr').value||2,
+    rr:+document.getElementById('rr').value||2,
     maxKelly:+document.getElementById('maxKelly').value||4,
     dLoss:+document.getElementById('dLoss').value||4,
-    cb:   +document.getElementById('cb').value||15,
+    cb:+document.getElementById('cb').value||15,
   };
   var sym=document.getElementById('sym').value.trim()||'BTC-USDT-SWAP';
   var limit=quick?10000:Math.max(5000,+document.getElementById('bars').value||50000);
@@ -453,7 +423,7 @@ async function go(quick){
       setProg(0.72+(i+1)/STRATS.length*0.28,'');
       await new Promise(r=>setTimeout(r,20));
       var res=runBacktest(_candles,s.id,cfg);
-      res.name=s.name; res.cfg=cfg;
+      res.name=s.name;res.cfg=cfg;
       _results.push(res);
     }
     await new Promise(r=>setTimeout(r,60));
@@ -470,22 +440,19 @@ async function go(quick){
 function fD(ts){return new Date(ts).toLocaleDateString('ko-KR',{year:'2-digit',month:'numeric',day:'numeric'});}
 function f1(v){return v.toFixed(1);}
 function f2(v){return v.toFixed(2);}
-function pc(v,d){d=d??1;return'<span class="'+(v>0?'pos':v<0?'neg':'neu')+'">'+v.toFixed(d)+'%</span>';}
-function sbox(val,lbl,cls){return'<div class="sbox"><div class="sval '+(cls||')+'">'+val+'</div><div class="slbl">'+lbl+'</div></div>';}
+function pc(v,d){d=d==null?1:d;return '<span class="'+(v>0?'pos':v<0?'neg':'neu')+'">'+v.toFixed(d)+'%</span>';}
+function sbox(val,lbl,cls){return '<div class="sbox"><div class="sval '+(cls||'')+'">'+val+'</div><div class="slbl">'+lbl+'</div></div>';}
 
 function renderAll(){
   var c=_candles;
   document.getElementById('resCard').classList.remove('hidden');
   document.getElementById('infoRange').textContent=fD(+c[0][0])+' ~ '+fD(+c[c.length-1][0]);
   document.getElementById('infoN').textContent=c.length.toLocaleString()+'봉';
-
   var wb=document.getElementById('warnBanner');
   _results.some(r=>r.n<1000)?wb.classList.remove('hidden'):wb.classList.add('hidden');
-
   var bestI=0,bestA=-Infinity;
   _results.forEach((r,i)=>{if(r.annRet>bestA){bestA=r.annRet;bestI=i;}});
-
-  var tb=document.getElementById('resTbody'); tb.innerHTML='';
+  var tb=document.getElementById('resTbody');tb.innerHTML='';
   _results.forEach((r,i)=>{
     var tr=document.createElement('tr');
     if(i===bestI) tr.className='best';
@@ -500,9 +467,8 @@ function renderAll(){
       '<td><span class="neg">'+f1(r.mdd*100)+'%</span></td>';
     tb.appendChild(tr);
   });
-
   document.getElementById('detCard').classList.remove('hidden');
-  var tabs=document.getElementById('stratTabs'); tabs.innerHTML='';
+  var tabs=document.getElementById('stratTabs');tabs.innerHTML='';
   _results.forEach((r,i)=>{
     var b=document.createElement('button');
     b.className='tab'+(i===0?' active':'');
@@ -519,7 +485,6 @@ function renderAll(){
 
 function renderDetail(r){
   _curRes=r;
-  var cfg=r.cfg||{cap:10000};
   document.getElementById('sg1').innerHTML=
     sbox((r.wr*100).toFixed(1)+'%','승률',r.wr>=0.40?'pos':r.wr>=0.35?'warn':'neg')+
     sbox(r.n.toLocaleString(),'거래수',r.n>=1000?'pos':'warn')+
@@ -548,11 +513,11 @@ function drawChart(){
   if(_chartMode==='eq'){
     labels=r.curve.map(p=>fD(p.ts));
     data=r.curve.map(p=>p.eq);
-    color='#6366f1'; label='자본($)';
-  } else {
+    color='#6366f1';label='자본($)';
+  }else{
     labels=r.kellyLog.map(p=>fD(p.ts));
     data=r.kellyLog.map(p=>+p.k.toFixed(3));
-    color='#f59e0b'; label='Kelly Risk(%)';
+    color='#f59e0b';label='Kelly Risk(%)';
   }
   _chart=new Chart(ctx,{
     type:'line',
