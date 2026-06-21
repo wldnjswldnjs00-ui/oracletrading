@@ -65,7 +65,7 @@ tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:10px;}
   <div class="card-title">설정</div>
   <div class="grid3">
     <div><label>심볼</label><input type="text" id="symbol" value="BTC-USDT-SWAP"></div>
-    <div><label>목표 캔들 수</label><input type="number" id="bars" value="100000" min="10000" max="150000" step="10000"></div>
+    <div><label>목표 캔들 수</label><input type="number" id="bars" value="50000" min="10000" max="150000" step="10000"></div>
     <div><label>초기 자본 ($)</label><input type="number" id="capital" value="10000" min="100"></div>
   </div>
   <div class="grid2">
@@ -88,7 +88,7 @@ tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:10px;}
   </div>
   <div class="btn-row">
     <button class="btn btn-primary" id="btnRun" onclick="startRun()">백테스트 실행</button>
-    <button class="btn btn-secondary" id="btnQuick" onclick="startQuick()">빠른 (20,000봉)</button>
+    <button class="btn btn-secondary" id="btnQuick" onclick="startQuick()">빠른 (10,000봉)</button>
   </div>
   <div class="prog-wrap">
     <div class="prog-msg" id="progMsg">대기 중</div>
@@ -102,7 +102,7 @@ tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:10px;}
     <span id="infoRange">-</span>
     <span id="infoCandles">-</span>
   </div>
-  <div id="warnDiv" class="warn-box hidden">⚠️ 거래 수가 1,000건 미만인 전략이 있습니다.</div>
+  <div id="warnDiv" class="warn-box hidden">⚠️ 거래 수가 1,000건 미만인 전략이 있습니다. 캔들 수를 늘려보세요.</div>
   <table>
     <thead><tr>
       <th>전략</th>
@@ -348,16 +348,15 @@ async function fetchCandles(symbol,limit){
     var need=Math.min(300,limit-fetched);
     var url=base+'?instId='+encodeURIComponent(symbol)+'&bar=5m&limit='+need+(after?'&after='+after:'');
     var r=await fetch(url);
-    if(!r.ok)throw new Error('OKX '+r.status);
+    if(!r.ok)throw new Error('OKX API 오류 '+r.status);
     var j=await r.json();
     var d=j.data||[];
     if(!d.length)break;
     all=all.concat(d);
     after=d[d.length-1][0];
     fetched+=d.length;
+    _setProg(Math.min(fetched/limit,0.99)*0.75,'캔들 로딩: '+fetched.toLocaleString()+'봉...');
     if(d.length<need)break;
-    _setProg(fetched/limit*0.7,'캔들 로딩: '+fetched.toLocaleString()+' / '+limit.toLocaleString());
-    await new Promise(r=>setTimeout(r,80));
   }
   return all.reverse();
 }
@@ -374,8 +373,8 @@ function _setProg(r,msg){
   if(msg)document.getElementById('progMsg').textContent=msg;
 }
 function _setOvSub(t){document.getElementById('ovSub').textContent=t;}
-async function startRun(){await _run(parseInt(document.getElementById('bars').value)||100000);}
-async function startQuick(){await _run(20000);}
+async function startRun(){await _run(parseInt(document.getElementById('bars').value)||50000);}
+async function startQuick(){await _run(10000);}
 async function _run(limit){
   if(_running)return;
   _setBusy(true,'데이터 로딩 중...');
@@ -391,15 +390,15 @@ async function _run(limit){
     };
     var sel=document.getElementById('stratSel').value;
     var toRun=sel==='all'?STRATS:STRATS.filter(s=>s.id===sel);
-    _setOvSub(sym+' '+limit.toLocaleString()+'봉 로딩 중...');
+    _setOvSub(sym+' 데이터 로딩 중...');
     var candles=await fetchCandles(sym,limit);
-    if(candles.length<1000)throw new Error('데이터 부족: '+candles.length+'봉');
+    if(candles.length<500)throw new Error('데이터 부족: '+candles.length+'봉');
     _results=[];
     for(var i=0;i<toRun.length;i++){
       var s=toRun[i];
       document.getElementById('ovMsg').textContent=s.name+' 계산 중...';
-      _setOvSub((i+1)+'/'+toRun.length+' 전략');
-      _setProg(0.7+(i+1)/toRun.length*0.3,'');
+      _setOvSub((i+1)+'/'+toRun.length+' 전략 | 로드된 캔들: '+candles.length.toLocaleString()+'봉');
+      _setProg(0.75+(i+1)/toRun.length*0.25,'');
       await new Promise(r=>setTimeout(r,20));
       var res=runBacktest(candles,s.id,cfg);
       res.name=s.name;
