@@ -375,7 +375,12 @@ async function fetchCandles(symbol,limit){
   while(fetched<limit){
     var need=Math.min(300,limit-fetched);
     var url=base+'?instId='+encodeURIComponent(symbol)+'&bar=5m&limit='+need+(after?'&after='+after:'');
-    var r=await fetch(url);
+    var r,tries=0;
+    while(tries<5){
+      r=await fetch(url);
+      if(r.status===429){tries++;await new Promise(x=>setTimeout(x,600*tries));continue;}
+      break;
+    }
     if(!r.ok)throw new Error('OKX '+r.status);
     var j=await r.json();
     var d=j.data||[];
@@ -383,8 +388,9 @@ async function fetchCandles(symbol,limit){
     all=all.concat(d);
     after=d[d.length-1][0];
     fetched+=d.length;
+    _setProg(Math.min(fetched/limit,0.99)*0.75,'캔들 로딩: '+fetched.toLocaleString()+'봉...');
     if(d.length<need)break;
-    _setProg(fetched/limit*0.7,'캔들 로딩: '+fetched.toLocaleString()+'봉...');
+    await new Promise(x=>setTimeout(x,120));
   }
   return all.reverse();
 }
