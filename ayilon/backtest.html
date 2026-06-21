@@ -53,7 +53,7 @@ canvas{width:100%;height:220px;display:block;}
   <div class="row">
     <div class="field"><label>페어</label><input id="pair" value="BTC-USDT-SWAP" /></div>
     <div class="field"><label>레버리지</label><input id="leverage" type="number" value="10" min="1" max="100" /></div>
-    <div class="field"><label>R:R 배율</label><input id="rr" type="number" value="2.5" step="0.1" min="1" /></div>
+    <div class="field"><label>R:R 배율</label><input id="rr" type="number" value="2.0" step="0.1" min="1" /></div>
   </div>
 </div>
 
@@ -544,7 +544,7 @@ async function runBacktest(c5, stratId, tier, riskFrac, leverage, posSizePct, rr
         var slAmt = Math.abs(op5 - pending.sl);
         var tp = pending.dir === 'long' ? op5 + slAmt * rrMult : op5 - slAmt * rrMult;
         pos = { dir: pending.dir, entry: op5, sl: pending.sl, tp: tp, nf: nf };
-        equity = Math.max(100, equity - equity * nf * 0.0005);
+        equity = Math.max(100, equity - equity * nf * 0.0002);
         pending = null;
       }
     }
@@ -558,7 +558,7 @@ async function runBacktest(c5, stratId, tier, riskFrac, leverage, posSizePct, rr
         var exitPx = win ? pos.tp : pos.sl;
         var ret = pos.dir === 'long' ? (exitPx - pos.entry) / pos.entry : (pos.entry - exitPx) / pos.entry;
         var pnl = equity * pos.nf * ret;
-        equity = Math.max(100, equity + pnl - equity * pos.nf * 0.0005);
+        equity = Math.max(100, equity + pnl - equity * pos.nf * 0.0002);
         trades.push({ ts: ts, type: win ? 'WIN' : 'LOSS', pnl: pnl, eq: equity });
         if (win) wins++;
         total++;
