@@ -69,13 +69,13 @@ tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:9px;}
 <body>
 
 <h1>Oracle Backtest v3</h1>
-<p class="sub">5분봉 · 켈리 복리 · EMA600 추세 필터 · 거래량 확인</p>
+<p class="sub">5분봉 · 켈리 복리 · EMA600 추세 필터 · 거래량 확인 · 기본 12개월</p>
 
 <div class="card">
   <div class="card-title">파라미터</div>
   <div class="grid3">
     <div><label>심볼</label><input type="text" id="sym" value="BTC-USDT-SWAP"></div>
-    <div><label>캔들 수</label><input type="number" id="bars" value="50000" min="5000" max="150000" step="5000"></div>
+    <div><label>캔들 수</label><input type="number" id="bars" value="105000" min="5000" max="200000" step="5000"></div>
     <div><label>초기 자본 ($)</label><input type="number" id="cap" value="10000" min="100"></div>
   </div>
   <div class="grid3">
@@ -132,8 +132,8 @@ tr.best td:first-child::after{content:' ★';color:#fbbf24;font-size:9px;}
     <code>EMA Pullback</code> — EMA21/55/200 정배열 + EMA600 중기추세 + ADX>22 + 거래량↑ + EMA21 터치반등<br>
     <code>MACD Histogram</code> — 히스토그램 부호 전환 + EMA200/600 방향 + ADX>20 + 거래량↑<br>
     <code>Supertrend</code> — 방향 전환 or ST라인 반등 + EMA200/600 방향 + 거래량↑<br><br>
-    <b>EMA600 필터</b> — 5분봉 600기간 = 약 50시간 중기 추세. 이 방향에서만 진입<br>
-    <b>거래량 필터</b> — 현재 거래량 > 20봉 평균 × 1.15 (가짜 신호 제거)<br><br>
+    <b>EMA600 필터</b> — 5분봉 600기간 = 약 50시간 중기 추세. 단일 필터 (EMA200 제거)<br>
+    <b>거래량 필터</b> — 현재 거래량 > 20봉 평균 × 1.10 (1.15→1.10 완화)<br><br>
     <b>켈리 복리 (Half-Kelly)</b><br>
     <code>Kelly = (WR × RR − (1−WR)) / RR</code><br>
     <code>Risk = Kelly × 0.5</code> (Half-Kelly, 과잉 배팅 방지)<br>
@@ -259,25 +259,23 @@ function kellyRisk(trades, rr, maxK){
 function getSig(id,i,ind){
   if(i<3) return null;
   var a=ind.atr[i]; if(!a||a<=0) return null;
-  // 이중 추세 필터: EMA200 + EMA600 (50시간 중기)
-  var bull=ind.c[i]>ind.e200[i]&&ind.c[i]>ind.e600[i];
-  var bear=ind.c[i]<ind.e200[i]&&ind.c[i]<ind.e600[i];
-  // 거래량 필터
-  var volOk=ind.vAvg[i]>0&&ind.v[i]>ind.vAvg[i]*1.15;
+  var bull=ind.c[i]>ind.e600[i];
+  var bear=ind.c[i]<ind.e600[i];
+  var volOk=ind.vAvg[i]>0&&ind.v[i]>ind.vAvg[i]*1.10;
 
   if(id==='s_ema_pb'){
     var upT=ind.e21[i]>ind.e55[i]&&ind.e55[i]>ind.e200[i];
     var dnT=ind.e21[i]<ind.e55[i]&&ind.e55[i]<ind.e200[i];
-    if(bull&&upT&&ind.adx[i]>22&&volOk&&ind.c[i-1]<ind.e21[i-1]&&ind.c[i]>ind.e21[i]&&ind.srK[i]<65&&ind.c[i]>ind.o[i])
+    if(bull&&upT&&ind.adx[i]>18&&volOk&&ind.c[i-1]<ind.e21[i-1]&&ind.c[i]>ind.e21[i]&&ind.c[i]>ind.o[i])
       return{dir:'long',sl:ind.c[i]-a*1.5};
-    if(bear&&dnT&&ind.adx[i]>22&&volOk&&ind.c[i-1]>ind.e21[i-1]&&ind.c[i]<ind.e21[i]&&ind.srK[i]>35&&ind.c[i]<ind.o[i])
+    if(bear&&dnT&&ind.adx[i]>18&&volOk&&ind.c[i-1]>ind.e21[i-1]&&ind.c[i]<ind.e21[i]&&ind.c[i]<ind.o[i])
       return{dir:'short',sl:ind.c[i]+a*1.5};
   }
   if(id==='s_macd_h'){
     var h=ind.mL[i]-ind.mS[i],hP=ind.mL[i-1]-ind.mS[i-1];
-    if(bull&&ind.adx[i]>20&&volOk&&h>0&&hP<=0&&ind.rsi[i]<68)
+    if(bull&&ind.adx[i]>16&&volOk&&h>0&&hP<=0&&ind.rsi[i]<68)
       return{dir:'long',sl:ind.c[i]-a*1.5};
-    if(bear&&ind.adx[i]>20&&volOk&&h<0&&hP>=0&&ind.rsi[i]>32)
+    if(bear&&ind.adx[i]>16&&volOk&&h<0&&hP>=0&&ind.rsi[i]>32)
       return{dir:'short',sl:ind.c[i]+a*1.5};
   }
   if(id==='s_st'){
