@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle Backtest — Impulse Retest</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0e;color:#f0f0f0;min-height:100vh;padding:20px 14px 56px;}
+h1{font-size:19px;font-weight:700;margin-bottom:2px;}
+.sub{font-size:11px;color:#555;margin-bottom:18px;}
+.card{background:#111117;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px;margin-bottom:14px;}
+.card-title{font-size:11px;font-weight:700;margin-bottom:12px;color:#aaa;letter-spacing:.07em;text-transform:uppercase;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;}
+label{display:block;font-size:10px;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em;}
+input[type=number],input[type=text],select{width:100%;background:#1a1a22;border:1px solid rgba(255,255,255,0.08);border-radius:7px;padding:8px 10px;color:#fff;font-size:13px;font-family:inherit;}
+input:focus,select:focus{outline:none;border-color:rgba(99,102,241,0.5);}
+select option{background:#1a1a22;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.btn{padding:11px 20px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.btn-primary{background:#6366f1;color:#fff;}
+.btn-secondary{background:rgba(255,255,255,0.07);color:#fff;border:1px solid rgba(255,255,255,0.1);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.prog-wrap{margin-top:10px;}
+.prog-msg{font-size:11px;color:#555;margin-bottom:4px;min-height:15px;}
+.prog-bg{background:rgba(255,255,255,0.05);border-radius:3px;height:3px;}
+.prog-bar{height:100%;background:#6366f1;width:0%;transition:width .3s;border-radius:3px;}
+.s3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px;}
+.s4{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-bottom:10px;}
+.sbox{background:#0d0d15;border-radius:9px;padding:11px 8px;text-align:center;}
+.sval{font-size:17px;font-weight:700;margin-bottom:2px;line-height:1;}
+.slbl{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:.04em;}
+table{width:100%;border-collapse:collapse;}
+thead tr{border-bottom:1px solid rgba(255,255,255,0.06);}
+th{text-align:right;padding:7px 7px;color:#555;font-weight:500;font-size:10px;white-space:nowrap;}
+th:first-child{text-align:left;}
+td{padding:9px 7px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:right;font-size:11px;}
+td:first-child{text-align:left;font-weight:600;color:#ccc;font-size:12px;}
+tr:last-child td{border-bottom:none;}
+.pos{color:#22c55e;}.neg{color:#f87171;}.neu{color:#888;}.warn{color:#f59e0b;}
+.chart-wrap{position:relative;height:210px;margin-top:4px;}
+.tabs{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;}
+.tab{padding:4px 12px;border-radius:100px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#555;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:all .1s;}
+.tab.active{background:#6366f1;color:#fff;border-color:#6366f1;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:24px;}
+.overlay.show{display:flex;}
+.ov-title{font-size:15px;color:#fff;font-weight:700;text-align:center;}
+.ov-sub{font-size:12px;color:#888;text-align:center;line-height:1.7;max-width:300px;}
+.spin{width:38px;height:38px;border:3px solid rgba(255,255,255,.1);border-top-color:#6366f1;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.info-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#888;margin-bottom:10px;}
+.info-row b{color:#fff;}
+.warn-banner{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:9px 11px;font-size:11px;color:#fbbf24;margin-bottom:10px;}
+.ok-banner{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:9px 11px;font-size:11px;color:#22c55e;margin-bottom:10px;}
+.mbox{background:#0a0a12;border:1px solid rgba(99,102,241,.2);border-radius:9px;padding:14px;font-size:11px;color:#888;line-height:1.85;}
+.mbox b{color:#ccc;}
+.mbox code{background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;font-size:10px;color:#a5b4fc;font-family:monospace;}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<h1>Oracle Backtest — Impulse Retest</h1>
+<p class="sub">임펄스 캔들(A 솔리드 / B 연속 / C 스파이크) → 되돌림 리테스트 → 확정 후 진입 · 손절=이전 스윙 · 시드 40% 고정</p>
+
+<div class="card">
+  <div class="card-title">파라미터</div>
+  <div class="grid3">
+    <div><label>심볼</label><input type="text" id="sym" value="BTC-USDT-SWAP"></div>
+    <div><label>타임프레임</label>
+      <select id="tf" onchange="onTf()">
+        <option value="5m" selected>5분 (scalp)</option>
+        <option value="15m">15분</option>
+        <option value="1H">1시간 (day)</option>
+        <option value="4H">4시간 (swing)</option>
+      </select>
+    </div>
+    <div><label>캔들 수</label><input type="number" id="bars" value="105000" min="5000" max="200000" step="5000"></div>
+  </div>
+  <div class="grid3">
+    <div><label>초기 자본 ($)</label><input type="number" id="cap" value="10000" min="100"></div>
+    <div><label>레버리지 (선택)</label>
+      <select id="lev">
+        <option value="1">1x</option>
+        <option value="2">2x</option>
+        <option value="3">3x</option>
+        <option value="5">5x</option>
+        <option value="10" selected>10x</option>
+        <option value="15">15x</option>
+        <option value="20">20x</option>
+        <option value="25">25x</option>
+        <option value="50">50x</option>
+        <option value="75">75x</option>
+        <option value="100">100x</option>
+      </select>
+    </div>
+    <div><label>진입 비중 (시드 %)</label><input type="number" id="posFrac" value="40" min="1" max="100" step="5"></div>
+  </div>
+  <div class="grid3">
+    <div><label>R:R (익절배수)</label><input type="number" id="rr" value="1.5" min="0.5" step="0.1"></div>
+    <div><label>리테스트 허용 (%)</label><input type="number" id="retest" value="0.15" min="0.02" step="0.01"></div>
+    <div><label>레벨 유효윈도우 (봉)</label><input type="number" id="win" value="576" min="20" max="3000" step="24"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btnRun" onclick="go(false)">백테스트 실행</button>
+    <button class="btn btn-secondary" id="btnQ" onclick="go(true)">빠른 (15,000봉)</button>
+    <button class="btn btn-secondary" id="btnSweep" onclick="goSweep()">R:R 비율 최적화</button>
+  </div>
+  <div class="prog-wrap">
+    <div class="prog-msg" id="pMsg">대기 중</div>
+    <div class="prog-bg"><div class="prog-bar" id="pBar"></div></div>
+  </div>
+</div>
+
+<div class="card hidden" id="resCard">
+  <div class="card-title">결과 요약</div>
+  <div class="info-row">
+    <span>기간: <b id="infoRange">-</b></span>
+    <span><b id="infoDur">-</b></span>
+  </div>
+  <div class="info-row">
+    <span>캔들: <b id="infoBars">-</b></span>
+    <span>레버리지 <b id="infoLev">-</b> · 진입 <b id="infoFrac">-</b></span>
+  </div>
+  <div class="warn-banner hidden" id="warnN">⚠️ 거래 수 1,000건 미만 — 캔들 수를 늘리거나 타임프레임을 낮추세요 (통계 신뢰도 부족)</div>
+  <div class="ok-banner hidden" id="okN">✅ 거래 1,000건 이상 — 통계 표본 충분</div>
+  <div class="s3" id="sg1"></div>
+  <div class="s4" id="sg2"></div>
+  <div class="s3" id="sg3"></div>
+</div>
+
+<div class="card hidden" id="detCard">
+  <div class="card-title">자본 곡선</div>
+  <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+</div>
+
+<div class="card hidden" id="brkCard">
+  <div class="card-title">임펄스 타입별 분해</div>
+  <table>
+    <thead><tr><th>타입</th><th>거래</th><th>승률</th><th>순손익($)</th></tr></thead>
+    <tbody id="brkTbody"></tbody>
+  </table>
+</div>
+
+<div class="card hidden" id="sweepCard">
+  <div class="card-title">R:R 비율 최적화 — 어느 비율이 이득인가</div>
+  <div class="info-row"><span>초록 = 실제승률 &gt; 손익분기승률 (수수료 후 기대값 +)</span></div>
+  <table>
+    <thead><tr><th>R:R</th><th>분기WR</th><th>실제WR</th><th>거래</th><th>PF</th><th>총수익</th><th>기대값$</th></tr></thead>
+    <tbody id="sweepTbody"></tbody>
+  </table>
+  <div class="mbox" id="sweepNote" style="margin-top:12px"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">전략 &amp; 백테스트 규칙</div>
+  <div class="mbox">
+    <b>임펄스 3종</b><br>
+    <code>A 솔리드</code> 바디≥62% · 꼬리≤바디45% · 거래량≥1.8× → base=시가<br>
+    <code>B 연속</code> 2~3봉 연속 · 이동≥0.6% · 총거래량≥1.5× → base=첫봉 시가<br>
+    <code>C 스파이크</code> 범위≥1.0% · 거래량≥2.5× → base=종가<br><br>
+    <b>진입</b> base ±리테스트% 도달 + 임펄스 극단 안 깨짐 + <b>확정봉(양봉/음봉)</b> → 다음 봉 시가 진입<br>
+    <b>손절</b> 진입 이전 가장 가까운 <b>스윙 저점/고점</b>(fractal pivot, 양옆 2봉) — 임펄스 캔들 자체가 아님<br>
+    <b>익절</b> 진입가 ± (손절거리 × R:R)<br>
+    <b>사이징</b> 시드 N%(기본 40%) × 레버리지 = 명목 노출. 손절 거리 무관 <b>고정 비중</b><br>
+    <b>비용</b> 왕복 수수료 0.05%×2(taker), <b>청산 모델</b>: 손절거리×레버리지 ≥ 1 이면 손절 전 청산 → 증거금 전액 손실<br>
+    <b>추세필터 면제</b> 횡보장 포함 전 구간에서 작동 (방향 필터 없음)
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="spin"></div>
+  <div class="ov-title" id="ovTitle">데이터 로딩 중...</div>
+  <div class="ov-sub" id="ovSub"></div>
+</div>
+
+<script>
+// ── base series + fractal pivots ─────────────────────────────────
+function buildBase(K){
+  var n=K.length;
+  var ts=new Float64Array(n),o=new Float64Array(n),h=new Float64Array(n),lo=new Float64Array(n),c=new Float64Array(n),v=new Float64Array(n);
+  for(var i=0;i<n;i++){ts[i]=+K[i][0];o[i]=+K[i][1];h[i]=+K[i][2];lo[i]=+K[i][3];c[i]=+K[i][4];v[i]=+K[i][5];}
+  var vAvg=new Float64Array(n);
+  for(var i=20;i<n;i++){var s=0;for(var j=i-20;j<i;j++)s+=v[j];vAvg[i]=s/20;}
+  var L=2,pL=new Uint8Array(n),pH=new Uint8Array(n);
+  for(var i=L;i<n-L;i++){
+    var isL=true,isH=true;
+    for(var k=i-L;k<=i+L;k++){if(k===i)continue;if(lo[k]<=lo[i])isL=false;if(h[k]>=h[i])isH=false;}
+    pL[i]=isL?1:0;pH[i]=isH?1:0;
+  }
+  return{n,ts,o,h,lo,c,v,vAvg,pL,pH};
+}
+
+// ── detect all impulse levels (oldest-first), born at bar j ──────
+function detectImpulses(B){
+  var ev=[],n=B.n;
+  for(var j=22;j<n;j++){
+    var range=B.h[j]-B.lo[j];if(range<=0)continue;
+    var av=B.vAvg[j];if(av<=0)continue;
+    var body=Math.abs(B.c[j]-B.o[j]);
+    var bull=B.c[j]>B.o[j],bear=B.c[j]<B.o[j];
+    var br=body/range,wr=(range-body)/(body||1e-9);
+    // Type A — solid impulse candle
+    if(br>=0.62&&wr<=0.45&&B.v[j]>=av*1.8){
+      if(bull)      ev.push({j,dir:'long', base:B.o[j],ext:B.lo[j],kind:'A'});
+      else if(bear) ev.push({j,dir:'short',base:B.o[j],ext:B.h[j], kind:'A'});
+      continue;
+    }
+    // Type C — spike candle
+    if(range/B.c[j]>=0.010&&B.v[j]>=av*2.5){
+      if(B.c[j]<=B.o[j]) ev.push({j,dir:'long', base:B.c[j],ext:B.lo[j],kind:'C'});
+      else               ev.push({j,dir:'short',base:B.c[j],ext:B.h[j], kind:'C'});
+      continue;
+    }
+    // Type B — 2~3 consecutive same-direction candles ending at j
+    var done=false;
+    for(var nlen=3;nlen>=2&&!done;nlen--){
+      var s=j-nlen+1;if(s<1)continue;
+      var allBull=true,allBear=true;
+      for(var k=s;k<=j;k++){if(!(B.c[k]>B.o[k]))allBull=false;if(!(B.c[k]<B.o[k]))allBear=false;}
+      if(!allBull&&!allBear)continue;
+      var move=Math.abs(B.c[j]-B.o[s])/B.o[s];if(move<0.006)continue;
+      var totV=0;for(var k=s;k<=j;k++)totV+=B.v[k];
+      var avgB=B.vAvg[s];if(avgB<=0)continue;
+      if(totV<avgB*1.5*nlen)continue;
+      var rH=-Infinity,rLo=Infinity;
+      for(var k=s;k<=j;k++){if(B.h[k]>rH)rH=B.h[k];if(B.lo[k]<rLo)rLo=B.lo[k];}
+      if(allBull) ev.push({j,dir:'long', base:B.o[s],ext:rLo,kind:'B'});
+      else        ev.push({j,dir:'short',base:B.o[s],ext:rH, kind:'B'});
+      done=true;
+    }
+  }
+  return ev;
+}
+
+// nearest prior swing low below px (long) / swing high above px (short)
+function swingStop(B,i,dir,px,win){
+  var lim=Math.max(0,i-win);
+  if(dir==='long'){
+    for(var k=i-1;k>=lim;k--){ if(B.pL[k]&&B.lo[k]<px) return B.lo[k]; }
+  }else{
+    for(var k=i-1;k>=lim;k--){ if(B.pH[k]&&B.h[k]>px) return B.h[k]; }
+  }
+  return null;
+}
+
+function runBacktest(K,cfg){
+  var B=buildBase(K);
+  var ev=detectImpulses(B);
+  var posFrac=cfg.posFrac/100, lev=cfg.lev, rr=cfg.rr, retest=cfg.retest/100, win=cfg.win;
+  var FEE=0.0005, BUF=0.0005, SL_MIN=0.0012, SL_SANE=0.20;
+  var eq=cfg.cap, peak=eq, wins=0, liq=0;
+  var trades=[], curve=[], pos=null, pending=null;
+  var lastDay=-1;
+  var byKind={A:{n:0,w:0,pnl:0},B:{n:0,w:0,pnl:0},C:{n:0,w:0,pnl:0}};
+  var lo_e=0, hi_e=0; // event window pointers into ev (sorted by j ascending)
+  var START=Math.max(650, win+25);
+
+  for(var i=START;i<B.n-1;i++){
+    var ts=B.ts[i], day=Math.floor(ts/86400000);
+    if(day!==lastDay){curve.push({ts,eq});lastDay=day;}
+
+    // advance event window: include events born in [i-win, i-1]
+    while(hi_e<ev.length && ev[hi_e].j<=i-1) hi_e++;
+    while(lo_e<hi_e && ev[lo_e].j<i-win) lo_e++;
+
+    // ── fill pending at this bar's open ──
+    if(pending&&!pos){
+      var ep=B.o[i];
+      var slD=Math.abs(ep-pending.sl)/ep;
+      if(slD>=SL_MIN&&slD<=SL_SANE){
+        var sa=Math.abs(ep-pending.sl);
+        var tp=pending.dir==='long'?ep+sa*rr:ep-sa*rr;
+        var exposure=eq*posFrac*lev;
+        pos={dir:pending.dir,entry:ep,sl:pending.sl,tp,exposure,slD,kind:pending.kind};
+      }
+      pending=null;
+    }
+
+    // ── manage open position (intrabar) ──
+    if(pos){
+      var hi=B.h[i],lw=B.lo[i];
+      var slH=pos.dir==='long'?lw<=pos.sl:hi>=pos.sl;
+      var tpH=pos.dir==='long'?hi>=pos.tp:lw<=pos.tp;
+      if(slH||tpH){
+        var win_=tpH&&!slH;
+        var gross, liquidated=false;
+        if(win_){
+          var ret=pos.slD*rr;
+          gross=pos.exposure*ret;
+        }else{
+          // loss leg — check liquidation: margin loss fraction = slD*lev
+          var lossFrac=pos.slD*lev;
+          if(lossFrac>=1){ liquidated=true; gross=-eq*posFrac; } // lose entire posted margin
+          else gross=-pos.exposure*pos.slD;
+        }
+        var fee=pos.exposure*FEE*2;        // round-trip taker fee (entry+exit)
+        var pnl=gross-fee;                  // net P&L, fees included
+        eq+=pnl;
+        eq=Math.max(eq,1);
+        if(eq>peak)peak=eq;
+        if(win_)wins++;
+        if(liquidated)liq++;
+        var bk=byKind[pos.kind]; bk.n++; if(win_)bk.w++; bk.pnl+=pnl;
+        trades.push({ts:B.ts[i],win:win_,pnl,eq,liq:liquidated,kind:pos.kind});
+        pos=null;
+      }
+    }
+
+    // ── look for a new signal (confirmation bar = i) ──
+    if(!pos&&!pending){
+      var px=B.c[i];
+      var bullBar=B.c[i]>B.o[i], bearBar=B.c[i]<B.o[i];
+      // freshest qualifying event first
+      for(var e=hi_e-1;e>=lo_e;e--){
+        var L_=ev[e];
+        var nearBase=Math.abs(px-L_.base)/L_.base<=retest;
+        if(!nearBase)continue;
+        if(L_.dir==='long'){
+          if(px<L_.ext)continue;        // structure broken
+          if(!bullBar)continue;          // confirmation
+          var sw=swingStop(B,i,'long',px,win); if(sw==null)sw=L_.ext;
+          var sl=sw*(1-BUF);
+          var d=(px-sl)/px; if(d<SL_MIN||d>SL_SANE)continue;
+          pending={dir:'long',sl,kind:L_.kind}; break;
+        }else{
+          if(px>L_.ext)continue;
+          if(!bearBar)continue;
+          var sw2=swingStop(B,i,'short',px,win); if(sw2==null)sw2=L_.ext;
+          var sl2=sw2*(1+BUF);
+          var d2=(sl2-px)/px; if(d2<SL_MIN||d2>SL_SANE)continue;
+          pending={dir:'short',sl:sl2,kind:L_.kind}; break;
+        }
+      }
+    }
+  }
+  curve.push({ts:B.ts[B.n-1],eq});
+
+  var n=trades.length;
+  var wr=n?wins/n:0, tw=0,tl=0;
+  for(var t of trades){t.win?tw+=t.pnl:tl+=Math.abs(t.pnl);}
+  var pf=tl>0?tw/tl:(tw>0?99:0);
+  var pk=cfg.cap,mdd=0,re=cfg.cap;
+  for(var t of trades){re+=t.pnl;if(re>pk)pk=re;var dd=(pk-re)/pk;if(dd>mdd)mdd=dd;}
+  var t0=B.ts[START],t1=B.ts[B.n-2];
+  var yrs=(t1-t0)/(365.25*24*3600*1000);
+  var totRet=(eq/cfg.cap-1)*100;
+  var annRet=yrs>0&&eq>0?((eq/cfg.cap)**(1/yrs)-1)*100:0;
+  var avgWin=wins?tw/wins:0, losN=n-wins, avgLoss=losN?tl/losN:0;
+  var expectancy=n?(wr*avgWin-(1-wr)*avgLoss):0;
+  return{n,wins,wr,pf,mdd,totRet,annRet,yrs,finalEq:eq,liq,curve,byKind,expectancy,t0,t1,nev:ev.length};
+}
+
+// ── data fetch (OKX history-candles, paginated) ──────────────────
+async function fetchCandles(sym,bar,limit){
+  var all=[],after='';
+  var base='https://www.okx.com/api/v5/market/history-candles';
+  var fetched=0;
+  while(fetched<limit){
+    var need=Math.min(300,limit-fetched);
+    var url=base+'?instId='+encodeURIComponent(sym)+'&bar='+bar+'&limit='+need+(after?'&after='+after:'');
+    var r,tries=0;
+    while(tries<5){r=await fetch(url);if(r.status===429){tries++;await new Promise(x=>setTimeout(x,700*tries));continue;}break;}
+    if(!r.ok) throw new Error('OKX '+r.status);
+    var j=await r.json();
+    var d=j.data||[];
+    if(!d.length) break;
+    all=all.concat(d);
+    after=d[d.length-1][0];
+    fetched+=d.length;
+    setProg(Math.min(fetched/limit,0.98)*0.8,'캔들 로딩: '+fetched.toLocaleString()+'봉...');
+    if(d.length<need) break;
+    await new Promise(x=>setTimeout(x,120));
+  }
+  return all.reverse();
+}
+
+var _busy=false,_res=null,_chart=null,_candles=null;
+
+function busy(on,msg){
+  _busy=on;
+  document.getElementById('btnRun').disabled=on;
+  document.getElementById('btnQ').disabled=on;
+  document.getElementById('btnSweep').disabled=on;
+  var ov=document.getElementById('overlay');
+  on?ov.classList.add('show'):ov.classList.remove('show');
+  if(msg) document.getElementById('ovTitle').textContent=msg;
+}
+function setProg(r,msg){document.getElementById('pBar').style.width=(r*100)+'%';if(msg)document.getElementById('pMsg').textContent=msg;}
+function setOvSub(t){document.getElementById('ovSub').textContent=t;}
+function onTf(){
+  var tf=document.getElementById('tf').value;
+  var def={'5m':{bars:105000,win:576},'15m':{bars:70000,win:192},'1H':{bars:35000,win:96},'4H':{bars:18000,win:60}}[tf];
+  document.getElementById('bars').value=def.bars;
+  document.getElementById('win').value=def.win;
+}
+
+async function go(quick){
+  if(_busy)return;
+  var cfg={
+    cap:+document.getElementById('cap').value||10000,
+    lev:+document.getElementById('lev').value||10,
+    posFrac:+document.getElementById('posFrac').value||40,
+    rr:+document.getElementById('rr').value||1.5,
+    retest:+document.getElementById('retest').value||0.15,
+    win:+document.getElementById('win').value||576,
+  };
+  var sym=document.getElementById('sym').value.trim()||'BTC-USDT-SWAP';
+  var bar=document.getElementById('tf').value;
+  var limit=quick?15000:Math.max(5000,+document.getElementById('bars').value||105000);
+  busy(true,'데이터 로딩 중...');
+  setProg(0,'시작...');
+  try{
+    setOvSub(sym+' '+bar+' '+limit.toLocaleString()+'봉 로딩 중...');
+    _candles=await fetchCandles(sym,bar,limit);
+    if(_candles.length<1000) throw new Error('데이터 부족: '+_candles.length+'봉');
+    document.getElementById('ovTitle').textContent='임펄스 백테스트 계산 중...';
+    setOvSub('로드된 캔들: '+_candles.length.toLocaleString()+'봉');
+    setProg(0.85,'백테스트 실행...');
+    await new Promise(r=>setTimeout(r,40));
+    _res=runBacktest(_candles,cfg);
+    _res.cfg=cfg; _res.bar=bar;
+    render();
+  }catch(e){
+    alert('오류: '+e.message);
+    setProg(0,'오류 발생');
+  }finally{
+    busy(false);
+    setProg(1,'완료');
+  }
+}
+
+function readCfg(){
+  return{
+    cap:+document.getElementById('cap').value||10000,
+    lev:+document.getElementById('lev').value||10,
+    posFrac:+document.getElementById('posFrac').value||40,
+    rr:+document.getElementById('rr').value||1.5,
+    retest:+document.getElementById('retest').value||0.15,
+    win:+document.getElementById('win').value||576,
+  };
+}
+
+async function goSweep(){
+  if(_busy)return;
+  var cfg=readCfg();
+  var sym=document.getElementById('sym').value.trim()||'BTC-USDT-SWAP';
+  var bar=document.getElementById('tf').value;
+  var limit=Math.max(5000,+document.getElementById('bars').value||105000);
+  busy(true,'데이터 준비 중...');
+  setProg(0,'시작...');
+  try{
+    if(!_candles||_candles.length<1000){
+      setOvSub(sym+' '+bar+' '+limit.toLocaleString()+'봉 로딩 중...');
+      _candles=await fetchCandles(sym,bar,limit);
+      if(_candles.length<1000) throw new Error('데이터 부족: '+_candles.length+'봉');
+    }
+    var RRs=[0.8,1.0,1.5,2.0,2.5,3.0,4.0,5.0];
+    var rows=[];
+    for(var k=0;k<RRs.length;k++){
+      document.getElementById('ovTitle').textContent='R:R '+RRs[k].toFixed(1)+' 계산 중...';
+      setOvSub((k+1)+'/'+RRs.length+' | 캔들 '+_candles.length.toLocaleString()+'봉');
+      setProg(0.85+(k+1)/RRs.length*0.15,'R:R '+RRs[k].toFixed(1));
+      await new Promise(r=>setTimeout(r,15));
+      var c2=Object.assign({},cfg,{rr:RRs[k]});
+      var r=runBacktest(_candles,c2);
+      rows.push({rr:RRs[k],r});
+    }
+    renderSweep(rows,cfg);
+  }catch(e){
+    alert('오류: '+e.message);setProg(0,'오류 발생');
+  }finally{busy(false);setProg(1,'완료');}
+}
+
+function renderSweep(rows,cfg){
+  var card=document.getElementById('sweepCard');card.classList.remove('hidden');
+  var tb=document.getElementById('sweepTbody');tb.innerHTML='';
+  var bestI=-1,bestRet=-Infinity;
+  rows.forEach(function(x,i){if(x.r.totRet>bestRet){bestRet=x.r.totRet;bestI=i;}});
+  rows.forEach(function(x,i){
+    var r=x.r, beWR=100/(1+x.rr), actWR=r.wr*100;
+    var edge=r.pf>=1; // net-of-fee profitable (gross beWR shown only as reference)
+    var tr=document.createElement('tr');
+    if(i===bestI) tr.style.background='rgba(99,102,241,0.10)';
+    tr.innerHTML=
+      '<td>1:'+x.rr.toFixed(1)+(i===bestI?' ★':'')+'</td>'+
+      '<td class="neu">'+beWR.toFixed(1)+'%</td>'+
+      '<td><span class="'+(edge?'pos':'neg')+'">'+actWR.toFixed(1)+'%</span></td>'+
+      '<td style="color:'+(r.n>=1000?'#22c55e':'#f59e0b')+'">'+r.n.toLocaleString()+'</td>'+
+      '<td><span class="'+(r.pf>=1?'pos':'neg')+'">'+r.pf.toFixed(2)+'</span></td>'+
+      '<td><span class="'+(r.totRet>0?'pos':'neg')+'">'+(r.totRet>0?'+':'')+r.totRet.toFixed(0)+'%</span></td>'+
+      '<td><span class="'+(r.expectancy>0?'pos':'neg')+'">'+(r.expectancy>0?'+':'')+r.expectancy.toFixed(1)+'</span></td>';
+    tb.appendChild(tr);
+  });
+  var b=rows[bestI], pos=rows.filter(x=>x.r.totRet>0);
+  var note=document.getElementById('sweepNote');
+  if(pos.length===0){
+    note.innerHTML='<b style="color:#f87171">모든 비율에서 손실.</b> 이 구간/심볼에선 임펄스 리테스트가 수수료를 못 이김. '+
+      '레버리지를 낮추거나(수수료 부담↓), 캔들 수/타임프레임을 바꿔 다른 구간을 보거나, 진입 필터(거래량·바디 임계값)를 더 빡빡하게 해서 표본 질을 높여야 함.';
+  }else{
+    note.innerHTML='<b style="color:#22c55e">최적 비율: 1:'+b.rr.toFixed(1)+'</b> '+
+      '— 총수익 '+(b.r.totRet>0?'+':'')+b.r.totRet.toFixed(0)+'%, 실제승률 '+(b.r.wr*100).toFixed(1)+'% (분기 '+(100/(1+b.rr)).toFixed(1)+'%), 거래 '+b.r.n.toLocaleString()+'건.<br>'+
+      '<b>읽는 법:</b> 초록(실제WR)은 <b>수수료까지 뺀 PF≥1</b>인 행 = 진짜 이득 구간. \"분기WR\"은 수수료 전 이론값(참고용)이라, 분기WR을 넘어도 수수료 때문에 빨강일 수 있음. R:R을 올리면 분기WR은 내려가지만 실제WR도 같이 떨어지니, <b>총수익·PF가 최대인 비율</b>이 정답. '+
+      (b.r.n<1000?'<br><b style="color:#f59e0b">⚠️ 최적행 거래 1,000건 미만 — 캔들 수를 늘려 재검증 필요.</b>':'');
+  }
+  card.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function fD(ts){return new Date(ts).toLocaleDateString('ko-KR',{year:'2-digit',month:'numeric',day:'numeric'});}
+function f1(v){return v.toFixed(1);}
+function f2(v){return v.toFixed(2);}
+function sbox(val,lbl,cls){return '<div class="sbox"><div class="sval '+(cls||'')+'">'+val+'</div><div class="slbl">'+lbl+'</div></div>';}
+
+function render(){
+  var r=_res,c=_candles;
+  document.getElementById('resCard').classList.remove('hidden');
+  document.getElementById('infoRange').textContent=fD(r.t0)+' ~ '+fD(r.t1);
+  var days=(r.t1-r.t0)/(86400000);
+  document.getElementById('infoDur').textContent=r.yrs>=1?(r.yrs.toFixed(2)+'년'):(Math.round(days)+'일');
+  document.getElementById('infoBars').textContent=c.length.toLocaleString()+'봉 ('+r.bar+') · 임펄스레벨 '+r.nev.toLocaleString()+'개';
+  document.getElementById('infoLev').textContent=r.cfg.lev+'x';
+  document.getElementById('infoFrac').textContent=r.cfg.posFrac+'%';
+  document.getElementById('warnN').classList.toggle('hidden',r.n>=1000);
+  document.getElementById('okN').classList.toggle('hidden',r.n<1000);
+
+  document.getElementById('sg1').innerHTML=
+    sbox((r.wr*100).toFixed(1)+'%','승률',r.wr>=0.45?'pos':r.wr>=0.38?'warn':'neg')+
+    sbox(r.n.toLocaleString(),'총 거래수',r.n>=1000?'pos':'warn')+
+    sbox(f2(r.pf),'Profit Factor',r.pf>=1.1?'pos':r.pf>=1?'neu':'neg');
+  document.getElementById('sg2').innerHTML=
+    sbox((r.totRet>=0?'+':'')+r.totRet.toFixed(0)+'%','총 수익률',r.totRet>0?'pos':'neg')+
+    sbox((r.annRet>=0?'+':'')+r.annRet.toFixed(0)+'%','연 환산',r.annRet>=20?'pos':r.annRet>0?'warn':'neg')+
+    sbox((r.mdd*100).toFixed(1)+'%','MDD','neg')+
+    sbox('$'+Math.round(r.finalEq).toLocaleString(),'최종 자본',r.finalEq>=r.cfg.cap?'pos':'neg');
+  document.getElementById('sg3').innerHTML=
+    sbox(r.liq.toLocaleString(),'청산 횟수',r.liq>0?'neg':'pos')+
+    sbox('$'+r.expectancy.toFixed(1),'기대값/거래',r.expectancy>0?'pos':'neg')+
+    sbox(r.yrs>0?(r.n/(r.yrs*12)).toFixed(0):'-','월 평균 거래','neu');
+
+  // breakdown
+  var tb=document.getElementById('brkTbody');tb.innerHTML='';
+  ['A','B','C'].forEach(function(k){
+    var b=r.byKind[k],nm={A:'A 솔리드',B:'B 연속',C:'C 스파이크'}[k];
+    var wr=b.n?(b.w/b.n*100).toFixed(1):'0.0';
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+nm+'</td><td>'+b.n.toLocaleString()+'</td>'+
+      '<td><span class="'+(b.n&&b.w/b.n>=0.45?'pos':'warn')+'">'+wr+'%</span></td>'+
+      '<td><span class="'+(b.pnl>=0?'pos':'neg')+'">'+(b.pnl>=0?'+':'')+Math.round(b.pnl).toLocaleString()+'</span></td>';
+    tb.appendChild(tr);
+  });
+  document.getElementById('brkCard').classList.remove('hidden');
+
+  document.getElementById('detCard').classList.remove('hidden');
+  drawChart();
+}
+
+function drawChart(){
+  var r=_res;
+  var ctx=document.getElementById('mainChart').getContext('2d');
+  if(_chart)_chart.destroy();
+  _chart=new Chart(ctx,{
+    type:'line',
+    data:{labels:r.curve.map(p=>fD(p.ts)),datasets:[{label:'자본($)',data:r.curve.map(p=>Math.round(p.eq)),borderColor:'#6366f1',borderWidth:1.5,pointRadius:0,fill:true,backgroundColor:'rgba(99,102,241,0.07)',tension:0.15}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#444',maxTicksLimit:6,font:{size:10}},grid:{color:'rgba(255,255,255,0.03)'}},
+        y:{ticks:{color:'#444',font:{size:10},callback:v=>'$'+(v|0).toLocaleString()},grid:{color:'rgba(255,255,255,0.04)'}}}}
+  });
+}
+</script>
+</body>
+</html>
