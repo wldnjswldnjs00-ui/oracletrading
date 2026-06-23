@@ -3,6 +3,8 @@ const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
 const ALLOWED_ORIGINS = [
   'https://oracletrading-01o.pages.dev',
+  'https://ayilon.com',
+  'https://www.ayilon.com',
   'http://localhost',
   'http://127.0.0.1'
 ];
