@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle Backtest — Fib / ICT / Ribbon</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0e;color:#f0f0f0;min-height:100vh;padding:20px 14px 56px;}
+h1{font-size:19px;font-weight:700;margin-bottom:2px;}
+.sub{font-size:11px;color:#555;margin-bottom:18px;}
+.card{background:#111117;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px;margin-bottom:14px;}
+.card-title{font-size:11px;font-weight:700;margin-bottom:12px;color:#aaa;letter-spacing:.07em;text-transform:uppercase;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;}
+label{display:block;font-size:10px;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em;}
+input[type=number],input[type=text],select{width:100%;background:#1a1a22;border:1px solid rgba(255,255,255,0.08);border-radius:7px;padding:8px 10px;color:#fff;font-size:13px;font-family:inherit;}
+input:focus,select:focus{outline:none;border-color:rgba(99,102,241,0.5);}
+select option{background:#1a1a22;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.btn{padding:11px 20px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.btn-primary{background:#6366f1;color:#fff;}
+.btn-secondary{background:rgba(255,255,255,0.07);color:#fff;border:1px solid rgba(255,255,255,0.1);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.prog-wrap{margin-top:10px;}
+.prog-msg{font-size:11px;color:#555;margin-bottom:4px;min-height:15px;}
+.prog-bg{background:rgba(255,255,255,0.05);border-radius:3px;height:3px;}
+.prog-bar{height:100%;background:#6366f1;width:0%;transition:width .3s;border-radius:3px;}
+.s3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px;}
+.s4{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-bottom:10px;}
+.sbox{background:#0d0d15;border-radius:9px;padding:11px 8px;text-align:center;}
+.sval{font-size:17px;font-weight:700;margin-bottom:2px;line-height:1;}
+.slbl{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:.04em;}
+.pos{color:#22c55e;}.neg{color:#f87171;}.neu{color:#888;}.warn{color:#f59e0b;}
+.chart-wrap{position:relative;height:210px;margin-top:4px;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:24px;}
+.overlay.show{display:flex;}
+.ov-title{font-size:15px;color:#fff;font-weight:700;text-align:center;}
+.ov-sub{font-size:12px;color:#888;text-align:center;line-height:1.7;max-width:300px;}
+.spin{width:38px;height:38px;border:3px solid rgba(255,255,255,.1);border-top-color:#6366f1;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.info-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#888;margin-bottom:10px;}
+.info-row b{color:#fff;}
+.warn-banner{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:9px 11px;font-size:11px;color:#fbbf24;margin-bottom:10px;}
+.ok-banner{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:9px 11px;font-size:11px;color:#22c55e;margin-bottom:10px;}
+.mbox{background:#0a0a12;border:1px solid rgba(99,102,241,.2);border-radius:9px;padding:14px;font-size:11px;color:#888;line-height:1.85;}
+.mbox b{color:#ccc;}
+.mbox code{background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;font-size:10px;color:#a5b4fc;font-family:monospace;}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<h1>Oracle Backtest — Fib / ICT / Ribbon</h1>
+<p class="sub">피보나치 OTE · ICT 유동성 스윕 · EMA 리본 — 전부 롱+숏(정배열/역배열) · 비관적 모델 · 켈리(40%캡)</p>
+
+<div class="card">
+  <div class="card-title">파라미터</div>
+  <div class="grid3">
+    <div><label>전략</label>
+      <select id="strat" onchange="onStrat()">
+        <option value="fib">피보나치 (OTE 0.618~0.786)</option>
+        <option value="ict">ICT (유동성 스윕)</option>
+        <option value="ribbon" selected>리본 (정/역배열 눌림목)</option>
+      </select>
+    </div>
+    <div><label>타임프레임</label>
+      <select id="tf"><option value="5m">5분</option><option value="15m">15분</option><option value="1H" selected>1시간</option><option value="4H">4시간</option></select>
+    </div>
+    <div><label>심볼</label><input type="text" id="sym" value="BTC-USDT-SWAP"></div>
+  </div>
+  <div class="grid3">
+    <div><label>캔들 수</label><input type="number" id="bars" value="35000" min="5000" max="200000" step="5000"></div>
+    <div><label>초기 자본 ($)</label><input type="number" id="cap" value="10000" min="100"></div>
+    <div><label>레버리지</label><select id="lev"><option value="1">1x</option><option value="2">2x</option><option value="3" selected>3x</option><option value="5">5x</option><option value="10">10x</option><option value="25">25x</option><option value="50">50x</option><option value="100">100x</option></select></div>
+  </div>
+  <div class="grid3">
+    <div><label>최대 포지션 (시드 %)</label><input type="number" id="posCap" value="40" min="5" max="100" step="5"></div>
+    <div><label>최대 켈리 리스크 (%)</label><input type="number" id="maxKelly" value="4" min="0.5" max="10" step="0.5"></div>
+    <div><label>방향</label><select id="dir"><option value="both" selected>롱 + 숏</option><option value="long">롱만</option><option value="short">숏만</option></select></div>
+  </div>
+  <div class="grid3">
+    <div><label>슬리피지 (%/체결)</label><input type="number" id="slip" value="0.03" min="0" max="0.5" step="0.01"></div>
+    <div><label>펀딩비 (%/8h)</label><input type="number" id="funding" value="0.01" min="0" max="0.2" step="0.005"></div>
+    <div><label>리본 스윙 윈도우 (봉)</label><input type="number" id="win" value="96" min="20" max="2000" step="12"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btnRun" onclick="go(false)">백테스트 실행</button>
+    <button class="btn btn-secondary" id="btnQ" onclick="go(true)">빠른 (15,000봉)</button>
+  </div>
+  <div class="prog-wrap"><div class="prog-msg" id="pMsg">대기 중</div><div class="prog-bg"><div class="prog-bar" id="pBar"></div></div></div>
+</div>
+
+<div class="card hidden" id="resCard">
+  <div class="card-title">결과 요약</div>
+  <div class="info-row"><span>기간: <b id="infoRange">-</b></span><span><b id="infoDur">-</b></span></div>
+  <div class="info-row"><span><b id="infoStrat">-</b> · <b id="infoBars">-</b></span><span>레버 <b id="infoLev">-</b> · 켈리캡 <b id="infoK">-</b></span></div>
+  <div class="warn-banner hidden" id="warnN">⚠️ 거래 1,000건 미만 — 표본 주의</div>
+  <div class="s3" id="sg1"></div>
+  <div class="s4" id="sg2"></div>
+  <div class="s4" id="sg3"></div>
+  <div class="info-row" id="exitRow" style="margin-top:8px"></div>
+  <div class="ok-banner hidden" id="riskOK">🛡️ 청산 0회 · 비관적 모델(슬리피지+펀딩 반영)</div>
+</div>
+
+<div class="card hidden" id="detCard"><div class="card-title">자본 곡선</div><div class="chart-wrap"><canvas id="mainChart"></canvas></div></div>
+
+<div class="card">
+  <div class="card-title">전략 &amp; 모델</div>
+  <div class="mbox" id="stratBox"></div>
+  <div class="mbox" style="margin-top:10px">
+    <b>비관적 실행</b> 다음봉 시가 체결 · 슬리피지 양방향 · 펀딩비 · 테이커 0.05%×2 → 실거래 ≥ 백테<br>
+    <b>사이징</b> 하프켈리(최근 60거래) · 최대 켈리%·시드 40% 이중 캡 · 레버리지는 자유<br>
+    <b>판단</b> <b>평균 R/거래 &gt; 0</b> 이면 엣지 있음 → 켈리 복리로 우상향. 음수면 그 전략 폐기
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="spin"></div><div class="ov-title" id="ovTitle">데이터 로딩 중...</div><div class="ov-sub" id="ovSub"></div></div>
+
+<script>
+function buildBase(K){
+  var n=K.length;
+  var ts=new Float64Array(n),o=new Float64Array(n),h=new Float64Array(n),lo=new Float64Array(n),c=new Float64Array(n),v=new Float64Array(n);
+  for(var i=0;i<n;i++){ts[i]=+K[i][0];o[i]=+K[i][1];h[i]=+K[i][2];lo[i]=+K[i][3];c[i]=+K[i][4];v[i]=+K[i][5];}
+  var L=2,pL=new Uint8Array(n),pH=new Uint8Array(n);
+  for(var i=L;i<n-L;i++){var a=true,b=true;for(var k=i-L;k<=i+L;k++){if(k===i)continue;if(lo[k]<=lo[i])a=false;if(h[k]>=h[i])b=false;}pL[i]=a?1:0;pH[i]=b?1:0;}
+  return{n,ts,o,h,lo,c,v,pL,pH};
+}
+function ema(c,p){var k=2/(p+1),a=new Float64Array(c.length);a[0]=c[0];for(var i=1;i<c.length;i++)a[i]=c[i]*k+a[i-1]*(1-k);return a;}
+function atrArr(h,l,c,p){var n=c.length,a=new Float64Array(n);for(var i=1;i<n;i++){var tr=Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1]));a[i]=i<=p?(a[i-1]*(i-1)+tr)/i:(a[i-1]*(p-1)+tr)/p;}return a;}
+function adxArr(h,l,c,p){var n=c.length,pm=new Float64Array(n),nm=new Float64Array(n),tr=new Float64Array(n);
+  for(var i=1;i<n;i++){var hd=h[i]-h[i-1],ld=l[i-1]-l[i];pm[i]=hd>ld&&hd>0?hd:0;nm[i]=ld>hd&&ld>0?ld:0;tr[i]=Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1]));}
+  var sT=new Float64Array(n),sP=new Float64Array(n),sN=new Float64Array(n),dx=new Float64Array(n),ax=new Float64Array(n);
+  for(var i=1;i<n;i++){sT[i]=i<=p?(sT[i-1]*(i-1)+tr[i])/i:(sT[i-1]*(p-1)+tr[i])/p;sP[i]=i<=p?(sP[i-1]*(i-1)+pm[i])/i:(sP[i-1]*(p-1)+pm[i])/p;sN[i]=i<=p?(sN[i-1]*(i-1)+nm[i])/i:(sN[i-1]*(p-1)+nm[i])/p;}
+  for(var i=p;i<n;i++){var pdi=sT[i]?100*sP[i]/sT[i]:0,ndi=sT[i]?100*sN[i]/sT[i]:0;dx[i]=(pdi+ndi)?100*Math.abs(pdi-ndi)/(pdi+ndi):0;ax[i]=i===p?dx[i]:(ax[i-1]*(p-1)+dx[i])/p;}
+  return ax;
+}
+function swingLowBelow(B,i,px,win){var lim=Math.max(0,i-win);for(var k=i-1;k>=lim;k--){if(B.pL[k]&&B.lo[k]<px)return B.lo[k];}return null;}
+function swingHighAbove(B,i,px,win){var lim=Math.max(0,i-win);for(var k=i-1;k>=lim;k--){if(B.pH[k]&&B.h[k]>px)return B.h[k];}return null;}
+function buildInd(B){
+  var c=Array.from(B.c),h=Array.from(B.h),l=Array.from(B.lo),n=B.n;
+  var plPx=new Float64Array(n),phPx=new Float64Array(n),legLow=new Float64Array(n),legHigh=new Float64Array(n),phIdx=new Int32Array(n),plIdx=new Int32Array(n);
+  var lastLpx=0,lastHpx=0,lastH=-1,lastL=-1,legLowForH=0,legHighForL=0;
+  for(var i=0;i<n;i++){var k=i-2;
+    if(k>=0){if(B.pL[k]){lastL=k;lastLpx=B.lo[k];legHighForL=lastHpx;}if(B.pH[k]){lastH=k;lastHpx=B.h[k];legLowForH=lastLpx;}}
+    plPx[i]=lastLpx;phPx[i]=lastHpx;legLow[i]=legLowForH;legHigh[i]=legHighForL;phIdx[i]=lastH;plIdx[i]=lastL;}
+  return{e5:ema(c,5),e20:ema(c,20),e60:ema(c,60),e120:ema(c,120),e240:ema(c,240),at:atrArr(h,l,c,14),ax:adxArr(h,l,c,14),
+    plPx,phPx,legLow,legHigh,phIdx,plIdx};
+}
+function getSig(strat,B,I,i,win,allowL,allowS){
+  var c=B.c[i],o=B.o[i],hi=B.h[i],lo=B.lo[i];
+  if(strat==='fib'){
+    if(allowL){var H=I.phPx[i],Lp=I.legLow[i];
+      if(H>0&&Lp>0&&H>Lp&&I.phIdx[i]>I.plIdx[i]){var rng=H-Lp,oteHi=H-rng*0.618,oteLo=H-rng*0.786;
+        if(c<=oteHi&&c>=oteLo&&c>o&&lo>=Lp)return{dir:'long',stop:Lp*0.999};}}
+    if(allowS){var Lo2=I.plPx[i],H2=I.legHigh[i];
+      if(Lo2>0&&H2>0&&H2>Lo2&&I.plIdx[i]>I.phIdx[i]){var r2=H2-Lo2,lo2=Lo2+r2*0.618,hi2=Lo2+r2*0.786;
+        if(c>=lo2&&c<=hi2&&c<o&&hi<=H2)return{dir:'short',stop:H2*1.001};}}
+    return null;
+  }
+  if(strat==='ict'){
+    var pl=I.plPx[i],ph=I.phPx[i],body=Math.abs(c-o),rng=hi-lo;if(rng<=0)return null;
+    var disp=body/rng>0.5;
+    if(allowL&&pl>0&&lo<pl&&c>pl&&c>o&&disp)return{dir:'long',stop:lo*0.999};
+    if(allowS&&ph>0&&hi>ph&&c<ph&&c<o&&disp)return{dir:'short',stop:hi*1.001};
+    return null;
+  }
+  if(strat==='ribbon'){
+    if(!I.e240[i]||!I.ax[i]||I.ax[i]<18)return null;
+    var bull=I.e5[i]>I.e20[i]&&I.e20[i]>I.e60[i]&&I.e60[i]>I.e120[i]&&I.e120[i]>I.e240[i];
+    var bear=I.e5[i]<I.e20[i]&&I.e20[i]<I.e60[i]&&I.e60[i]<I.e120[i]&&I.e120[i]<I.e240[i];
+    if(allowL&&bull&&lo<=I.e20[i]&&c>I.e20[i]&&c>o){var sw=swingLowBelow(B,i,c,win);return{dir:'long',stop:(sw==null?lo:sw)*0.9995};}
+    if(allowS&&bear&&hi>=I.e20[i]&&c<I.e20[i]&&c<o){var s2=swingHighAbove(B,i,c,win);return{dir:'short',stop:(s2==null?hi:s2)*1.0005};}
+    return null;
+  }
+  return null;
+}
+function kellyRisk(trades,maxK){
+  var w=trades.slice(-60);if(w.length<20)return 0.005;
+  var wins=w.filter(t=>t.win),loss=w.filter(t=>!t.win),WR=wins.length/w.length;
+  var aW=wins.length?wins.reduce((s,t)=>s+t.r,0)/wins.length:0;
+  var aL=loss.length?-loss.reduce((s,t)=>s+t.r,0)/loss.length:1;if(aL<=0)aL=1;
+  if(aW<=0)return 0.003;
+  var b=aW/aL,f=(WR-(1-WR)/b)*0.5;
+  return Math.max(0.002,Math.min(f,maxK/100));
+}
+function runBT(K,cfg){
+  var B=buildBase(K),I=buildInd(B);
+  var strat=cfg.strat,lev=cfg.lev,win=cfg.win,maxK=cfg.maxKelly;
+  var slip=cfg.slip/100,fund=cfg.funding/100,FEE=0.0005,SL_MIN=0.0012,SL_SANE=0.20,posCap=cfg.posCap/100;
+  var allowL=cfg.dir!=='short',allowS=cfg.dir!=='long';
+  var mode=strat==='ribbon'?'trend':'trail';
+  var eq=cfg.cap,peak=eq,wins=0,liq=0,kSum=0,kN=0;
+  var trades=[],curve=[],pos=null,pending=null,lastDay=-1,worstPnl=0,curI=0;
+  var reason={stop:0,trail:0,trend:0};
+  var START=350;
+
+  function closeAt(rawPx,why){
+    var ex=pos.dir==='long'?rawPx*(1-slip):rawPx*(1+slip);
+    var ret=pos.dir==='long'?(ex-pos.entry)/pos.entry:(pos.entry-ex)/pos.entry;
+    var hours=(B.ts[curI]-pos.ts)/3600000,funding=pos.exposure*fund*Math.max(0,hours)/8;
+    var pnl=ret*pos.exposure-pos.exposure*FEE-funding;
+    eq+=pnl;if(eq>peak)peak=eq;eq=Math.max(eq,1);
+    if(pnl>0)wins++;if(pnl<worstPnl)worstPnl=pnl;
+    reason[why]=(reason[why]||0)+1;
+    trades.push({win:pnl>0,pnl,r:pos.riskUSD>0?pnl/pos.riskUSD:0,why});pos=null;
+  }
+  for(var i=START;i<B.n-1;i++){
+    curI=i;
+    var day=Math.floor(B.ts[i]/86400000);
+    if(day!==lastDay){curve.push({ts:B.ts[i],eq});lastDay=day;}
+    if(pending&&!pos){
+      var raw=B.o[i],ep=pending.dir==='long'?raw*(1+slip):raw*(1-slip),stop=pending.stop,sd=Math.abs(ep-stop)/ep;
+      if(sd>=SL_MIN&&sd<=SL_SANE){
+        var kf=kellyRisk(trades,maxK);kSum+=kf;kN++;
+        var exposure=(eq*kf)/sd,capE=eq*posCap*lev;if(exposure>capE)exposure=capE;
+        eq-=exposure*FEE;
+        pos={dir:pending.dir,entry:ep,stop,stopCur:stop,exposure,riskUSD:exposure*sd,peak:ep,trough:ep,ts:B.ts[i]};
+      }
+      pending=null;
+    }
+    if(pos){
+      var hi=B.h[i],lw=B.lo[i],cl=B.c[i];
+      if(pos.dir==='long'){
+        if(mode==='trail'){pos.peak=Math.max(pos.peak,hi);pos.stopCur=Math.max(pos.stopCur,pos.peak-2*I.at[i]);}
+        if(pos.exposure*(pos.entry-lw)/pos.entry>=eq){eq=1;liq++;worstPnl=Math.min(worstPnl,-eq);reason.stop++;trades.push({win:false,pnl:-eq,r:-99,why:'stop'});pos=null;}
+        else if(lw<=pos.stopCur){closeAt(pos.stopCur,pos.stopCur>pos.entry?'trail':'stop');}
+        else if(mode==='trend'&&cl<I.e60[i]){closeAt(cl,'trend');}
+      } else {
+        if(mode==='trail'){pos.trough=Math.min(pos.trough,lw);pos.stopCur=Math.min(pos.stopCur,pos.trough+2*I.at[i]);}
+        if(pos.exposure*(hi-pos.entry)/pos.entry>=eq){eq=1;liq++;reason.stop++;trades.push({win:false,pnl:-eq,r:-99,why:'stop'});pos=null;}
+        else if(hi>=pos.stopCur){closeAt(pos.stopCur,pos.stopCur<pos.entry?'trail':'stop');}
+        else if(mode==='trend'&&cl>I.e60[i]){closeAt(cl,'trend');}
+      }
+    }
+    if(!pos&&!pending){var sig=getSig(strat,B,I,i,win,allowL,allowS);if(sig)pending=sig;}
+  }
+  curve.push({ts:B.ts[B.n-1],eq});
+  var n=trades.length,tw=0,tl=0,rTot=0,streak=0,maxStreak=0;
+  for(var t of trades){t.win?tw+=t.pnl:tl+=Math.abs(t.pnl);rTot+=t.r;if(t.pnl<0){streak++;if(streak>maxStreak)maxStreak=streak;}else streak=0;}
+  var pf=tl>0?tw/tl:(tw>0?99:0);
+  var pk=cfg.cap,mdd=0,re=cfg.cap;
+  for(var t of trades){re+=t.pnl;if(re>pk)pk=re;var dd=(pk-re)/pk;if(dd>mdd)mdd=dd;}
+  var t0=B.ts[START],t1=B.ts[B.n-2],yrs=(t1-t0)/(365.25*24*3600*1000);
+  var totRet=(eq/cfg.cap-1)*100,annRet=yrs>0&&eq>0?((eq/cfg.cap)**(1/yrs)-1)*100:0;
+  return{n,wr:n?wins/n:0,pf,mdd,totRet,annRet,yrs,finalEq:eq,liq,avgKelly:kN?kSum/kN*100:0,
+    avgR:n?rTot/n:0,maxLossStreak:maxStreak,worstLossPct:worstPnl/cfg.cap*100,reason,curve,t0,t1};
+}
+async function fetchCandles(sym,bar,limit){
+  var all=[],after='',base='https://www.okx.com/api/v5/market/history-candles',fetched=0;
+  while(fetched<limit){var need=Math.min(300,limit-fetched);
+    var url=base+'?instId='+encodeURIComponent(sym)+'&bar='+bar+'&limit='+need+(after?'&after='+after:'');
+    var r,tries=0;while(tries<5){r=await fetch(url);if(r.status===429){tries++;await new Promise(x=>setTimeout(x,700*tries));continue;}break;}
+    if(!r.ok)throw new Error('OKX '+r.status);
+    var j=await r.json(),d=j.data||[];if(!d.length)break;
+    all=all.concat(d);after=d[d.length-1][0];fetched+=d.length;
+    setProg(Math.min(fetched/limit,0.98)*0.8,'캔들 로딩: '+fetched.toLocaleString()+'봉...');
+    if(d.length<need)break;await new Promise(x=>setTimeout(x,120));}
+  return all.reverse();
+}
+var STRAT_INFO={
+  fib:{tf:'1H',bars:35000,win:96,name:'피보나치 OTE',desc:'임펄스 스윙의 0.618~0.786 되돌림 존(OTE)에서 진입. <b>롱</b>=상승레그 눌림, <b>숏</b>=하락레그 되돌림. 손절=스윙 극단, 익절=2×ATR 트레일'},
+  ict:{tf:'15m',bars:70000,win:96,name:'ICT 유동성 스윕',desc:'직전 스윙 고/저를 살짝 깨고(유동성 사냥) 반대로 displacement 마감 시 진입. <b>롱</b>=저점 스윕 후 회복, <b>숏</b>=고점 스윕 후 거부. 손절=스윕 꼬리, 익절=2×ATR 트레일'},
+  ribbon:{tf:'1H',bars:35000,win:96,name:'EMA 리본 (정/역배열)',desc:'EMA 5·20·60·120·240 정배열(롱)/역배열(숏) + ADX>18 + EMA20 눌림목 reclaim 진입. 추세 꺾이면(종가 EMA60 교차) 청산'}
+};
+var _busy=false,_res=null,_chart=null,_candles=null;
+function busy(on,msg){_busy=on;document.getElementById('btnRun').disabled=on;document.getElementById('btnQ').disabled=on;var ov=document.getElementById('overlay');on?ov.classList.add('show'):ov.classList.remove('show');if(msg)document.getElementById('ovTitle').textContent=msg;}
+function setProg(r,msg){document.getElementById('pBar').style.width=(r*100)+'%';if(msg)document.getElementById('pMsg').textContent=msg;}
+function setOvSub(t){document.getElementById('ovSub').textContent=t;}
+function onStrat(){var s=document.getElementById('strat').value,info=STRAT_INFO[s];document.getElementById('tf').value=info.tf;document.getElementById('bars').value=info.bars;document.getElementById('win').value=info.win;document.getElementById('stratBox').innerHTML='<b>'+info.name+'</b><br>'+info.desc;}
+function readCfg(){return{cap:+document.getElementById('cap').value||10000,lev:+document.getElementById('lev').value||3,posCap:+document.getElementById('posCap').value||40,maxKelly:+document.getElementById('maxKelly').value||4,slip:+document.getElementById('slip').value||0,funding:+document.getElementById('funding').value||0,win:+document.getElementById('win').value||96,strat:document.getElementById('strat').value,dir:document.getElementById('dir').value};}
+async function go(quick){
+  if(_busy)return;
+  var cfg=readCfg(),sym=document.getElementById('sym').value.trim()||'BTC-USDT-SWAP',bar=document.getElementById('tf').value;
+  var limit=quick?15000:Math.max(5000,+document.getElementById('bars').value||35000);
+  busy(true,'데이터 로딩 중...');setProg(0,'시작...');
+  try{
+    setOvSub(sym+' '+bar+' '+limit.toLocaleString()+'봉 로딩 중...');
+    _candles=await fetchCandles(sym,bar,limit);
+    if(_candles.length<1000)throw new Error('데이터 부족: '+_candles.length+'봉');
+    document.getElementById('ovTitle').textContent='백테스트 계산 중...';setOvSub('로드된 캔들: '+_candles.length.toLocaleString()+'봉');setProg(0.85,'실행...');
+    await new Promise(r=>setTimeout(r,40));
+    _res=runBT(_candles,cfg);_res.cfg=cfg;_res.bar=bar;render();
+  }catch(e){alert('오류: '+e.message);setProg(0,'오류 발생');}
+  finally{busy(false);setProg(1,'완료');}
+}
+function fD(ts){return new Date(ts).toLocaleDateString('ko-KR',{year:'2-digit',month:'numeric',day:'numeric'});}
+function f2(v){return v.toFixed(2);}
+function sbox(val,lbl,cls){return '<div class="sbox"><div class="sval '+(cls||'')+'">'+val+'</div><div class="slbl">'+lbl+'</div></div>';}
+function render(){
+  var r=_res,c=_candles;
+  document.getElementById('resCard').classList.remove('hidden');
+  document.getElementById('infoRange').textContent=fD(r.t0)+' ~ '+fD(r.t1);
+  var days=(r.t1-r.t0)/86400000;
+  document.getElementById('infoDur').textContent=r.yrs>=1?(r.yrs.toFixed(2)+'년'):(Math.round(days)+'일');
+  document.getElementById('infoStrat').textContent=STRAT_INFO[r.cfg.strat].name;
+  document.getElementById('infoBars').textContent=c.length.toLocaleString()+'봉 ('+r.bar+')';
+  document.getElementById('infoLev').textContent=r.cfg.lev+'x';document.getElementById('infoK').textContent=r.cfg.maxKelly+'%';
+  document.getElementById('warnN').classList.toggle('hidden',r.n>=1000);
+  document.getElementById('sg1').innerHTML=
+    sbox((r.annRet>=0?'+':'')+r.annRet.toFixed(1)+'%','연 환산 ★',r.annRet>=20?'pos':r.annRet>0?'warn':'neg')+
+    sbox((r.totRet>=0?'+':'')+r.totRet.toFixed(0)+'%','총 수익률',r.totRet>0?'pos':'neg')+
+    sbox((r.mdd*100).toFixed(1)+'%','MDD','neg');
+  document.getElementById('sg2').innerHTML=
+    sbox((r.wr*100).toFixed(1)+'%','승률',r.wr>=0.40?'pos':r.wr>=0.30?'warn':'neg')+
+    sbox(r.n.toLocaleString(),'총 거래수','neu')+
+    sbox(f2(r.pf),'Profit Factor',r.pf>=1.2?'pos':r.pf>=1?'neu':'neg')+
+    sbox((r.avgR>=0?'+':'')+r.avgR.toFixed(3)+'R','평균 R/거래 (엣지)',r.avgR>0?'pos':'neg');
+  document.getElementById('sg3').innerHTML=
+    sbox(r.liq.toLocaleString(),'청산 횟수',r.liq>0?'neg':'pos')+
+    sbox(r.worstLossPct.toFixed(1)+'%','최악 단일거래',r.worstLossPct>-15?'pos':'warn')+
+    sbox(r.avgKelly.toFixed(2)+'%','평균 켈리 리스크','neu')+
+    sbox('$'+Math.round(r.finalEq).toLocaleString(),'최종 자본',r.finalEq>=r.cfg.cap?'pos':'neg');
+  document.getElementById('exitRow').innerHTML='<span>청산: 손절 <b>'+(r.reason.stop||0)+'</b> · 트레일 <b>'+(r.reason.trail||0)+'</b> · 추세이탈 <b>'+(r.reason.trend||0)+'</b></span><span>최대연속손실 <b>'+r.maxLossStreak+'</b></span>';
+  (r.liq===0)?document.getElementById('riskOK').classList.remove('hidden'):document.getElementById('riskOK').classList.add('hidden');
+  document.getElementById('detCard').classList.remove('hidden');drawChart();
+}
+function drawChart(){
+  var r=_res,ctx=document.getElementById('mainChart').getContext('2d');
+  if(_chart)_chart.destroy();
+  _chart=new Chart(ctx,{type:'line',data:{labels:r.curve.map(p=>fD(p.ts)),datasets:[{label:'자본($)',data:r.curve.map(p=>Math.round(p.eq)),borderColor:'#6366f1',borderWidth:1.5,pointRadius:0,fill:true,backgroundColor:'rgba(99,102,241,0.07)',tension:0.15}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#444',maxTicksLimit:6,font:{size:10}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#444',font:{size:10},callback:v=>'$'+(v|0).toLocaleString()},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+}
+onStrat();
+</script>
+</body>
+</html>
