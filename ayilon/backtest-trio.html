@@ -75,9 +75,14 @@ select option{background:#1a1a22;}
     <div><label>레버리지</label><select id="lev"><option value="1">1x</option><option value="2">2x</option><option value="3" selected>3x</option><option value="5">5x</option><option value="10">10x</option><option value="25">25x</option><option value="50">50x</option><option value="100">100x</option></select></div>
   </div>
   <div class="grid3">
-    <div><label>최대 포지션 (시드 %)</label><input type="number" id="posCap" value="40" min="5" max="100" step="5"></div>
-    <div><label>최대 켈리 리스크 (%)</label><input type="number" id="maxKelly" value="4" min="0.5" max="10" step="0.5"></div>
+    <div><label>사이징</label><select id="sizing"><option value="fixed" selected>고정 리스크</option><option value="kelly">하프켈리</option></select></div>
+    <div><label>거래당 리스크 (%)</label><input type="number" id="risk" value="1" min="0.1" max="5" step="0.1"></div>
     <div><label>방향</label><select id="dir"><option value="both" selected>롱 + 숏</option><option value="long">롱만</option><option value="short">숏만</option></select></div>
+  </div>
+  <div class="grid3">
+    <div><label>최대 포지션 (시드 %)</label><input type="number" id="posCap" value="40" min="5" max="100" step="5"></div>
+    <div><label>최대 켈리 리스크 (%, 켈리모드)</label><input type="number" id="maxKelly" value="4" min="0.5" max="10" step="0.5"></div>
+    <div></div>
   </div>
   <div class="grid3">
     <div><label>슬리피지 (%/체결)</label><input type="number" id="slip" value="0.03" min="0" max="0.5" step="0.01"></div>
@@ -212,7 +217,7 @@ function runBT(K,cfg){
     if(pending&&!pos){
       var raw=B.o[i],ep=pending.dir==='long'?raw*(1+slip):raw*(1-slip),stop=pending.stop,sd=Math.abs(ep-stop)/ep;
       if(sd>=SL_MIN&&sd<=SL_SANE){
-        var kf=kellyRisk(trades,maxK);kSum+=kf;kN++;
+        var kf=cfg.sizing==='kelly'?kellyRisk(trades,maxK):(cfg.risk/100);kSum+=kf;kN++;
         var exposure=(eq*kf)/sd,capE=eq*posCap*lev;if(exposure>capE)exposure=capE;
         eq-=exposure*FEE;
         pos={dir:pending.dir,entry:ep,stop,stopCur:stop,exposure,riskUSD:exposure*sd,peak:ep,trough:ep,ts:B.ts[i]};
@@ -268,7 +273,7 @@ function busy(on,msg){_busy=on;document.getElementById('btnRun').disabled=on;doc
 function setProg(r,msg){document.getElementById('pBar').style.width=(r*100)+'%';if(msg)document.getElementById('pMsg').textContent=msg;}
 function setOvSub(t){document.getElementById('ovSub').textContent=t;}
 function onStrat(){var s=document.getElementById('strat').value,info=STRAT_INFO[s];document.getElementById('tf').value=info.tf;document.getElementById('bars').value=info.bars;document.getElementById('win').value=info.win;document.getElementById('stratBox').innerHTML='<b>'+info.name+'</b><br>'+info.desc;}
-function readCfg(){return{cap:+document.getElementById('cap').value||10000,lev:+document.getElementById('lev').value||3,posCap:+document.getElementById('posCap').value||40,maxKelly:+document.getElementById('maxKelly').value||4,slip:+document.getElementById('slip').value||0,funding:+document.getElementById('funding').value||0,win:+document.getElementById('win').value||96,strat:document.getElementById('strat').value,dir:document.getElementById('dir').value};}
+function readCfg(){return{cap:+document.getElementById('cap').value||10000,lev:+document.getElementById('lev').value||3,posCap:+document.getElementById('posCap').value||40,maxKelly:+document.getElementById('maxKelly').value||4,slip:+document.getElementById('slip').value||0,funding:+document.getElementById('funding').value||0,win:+document.getElementById('win').value||96,strat:document.getElementById('strat').value,dir:document.getElementById('dir').value,sizing:document.getElementById('sizing').value,risk:+document.getElementById('risk').value||1};}
 async function go(quick){
   if(_busy)return;
   var cfg=readCfg(),sym=document.getElementById('sym').value.trim()||'BTC-USDT-SWAP',bar=document.getElementById('tf').value;
