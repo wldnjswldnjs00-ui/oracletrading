@@ -661,8 +661,8 @@
   ═══════════════════════════════════════════════════ -->
   <div class="page" id="page-bots">
 
-    <!-- ── No-Code Strategy Builder ── -->
-    <div class="card" style="margin-bottom:20px;">
+    <!-- ── No-Code Strategy Builder (hidden at launch: unproven + not wired to live execution; revive later as a premium experimental feature) ── -->
+    <div class="card" style="margin-bottom:20px;display:none;">
       <div class="card-header" style="margin-bottom:6px;">
         <span class="card-title">전략 빌더 <span style="font-size:11px;font-weight:600;color:#60a5fa;background:rgba(59,130,246,0.12);padding:2px 8px;border-radius:5px;margin-left:6px;">No-Code</span></span>
         <button class="btn-primary" style="padding:9px 16px;font-size:13px;" onclick="sbOpen()">＋ 새 전략 만들기</button>
@@ -749,25 +749,27 @@
             </div>
           </div>
           <div class="d-form-group">
-            <label class="d-form-label">Risk per Trade (%)</label>
+            <label class="d-form-label">Risk per Trade (%) <span style="font-weight:400;color:var(--gray-400);font-size:11px;">— 거래 1회당 위험 (일일 한도 아님)</span></label>
             <input type="number" class="d-form-input" id="botRisk" value="2" min="0.1" max="10" step="0.1" />
           </div>
           <div class="d-form-group">
-            <label class="d-form-label">Trading Pair</label>
-            <input type="text" id="botTradingPair" list="pairDatalist" class="d-form-input"
-              placeholder="검색: BTC, ETH, SOL..."
-              value="BTC-USDT-SWAP"
-              oninput="onTradingPairChange(this.value)"
-              autocomplete="off"
+            <label class="d-form-label">일일 손실 한도 (%) <span style="font-weight:400;color:var(--gray-400);font-size:11px;">— 하루 누적 손실이 이만큼이면 봇 정지</span></label>
+            <input type="number" class="d-form-input" id="botLossLimit" value="5" min="1" max="50" step="0.5" />
+          </div>
+          <div class="d-form-group">
+            <label class="d-form-label">최대 낙폭 한도 (%) <span style="font-weight:400;color:var(--gray-400);font-size:11px;">— 누적 낙폭이 이만큼이면 봇 정지</span></label>
+            <input type="number" class="d-form-input" id="botMddLimit" value="30" min="5" max="100" step="1" />
+          </div>
+          <div class="d-form-group">
+            <label class="d-form-label">Trading Pair <span style="font-weight:400;color:var(--gray-400);font-size:11px;">— 추세추종은 BTC/ETH 지원</span></label>
+            <select id="botTradingPair" class="d-form-input" onchange="onTradingPairChange(this.value)"
               style="background:#111;color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;width:100%;box-sizing:border-box;">
-            <datalist id="pairDatalist">
-              <option value="BTC-USDT-SWAP">
-              <option value="ETH-USDT-SWAP">
-            </datalist>
-            <div id="botPairLoading" style="display:none;margin-top:5px;font-size:11px;color:rgba(255,255,255,0.4);">페어 목록 불러오는 중...</div>
-            <div id="botAltcoinWarn" style="display:none;margin-top:6px;padding:8px 10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:6px;font-size:11px;color:#f59e0b;line-height:1.6;">
-              ⚠️ 알트코인은 변동성이 크기 때문에 레버리지 <strong>2~3배</strong>, 포지션 사이즈 <strong>5~10%</strong>를 권장합니다. 레버리지가 높을수록 청산 위험도 높아집니다.
-            </div>
+              <option value="BTC-USDT-SWAP">BTC-USDT-SWAP</option>
+              <option value="ETH-USDT-SWAP">ETH-USDT-SWAP</option>
+            </select>
+            <div id="botPairLoading" style="display:none;"></div>
+            <datalist id="pairDatalist"></datalist>
+            <div id="botAltcoinWarn" style="display:none;"></div>
           </div>
           <div class="d-form-group">
             <label class="d-form-label">API Mode</label>
@@ -2213,6 +2215,9 @@
           leverage: parseInt(leverage),
           posSize: parseFloat(posSize),
           riskPerTrade: parseFloat(risk),
+          lossLimit: parseFloat((document.getElementById('botLossLimit')||{}).value||5),
+          mddLimit:  parseFloat((document.getElementById('botMddLimit')||{}).value||30),
+          lossLimitEnabled: true,
           tradingPair: pair,
           mode: mode,
           demoMode: mode === 'demo'
@@ -2332,6 +2337,9 @@
           leverage: parseInt(leverage),
           posSize: parseFloat(posSize),
           riskPerTrade: parseFloat(risk),
+          lossLimit: parseFloat((document.getElementById('botLossLimit')||{}).value||5),
+          mddLimit:  parseFloat((document.getElementById('botMddLimit')||{}).value||30),
+          lossLimitEnabled: true,
           tradingPair: (document.getElementById('botTradingPair') || {}).value || 'BTC-USDT-SWAP',
           mode: mode,
           demoMode: mode === 'demo'
