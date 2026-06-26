@@ -1511,6 +1511,42 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     }
     const state = ps[stateKey] || { entries: [], direction: null, takeProfit: null };
 
+    // ── Chandelier trailing stop (trend_follow only) ──────────
+    // Ratchet the stop toward price as the trade goes our way — locks profit,
+    // never loosens. Stop = (peak since entry) ∓ ATR×3 on the DAILY timeframe.
+    if (strategy === 'trend_follow' && state.direction && openPos.length > 0 && (state.entries || []).length > 0) {
+      try {
+        const dCandles = await getCandles(tradingPair, '1D', 30);
+        const dATR = _atr(dCandles, 14);
+        if (dATR && dATR > 0) {
+          const mult = 3;
+          const totalSz = state.entries.reduce((s, e) => s + parseInt(e.sz), 0);
+          let newStop = null;
+          if (state.direction === 'long') {
+            state.chandPeak = Math.max(state.chandPeak || currentPrice, currentPrice);
+            const cand = state.chandPeak - mult * dATR;
+            if (cand > (state.stopLoss || 0) * 1.001) newStop = cand;       // ratchet UP only
+          } else {
+            state.chandPeak = Math.min(state.chandPeak || currentPrice, currentPrice);
+            const cand = state.chandPeak + mult * dATR;
+            if (cand < (state.stopLoss || Infinity) * 0.999) newStop = cand; // ratchet DOWN only
+          }
+          if (newStop) {
+            if (state.slAlgoId) await cancelSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.slAlgoId, demoMode);
+            const r = await placeSLAlgo(apiKey, apiSecret, apiPassphrase, tradingPair, state.direction, newStop, totalSz, demoMode, isOneWayMode);
+            const newId = r?.data?.[0]?.algoId ? String(r.data[0].algoId) : null;
+            state.slAlgoId = newId;
+            state.stopLoss = newStop;     // software checkSL also honours the ratcheted stop next tick
+            ps[stateKey] = state; psModifiedRef.modified = true;
+            await upsertBotState(env, email, { position_state: JSON.stringify(ps) });
+            await botLog(env, email, `[trend_follow] Chandelier trail → SL ${newStop.toFixed(0)} (peak ${state.chandPeak.toFixed(0)}, ATR ${dATR.toFixed(0)})${newId ? '' : ' ⚠️ algo replace failed (software SL active)'}`);
+          }
+        }
+      } catch (e) {
+        await botLog(env, email, `[trend_follow] Chandelier update error: ${e.message}`);
+      }
+    }
+
     // ── Trailing TP: 10% close every 1% move beyond last TP ──
     if (state.halfClosed && state.lastTPLevel && openPos.length > 0) {
       const TRAIL_STEP = 0.010; // 1% move triggers next 10% close
