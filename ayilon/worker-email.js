@@ -711,7 +711,11 @@ async function handleMe(request, env) {
   if (!session) return json({ authenticated: false }, 401);
   const meUser = await env.USERS_KV.get('user:' + session.email.toLowerCase(), { type: 'json' }).catch(() => null);
   const meTF = meUser?.twoFactor || {};
-  return json({ authenticated: true, email: session.email, username: session.username, name: session.name, twoFactor: { email: !!meTF.email, totp: !!meTF.totp } });
+  const acc = accessStatus(meUser);
+  return json({ authenticated: true, email: session.email, username: session.username, name: session.name,
+    twoFactor: { email: !!meTF.email, totp: !!meTF.totp },
+    access: { canLive: acc.canLive, canDemo: acc.canDemo, trialActive: acc.trialActive, trialEndsAt: acc.trialEndsAt,
+              subActive: acc.subActive, referralOk: acc.referralOk, plan: acc.plan, admin: !!acc.admin } });
 }
 
 async function handleChangePassword(request, env) {
@@ -800,6 +804,25 @@ async function handleUpdateProfile(request, env) {
 // ════════════════════════════════════════════════════════════
 // BOT ENDPOINTS
 // ════════════════════════════════════════════════════════════
+
+// ── ACCESS CONTROL (monetization gate — enforced server-side) ──────────────
+// Live trading requires a paid subscription OR a verified referral (your OKX
+// referral, which earns you commission). Demo is a time-boxed free trial.
+// This is the real enforcement; the frontend cannot be trusted to gate it.
+const TRIAL_DAYS = 14;
+function accessStatus(user) {
+  if (!user)                              return { canLive:false, canDemo:false, reason:'no_user' };
+  if (user.email === ADMIN_EMAIL_CONST)   return { canLive:true,  canDemo:true,  admin:true, plan:'admin' };
+  const sub = user.subscription || {};
+  const plan = String(sub.plan || 'free').toLowerCase();
+  const subActive  = plan !== 'free' && plan !== 'none' && (!sub.expiresAt || sub.expiresAt > Date.now());
+  const referralOk = !!(user.referral && user.referral.verified);   // verified = under your OKX referral (set via affiliate check / admin)
+  const canLive    = subActive || referralOk;
+  const trialStart = user.trialStartedAt || user.createdAt || 0;
+  const trialEndsAt = trialStart ? trialStart + TRIAL_DAYS*24*3600*1000 : 0;
+  const trialActive = trialEndsAt > Date.now();
+  return { canLive, canDemo: canLive || trialActive, subActive, referralOk, trialActive, trialEndsAt, plan };
+}
 
 async function handleSaveBotSettings(request, env) {
   const body = await request.json();
@@ -979,6 +1002,17 @@ async function handleBotControl(request, env) {
   // ── START / RESUME: write KV + reset D1 running flag ──
   const configKey = 'bot:config:' + session.email;
   const config = await env.USERS_KV.get(configKey, { type: 'json' }) || {};
+
+  // ── ACCESS GATE (server-side; cannot be bypassed from the dashboard) ──
+  if (action === 'start' || action === 'resume') {
+    const accUser = await env.USERS_KV.get('user:' + session.email, { type: 'json' });
+    const acc = accessStatus(accUser);
+    const isDemo = config.demoMode === true || config.mode === 'demo';
+    if (isDemo && !acc.canDemo)
+      return json({ ok: false, error: 'trial_expired', message: '데모 체험 기간이 끝났습니다. 리퍼럴 가입(라이브) 또는 구독 후 이용하세요.' }, 402);
+    if (!isDemo && !acc.canLive)
+      return json({ ok: false, error: 'subscription_required', message: '라이브 거래는 구독 또는 리퍼럴 인증이 필요합니다. 데모는 체험 가능합니다.' }, 402);
+  }
 
   if (action === 'start') {
     if (!config.apiKey || !config.apiSecret || !config.apiPassphrase) {
@@ -1321,6 +1355,21 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     // Always derive plan from actual subscription — never trust client-provided value
     const userRecord = await env.USERS_KV.get('user:' + email, { type: 'json' }) || {};
     const plan = userRecord.subscription?.plan || 'starter';
+
+    // ── HARD ACCESS GATE — the bulletproof enforcement point (orders happen below) ──
+    // Even if a config is started by bypassing the dashboard, the cron will not
+    // place a single order without valid access for the configured mode.
+    {
+      const acc = accessStatus(userRecord);
+      const isDemo = demoMode === true;
+      if ((isDemo && !acc.canDemo) || (!isDemo && !acc.canLive)) {
+        cfg.running = false;
+        await env.USERS_KV.put('bot:config:' + email, JSON.stringify(cfg));
+        await upsertBotState(env, email, { running: 0 });
+        await botLog(env, email, `Bot stopped: ${isDemo ? 'demo trial ended' : 'live needs subscription or verified referral'} — access required`);
+        return;
+      }
+    }
 
     const lossLimitNorm = parseFloat(lossLimit) > 1 ? parseFloat(lossLimit) / 100 : parseFloat(lossLimit) || 0.05;
     const today = new Date().toDateString();

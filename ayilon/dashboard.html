@@ -2359,8 +2359,11 @@
         msgEl.style.color = 'var(--red)';
         var errMsg = startData.error === 'api_keys_required'
           ? 'API 키를 먼저 설정해 주세요 (설정 → API 키)'
-          : (startData.error || '봇 시작에 실패했습니다');
+          : (startData.message || startData.error || '봇 시작에 실패했습니다');
         msgEl.textContent = errMsg;
+        if (startData.error === 'subscription_required' || startData.error === 'trial_expired') {
+          msgEl.innerHTML = errMsg + ' &nbsp;<a href="#" onclick="showPage(\'subscription\',null);return false;" style="color:#60a5fa;text-decoration:underline;">구독 보기 →</a>';
+        }
       }
     } catch(e) {
       msgEl.style.color = 'var(--red)';
