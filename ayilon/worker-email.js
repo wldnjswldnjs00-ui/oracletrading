@@ -575,16 +575,23 @@ async function handleVerify2FALogin(request, env) {
     if (!user) return json({ ok: false, error: 'user_not_found' }, 404);
     const tf = user.twoFactor || {};
 
-    if (tf.email) {
-      if (!emailCode || String(emailCode).trim() !== String(challenge.code)) {
-        return json({ ok: false, error: 'invalid_email_code' }, 401);
-      }
+    // The login UI lets the user pick ONE method, so verify only the code(s)
+    // actually supplied. Any single valid enabled method grants access.
+    const hasEmailCode = emailCode != null && String(emailCode).trim() !== '';
+    const hasTotpCode  = totpCode  != null && String(totpCode).trim()  !== '';
+    if (!hasEmailCode && !hasTotpCode) return json({ ok: false, error: 'missing_code' }, 400);
+
+    let verified = false;
+    if (hasEmailCode && tf.email) {
+      if (String(emailCode).trim() === String(challenge.code)) verified = true;
+      else return json({ ok: false, error: 'invalid_email_code' }, 401);
     }
-    if (tf.totp) {
-      if (!totpCode) return json({ ok: false, error: 'missing_totp_code' }, 400);
+    if (hasTotpCode && tf.totp) {
       const valid = await verifyTOTP(tf.totpSecret, totpCode);
-      if (!valid) return json({ ok: false, error: 'invalid_totp_code' }, 401);
+      if (valid) verified = true;
+      else return json({ ok: false, error: 'invalid_totp_code' }, 401);
     }
+    if (!verified) return json({ ok: false, error: 'invalid_code' }, 401);
 
     await env.BOT_DB.prepare('DELETE FROM challenges WHERE token=?').bind(challengeToken).run();
 

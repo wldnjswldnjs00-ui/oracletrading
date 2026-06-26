@@ -262,7 +262,8 @@
           } else {
             var methodInfo = {
               email:         { icon: '&#128231;', title: _t('login.2fa.email.title'), desc: _t('login.2fa.email.desc') },
-              authenticator: { icon: '&#128272;', title: _t('login.2fa.app.title'),   desc: _t('login.2fa.app.desc') }
+              authenticator: { icon: '&#128272;', title: _t('login.2fa.app.title'),   desc: _t('login.2fa.app.desc') },
+              totp:          { icon: '&#128272;', title: _t('login.2fa.app.title'),   desc: _t('login.2fa.app.desc') }
             };
             document.getElementById('twofaOptions').innerHTML = _2faMethods.map(function(m) {
               var info = methodInfo[m] || { icon: '&#128272;', title: m, desc: '' };
@@ -293,10 +294,11 @@
 
     function selectMethod(method) {
       _2faCurrentMethod = method;
-      var titles = { email: _t('login.2fa.email.title'), authenticator: _t('login.2fa.app.title') };
+      var titles = { email: _t('login.2fa.email.title'), authenticator: _t('login.2fa.app.title'), totp: _t('login.2fa.app.title') };
       var descs  = {
         email:         _t('login.2fa.email.desc'),
-        authenticator: _t('login.2fa.app.desc')
+        authenticator: _t('login.2fa.app.desc'),
+        totp:          _t('login.2fa.app.desc')
       };
       document.getElementById('otpTitle').textContent = titles[method] || 'Verify';
       document.getElementById('otpDesc').textContent  = descs[method]  || '';
