@@ -914,7 +914,12 @@ async function handleBotStatus(request, env) {
       mode:        _config.mode        || 'live',
       leverage:    _config.leverage    || 20,
       posSize:     _config.posSize     || 40,
-      tradingPair: _config.tradingPair || 'BTC-USDT-SWAP'
+      tradingPair: _config.tradingPair || 'BTC-USDT-SWAP',
+      // API connection state = server truth (not browser localStorage). Lets the
+      // dashboard show "connected" on any device and prevents the "API disconnected
+      // but bot running" inconsistency. Secret is never exposed.
+      hasApiKey:   !!(_config.apiKey && _config.apiSecret && (_config.apiPassphrase || _config.apiPass)),
+      apiKeyMask:  _config.apiKey ? (String(_config.apiKey).slice(0, 4) + '****' + String(_config.apiKey).slice(-4)) : null
     },
     logs: _logs, alert, positions: _pos, positionSummary, lastScan, fundingRate, marketData: null,
     winCount:  parseInt(botStateRow.win_count  || '0'),

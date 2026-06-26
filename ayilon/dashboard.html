@@ -1321,12 +1321,35 @@
   var _dashEquityChart = null;
   var _dashPortfolioChart = null;
 
+  // OKX connection state = SERVER truth (not browser localStorage). Fixes the
+  // "API shows disconnected but bot is running / got unlinked on another device"
+  // inconsistency. Back-compat: no-op until the worker ships config.hasApiKey.
+  function syncApiState(config) {
+    if (!config || config.hasApiKey === undefined) return;
+    var cur = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
+    if (config.hasApiKey) {
+      if (!cur.apiKey) localStorage.setItem('ayilon_api', JSON.stringify({ apiKey: config.apiKeyMask || 'connected' }));
+    } else if (cur.apiKey) {
+      localStorage.removeItem('ayilon_api');
+    }
+    var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
+    var noApiCard = document.getElementById('dashNoApiCard');
+    if (noApiCard) noApiCard.style.display = apiData.apiKey ? 'none' : 'block';
+    var reg = document.getElementById('termApiRegisterWrap'), conn = document.getElementById('termApiConnectedWrap');
+    if (reg && conn) { reg.style.display = apiData.apiKey ? 'none' : 'block'; conn.style.display = apiData.apiKey ? 'block' : 'none'; }
+    var fw = document.getElementById('apiFormWrap'), cw = document.getElementById('apiConnectedWrap');
+    if (fw && cw) { fw.style.display = apiData.apiKey ? 'none' : 'block'; cw.style.display = apiData.apiKey ? 'block' : 'none'; }
+    var masked = document.getElementById('apiKeyMasked');
+    if (masked && apiData.apiKey) masked.textContent = 'API: ' + (config.apiKeyMask || apiData.apiKey);
+  }
+
   async function loadDashBotStatus() {
     var token = getSessionToken();
     if (!token) return;
     try {
       var res  = await fetch(WORKER_URL + '/bot-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: token }) });
       var data = await res.json();
+      if (data && data.config) syncApiState(data.config);
 
       // Active bots count
       var el = document.getElementById('dashActiveBots');
@@ -1875,6 +1898,7 @@
     {
       id: 'ma-50-bounce',
       name: 'MA50 Bounce',
+      tier: 'STARTER',
       type: 'SCALP',
       desc: 'Price touches 50MA in aligned trend — narrow consolidation entry',
       enabled: true
@@ -1882,6 +1906,7 @@
     {
       id: 'ict-fib-ote',
       name: 'ICT Fibonacci OTE',
+      tier: 'STARTER',
       type: 'SWING',
       desc: 'ICT Fibonacci 21–38% OTE zone entry with swing structure',
       enabled: true
@@ -2637,6 +2662,7 @@
     el = document.getElementById('usernameHint');         if(el) el.textContent = '';
     el = document.getElementById('settingsEmail');        if(el) el.value = user.email || '';
     loadApiSection();
+    loadDashBotStatus(); // sync OKX connected state from server (corrects card if localStorage stale)
 
     // Reset email verify section
     var evWrap = document.getElementById('emailVerifyWrap');
