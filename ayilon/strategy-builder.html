@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ayilon — 전략 빌더</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0e;color:#f0f0f0;min-height:100vh;padding:18px 12px 60px;}
+h1{font-size:18px;font-weight:700;}.sub{font-size:11px;color:#555;margin:2px 0 16px;}
+.card{background:#111117;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;margin-bottom:12px;}
+.ct{font-size:11px;font-weight:700;color:#aaa;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;}
+label{display:block;font-size:10px;color:#666;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em;}
+input,select{width:100%;background:#1a1a22;border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:7px 9px;color:#fff;font-size:12px;font-family:inherit;}
+input:focus,select:focus{outline:none;border-color:rgba(99,102,241,.5);}
+select option{background:#1a1a22;}
+.row{display:flex;gap:7px;flex-wrap:wrap;}.row>*{flex:1;min-width:80px;}
+.btn{padding:9px 16px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-p{background:#6366f1;color:#fff;}.btn-s{background:rgba(255,255,255,.07);color:#fff;border:1px solid rgba(255,255,255,.1);}
+.btn-g{background:#22c55e;color:#04210f;}.btn:disabled{opacity:.35;cursor:not-allowed;}
+.chip{display:inline-flex;align-items:center;gap:5px;background:#1a1a22;border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:5px 10px;font-size:11px;margin:3px 4px 3px 0;cursor:pointer;}
+.chip:hover{border-color:#6366f1;}
+.cat{font-size:9px;color:#6366f1;text-transform:uppercase;margin:8px 0 4px;letter-spacing:.05em;}
+.ind{background:#0d0d15;border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:10px;margin-bottom:7px;}
+.ind .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.ind .nm{font-size:12px;font-weight:700;color:#ddd;}
+.ind .rm{color:#f87171;cursor:pointer;font-size:11px;border:none;background:none;}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;}
+.pgrid label{font-size:9px;}
+.warn{border-radius:8px;padding:8px 11px;font-size:11px;margin-bottom:6px;line-height:1.5;}
+.w-error{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:#f87171;}
+.w-warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);color:#fbbf24;}
+.w-info{background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.25);color:#a5b4fc;}
+.w-ok{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#22c55e;}
+.s4{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;}
+.sbox{background:#0d0d15;border-radius:9px;padding:10px;text-align:center;}
+.sval{font-size:16px;font-weight:700;}.slbl{font-size:9px;color:#666;text-transform:uppercase;}
+pre{background:#06060a;border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:11px;font-size:10px;color:#a5b4fc;overflow-x:auto;white-space:pre-wrap;}
+.exit{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:50;align-items:center;justify-content:center;padding:20px;}
+.overlay.show{display:flex;}
+.modal{background:#111117;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:22px;max-width:420px;width:100%;}
+.modal h3{font-size:15px;margin-bottom:10px;}
+.modal .disc{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:9px;padding:12px;font-size:12px;line-height:1.7;color:#ddd;margin-bottom:12px;}
+.ck{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#ccc;margin-bottom:14px;cursor:pointer;}
+.ck input{width:auto;margin-top:2px;}
+.muted{color:#666;font-size:10px;}
+.pill{font-size:9px;padding:2px 7px;border-radius:100px;background:rgba(99,102,241,.15);color:#a5b4fc;}
+</style>
+</head>
+<body>
+<h1>Ayilon 전략 빌더</h1>
+<p class="sub">지표를 조합해 나만의 전략을 설계 · 플랫폼은 수익을 보장하지 않으며 모든 결과·책임은 사용자에게 귀속됩니다</p>
+
+<div class="card">
+  <div class="ct">① 지표 추가 <span class="pill" id="libCount"></span></div>
+  <div id="lib"></div>
+</div>
+
+<div class="card">
+  <div class="ct">② 선택한 지표 <span class="pill" id="selCount">0</span></div>
+  <div id="selected"></div>
+  <div class="muted" id="emptyHint">위에서 지표를 추가하세요.</div>
+</div>
+
+<div class="card">
+  <div class="ct">③ 신호 충돌 해결 규칙</div>
+  <select id="rule" onchange="render()">
+    <option value="MAJORITY">MAJORITY — 다수결 (롱/숏 표 많은 쪽)</option>
+    <option value="WEIGHTED">WEIGHTED — 가중치 합산 부호</option>
+    <option value="AND_GATE">AND_GATE — 전원 일치해야 진입 (충돌시 관망)</option>
+    <option value="PRIORITY_ORDER">PRIORITY_ORDER — 우선순위 지표 신호 채택</option>
+  </select>
+  <div class="muted" style="margin-top:6px">롱 vs 숏이 충돌하면 이 규칙대로만 처리됩니다 (플랫폼이 임의 판단하지 않음). PRIORITY는 위 ②의 순서가 우선순위.</div>
+</div>
+
+<div class="card">
+  <div class="ct">④ 포지션 사이징 &amp; 진입/청산</div>
+  <div class="row" style="margin-bottom:10px">
+    <div><label>진입 규모 (시드 %)</label><input type="number" id="sizePct" value="10" min="1" max="100" step="1"></div>
+    <div><label>레버리지</label><input type="number" id="lev" value="3" min="1" max="100" step="1"></div>
+  </div>
+  <label>청산 규칙 (익절 TP / 손절 SL)</label>
+  <div id="exits"></div>
+  <button class="btn btn-s" style="margin-top:6px;font-size:11px;padding:6px 12px" onclick="addExit()">+ 청산 규칙 추가</button>
+</div>
+
+<div class="card">
+  <div class="ct">⑤ 검증 &amp; 정합성 백테스트</div>
+  <div class="row" style="margin-bottom:10px">
+    <div><label>심볼</label><input type="text" id="sym" value="BTC-USDT-SWAP"></div>
+    <div><label>봉</label><select id="tf"><option>5m</option><option selected>1H</option><option>4H</option></select></div>
+    <div><label>캔들 수</label><input type="number" id="bars" value="8000" min="1000" max="50000" step="1000"></div>
+  </div>
+  <div class="row">
+    <button class="btn btn-s" onclick="doValidate()">전략 검증</button>
+    <button class="btn btn-p" id="btnBT" onclick="doBacktest()">정합성 백테스트</button>
+  </div>
+  <div id="vwrap" style="margin-top:12px"></div>
+  <div id="result" style="margin-top:10px"></div>
+</div>
+
+<div class="card">
+  <div class="ct">⑥ 전략 JSON <span class="muted">(백엔드/프론트 동기화 스키마)</span></div>
+  <pre id="json"></pre>
+  <button class="btn btn-g" id="btnSave" onclick="openConsent()" style="margin-top:6px" disabled>전략 저장 / 활성화</button>
+  <div class="muted" id="saveHint" style="margin-top:6px">활성화하려면 먼저 ⑤ 정합성 백테스트를 1회 실행하세요.</div>
+</div>
+
+<!-- accountability / consent gate -->
+<div class="overlay" id="consent">
+  <div class="modal">
+    <h3>⚠️ 전략 위험 고지 및 동의</h3>
+    <div class="disc" id="discText"></div>
+    <label class="ck"><input type="checkbox" id="ck1" onchange="ckUpdate()">위 과거 데이터 결과는 미래 수익을 보장하지 않으며, 이 전략의 모든 운용 책임은 전적으로 본인에게 있음을 이해하고 동의합니다.</label>
+    <div class="row">
+      <button class="btn btn-s" onclick="closeConsent()">취소</button>
+      <button class="btn btn-g" id="confirmSave" onclick="confirmSave()" disabled>동의하고 활성화</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== Strategy Engine (inlined — identical to ayilon/strategy-engine.js) ===== */
+function prep(K0){const K=K0.slice().sort((a,b)=>(+a[0])-(+b[0]));const n=K.length;const o=new Float64Array(n),h=new Float64Array(n),l=new Float64Array(n),c=new Float64Array(n),v=new Float64Array(n),t=new Float64Array(n);for(let i=0;i<n;i++){t[i]=+K[i][0];o[i]=+K[i][1];h[i]=+K[i][2];l[i]=+K[i][3];c[i]=+K[i][4];v[i]=+K[i][5];}return{n,t,o,h,l,c,v};}
+function ema(s,p){const n=s.length,a=new Float64Array(n),k=2/(p+1);a[0]=s[0];for(let i=1;i<n;i++)a[i]=s[i]*k+a[i-1]*(1-k);return a;}
+function sma(s,p){const n=s.length,a=new Float64Array(n);let q=0;for(let i=0;i<n;i++){q+=s[i];if(i>=p)q-=s[i-p];a[i]=i>=p-1?q/p:NaN;}return a;}
+function stdev(s,p){const n=s.length,a=new Float64Array(n),m=sma(s,p);for(let i=p-1;i<n;i++){let q=0;for(let j=i-p+1;j<=i;j++)q+=(s[j]-m[i])**2;a[i]=Math.sqrt(q/p);}return a;}
+function rsiArr(c,p){const n=c.length,a=new Float64Array(n);let g=0,ls=0;for(let i=1;i<=p&&i<n;i++){const d=c[i]-c[i-1];d>0?g+=d:ls-=d;}g/=p;ls/=p;if(p<n)a[p]=ls===0?100:100-100/(1+g/ls);for(let i=p+1;i<n;i++){const d=c[i]-c[i-1];g=(g*(p-1)+Math.max(0,d))/p;ls=(ls*(p-1)+Math.max(0,-d))/p;a[i]=ls===0?100:100-100/(1+g/ls);}return a;}
+function atrArr(h,l,c,p){const n=c.length,a=new Float64Array(n);for(let i=1;i<n;i++){const tr=Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1]));a[i]=i<=p?(a[i-1]*(i-1)+tr)/i:(a[i-1]*(p-1)+tr)/p;}return a;}
+function adxArr(h,l,c,p){const n=c.length,pm=new Float64Array(n),nm=new Float64Array(n),tr=new Float64Array(n);for(let i=1;i<n;i++){const hd=h[i]-h[i-1],ld=l[i-1]-l[i];pm[i]=hd>ld&&hd>0?hd:0;nm[i]=ld>hd&&ld>0?ld:0;tr[i]=Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1]));}const sT=new Float64Array(n),sP=new Float64Array(n),sN=new Float64Array(n),adx=new Float64Array(n),pdi=new Float64Array(n),ndi=new Float64Array(n);for(let i=1;i<n;i++){sT[i]=i<=p?(sT[i-1]*(i-1)+tr[i])/i:(sT[i-1]*(p-1)+tr[i])/p;sP[i]=i<=p?(sP[i-1]*(i-1)+pm[i])/i:(sP[i-1]*(p-1)+pm[i])/p;sN[i]=i<=p?(sN[i-1]*(i-1)+nm[i])/i:(sN[i-1]*(p-1)+nm[i])/p;pdi[i]=sT[i]?100*sP[i]/sT[i]:0;ndi[i]=sT[i]?100*sN[i]/sT[i]:0;}for(let i=p;i<n;i++){const dx=(pdi[i]+ndi[i])?100*Math.abs(pdi[i]-ndi[i])/(pdi[i]+ndi[i]):0;adx[i]=i===p?dx:(adx[i-1]*(p-1)+dx)/p;}return{adx,pdi,ndi};}
+function rollMax(a,p){const n=a.length,o=new Float64Array(n);for(let i=p-1;i<n;i++){let m=-Infinity;for(let j=i-p+1;j<=i;j++)if(a[j]>m)m=a[j];o[i]=m;}return o;}
+function rollMin(a,p){const n=a.length,o=new Float64Array(n);for(let i=p-1;i<n;i++){let m=Infinity;for(let j=i-p+1;j<=i;j++)if(a[j]<m)m=a[j];o[i]=m;}return o;}
+const sgn=x=>x>0?1:x<0?-1:0;
+const INDICATORS=[
+ {id:'ema_cross',name:'EMA Cross',category:'trend',defaults:{fast:20,slow:50},compute(D,p){const f=ema(D.c,p.fast),s=ema(D.c,p.slow),o=new Int8Array(D.n);for(let i=0;i<D.n;i++)o[i]=i<p.slow?0:sgn(f[i]-s[i]);return o;}},
+ {id:'sma_cross',name:'SMA Cross',category:'trend',defaults:{fast:10,slow:30},compute(D,p){const f=sma(D.c,p.fast),s=sma(D.c,p.slow),o=new Int8Array(D.n);for(let i=0;i<D.n;i++)o[i]=isNaN(s[i])?0:sgn(f[i]-s[i]);return o;}},
+ {id:'macd',name:'MACD',category:'trend',defaults:{fast:12,slow:26,signal:9},compute(D,p){const ef=ema(D.c,p.fast),es=ema(D.c,p.slow),n=D.n,L=new Float64Array(n);for(let i=0;i<n;i++)L[i]=ef[i]-es[i];const sg=ema(L,p.signal),o=new Int8Array(n);for(let i=0;i<n;i++)o[i]=i<p.slow+p.signal?0:sgn(L[i]-sg[i]);return o;}},
+ {id:'adx_di',name:'ADX / DI',category:'trend',defaults:{period:14,min:20},compute(D,p){const{adx,pdi,ndi}=adxArr(D.h,D.l,D.c,p.period),o=new Int8Array(D.n);for(let i=0;i<D.n;i++){if(adx[i]<p.min){o[i]=0;continue;}o[i]=sgn(pdi[i]-ndi[i]);}return o;}},
+ {id:'supertrend',name:'Supertrend',category:'trend',defaults:{period:10,mult:3},compute(D,p){const at=atrArr(D.h,D.l,D.c,p.period),n=D.n,o=new Int8Array(n);let dir=1,up=0,dn=0;for(let i=1;i<n;i++){const mid=(D.h[i]+D.l[i])/2;let u=mid+p.mult*at[i],d=mid-p.mult*at[i];if(dir===1){d=Math.max(d,dn);dir=D.c[i]<d?-1:1;}else{u=Math.min(u,up);dir=D.c[i]>u?1:-1;}up=u;dn=d;o[i]=i<p.period?0:dir;}return o;}},
+ {id:'ema_ribbon',name:'EMA Ribbon',category:'trend',defaults:{e1:5,e2:20,e3:60,e4:120},compute(D,p){const a=ema(D.c,p.e1),b=ema(D.c,p.e2),c=ema(D.c,p.e3),d=ema(D.c,p.e4),o=new Int8Array(D.n);for(let i=0;i<D.n;i++){if(i<p.e4){o[i]=0;continue;}if(a[i]>b[i]&&b[i]>c[i]&&c[i]>d[i])o[i]=1;else if(a[i]<b[i]&&b[i]<c[i]&&c[i]<d[i])o[i]=-1;else o[i]=0;}return o;}},
+ {id:'donchian',name:'Donchian Breakout',category:'trend',defaults:{period:20},compute(D,p){const hh=rollMax(D.h,p.period),ll=rollMin(D.l,p.period),o=new Int8Array(D.n);for(let i=1;i<D.n;i++){if(i<=p.period){o[i]=0;continue;}if(D.c[i]>hh[i-1])o[i]=1;else if(D.c[i]<ll[i-1])o[i]=-1;else o[i]=0;}return o;}},
+ {id:'psar',name:'Parabolic SAR',category:'trend',defaults:{step:0.02,max:0.2},compute(D,p){const n=D.n,o=new Int8Array(n);let dir=1,sar=D.l[0],ep=D.h[0],af=p.step;for(let i=1;i<n;i++){sar=sar+af*(ep-sar);if(dir===1){if(D.h[i]>ep){ep=D.h[i];af=Math.min(af+p.step,p.max);}if(D.l[i]<sar){dir=-1;sar=ep;ep=D.l[i];af=p.step;}}else{if(D.l[i]<ep){ep=D.l[i];af=Math.min(af+p.step,p.max);}if(D.h[i]>sar){dir=1;sar=ep;ep=D.h[i];af=p.step;}}o[i]=dir;}return o;}},
+ {id:'rsi',name:'RSI',category:'momentum',defaults:{period:14,low:30,high:70},compute(D,p){const r=rsiArr(D.c,p.period),o=new Int8Array(D.n);for(let i=0;i<D.n;i++){if(i<p.period){o[i]=0;continue;}o[i]=r[i]<p.low?1:r[i]>p.high?-1:0;}return o;}},
+ {id:'stoch',name:'Stochastic',category:'momentum',defaults:{period:14,low:20,high:80},compute(D,p){const hh=rollMax(D.h,p.period),ll=rollMin(D.l,p.period),o=new Int8Array(D.n);for(let i=p.period-1;i<D.n;i++){const k=hh[i]===ll[i]?50:100*(D.c[i]-ll[i])/(hh[i]-ll[i]);o[i]=k<p.low?1:k>p.high?-1:0;}return o;}},
+ {id:'stochrsi',name:'Stoch RSI',category:'momentum',defaults:{period:14,low:20,high:80},compute(D,p){const r=rsiArr(D.c,p.period),hh=rollMax(r,p.period),ll=rollMin(r,p.period),o=new Int8Array(D.n);for(let i=2*p.period;i<D.n;i++){const k=hh[i]===ll[i]?50:100*(r[i]-ll[i])/(hh[i]-ll[i]);o[i]=k<p.low?1:k>p.high?-1:0;}return o;}},
+ {id:'cci',name:'CCI',category:'momentum',defaults:{period:20,low:-100,high:100},compute(D,p){const n=D.n,tp=new Float64Array(n);for(let i=0;i<n;i++)tp[i]=(D.h[i]+D.l[i]+D.c[i])/3;const m=sma(tp,p.period),o=new Int8Array(n);for(let i=p.period-1;i<n;i++){let md=0;for(let j=i-p.period+1;j<=i;j++)md+=Math.abs(tp[j]-m[i]);md/=p.period;const cci=md===0?0:(tp[i]-m[i])/(0.015*md);o[i]=cci<p.low?1:cci>p.high?-1:0;}return o;}},
+ {id:'williams_r',name:'Williams %R',category:'momentum',defaults:{period:14,low:-80,high:-20},compute(D,p){const hh=rollMax(D.h,p.period),ll=rollMin(D.l,p.period),o=new Int8Array(D.n);for(let i=p.period-1;i<D.n;i++){const wr=hh[i]===ll[i]?-50:-100*(hh[i]-D.c[i])/(hh[i]-ll[i]);o[i]=wr<p.low?1:wr>p.high?-1:0;}return o;}},
+ {id:'roc',name:'Rate of Change',category:'momentum',defaults:{period:12},compute(D,p){const o=new Int8Array(D.n);for(let i=p.period;i<D.n;i++)o[i]=sgn(D.c[i]-D.c[i-p.period]);return o;}},
+ {id:'bollinger',name:'Bollinger (역추세)',category:'volatility',defaults:{period:20,mult:2},compute(D,p){const m=sma(D.c,p.period),sd=stdev(D.c,p.period),o=new Int8Array(D.n);for(let i=p.period-1;i<D.n;i++){const up=m[i]+p.mult*sd[i],lo=m[i]-p.mult*sd[i];o[i]=D.c[i]<lo?1:D.c[i]>up?-1:0;}return o;}},
+ {id:'bollinger_break',name:'Bollinger Breakout',category:'volatility',defaults:{period:20,mult:2},compute(D,p){const m=sma(D.c,p.period),sd=stdev(D.c,p.period),o=new Int8Array(D.n);for(let i=p.period-1;i<D.n;i++){const up=m[i]+p.mult*sd[i],lo=m[i]-p.mult*sd[i];o[i]=D.c[i]>up?1:D.c[i]<lo?-1:0;}return o;}},
+ {id:'keltner',name:'Keltner Channel',category:'volatility',defaults:{period:20,mult:2},compute(D,p){const m=ema(D.c,p.period),at=atrArr(D.h,D.l,D.c,p.period),o=new Int8Array(D.n);for(let i=p.period;i<D.n;i++){const up=m[i]+p.mult*at[i],lo=m[i]-p.mult*at[i];o[i]=D.c[i]>up?1:D.c[i]<lo?-1:0;}return o;}},
+ {id:'obv',name:'OBV Trend',category:'volume',defaults:{ema:21},compute(D,p){const n=D.n,obv=new Float64Array(n);for(let i=1;i<n;i++)obv[i]=obv[i-1]+(D.c[i]>D.c[i-1]?D.v[i]:D.c[i]<D.c[i-1]?-D.v[i]:0);const e=ema(obv,p.ema),o=new Int8Array(n);for(let i=p.ema;i<n;i++)o[i]=sgn(obv[i]-e[i]);return o;}},
+ {id:'volume_spike',name:'Volume Spike',category:'volume',defaults:{period:20,mult:1.8},compute(D,p){const va=sma(D.v,p.period),o=new Int8Array(D.n);for(let i=p.period;i<D.n;i++){if(D.v[i]>va[i]*p.mult)o[i]=sgn(D.c[i]-D.o[i]);else o[i]=0;}return o;}},
+ {id:'vwap',name:'Rolling VWAP',category:'volume',defaults:{period:48},compute(D,p){const n=D.n,o=new Int8Array(n);for(let i=p.period-1;i<n;i++){let pv=0,vv=0;for(let j=i-p.period+1;j<=i;j++){const tp=(D.h[j]+D.l[j]+D.c[j])/3;pv+=tp*D.v[j];vv+=D.v[j];}const vw=vv?pv/vv:D.c[i];o[i]=sgn(D.c[i]-vw);}return o;}},
+];
+const REGISTRY=Object.fromEntries(INDICATORS.map(x=>[x.id,x]));
+function computeSignals(D,cfgs){return cfgs.map(cfg=>{const def=REGISTRY[cfg.id];if(!def)return{id:cfg.id,sig:new Int8Array(D.n)};const params={...def.defaults,...(cfg.params||{})};return{id:cfg.id,weight:cfg.weight??1,sig:def.compute(D,params)};});}
+function resolveBar(votes,rule,prio){const active=votes.filter(x=>x.v!==0);if(!active.length)return 0;switch(rule){case'AND_GATE':{const d=active[0].v;return active.every(x=>x.v===d)?d:0;}case'PRIORITY_ORDER':{const order=prio&&prio.length?prio:votes.map(x=>x.id);for(const id of order){const x=votes.find(v=>v.id===id);if(x&&x.v!==0)return x.v;}return 0;}case'WEIGHTED':{let s=0;for(const x of active)s+=x.weight*x.v;return sgn(s);}default:{let s=0;for(const x of active)s+=sgn(x.v);return sgn(s);}}}
+function evaluateStrategy(K,strat){const D=prep(K);const sigs=computeSignals(D,strat.indicators||[]);const rule=strat.conflict_resolution||'MAJORITY';const final=new Int8Array(D.n);for(let i=0;i<D.n;i++){const votes=sigs.map(s=>({id:s.id,weight:s.weight??1,v:s.sig[i]||0}));final[i]=resolveBar(votes,rule,strat.priority_order);}return{D,perIndicator:sigs,final};}
+function validateStrategy(K,strat){const warnings=[];const inds=strat.indicators||[];if(!inds.length)warnings.push({level:'error',msg:'지표가 없습니다. 최소 1개를 추가하세요.'});const{D,final}=evaluateStrategy(K,strat);let nn=0,flips=0,prev=0,cf=0;const sigs=computeSignals(D,inds);for(let i=0;i<D.n;i++){if(final[i]!==0)nn++;if(final[i]!==0&&prev!==0&&final[i]!==prev)flips++;if(final[i]!==0)prev=final[i];const vv=sigs.map(s=>s.sig[i]||0);if(vv.includes(1)&&vv.includes(-1)&&final[i]===0)cf++;}const sr=D.n?nn/D.n:0,fr=nn?flips/nn:0,cr=D.n?cf/D.n:0;if(sr<0.005)warnings.push({level:'warn',msg:'설정이 거의 신호를 내지 않습니다 (지표들이 계속 충돌할 수 있음). 규칙 완화를 고려하세요.'});if(fr>0.5)warnings.push({level:'warn',msg:`신호 방향이 너무 자주 뒤집힙니다 (전환율 ${(fr*100).toFixed(0)}%). 노이즈/과매매 위험.`});if((strat.conflict_resolution==='AND_GATE')&&cr>0.3)warnings.push({level:'warn',msg:`지표 충돌이 잦습니다 (${(cr*100).toFixed(0)}%). AND_GATE라 대부분 관망합니다.`});if(inds.length>=8)warnings.push({level:'info',msg:`지표 ${inds.length}개 — 많을수록 신호가 희석됩니다. weight나 PRIORITY 권장.`});return{warnings,stats:{bars:D.n,signalRate:sr,flipRate:fr,conflictRate:cr}};}
+function backtestStrategy(K,strat,opts={}){const slip=opts.slip??0.0005,FEE=opts.fee??0.0005;const{D,final}=evaluateStrategy(K,strat);const sizePct=(strat.position_sizing?.fixed_pct??10)/100,lev=strat.position_sizing?.leverage??1;const exits=(strat.exit_rules||[]).slice().sort((a,b)=>(a.type==='SL'?-1:1));let eq=opts.cap??10000,peak=eq,mdd=0,wins=0,n=0,pos=null;for(let i=1;i<D.n;i++){if(pos){let ex=null;const mv=pos.dir===1?(D.h[i]-pos.entry)/pos.entry:(pos.entry-D.l[i])/pos.entry;const ad=pos.dir===1?(pos.entry-D.l[i])/pos.entry:(D.h[i]-pos.entry)/pos.entry;for(const r of exits){if(r.type==='SL'&&ad>=r.price_pct/100){ex=pos.dir===1?pos.entry*(1-r.price_pct/100):pos.entry*(1+r.price_pct/100);break;}if(r.type==='TP'&&mv>=r.price_pct/100){ex=pos.dir===1?pos.entry*(1+r.price_pct/100):pos.entry*(1-r.price_pct/100);break;}}if(ex===null&&final[i]===-pos.dir)ex=D.c[i];if(ex!==null){const xp=pos.dir===1?ex*(1-slip):ex*(1+slip);const ret=pos.dir===1?(xp-pos.entry)/pos.entry:(pos.entry-xp)/pos.entry;const pnl=ret*pos.notional-pos.notional*FEE;eq+=pnl;if(eq>peak)peak=eq;mdd=Math.max(mdd,(peak-eq)/peak);if(pnl>0)wins++;n++;pos=null;}}if(!pos&&final[i]!==0){const entry=D.c[i]*(final[i]===1?1+slip:1-slip);const notional=eq*sizePct*lev;eq-=notional*FEE;pos={dir:final[i],entry,notional};}}const yrs=D.n>1?(D.t[D.n-1]-D.t[0])/(365.25*24*3600*1000):0;const cap=opts.cap??10000;return{trades:n,winRate:n?wins/n*100:0,totalReturn:(eq/cap-1)*100,annualReturn:yrs>0&&eq>0?((eq/cap)**(1/yrs)-1)*100:0,maxDrawdown:mdd*100,finalEquity:eq,years:yrs};}
+
+/* ===== UI state ===== */
+var strat={indicators:[],exit_rules:[{type:'TP',price_pct:5,size_pct:50},{type:'SL',price_pct:3,size_pct:100}]};
+var lastBT=null, candles=null;
+
+function buildLib(){
+  document.getElementById('libCount').textContent=INDICATORS.length+'개';
+  const cats={trend:'추세',momentum:'모멘텀',volatility:'변동성',volume:'거래량'};
+  let html='';
+  for(const cat of Object.keys(cats)){
+    html+='<div class="cat">'+cats[cat]+'</div>';
+    for(const ind of INDICATORS.filter(x=>x.category===cat))
+      html+='<span class="chip" onclick="addInd(\''+ind.id+'\')">+ '+ind.name+'</span>';
+  }
+  document.getElementById('lib').innerHTML=html;
+}
+function addInd(id){const def=REGISTRY[id];strat.indicators.push({id,params:{...def.defaults},weight:1});render();}
+function rmInd(i){strat.indicators.splice(i,1);render();}
+function addExit(){strat.exit_rules.push({type:'TP',price_pct:3,size_pct:50});render();}
+function rmExit(i){strat.exit_rules.splice(i,1);render();}
+
+function render(){
+  // selected indicators
+  const sel=document.getElementById('selected');
+  document.getElementById('selCount').textContent=strat.indicators.length;
+  document.getElementById('emptyHint').style.display=strat.indicators.length?'none':'block';
+  sel.innerHTML=strat.indicators.map((c,i)=>{
+    const def=REGISTRY[c.id];
+    const params=Object.keys(c.params).map(k=>'<div><label>'+k+'</label><input type="number" step="any" value="'+c.params[k]+'" oninput="setP('+i+',\''+k+'\',this.value)"></div>').join('');
+    return '<div class="ind"><div class="hd"><span class="nm">'+(i+1)+'. '+def.name+' <span class="muted">['+def.category+']</span></span><button class="rm" onclick="rmInd('+i+')">제거</button></div>'+
+      '<div class="pgrid">'+params+'<div><label>weight</label><input type="number" step="0.1" value="'+c.weight+'" oninput="setW('+i+',this.value)"></div></div></div>';
+  }).join('');
+  // exits
+  document.getElementById('exits').innerHTML=strat.exit_rules.map((r,i)=>
+    '<div class="exit"><select onchange="setEx('+i+',\'type\',this.value)" style="flex:0 0 70px"><option '+(r.type==='TP'?'selected':'')+'>TP</option><option '+(r.type==='SL'?'selected':'')+'>SL</option></select>'+
+    '<input type="number" value="'+r.price_pct+'" oninput="setEx('+i+',\'price_pct\',this.value)" title="가격 %"><span class="muted">%가격</span>'+
+    '<input type="number" value="'+r.size_pct+'" oninput="setEx('+i+',\'size_pct\',this.value)" title="청산 비중 %"><span class="muted">%청산</span>'+
+    '<button class="rm" onclick="rmExit('+i+')">×</button></div>').join('');
+  // json
+  document.getElementById('json').textContent=JSON.stringify(currentStrat(),null,2);
+}
+function setP(i,k,v){strat.indicators[i].params[k]=parseFloat(v);scheduleJson();}
+function setW(i,v){strat.indicators[i].weight=parseFloat(v);scheduleJson();}
+function setEx(i,k,v){strat.exit_rules[i][k]=k==='type'?v:parseFloat(v);scheduleJson();}
+function scheduleJson(){document.getElementById('json').textContent=JSON.stringify(currentStrat(),null,2);}
+function currentStrat(){return{strategy_name:'My_Custom_Strategy',indicators:strat.indicators,conflict_resolution:document.getElementById('rule').value,priority_order:strat.indicators.map(x=>x.id),position_sizing:{fixed_pct:+document.getElementById('sizePct').value||10,leverage:+document.getElementById('lev').value||1},exit_rules:strat.exit_rules};}
+
+function showWarnings(v){
+  const ok=v.warnings.filter(w=>w.level==='error').length===0;
+  let html='';
+  if(!v.warnings.length||ok&&v.warnings.length===0) html+='<div class="warn w-ok">✅ 논리 충돌·과매매 경고 없음. 신호율 '+(v.stats.signalRate*100).toFixed(0)+'%</div>';
+  v.warnings.forEach(w=>{html+='<div class="warn w-'+w.level+'">'+(w.level==='error'?'⛔ ':w.level==='warn'?'⚠️ ':'ℹ️ ')+w.msg+'</div>';});
+  if(ok&&v.warnings.length) html='<div class="warn w-ok">신호율 '+(v.stats.signalRate*100).toFixed(0)+'% · 전환율 '+(v.stats.flipRate*100).toFixed(0)+'%</div>'+html;
+  document.getElementById('vwrap').innerHTML=html;
+}
+function doValidate(){
+  if(!strat.indicators.length){alert('지표를 1개 이상 추가하세요.');return;}
+  if(!candles){alert('먼저 정합성 백테스트로 데이터를 불러오거나, 백테스트를 실행하세요.');}
+  const K=candles||genDummy();
+  showWarnings(validateStrategy(K,currentStrat()));
+}
+function genDummy(){let px=60000,K=[],ts=Date.now()-3000*36e5;for(let i=0;i<3000;i++){let o=px,d=(Math.random()-0.49)*px*0.004,c=Math.max(1000,o+d),h=Math.max(o,c)+Math.random()*px*0.002,l=Math.min(o,c)-Math.random()*px*0.002;K.push([ts+i*36e5,o,h,l,c,100+Math.random()*200]);px=c;}return K;}
+
+async function fetchCandles(sym,bar,limit){let all=[],after='',base='https://www.okx.com/api/v5/market/history-candles',got=0;while(got<limit){const need=Math.min(300,limit-got);const url=base+'?instId='+encodeURIComponent(sym)+'&bar='+bar+'&limit='+need+(after?'&after='+after:'');let r,t=0;while(t<5){r=await fetch(url);if(r.status===429){t++;await new Promise(x=>setTimeout(x,600*t));continue;}break;}if(!r.ok)throw new Error('OKX '+r.status);const j=await r.json(),d=j.data||[];if(!d.length)break;all=all.concat(d);after=d[d.length-1][0];got+=d.length;if(d.length<need)break;await new Promise(x=>setTimeout(x,100));}return all.reverse();}
+
+async function doBacktest(){
+  if(!strat.indicators.length){alert('지표를 1개 이상 추가하세요.');return;}
+  const btn=document.getElementById('btnBT');btn.disabled=true;btn.textContent='로딩...';
+  try{
+    candles=await fetchCandles(document.getElementById('sym').value.trim()||'BTC-USDT-SWAP',document.getElementById('tf').value,Math.max(1000,+document.getElementById('bars').value||8000));
+    if(candles.length<500)throw new Error('데이터 부족');
+    const cs=currentStrat();
+    showWarnings(validateStrategy(candles,cs));
+    const b=backtestStrategy(candles,cs);lastBT=b;
+    document.getElementById('result').innerHTML='<div class="s4">'+
+      sb((b.winRate).toFixed(1)+'%','승률')+sb(b.trades,'거래 수')+
+      sb((b.totalReturn>=0?'+':'')+b.totalReturn.toFixed(1)+'%','총 수익률')+sb(b.maxDrawdown.toFixed(1)+'%','MDD')+'</div>'+
+      '<div class="warn w-info" style="margin-top:8px">이 백테스트는 <b>수익 최적화가 아니라 정합성 검증</b>입니다 — 전략이 의도대로 작동하는지 확인용. 결과는 미래 수익을 보장하지 않습니다.</div>';
+    document.getElementById('btnSave').disabled=false;
+    document.getElementById('saveHint').textContent='검증 완료 — 저장/활성화 가능 (책임 동의 필요).';
+  }catch(e){alert('오류: '+e.message+'\\n(데이터를 못 불러오면 지표/규칙 검증만 가능합니다.)');}
+  finally{btn.disabled=false;btn.textContent='정합성 백테스트';}
+}
+function sb(v,l){return '<div class="sbox"><div class="sval">'+v+'</div><div class="slbl">'+l+'</div></div>';}
+
+/* ===== accountability / consent gate ===== */
+function openConsent(){
+  if(!lastBT){alert('먼저 정합성 백테스트를 실행하세요.');return;}
+  document.getElementById('discText').innerHTML='본 전략의 과거 데이터 백테스트 결과는 <b>승률 '+lastBT.winRate.toFixed(1)+'% · 총수익률 '+(lastBT.totalReturn>=0?'+':'')+lastBT.totalReturn.toFixed(1)+'% · 최대낙폭 '+lastBT.maxDrawdown.toFixed(1)+'%</b> 입니다.<br><br>이는 <b>과거 데이터에 기반한 참고치이며 미래 수익을 보장하지 않습니다.</b> 플랫폼은 어떠한 수익도 보장하지 않으며, 본 전략의 설계·실행·운용에 대한 <b>모든 책임은 전적으로 사용자 본인</b>에게 있습니다.';
+  document.getElementById('ck1').checked=false;document.getElementById('confirmSave').disabled=true;
+  document.getElementById('consent').classList.add('show');
+}
+function closeConsent(){document.getElementById('consent').classList.remove('show');}
+function ckUpdate(){document.getElementById('confirmSave').disabled=!document.getElementById('ck1').checked;}
+function confirmSave(){
+  closeConsent();
+  const payload=currentStrat();
+  // BE/FE 동기화 지점: 실제 서비스에선 여기서 POST /api/strategies (동의 타임스탬프 포함)
+  console.log('SAVE STRATEGY (→ API):',payload);
+  alert('전략이 저장/활성화되었습니다.\\n(데모: 콘솔에 JSON 출력. 실서비스에선 동의 기록과 함께 API로 전송)');
+}
+
+/* init */
+buildLib();render();
+// seed example
+addInd('ema_ribbon');addInd('rsi');addInd('adx_di');
+</script>
+</body>
+</html>
