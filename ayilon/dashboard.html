@@ -176,6 +176,34 @@
     .tier-free { background: rgba(34,197,94,0.12); color: var(--green); }
     .tier-pro { background: rgba(245,158,11,0.12); color: var(--yellow); }
     .tier-elite { background: rgba(147,51,234,0.15); color: #c084fc; }
+    .tier-custom { background: rgba(59,130,246,0.15); color: #60a5fa; }
+
+    /* STRATEGY BUILDER */
+    .sb-modal { max-width: 720px; max-height: 92vh; overflow-y: auto; position: relative; padding: 26px; }
+    .sb-section { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+    .sb-section-title { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: rgba(255,255,255,0.55); margin-bottom: 4px; text-transform: uppercase; }
+    .sb-section-hint { font-size: 11px; color: rgba(255,255,255,0.4); line-height: 1.6; margin-bottom: 12px; }
+    .sb-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 7px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); font-size: 12px; cursor: pointer; transition: all 0.15s; }
+    .sb-chip:hover { background: rgba(255,255,255,0.1); }
+    .sb-cat-tab { padding: 5px 11px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.55); background: transparent; }
+    .sb-cat-tab.active { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.2); }
+    .sb-ind-row { display: flex; align-items: center; gap: 8px; padding: 9px 11px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; margin-bottom: 6px; }
+    .sb-ind-row .nm { flex: 1; font-size: 12px; font-weight: 500; }
+    .sb-leg-row { display: grid; grid-template-columns: 92px 1fr 1fr 32px; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .sb-mini-input { background: #0b0b0b; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #fff; font-size: 12px; padding: 7px 9px; width: 100%; box-sizing: border-box; font-family: inherit; }
+    .sb-mini-select { background: #0b0b0b; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #fff; font-size: 12px; padding: 7px 9px; font-family: inherit; }
+    .sb-x { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #ef4444; border-radius: 6px; width: 30px; height: 30px; cursor: pointer; font-size: 14px; line-height: 1; }
+    .sb-warn { padding: 9px 12px; border-radius: 7px; font-size: 12px; line-height: 1.55; margin-bottom: 6px; }
+    .sb-warn.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171; }
+    .sb-warn.warn { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.22); color: #fbbf24; }
+    .sb-warn.info { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: #93c5fd; }
+    .sb-warn.ok { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); color: #4ade80; }
+    .sb-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .sb-stat { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 9px; padding: 11px; text-align: center; }
+    .sb-stat .v { font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700; }
+    .sb-stat .l { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .sb-card { background: #0d0d0d; border: 1px solid rgba(255,255,255,0.08); border-radius: 11px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+    @media (max-width: 600px) { .sb-stat-grid { grid-template-columns: repeat(2,1fr); } .sb-leg-row { grid-template-columns: 80px 1fr 1fr 30px; } }
 
     /* STRATEGY STEP GUIDE */
     .step-guide { display: flex; flex-direction: column; gap: 16px; padding: 8px 0; }
@@ -610,6 +638,22 @@
        PAGE: BOTS (Signal Bots)
   ═══════════════════════════════════════════════════ -->
   <div class="page" id="page-bots">
+
+    <!-- ── No-Code Strategy Builder ── -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header" style="margin-bottom:6px;">
+        <span class="card-title">전략 빌더 <span style="font-size:11px;font-weight:600;color:#60a5fa;background:rgba(59,130,246,0.12);padding:2px 8px;border-radius:5px;margin-left:6px;">No-Code</span></span>
+        <button class="btn-primary" style="padding:9px 16px;font-size:13px;" onclick="sbOpen()">＋ 새 전략 만들기</button>
+      </div>
+      <div style="font-size:12px;color:var(--gray-400);line-height:1.65;margin-bottom:14px;">
+        100여 개의 기술 지표를 직접 조합해 나만의 전략을 설계합니다. 충돌 규칙 · 가중치 · 포지션 사이징 · 유연한 부분 익절/손절 사다리를 직접 정의하고,
+        <strong style="color:rgba(255,255,255,0.7);">일관성 백테스트</strong>로 로직이 의도대로 동작하는지 검증하세요.
+        <span style="color:#fbbf24;">플랫폼은 어떤 거래도 추천하거나 수익을 보장하지 않습니다 — 모든 판단과 책임은 사용자에게 있습니다.</span>
+      </div>
+      <div id="sbMyStrategies" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;"></div>
+      <div id="sbMyStrategiesEmpty" style="font-size:12px;color:var(--gray-600);padding:14px 0;">아직 만든 커스텀 전략이 없습니다. <strong style="color:rgba(255,255,255,0.6);">＋ 새 전략 만들기</strong>로 시작하세요.</div>
+    </div>
+
     <div class="bots-layout">
       <!-- Strategy List -->
       <div class="card" style="height:fit-content;">
@@ -1279,7 +1323,7 @@
     if (name !== 'terminal')     stopTermPosRefresh();
     if (name === 'dashboard')    initDashboard();
     if (name === 'terminal')     initTerminal();
-    if (name === 'bots')         { renderStrategyList(); loadMyBots(); loadOKXPairs(false); }
+    if (name === 'bots')         { renderStrategyList(); loadMyBots(); loadOKXPairs(false); if (window.sbRenderMyStrategies) sbRenderMyStrategies(); }
     if (name === 'subscription') initSubscriptionPage();
     if (name === 'settings')     initSettingsPage();
     if (name === 'guide')        renderGuide();
@@ -3777,5 +3821,413 @@
     <div id="stratInfoContent"></div>
   </div>
 </div>
+
+<!-- ═══════════ Strategy Builder Modal ═══════════ -->
+<div class="modal-overlay" id="sbModal" style="display:none;align-items:flex-start;padding-top:28px;" onclick="if(event.target===this)sbClose()">
+  <div class="modal sb-modal">
+    <button onclick="sbClose()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;line-height:1;z-index:2;">×</button>
+    <div class="modal-title" style="margin-bottom:4px;">전략 빌더</div>
+    <div style="font-size:11px;color:#fbbf24;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.18);border-radius:8px;padding:9px 12px;line-height:1.6;margin-bottom:18px;">
+      ⚠️ 이 빌더는 <strong>사용자가 선언한 로직만 실행</strong>합니다. 어떤 지표·진입·청산도 권장하지 않으며 수익을 보장하지 않습니다. 백테스트는 과거 데이터 기반 <strong>일관성 검증</strong>일 뿐 미래 수익과 무관합니다.
+    </div>
+
+    <!-- 1. name -->
+    <div class="sb-section">
+      <div class="sb-section-title">1 · 전략 이름</div>
+      <input type="text" class="sb-mini-input" id="sbName" placeholder="예: 추세추종 트리플 컨플루언스" maxlength="40" oninput="sbSyncJson()" />
+    </div>
+
+    <!-- 2. indicators -->
+    <div class="sb-section">
+      <div class="sb-section-title">2 · 지표 선택 <span id="sbIndCount" style="color:#60a5fa;"></span></div>
+      <div class="sb-section-hint">카테고리에서 지표를 눌러 추가합니다. 추가한 지표마다 <strong>가중치</strong>(WEIGHTED 규칙에서 사용)를 줄 수 있습니다.</div>
+      <div id="sbCatTabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+      <div id="sbCatalog" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+      <div id="sbAddedList"></div>
+      <div id="sbAddedEmpty" style="font-size:11px;color:rgba(255,255,255,0.35);padding:4px 0;">선택된 지표가 없습니다.</div>
+    </div>
+
+    <!-- 3. conflict resolution -->
+    <div class="sb-section">
+      <div class="sb-section-title">3 · 신호 충돌 해결 규칙</div>
+      <div class="sb-section-hint">여러 지표가 롱/숏으로 엇갈릴 때 최종 방향을 정하는 방식입니다.</div>
+      <select class="sb-mini-select" id="sbRule" style="width:100%;" onchange="sbSyncJson()">
+        <option value="MAJORITY">다수결 (MAJORITY) — 더 많은 쪽을 따름, 동률이면 관망</option>
+        <option value="WEIGHTED">가중 (WEIGHTED) — 가중치 합의 부호를 따름</option>
+        <option value="AND_GATE">전원합의 (AND_GATE) — 모든 신호가 일치해야만 진입</option>
+        <option value="PRIORITY_ORDER">우선순위 (PRIORITY_ORDER) — 위에서부터 첫 신호가 결정</option>
+      </select>
+    </div>
+
+    <!-- 4. position sizing -->
+    <div class="sb-section">
+      <div class="sb-section-title">4 · 포지션 사이징</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:11px;color:rgba(255,255,255,0.5);">진입 규모 (자산 %)</label>
+          <input type="number" class="sb-mini-input" id="sbPos" value="10" min="1" max="100" step="1" oninput="sbSyncJson()" />
+        </div>
+        <div>
+          <label style="font-size:11px;color:rgba(255,255,255,0.5);">레버리지 (x)</label>
+          <input type="number" class="sb-mini-input" id="sbLev" value="1" min="1" max="50" step="1" oninput="sbSyncJson()" />
+        </div>
+      </div>
+      <div id="sbPosWarn" style="display:none;margin-top:8px;" class="sb-warn warn"></div>
+    </div>
+
+    <!-- 5. exit ladder -->
+    <div class="sb-section">
+      <div class="sb-section-title">5 · 부분 익절 / 손절 사다리</div>
+      <div class="sb-section-hint">
+        각 단계는 <strong>한 번</strong> 발동하며 진입가 대비 거리(%)에 도달하면 <strong>원래 포지션의 size%</strong>를 청산합니다. 나머지 물량은 다음 단계로 계속 유지됩니다.<br>
+        예) TP 5%에서 30% 청산 → 남은 물량은 TP 10%에서 50% 더 청산 → SL 8% 도달 시 나머지 청산.
+      </div>
+      <div style="display:grid;grid-template-columns:92px 1fr 1fr 32px;gap:8px;margin-bottom:6px;font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.04em;">
+        <div>종류</div><div>진입가 대비 %</div><div>청산 비율 %</div><div></div>
+      </div>
+      <div id="sbLadder"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+        <button class="sb-chip" onclick="sbAddLeg()">＋ 단계 추가</button>
+        <span id="sbLadderTotal" style="font-size:11px;color:rgba(255,255,255,0.5);"></span>
+      </div>
+    </div>
+
+    <!-- 6. backtest data -->
+    <div class="sb-section">
+      <div class="sb-section-title">6 · 검증 데이터</div>
+      <div style="display:grid;grid-template-columns:1fr 110px;gap:12px;">
+        <div>
+          <label style="font-size:11px;color:rgba(255,255,255,0.5);">심볼</label>
+          <input type="text" class="sb-mini-input" id="sbPair" value="BTC-USDT-SWAP" />
+        </div>
+        <div>
+          <label style="font-size:11px;color:rgba(255,255,255,0.5);">타임프레임</label>
+          <select class="sb-mini-select" id="sbTf" style="width:100%;">
+            <option value="1H" selected>1H</option>
+            <option value="4H">4H</option>
+            <option value="15m">15m</option>
+            <option value="1D">1D</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. validate + backtest -->
+    <div class="sb-section">
+      <div class="sb-section-title">7 · 검증 & 일관성 백테스트</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn-secondary" style="flex:1;" onclick="sbValidate()">① 로직 검증</button>
+        <button class="btn-secondary" style="flex:1;" onclick="sbBacktest()">② 일관성 백테스트</button>
+      </div>
+      <div id="sbWarnings"></div>
+      <div id="sbStatsWrap" style="display:none;">
+        <div class="sb-stat-grid" style="margin:6px 0 10px;">
+          <div class="sb-stat"><div class="v" id="sbStatWin">—</div><div class="l">승률</div></div>
+          <div class="sb-stat"><div class="v" id="sbStatRet">—</div><div class="l">총수익률</div></div>
+          <div class="sb-stat"><div class="v" id="sbStatTrades">—</div><div class="l">거래수</div></div>
+          <div class="sb-stat"><div class="v" id="sbStatMdd">—</div><div class="l">최대낙폭</div></div>
+        </div>
+        <div class="sb-warn info" id="sbStatDisclosure"></div>
+      </div>
+    </div>
+
+    <!-- 8. accountability + save -->
+    <div class="sb-section" style="border-color:rgba(245,158,11,0.2);">
+      <div class="sb-section-title" style="color:#fbbf24;">8 · 책임 동의</div>
+      <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.75);line-height:1.6;">
+        <input type="checkbox" id="sbConsent" onchange="sbUpdateSave()" style="margin-top:2px;accent-color:#fbbf24;flex-shrink:0;" />
+        <span>위 백테스트 결과는 <strong>과거 데이터 기반 일관성 검증</strong>이며 미래 수익을 보장하지 않음을 이해합니다. 이 전략으로 발생하는 모든 거래 결과의 책임은 전적으로 <strong>저(사용자)</strong>에게 있으며, 플랫폼은 어떤 거래도 추천하지 않았음에 동의합니다.</span>
+      </label>
+    </div>
+
+    <details style="margin-bottom:14px;">
+      <summary style="font-size:11px;color:rgba(255,255,255,0.45);cursor:pointer;">전략 JSON 보기</summary>
+      <pre id="sbJson" style="font-size:10px;color:rgba(255,255,255,0.55);background:#0b0b0b;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;overflow-x:auto;margin-top:8px;white-space:pre-wrap;word-break:break-all;"></pre>
+    </details>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="sbClose()">취소</button>
+      <button class="btn-primary" id="sbSaveBtn" onclick="sbSave()" disabled style="opacity:0.5;">전략 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Strategy engine (single source of truth; sets window.StrategyEngine) -->
+<script type="module" src="strategy-engine.js"></script>
+
+<!-- Strategy Builder controller -->
+<script>
+(function(){
+  var SB_KEY = 'ayilon_custom_strategies';
+  var state = { indicators: [], ladder: [], cat: 'all', editingId: null, validated: false };
+
+  // ── persistence ──
+  function loadAll(){ try { return JSON.parse(localStorage.getItem(SB_KEY) || '[]'); } catch(e){ return []; } }
+  function saveAll(list){ localStorage.setItem(SB_KEY, JSON.stringify(list)); }
+  window.sbGetCustomStrategies = loadAll;
+
+  function engine(){ return window.StrategyEngine; }
+
+  // ── catalog rendering ──
+  function categories(){
+    var E = engine(); if (!E) return [];
+    var set = {}; E.listIndicators().forEach(function(i){ set[i.category] = 1; });
+    return ['all'].concat(Object.keys(set).sort());
+  }
+  function catLabel(c){ return ({all:'전체',trend:'추세',momentum:'모멘텀',volatility:'변동성',volume:'거래량'})[c] || c; }
+
+  function renderTabs(){
+    var html = categories().map(function(c){
+      return '<button class="sb-cat-tab'+(state.cat===c?' active':'')+'" onclick="sbSetCat(\''+c+'\')">'+catLabel(c)+'</button>';
+    }).join('');
+    document.getElementById('sbCatTabs').innerHTML = html;
+  }
+  function renderCatalog(){
+    var E = engine(); if (!E) return;
+    var added = {}; state.indicators.forEach(function(x){ added[x.id]=1; });
+    var list = E.listIndicators().filter(function(i){ return state.cat==='all' || i.category===state.cat; });
+    document.getElementById('sbCatalog').innerHTML = list.map(function(i){
+      var on = added[i.id];
+      return '<span class="sb-chip" style="'+(on?'opacity:0.4;':'')+'" onclick="sbToggleInd(\''+i.id+'\')" title="'+i.category+'">'+(on?'✓ ':'+ ')+i.name+'</span>';
+    }).join('');
+  }
+  function renderAdded(){
+    var E = engine();
+    var wrap = document.getElementById('sbAddedList');
+    var empty = document.getElementById('sbAddedEmpty');
+    document.getElementById('sbIndCount').textContent = state.indicators.length ? '('+state.indicators.length+')' : '';
+    if (!state.indicators.length){ wrap.innerHTML=''; empty.style.display='block'; return; }
+    empty.style.display='none';
+    var rule = document.getElementById('sbRule').value;
+    wrap.innerHTML = state.indicators.map(function(x, idx){
+      var def = E.REGISTRY[x.id];
+      var order = rule==='PRIORITY_ORDER' ? '<span style="font-size:10px;color:rgba(255,255,255,0.35);width:16px;">'+(idx+1)+'</span>' : '';
+      var wt = rule==='WEIGHTED'
+        ? '<input type="number" class="sb-mini-input" style="width:62px;" value="'+(x.weight||1)+'" min="0.1" max="10" step="0.1" title="가중치" oninput="sbSetWeight('+idx+',this.value)">'
+        : '';
+      var up = idx>0 && rule==='PRIORITY_ORDER' ? '<button class="sb-chip" style="padding:3px 7px;" onclick="sbMoveInd('+idx+',-1)">↑</button>' : '';
+      return '<div class="sb-ind-row">'+order+
+        '<span class="nm">'+(def?def.name:x.id)+'</span>'+up+wt+
+        '<button class="sb-x" onclick="sbRemoveInd('+idx+')">×</button></div>';
+    }).join('');
+  }
+
+  // ── ladder ──
+  function renderLadder(){
+    var html = state.ladder.map(function(leg, idx){
+      return '<div class="sb-leg-row">'+
+        '<select class="sb-mini-select" onchange="sbSetLeg('+idx+',\'type\',this.value)">'+
+          '<option value="TP"'+(leg.type==='TP'?' selected':'')+'>익절 TP</option>'+
+          '<option value="SL"'+(leg.type==='SL'?' selected':'')+'>손절 SL</option>'+
+        '</select>'+
+        '<input type="number" class="sb-mini-input" value="'+leg.price_pct+'" min="0.1" step="0.1" placeholder="%" oninput="sbSetLeg('+idx+',\'price_pct\',this.value)">'+
+        '<input type="number" class="sb-mini-input" value="'+leg.size_pct+'" min="1" max="100" step="1" placeholder="%" oninput="sbSetLeg('+idx+',\'size_pct\',this.value)">'+
+        '<button class="sb-x" onclick="sbRemoveLeg('+idx+')">×</button></div>';
+    }).join('');
+    document.getElementById('sbLadder').innerHTML = html;
+    var tpTotal = state.ladder.filter(function(l){return l.type==='TP';}).reduce(function(a,l){return a+(+l.size_pct||0);},0);
+    var slTotal = state.ladder.filter(function(l){return l.type==='SL';}).reduce(function(a,l){return a+(+l.size_pct||0);},0);
+    var el = document.getElementById('sbLadderTotal');
+    el.innerHTML = 'TP 합계 '+tpTotal+'% · SL 합계 '+slTotal+'%'+
+      ((tpTotal>100||slTotal>100)?' <span style="color:#fbbf24;">(100% 초과분은 자동으로 잔여 물량까지만 청산)</span>':'');
+  }
+
+  // ── build the strategy JSON from UI ──
+  function buildStrategy(){
+    return {
+      id: state.editingId || ('custom_'+Date.now()),
+      name: (document.getElementById('sbName').value||'').trim() || '이름 없는 전략',
+      conflict_resolution: document.getElementById('sbRule').value,
+      indicators: state.indicators.map(function(x){ return { id:x.id, weight: +x.weight||1 }; }),
+      priority_order: state.indicators.map(function(x){ return x.id; }),
+      position_sizing: { fixed_pct: +document.getElementById('sbPos').value||10, leverage: +document.getElementById('sbLev').value||1 },
+      exit_rules: state.ladder.map(function(l){ return { type:l.type, price_pct:+l.price_pct||0, size_pct:+l.size_pct||0 }; }),
+      _meta: { pair: document.getElementById('sbPair').value, tf: document.getElementById('sbTf').value }
+    };
+  }
+  window.sbSyncJson = function(){
+    document.getElementById('sbJson').textContent = JSON.stringify(buildStrategy(), null, 2);
+    var pos = +document.getElementById('sbPos').value||0;
+    var pw = document.getElementById('sbPosWarn');
+    if (pos >= 40){ pw.style.display='block'; pw.textContent='⚠️ 진입 규모 '+pos+'% — 한 거래에 자산의 큰 비중을 거는 것은 연속 손실 시 수학적으로 회복이 어렵습니다. 권장 5~15%.'; }
+    else pw.style.display='none';
+    renderAdded(); // weight/priority columns depend on rule
+    state.validated = false; sbUpdateSave();
+  };
+
+  // ── candle fetch (OKX public market data; CORS-enabled) ──
+  async function fetchCandles(instId, bar, total){
+    var out = [], after = '', guard = 0;
+    while (out.length < total && guard < 25){
+      guard++;
+      var url = 'https://www.okx.com/api/v5/market/history-candles?instId='+encodeURIComponent(instId)+'&bar='+bar+'&limit=100'+(after?'&after='+after:'');
+      var r = await fetch(url);
+      var j = await r.json();
+      if (!j.data || !j.data.length) break;
+      out = out.concat(j.data);
+      after = j.data[j.data.length-1][0];   // page to older data
+      if (j.data.length < 100) break;
+    }
+    // OKX rows: [ts,o,h,l,c,vol,...]; engine.prep sorts ascending
+    return out.map(function(d){ return [ +d[0], +d[1], +d[2], +d[3], +d[4], +d[5] ]; });
+  }
+
+  function warnHtml(w){
+    var icon = w.level==='error'?'⛔':w.level==='warn'?'⚠️':'ℹ️';
+    return '<div class="sb-warn '+w.level+'">'+icon+' '+w.msg+'</div>';
+  }
+
+  var _candleCache = {};
+  async function getCandles(){
+    var pair = document.getElementById('sbPair').value.trim();
+    var tf = document.getElementById('sbTf').value;
+    var key = pair+'|'+tf;
+    if (_candleCache[key]) return _candleCache[key];
+    var c = await fetchCandles(pair, tf, 1500);
+    _candleCache[key] = c; return c;
+  }
+
+  window.sbValidate = async function(){
+    var E = engine(); if (!E){ alert('엔진 로딩 중입니다. 잠시 후 다시 시도하세요.'); return; }
+    var box = document.getElementById('sbWarnings');
+    var strat = buildStrategy();
+    if (!strat.indicators.length){ box.innerHTML = warnHtml({level:'error',msg:'지표를 최소 1개 추가하세요.'}); return; }
+    box.innerHTML = '<div class="sb-warn info">데이터 불러오는 중...</div>';
+    try {
+      var candles = await getCandles();
+      if (candles.length < 200){ box.innerHTML = warnHtml({level:'error',msg:'데이터가 부족합니다 ('+candles.length+'개). 심볼/타임프레임을 확인하세요.'}); return; }
+      var res = E.validateStrategy(candles, strat);
+      var html = '';
+      var errors = res.warnings.filter(function(w){return w.level==='error';});
+      if (!errors.length) html += '<div class="sb-warn ok">✓ 구조 검증 통과 — '+res.stats.bars+'개 봉 기준, 신호 발생률 '+(res.stats.signalRate*100).toFixed(1)+'%</div>';
+      html += res.warnings.map(warnHtml).join('');
+      box.innerHTML = html;
+      state.validated = errors.length===0; sbUpdateSave();
+    } catch(e){
+      box.innerHTML = warnHtml({level:'error',msg:'데이터 로딩 실패: '+e.message+' (브라우저에서 OKX 접근이 차단되었을 수 있습니다)'});
+    }
+  };
+
+  window.sbBacktest = async function(){
+    var E = engine(); if (!E){ alert('엔진 로딩 중입니다.'); return; }
+    var box = document.getElementById('sbWarnings');
+    var strat = buildStrategy();
+    if (!strat.indicators.length){ box.innerHTML = warnHtml({level:'error',msg:'지표를 최소 1개 추가하세요.'}); return; }
+    if (!strat.exit_rules.length){ box.innerHTML = warnHtml({level:'warn',msg:'청산 규칙이 없어 반대 신호가 나올 때까지 포지션을 유지합니다.'}); }
+    box.innerHTML += '<div class="sb-warn info">백테스트 실행 중...</div>';
+    try {
+      var candles = await getCandles();
+      var b = E.backtestStrategy(candles, strat, {});
+      document.getElementById('sbStatsWrap').style.display = 'block';
+      var rc = b.totalReturn>=0 ? '#4ade80' : '#f87171';
+      document.getElementById('sbStatWin').textContent = b.winRate.toFixed(0)+'%';
+      document.getElementById('sbStatRet').innerHTML = '<span style="color:'+rc+'">'+(b.totalReturn>=0?'+':'')+b.totalReturn.toFixed(1)+'%</span>';
+      document.getElementById('sbStatTrades').textContent = b.trades;
+      document.getElementById('sbStatMdd').textContent = b.maxDrawdown.toFixed(1)+'%';
+      document.getElementById('sbStatDisclosure').innerHTML =
+        'ℹ️ 과거 '+b.years.toFixed(2)+'년('+candles.length+'봉) 데이터 일관성 검증 결과입니다. 연환산 '+
+        (b.annualReturn>=0?'+':'')+b.annualReturn.toFixed(1)+'%. <strong>이는 미래 수익을 보장하지 않습니다.</strong> 거래·수수료·슬리피지·체결 환경에 따라 실제 결과는 크게 달라질 수 있습니다.';
+      // remove the transient "실행 중" line
+      box.innerHTML = box.innerHTML.replace('<div class="sb-warn info">백테스트 실행 중...</div>','');
+    } catch(e){
+      box.innerHTML += warnHtml({level:'error',msg:'백테스트 실패: '+e.message});
+    }
+  };
+
+  window.sbUpdateSave = function(){
+    var btn = document.getElementById('sbSaveBtn');
+    var ok = document.getElementById('sbConsent').checked && state.indicators.length>0;
+    btn.disabled = !ok; btn.style.opacity = ok?'1':'0.5';
+  };
+
+  window.sbSave = function(){
+    if (!state.indicators.length){ alert('지표를 추가하세요.'); return; }
+    if (!document.getElementById('sbConsent').checked){ alert('책임 동의가 필요합니다.'); return; }
+    var strat = buildStrategy();
+    strat.savedAt = Date.now();
+    var list = loadAll();
+    var i = list.findIndex(function(s){ return s.id===strat.id; });
+    if (i>=0) list[i] = strat; else list.push(strat);
+    saveAll(list);
+    sbClose();
+    renderMyStrategies();
+  };
+
+  // ── modal open/close ──
+  window.sbOpen = function(strat){
+    if (!engine()){ alert('전략 엔진을 불러오는 중입니다. 잠시 후 다시 시도하세요.'); return; }
+    state = { indicators: [], ladder: [], cat: 'all', editingId: null, validated: false };
+    document.getElementById('sbName').value = '';
+    document.getElementById('sbRule').value = 'MAJORITY';
+    document.getElementById('sbPos').value = 10;
+    document.getElementById('sbLev').value = 1;
+    document.getElementById('sbConsent').checked = false;
+    document.getElementById('sbWarnings').innerHTML = '';
+    document.getElementById('sbStatsWrap').style.display = 'none';
+    if (strat){ // edit existing
+      state.editingId = strat.id;
+      document.getElementById('sbName').value = strat.name||'';
+      document.getElementById('sbRule').value = strat.conflict_resolution||'MAJORITY';
+      document.getElementById('sbPos').value = (strat.position_sizing&&strat.position_sizing.fixed_pct)||10;
+      document.getElementById('sbLev').value = (strat.position_sizing&&strat.position_sizing.leverage)||1;
+      state.indicators = (strat.indicators||[]).map(function(x){ return {id:x.id, weight:x.weight||1}; });
+      state.ladder = (strat.exit_rules||[]).map(function(l){ return {type:l.type, price_pct:l.price_pct, size_pct:l.size_pct}; });
+      if (strat._meta){ document.getElementById('sbPair').value = strat._meta.pair||'BTC-USDT-SWAP'; document.getElementById('sbTf').value = strat._meta.tf||'1H'; }
+    }
+    if (!state.ladder.length) state.ladder = [ {type:'TP',price_pct:5,size_pct:50}, {type:'SL',price_pct:3,size_pct:100} ];
+    renderTabs(); renderCatalog(); renderAdded(); renderLadder(); sbSyncJson();
+    document.getElementById('sbModal').style.display = 'flex';
+  };
+  window.sbClose = function(){ document.getElementById('sbModal').style.display = 'none'; };
+
+  // ── catalog/indicator handlers ──
+  window.sbSetCat = function(c){ state.cat=c; renderTabs(); renderCatalog(); };
+  window.sbToggleInd = function(id){
+    var i = state.indicators.findIndex(function(x){return x.id===id;});
+    if (i>=0) state.indicators.splice(i,1); else state.indicators.push({id:id, weight:1});
+    renderCatalog(); sbSyncJson();
+  };
+  window.sbRemoveInd = function(idx){ state.indicators.splice(idx,1); renderCatalog(); sbSyncJson(); };
+  window.sbSetWeight = function(idx,v){ state.indicators[idx].weight = +v||1; sbSyncJson(); };
+  window.sbMoveInd = function(idx,dir){ var j=idx+dir; if(j<0||j>=state.indicators.length)return; var t=state.indicators[idx]; state.indicators[idx]=state.indicators[j]; state.indicators[j]=t; renderAdded(); sbSyncJson(); };
+
+  // ── ladder handlers ──
+  window.sbAddLeg = function(){ state.ladder.push({type:'TP',price_pct:10,size_pct:50}); renderLadder(); sbSyncJson(); };
+  window.sbRemoveLeg = function(idx){ state.ladder.splice(idx,1); renderLadder(); sbSyncJson(); };
+  window.sbSetLeg = function(idx,k,v){ state.ladder[idx][k] = (k==='type')?v:(+v||0); renderLadder(); sbSyncJson(); };
+
+  // ── my-strategies grid on the bots page ──
+  function renderMyStrategies(){
+    var wrap = document.getElementById('sbMyStrategies');
+    var empty = document.getElementById('sbMyStrategiesEmpty');
+    if (!wrap) return;
+    var list = loadAll();
+    if (!list.length){ wrap.innerHTML=''; if(empty) empty.style.display='block'; return; }
+    if (empty) empty.style.display='none';
+    wrap.innerHTML = list.map(function(s){
+      var inds = (s.indicators||[]).length, legs = (s.exit_rules||[]).length;
+      return '<div class="sb-card">'+
+        '<div style="display:flex;align-items:center;gap:8px;">'+
+          '<span style="flex:1;font-size:13px;font-weight:600;">'+escapeSb(s.name)+'</span>'+
+          '<span class="strategy-item-tier tier-custom">CUSTOM</span>'+
+        '</div>'+
+        '<div style="font-size:11px;color:rgba(255,255,255,0.4);">지표 '+inds+'개 · '+(s.conflict_resolution||'MAJORITY')+' · 청산 '+legs+'단계</div>'+
+        '<div style="display:flex;gap:6px;margin-top:4px;">'+
+          '<button class="sb-chip" style="flex:1;justify-content:center;" onclick="sbEdit(\''+s.id+'\')">편집·백테스트</button>'+
+          '<button class="sb-x" onclick="sbDelete(\''+s.id+'\')" title="삭제">🗑</button>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  }
+  function escapeSb(s){ var d=document.createElement('div'); d.textContent=String(s==null?'':s); return d.innerHTML; }
+  window.sbEdit = function(id){ var s = loadAll().find(function(x){return x.id===id;}); if(s) sbOpen(s); };
+  window.sbDelete = function(id){ if(!confirm('이 전략을 삭제할까요?'))return; saveAll(loadAll().filter(function(x){return x.id!==id;})); renderMyStrategies(); };
+  window.sbRenderMyStrategies = renderMyStrategies;
+
+  // initial render once DOM is ready
+  if (document.readyState!=='loading') renderMyStrategies();
+  else document.addEventListener('DOMContentLoaded', renderMyStrategies);
+})();
+</script>
 </body>
 </html>
