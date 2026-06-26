@@ -2427,3 +2427,5 @@ async function botNotify(env, cfg, msg) {
     } catch {}
   }
 }
+
+// redeploy 2026-06-26T07:08:17Z (restore live worker)
