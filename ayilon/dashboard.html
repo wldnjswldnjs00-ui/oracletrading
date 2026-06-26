@@ -204,7 +204,8 @@
     .sb-leg-row { display: grid; grid-template-columns: 96px 1fr 1fr 34px; gap: 8px; align-items: center; margin-bottom: 7px; }
     .sb-mini-input { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; color: #fff; font-size: 13px; padding: 9px 11px; width: 100%; box-sizing: border-box; font-family: inherit; transition: border 0.15s; }
     .sb-mini-input:focus { border-color: rgba(255,255,255,0.3); outline: none; }
-    .sb-mini-select { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; color: #fff; font-size: 13px; padding: 9px 11px; font-family: inherit; }
+    .sb-mini-select { background-color: #181818; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; color: #fff; font-size: 13px; padding: 9px 11px; font-family: inherit; }
+    .sb-mini-select option { background-color: #181818; color: #fff; }
     .sb-x { background: transparent; border: 1px solid rgba(239,68,68,0.25); color: #ef4444; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 15px; line-height: 1; }
     .sb-x:hover { background: rgba(239,68,68,0.12); }
     .sb-seg { display: inline-flex; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 3px; gap: 2px; }
@@ -3921,22 +3922,25 @@
       </div>
     </div>
 
-    <!-- 6. backtest data / symbol -->
+    <!-- 6. trading target (symbol + timeframe) -->
     <div class="sb-step">
-      <div class="sb-step-head"><span class="sb-step-n">6</span><span class="sb-step-title">검증 데이터</span></div>
-      <div class="sb-step-hint">연동된 OKX 계정 종류에 맞는 종목만 표시됩니다. (데모 연결 → 데모 종목 / 실계좌 연결 → 실계좌 종목)</div>
+      <div class="sb-step-head"><span class="sb-step-n">6</span><span class="sb-step-title">거래 종목 &amp; 봉</span></div>
+      <div class="sb-step-hint">이 전략이 매매할 종목과, 신호를 판단할 <strong>봉 주기</strong>입니다 (봇이 어떤 캔들 기준으로 진입/청산할지 결정). 연동된 OKX 계정 종류에 맞는 종목만 표시됩니다.</div>
       <div style="margin-left:23px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
           <div class="sb-seg" id="sbSymSeg">
             <button type="button" class="on" id="sbSymLive" onclick="sbSetSymMode('live')">실계좌</button>
             <button type="button" id="sbSymDemo" onclick="sbSetSymMode('demo')">데모</button>
           </div>
-          <select class="sb-mini-select" id="sbTf" style="width:120px;">
-            <option value="1H" selected>1H</option>
-            <option value="4H">4H</option>
-            <option value="15m">15m</option>
-            <option value="1D">1D</option>
-          </select>
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span style="font-size:11px;color:rgba(255,255,255,0.4);">봉</span>
+            <select class="sb-mini-select" id="sbTf" style="width:96px;">
+              <option value="15m">15m</option>
+              <option value="1H" selected>1H</option>
+              <option value="4H">4H</option>
+              <option value="1D">1D</option>
+            </select>
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:11px;color:rgba(255,255,255,0.4);flex-shrink:0;">선택됨</span>
@@ -3948,24 +3952,13 @@
       </div>
     </div>
 
-    <!-- 7. validate + backtest -->
+    <!-- 7. logic check (offline structural — no profit backtest) -->
     <div class="sb-step">
-      <div class="sb-step-head"><span class="sb-step-n">7</span><span class="sb-step-title">검증 &amp; 일관성 백테스트</span></div>
+      <div class="sb-step-head"><span class="sb-step-n">7</span><span class="sb-step-title">로직 점검</span></div>
+      <div class="sb-step-hint">설정에 논리적 허점(충돌·손절 누락·과도한 지표 등)이 없는지 즉시 점검합니다. <strong>수익을 예측하지 않습니다.</strong></div>
       <div style="margin-left:23px;">
-        <div style="display:flex;gap:8px;margin:12px 0;">
-          <button class="btn-secondary" style="flex:1;" onclick="sbValidate()">① 로직 검증</button>
-          <button class="btn-secondary" style="flex:1;" onclick="sbBacktest()">② 일관성 백테스트</button>
-        </div>
+        <button class="btn-secondary" style="width:100%;margin-bottom:10px;" onclick="sbValidate()">로직 점검 실행</button>
         <div id="sbWarnings"></div>
-        <div id="sbStatsWrap" style="display:none;">
-          <div class="sb-stat-grid" style="margin:6px 0 10px;">
-            <div class="sb-stat"><div class="v" id="sbStatWin">—</div><div class="l">승률</div></div>
-            <div class="sb-stat"><div class="v" id="sbStatRet">—</div><div class="l">총수익률</div></div>
-            <div class="sb-stat"><div class="v" id="sbStatTrades">—</div><div class="l">거래수</div></div>
-            <div class="sb-stat"><div class="v" id="sbStatMdd">—</div><div class="l">최대낙폭</div></div>
-          </div>
-          <div class="sb-warn info" id="sbStatDisclosure"></div>
-        </div>
       </div>
     </div>
 
@@ -3974,7 +3967,7 @@
       <div class="sb-step-head"><span class="sb-step-n">8</span><span class="sb-step-title" style="color:#fbbf24;">책임 동의</span></div>
       <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.75);line-height:1.6;margin:12px 0 0 23px;">
         <input type="checkbox" id="sbConsent" onchange="sbUpdateSave()" style="margin-top:2px;accent-color:#fbbf24;flex-shrink:0;" />
-        <span>위 백테스트 결과는 <strong>과거 데이터 기반 일관성 검증</strong>이며 미래 수익을 보장하지 않음을 이해합니다. 이 전략으로 발생하는 모든 거래 결과의 책임은 전적으로 <strong>저(사용자)</strong>에게 있으며, 플랫폼은 어떤 거래도 추천하지 않았음에 동의합니다.</span>
+        <span>이 전략은 <strong>제가 직접 구성한 로직</strong>이며, 플랫폼은 어떤 지표·진입·청산도 추천하거나 수익을 보장하지 않았음을 이해합니다. 이 전략으로 발생하는 <strong>모든 거래 결과의 책임은 전적으로 저(사용자)에게 있음</strong>에 동의합니다.</span>
       </label>
     </div>
 
@@ -4108,83 +4101,41 @@
     state.validated = false; sbUpdateSave();
   };
 
-  // ── candle fetch (OKX public market data; CORS-enabled) ──
-  async function fetchCandles(instId, bar, total){
-    var out = [], after = '', guard = 0;
-    while (out.length < total && guard < 25){
-      guard++;
-      var url = 'https://www.okx.com/api/v5/market/history-candles?instId='+encodeURIComponent(instId)+'&bar='+bar+'&limit=100'+(after?'&after='+after:'');
-      var r = await fetch(url);
-      var j = await r.json();
-      if (!j.data || !j.data.length) break;
-      out = out.concat(j.data);
-      after = j.data[j.data.length-1][0];   // page to older data
-      if (j.data.length < 100) break;
-    }
-    // OKX rows: [ts,o,h,l,c,vol,...]; engine.prep sorts ascending
-    return out.map(function(d){ return [ +d[0], +d[1], +d[2], +d[3], +d[4], +d[5] ]; });
-  }
-
   function warnHtml(w){
-    var icon = w.level==='error'?'⛔':w.level==='warn'?'⚠️':'ℹ️';
+    var icon = w.level==='error'?'⛔':w.level==='warn'?'⚠️':w.level==='ok'?'✓':'ℹ️';
     return '<div class="sb-warn '+w.level+'">'+icon+' '+w.msg+'</div>';
   }
 
-  var _candleCache = {};
-  async function getCandles(){
-    var pair = document.getElementById('sbPair').value.trim();
-    var tf = document.getElementById('sbTf').value;
-    var key = pair+'|'+tf;
-    if (_candleCache[key]) return _candleCache[key];
-    var c = await fetchCandles(pair, tf, 1500);
-    _candleCache[key] = c; return c;
-  }
-
-  window.sbValidate = async function(){
-    var E = engine(); if (!E){ alert('엔진 로딩 중입니다. 잠시 후 다시 시도하세요.'); return; }
+  // ── instant offline LOGIC CHECK (structural only — no market data, no profit) ──
+  window.sbValidate = function(){
+    var E = engine();
     var box = document.getElementById('sbWarnings');
     var strat = buildStrategy();
-    if (!strat.indicators.length){ box.innerHTML = warnHtml({level:'error',msg:'지표를 최소 1개 추가하세요.'}); return; }
-    box.innerHTML = '<div class="sb-warn info">데이터 불러오는 중...</div>';
-    try {
-      var candles = await getCandles();
-      if (candles.length < 200){ box.innerHTML = warnHtml({level:'error',msg:'데이터가 부족합니다 ('+candles.length+'개). 심볼/타임프레임을 확인하세요.'}); return; }
-      var res = E.validateStrategy(candles, strat);
-      var html = '';
-      var errors = res.warnings.filter(function(w){return w.level==='error';});
-      if (!errors.length) html += '<div class="sb-warn ok">✓ 구조 검증 통과 — '+res.stats.bars+'개 봉 기준, 신호 발생률 '+(res.stats.signalRate*100).toFixed(1)+'%</div>';
-      html += res.warnings.map(warnHtml).join('');
-      box.innerHTML = html;
-      state.validated = errors.length===0; sbUpdateSave();
-    } catch(e){
-      box.innerHTML = warnHtml({level:'error',msg:'데이터 로딩 실패: '+e.message+' (브라우저에서 OKX 접근이 차단되었을 수 있습니다)'});
-    }
-  };
+    var ws = [];
+    // structural errors
+    if (!strat.indicators.length) ws.push({level:'error',msg:'지표가 없습니다. 최소 1개를 추가하세요.'});
+    if (E) strat.indicators.forEach(function(c){ if(!E.REGISTRY[c.id]) ws.push({level:'error',msg:'알 수 없는 지표: '+c.id}); });
+    // logic-hole warnings
+    var rule = strat.conflict_resolution;
+    if (rule==='AND_GATE' && strat.indicators.length>=4)
+      ws.push({level:'warn',msg:'전원합의(AND_GATE) + 지표 '+strat.indicators.length+'개 — 모두 동시에 일치하기 어려워 거의 진입하지 않을 수 있습니다.'});
+    if (strat.indicators.length>=8)
+      ws.push({level:'warn',msg:'지표 '+strat.indicators.length+'개 — 많을수록 신호가 희석됩니다. 가중치나 우선순위 규칙을 권장합니다.'});
+    var hasSL = (strat.exit_rules||[]).some(function(r){return r.type==='SL';});
+    if (!hasSL) ws.push({level:'warn',msg:'손절(SL) 단계가 없습니다. 반대 신호가 나기 전까지 손실이 무한정 커질 수 있습니다.'});
+    (strat.exit_rules||[]).forEach(function(r,i){
+      if (!(r.price_pct>0)) ws.push({level:'warn',msg:(i+1)+'번째 청산 단계의 거리(%)가 0입니다 — 발동하지 않습니다.'});
+      if (!(r.size_pct>0))  ws.push({level:'warn',msg:(i+1)+'번째 청산 단계의 청산 비율(%)이 0입니다 — 발동하지 않습니다.'});
+    });
+    var tpTotal = (strat.exit_rules||[]).filter(function(r){return r.type==='TP';}).reduce(function(a,r){return a+(+r.size_pct||0);},0);
+    if (tpTotal>0 && tpTotal<100 && !(strat.exit_rules||[]).some(function(r){return r.type==='SL';}))
+      ws.push({level:'info',msg:'익절 합계가 '+tpTotal+'%라 일부 물량은 반대 신호가 날 때까지 유지됩니다.'});
 
-  window.sbBacktest = async function(){
-    var E = engine(); if (!E){ alert('엔진 로딩 중입니다.'); return; }
-    var box = document.getElementById('sbWarnings');
-    var strat = buildStrategy();
-    if (!strat.indicators.length){ box.innerHTML = warnHtml({level:'error',msg:'지표를 최소 1개 추가하세요.'}); return; }
-    if (!strat.exit_rules.length){ box.innerHTML = warnHtml({level:'warn',msg:'청산 규칙이 없어 반대 신호가 나올 때까지 포지션을 유지합니다.'}); }
-    box.innerHTML += '<div class="sb-warn info">백테스트 실행 중...</div>';
-    try {
-      var candles = await getCandles();
-      var b = E.backtestStrategy(candles, strat, {});
-      document.getElementById('sbStatsWrap').style.display = 'block';
-      var rc = b.totalReturn>=0 ? '#4ade80' : '#f87171';
-      document.getElementById('sbStatWin').textContent = b.winRate.toFixed(0)+'%';
-      document.getElementById('sbStatRet').innerHTML = '<span style="color:'+rc+'">'+(b.totalReturn>=0?'+':'')+b.totalReturn.toFixed(1)+'%</span>';
-      document.getElementById('sbStatTrades').textContent = b.trades;
-      document.getElementById('sbStatMdd').textContent = b.maxDrawdown.toFixed(1)+'%';
-      document.getElementById('sbStatDisclosure').innerHTML =
-        'ℹ️ 과거 '+b.years.toFixed(2)+'년('+candles.length+'봉) 데이터 일관성 검증 결과입니다. 연환산 '+
-        (b.annualReturn>=0?'+':'')+b.annualReturn.toFixed(1)+'%. <strong>이는 미래 수익을 보장하지 않습니다.</strong> 거래·수수료·슬리피지·체결 환경에 따라 실제 결과는 크게 달라질 수 있습니다.';
-      // remove the transient "실행 중" line
-      box.innerHTML = box.innerHTML.replace('<div class="sb-warn info">백테스트 실행 중...</div>','');
-    } catch(e){
-      box.innerHTML += warnHtml({level:'error',msg:'백테스트 실패: '+e.message});
-    }
+    var errors = ws.filter(function(w){return w.level==='error';});
+    var html = errors.length ? '' : warnHtml({level:'ok',msg:'논리적 허점이 발견되지 않았습니다. (수익은 보장되지 않으며, 모든 결과의 책임은 사용자에게 있습니다.)'});
+    html += ws.map(warnHtml).join('');
+    box.innerHTML = html;
+    state.validated = errors.length===0; sbUpdateSave();
   };
 
   window.sbUpdateSave = function(){
@@ -4216,7 +4167,6 @@
     document.getElementById('sbLev').value = 1;
     document.getElementById('sbConsent').checked = false;
     document.getElementById('sbWarnings').innerHTML = '';
-    document.getElementById('sbStatsWrap').style.display = 'none';
     if (strat){ // edit existing
       state.editingId = strat.id;
       document.getElementById('sbName').value = strat.name||'';
@@ -4253,7 +4203,6 @@
   function sbSetSymVal(sym){
     document.getElementById('sbPair').value = sym;
     document.getElementById('sbSymSelected').textContent = sym;
-    _candleCache = {}; // symbol changed → invalidate backtest data cache
     sbSyncJson();
   }
   window.sbSetSymMode = function(mode){
