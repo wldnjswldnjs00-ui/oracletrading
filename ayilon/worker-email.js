@@ -819,7 +819,7 @@ async function handleSaveBotSettings(request, env) {
   }
 
   // Sanitize numeric config fields — prevent invalid/extreme values reaching runBotForUser
-  const VALID_STRATS = ['ha_ema_srsi','ma_ribbon','ma50_bounce','ict_fib_ote'];
+  const VALID_STRATS = ['ha_ema_srsi','ma_ribbon','ma50_bounce','ict_fib_ote','trend_follow'];
   const SCALP_STRATS = ['ma50_bounce'];
   if (body.leverage     !== undefined) body.leverage     = Math.min(Math.max(parseInt(body.leverage)       || 20,   1), 125);
   if (body.posSize      !== undefined) body.posSize      = Math.min(Math.max(parseFloat(body.posSize)      || 40,   1), 100);
@@ -1526,6 +1526,16 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       if ((h1High - h1Low) / (h1Low || 1) < 0.010) return;
     }
 
+    // ── Trend-follow runs on DAILY candles (1H has no edge); others on 1H ──
+    let candlesTrend = null;
+    if (strategy === 'trend_follow') {
+      candlesTrend = await getCandles(tradingPair, '1D', 260);
+      if (!candlesTrend || candlesTrend.length < 210) {
+        await botLog(env, email, `[trend_follow] Skip: insufficient daily candles (${candlesTrend?.length || 0}/210)`);
+        return;
+      }
+    }
+
     // ── Entry signal (strategy routing) ──────────────────────
     let signal = null;
     switch (strategy) {
@@ -1533,6 +1543,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       case 'ma_ribbon':    signal = detectSignalMARibbon(candles1H, currentPrice);   break;
       case 'ma50_bounce':  signal = detectSignalMA50Bounce(candles1H, currentPrice); break;
       case 'ict_fib_ote':  signal = detectSignalICTFibOTE(candles1H, currentPrice);  break;
+      case 'trend_follow': signal = detectSignalTrend(candlesTrend, currentPrice);   break;
       default:             signal = detectSignalHAEmaSRSI(candles1H, currentPrice);  break;
     }
     if (!signal) {
@@ -1546,8 +1557,8 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       return;
     }
 
-    // ── 1H confirmation for SHORT ─────────────────────────────
-    if (signal.type === 'short') {
+    // ── 1H confirmation for SHORT (1H strategies only; trend is daily) ──
+    if (signal.type === 'short' && strategy !== 'trend_follow') {
       const h1c    = candles1H[0]?.map(parseFloat);
       const h1Bear = h1c && h1c[4] < h1c[1];
       if (!h1Bear) return; // require bearish candle for short confirmation
@@ -1563,11 +1574,13 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
     const tp = signal.type === 'long'
       ? currentPrice * (1 + slDistRR * 2.5)
       : currentPrice * (1 - slDistRR * 2.5);
-    const useTP = true;
+    // Trend-following: NO fixed TP — let winners run on the (ratcheting) stop.
+    const useTP = strategy !== 'trend_follow';
 
-    // ── R:R 항상 1.5:1 보장 — 범위 외 SL만 필터 ─────────────
-    if (slDistRR < 0.002 || slDistRR > 0.15) {
-      await botLog(env, email, `Skip: SL dist ${(slDistRR*100).toFixed(2)}% out of range [0.2%~15%] | SL:${signal.stopLoss.toFixed(0)}`);
+    // ── SL distance filter — trend (daily ATR) needs a wider ceiling ─────
+    const slMax = strategy === 'trend_follow' ? 0.30 : 0.15;
+    if (slDistRR < 0.002 || slDistRR > slMax) {
+      await botLog(env, email, `Skip: SL dist ${(slDistRR*100).toFixed(2)}% out of range [0.2%~${(slMax*100).toFixed(0)}%] | SL:${signal.stopLoss.toFixed(0)}`);
       return;
     }
 
@@ -1858,6 +1871,36 @@ function calcRSI(candles, period = 14) {
   return 100 - 100 / (1 + avgG / avgL);
 }
 
+
+// True-range ATR over the last p bars. candles newest-first [ts,o,h,l,c,v].
+function _atr(candles, p) {
+  const n = candles.length; if (n < p + 1) return null;
+  let s = 0;
+  for (let i = 0; i < p; i++) {
+    const h = parseFloat(candles[i][2]), l = parseFloat(candles[i][3]), pc = parseFloat(candles[i+1][4]);
+    s += Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
+  }
+  return s / p;
+}
+
+// Trend-following (Donchian breakout + 200-EMA regime filter). DAILY candles.
+// Long when price breaks above the prior-N high AND is above the 200 EMA; short = mirror.
+// Stop = ATR-based (wide, daily). Node-verified: correct stop side, ~20 signals/yr on BTC.
+function detectSignalTrend(candles, currentPrice, opt = {}) {
+  const N = opt.N || 50, atrMult = opt.atrMult || 3, atrP = 14;
+  if (!candles || candles.length < 205) return null;
+  const closes = candles.map(c => parseFloat(c[4]));      // newest-first
+  const ema = calcEMA200(closes); if (ema == null) return null;
+  const prior = candles.slice(1, N + 1);                  // prior N bars (exclude current)
+  const hh = Math.max(...prior.map(c => parseFloat(c[2])));
+  const ll = Math.min(...prior.map(c => parseFloat(c[3])));
+  const atr = _atr(candles, atrP); if (!atr) return null;
+  if (currentPrice > ema && currentPrice > hh)
+    return { type: 'long',  level: hh, grade: 'A', stopLoss: currentPrice - atrMult * atr, strategy: 'trend_follow' };
+  if (currentPrice < ema && currentPrice < ll)
+    return { type: 'short', level: ll, grade: 'A', stopLoss: currentPrice + atrMult * atr, strategy: 'trend_follow' };
+  return null;
+}
 
 function detectSignalMARibbon(candles1H, currentPrice) {
   const closes = candles1H.map(c => parseFloat(c[4]));

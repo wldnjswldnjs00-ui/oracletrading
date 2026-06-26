@@ -677,7 +677,7 @@
     </div>
 
     <!-- legacy hardcoded-strategy flow retired in favour of the No-Code builder; kept hidden so existing bot helpers keep their element refs -->
-    <div class="bots-layout" id="legacyBotFlow" style="display:none;">
+    <div class="bots-layout" id="legacyBotFlow">
       <!-- Strategy List -->
       <div class="card" style="height:fit-content;">
         <div class="card-header" style="margin-bottom:12px;">
@@ -1960,24 +1960,8 @@
   var _algoOrdersCacheRenderedTs = 0;
 
   var STRATEGIES = [
-    { id: 'ha-ema-srsi', name: 'HA + EMA + StochRSI', tier: 'STARTER', desc: 'Heikin Ashi + 200 EMA + Stochastic RSI 복합 추세 전략 (권장)' },
-    { id: 'ma-ribbon',   name: 'MA Ribbon',            tier: 'STARTER', desc: '다중 이동평균 리본 컨플루언스 기반 스윙 진입 전략' },
-    {
-      id: 'ma-50-bounce',
-      name: 'MA50 Bounce',
-      tier: 'STARTER',
-      type: 'SCALP',
-      desc: 'Price touches 50MA in aligned trend — narrow consolidation entry',
-      enabled: true
-    },
-    {
-      id: 'ict-fib-ote',
-      name: 'ICT Fibonacci OTE',
-      tier: 'STARTER',
-      type: 'SWING',
-      desc: 'ICT Fibonacci 21–38% OTE zone entry with swing structure',
-      enabled: true
-    }
+    { id: 'trend-follow', name: '추세추종 (방어형)', tier: 'STARTER', type: 'SWING',
+      desc: '일봉 돈치안 돌파 + 200EMA 추세 필터. 폭락 방어형 — 수익 보장 아님, 낙폭을 줄이는 리스크관리 전략.' }
   ];
 
   function getUserPlanLevel() {
@@ -1999,6 +1983,17 @@
   }
 
   var STRAT_INFO = {
+    'trend-follow': {
+      chart: '일봉(1D)',
+      reliability: 'high',
+      simple: '일봉 기준으로 최근 50일 고점을 돌파하고 200일 이동평균 위에 있을 때만 롱(반대는 숏)을 잡는 추세추종 전략입니다. 거래는 드물고(연 20회 안팎) 며칠~몇 주 들고 갑니다. 목표는 "큰 수익"이 아니라 폭락장을 피해 낙폭을 줄이는 것입니다.',
+      long: '현재가가 200일 EMA 위 + 직전 50일 최고가 돌파',
+      short: '현재가가 200일 EMA 아래 + 직전 50일 최저가 이탈',
+      sl: 'ATR(변동성) 3배 거리에 OKX 알고 손절 자동 설정 (일봉이라 손절폭이 넓음)',
+      tp: '고정 익절 없음 — 추세가 꺾일 때까지 들고 가며 손절선으로만 청산 (이기는 거래를 끝까지 태움)',
+      close: '① ATR 손절 도달 ② 추세 반전 신호 ③ 일일 손실/최대낙폭 한도',
+      note: '⚠️ 승률 낮음(~40%): 작은 손실 여러 번 + 가끔 큰 수익 구조. 불장에선 단순 보유보다 수익이 적을 수 있고, 가치는 폭락 방어(낮은 낙폭)에 있습니다. 백테스트는 체결가정에 매우 민감 — 수익을 보장하지 않습니다. 데모로 충분히 검증 후 사용하세요.'
+    },
     'ha-ema-srsi': {
       chart: '1시간봉',
       reliability: 'high',
