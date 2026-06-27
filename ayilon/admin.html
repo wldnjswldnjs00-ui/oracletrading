@@ -119,7 +119,9 @@
 
   function getToken() { return localStorage.getItem('ayilon_session_token') || ''; }
   function getEmail() {
-    try { return JSON.parse(localStorage.getItem('ayilon_user') || '{}').email || ''; } catch(e) { return ''; }
+    // login stores email under 'ayilon_email'; 'ayilon_user' may not exist on a fresh domain
+    try { var u = JSON.parse(localStorage.getItem('ayilon_user') || '{}'); if (u && u.email) return u.email; } catch(e) {}
+    return localStorage.getItem('ayilon_email') || '';
   }
 
   // Auth check on load — no redirect loops: no session → login; logged-in non-admin → message
@@ -127,7 +129,7 @@
     var token = getToken();
     var email = getEmail();
     if (!token) { window.location.href = 'login.html'; return; }
-    if (email !== ADMIN_EMAIL) {
+    if (String(email).toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
       document.body.innerHTML = '<div style="padding:48px 24px;text-align:center;color:#fff;font-family:Inter,sans-serif;">'
         + '<div style="font-size:18px;font-weight:700;margin-bottom:10px;">관리자 전용 페이지</div>'
         + '<div style="color:#9ca3af;font-size:13px;margin-bottom:18px;">관리자 계정으로 로그인해야 합니다.</div>'
