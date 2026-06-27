@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- ayiloncompany.xyz is the admin-only entry point → route its root to the admin page -->
-  <script>if(location.hostname==='ayiloncompany.xyz'||location.hostname==='www.ayiloncompany.xyz'){location.replace('/admin.html');}</script>
+  <!-- ayiloncompany.xyz is the admin-only entry point → route its root to admin (or login first) -->
+  <script>if(/(^|\.)ayiloncompany\.xyz$/.test(location.hostname)){location.replace(localStorage.getItem('ayilon_session_token')?'/admin.html':'/login.html');}</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AYILON — The end of effort.</title>
