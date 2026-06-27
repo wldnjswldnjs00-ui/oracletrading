@@ -1573,6 +1573,29 @@
     }
   }
 
+  // Pull the authoritative plan/referral from the server (/me) and reflect it
+  // in localStorage + UI, so an admin granting Elite (or referral verify) takes
+  // effect for that account without re-login. Server-side enforcement already
+  // uses this; this keeps the UI honest.
+  async function syncPlanFromServer() {
+    try {
+      var r = await fetch(WORKER_URL + '/me', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: getSessionToken() }) });
+      var d = await r.json();
+      if (!d || !d.access) return;
+      var acc = d.access;
+      _botAccess = acc; _botSymCache = {};   // refresh bot symbol-picker access cache
+      var effectivePlan = acc.referralOk ? 'elite' : (acc.plan || 'free');
+      var sub = getSubscription();
+      sub.plan = effectivePlan;
+      sub.referral = !!acc.referralOk;
+      sub.expiresAt = acc.trialEndsAt || sub.expiresAt;
+      localStorage.setItem('ayilon_subscription', JSON.stringify(sub));
+      if (typeof renderStrategyList === 'function' && document.getElementById('strategyList')) renderStrategyList();
+      var cpn = document.getElementById('currentPlanName');
+      if (cpn) { var pn = { free:'FREE', starter:'STARTER', pro:'PRO', elite:'ELITE' }; cpn.textContent = (pn[effectivePlan] || String(effectivePlan).toUpperCase()) + (acc.referralOk ? ' (리퍼럴)' : ''); }
+    } catch(e) {}
+  }
+
   function initDashboard() {
     var apiData = JSON.parse(localStorage.getItem('ayilon_api') || '{}');
     var noApiCard = document.getElementById('dashNoApiCard');
@@ -1580,6 +1603,7 @@
 
     loadDashAssets();
     loadDashBotStatus();
+    syncPlanFromServer();   // pull the real plan/referral status from the server (admin grants take effect)
 
     var eqCtx = document.getElementById('dashEquityChart');
     var poCtx = document.getElementById('dashPortfolioChart');
