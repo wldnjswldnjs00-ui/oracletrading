@@ -28,6 +28,7 @@ export default {
       if (path === '/me')                return handleMe(request, env);
       if (path === '/change-password')   return handleChangePassword(request, env);
       if (path === '/verify-2fa-login')  return handleVerify2FALogin(request, env);
+      if (path === '/resend-2fa-code')   return handleResend2FACode(request, env);
       if (path === '/initiate-2fa')      return handleInitiate2FA(request, env);
       if (path === '/confirm-2fa')       return handleConfirm2FA(request, env);
       if (path === '/2fa-status')        return handle2FAStatus(request, env);
@@ -603,6 +604,34 @@ async function handleVerify2FALogin(request, env) {
     ).bind(sessionToken, user.email, user.username || '', user.name || '', expiresAt).run();
 
     return json({ ok: true, sessionToken, email: user.email, username: user.username || '', name: user.name || '' });
+  } catch(e) { return json({ ok: false, error: 'server_error' }, 500); }
+}
+
+// Re-send a fresh login email code for an existing challenge (and reset its expiry)
+async function handleResend2FACode(request, env) {
+  try {
+    const { challengeToken } = await request.json().catch(() => ({}));
+    if (!challengeToken) return json({ ok: false, error: 'missing_token' }, 400);
+    await ensureDB(env);
+    const ch = await env.BOT_DB.prepare('SELECT * FROM challenges WHERE token=? AND type=?').bind(challengeToken, 'login').first();
+    if (!ch) return json({ ok: false, error: 'challenge_not_found' }, 400);
+    const user = await env.USERS_KV.get('user:' + ch.email, { type: 'json' });
+    if (!user || !(user.twoFactor && user.twoFactor.email)) return json({ ok: false, error: 'no_email_2fa' }, 400);
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    await env.BOT_DB.prepare('UPDATE challenges SET code=?, expires_at=? WHERE token=?')
+      .bind(code, Date.now() + 600000, challengeToken).run();
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: 'AYILON <onboarding@resend.dev>', to: [user.email],
+          subject: 'AYILON Login Verification Code',
+          html: `<div style="font-family:sans-serif;padding:24px;"><h2>Login Code</h2><p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#111;">${code}</p><p style="color:#666;">This code expires in 10 minutes.</p></div>`
+        })
+      });
+    } catch(e) {}
+    return json({ ok: true });
   } catch(e) { return json({ ok: false, error: 'server_error' }, 500); }
 }
 

@@ -130,6 +130,7 @@
           <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 5)" />
         </div>
         <button class="btn-submit" onclick="verifyOTP()" data-i18n="login.otp.verify">Verify &amp; Sign In</button>
+        <p id="otpError" style="text-align:center;margin-top:12px;font-size:13px;color:#ef4444;display:none;"></p>
         <p style="text-align:center; margin-top:16px; font-size:13px; color:var(--gray-600)">
           <span data-i18n="login.otp.resend">Didn't receive a code?</span> <a href="#" style="color:var(--white)" onclick="resendCode()" data-i18n="login.otp.resendlink">Resend</a>
         </p>
@@ -340,6 +341,15 @@
         });
         var data = await res.json();
         if (!data.ok) {
+          var errEl = document.getElementById('otpError');
+          if (errEl) {
+            var msg = (data.error === 'challenge_expired')
+              ? 'This code expired. Tap “Resend” to get a fresh one.'
+              : (data.error === 'invalid_email_code' || data.error === 'invalid_code')
+                ? 'Incorrect code. Check your latest email or tap “Resend”.'
+                : (data.message || 'Verification failed. Tap “Resend” and try the new code.');
+            errEl.textContent = msg; errEl.style.display = 'block';
+          }
           Array.from(digits).forEach(function(d) { d.style.borderColor = '#ef4444'; d.value = ''; });
           setTimeout(function() {
             Array.from(digits).forEach(function(d) { d.style.borderColor = ''; });
@@ -348,6 +358,7 @@
           if (btn) { btn.textContent = _t('login.otp.verify') || 'Verify & Sign In'; btn.disabled = false; }
           return;
         }
+        var okErr = document.getElementById('otpError'); if (okErr) okErr.style.display = 'none';
         localStorage.setItem('ayilon_session_token', data.sessionToken);
         localStorage.setItem('ayilon_email',    data.email    || '');
         localStorage.setItem('ayilon_username', data.username || '');
@@ -368,9 +379,13 @@
     async function resendCode() {
       if (!_2faChallengeToken || _2faCurrentMethod !== 'email') return;
       try {
-        // Re-initiate with same email (need to re-login) — just show a note
-        alert('Please go back and log in again to receive a new code.');
-      } catch(e) {}
+        var res = await fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/resend-2fa-code', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ challengeToken: _2faChallengeToken })
+        });
+        var d = await res.json();
+        alert(d.ok ? 'A new code was sent. Check your email (and spam).' : 'Could not resend — please go back and log in again.');
+      } catch(e) { alert('Network error — try again.'); }
     }
 
     // ── FORGOT PASSWORD ──────────────────────────────────────────
