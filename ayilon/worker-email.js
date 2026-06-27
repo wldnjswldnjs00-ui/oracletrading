@@ -1459,8 +1459,11 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
 
     const lossLimitNorm = parseFloat(lossLimit) > 1 ? parseFloat(lossLimit) / 100 : parseFloat(lossLimit) || 0.05;
     const today = new Date().toDateString();
-    // Fix: cap leverage at 50x regardless of user input
-    const safeLeverage = Math.min(parseInt(leverage) || 20, 50);
+    // Leverage cap: BTC/ETH up to 20x, all altcoins capped at 10x (higher
+    // volatility → faster liquidation). Enforced here AND pushed to OKX via
+    // set-leverage, so it's real, not just UI.
+    const isMajorPair = tradingPair === 'BTC-USDT-SWAP' || tradingPair === 'ETH-USDT-SWAP';
+    const safeLeverage = Math.min(parseInt(leverage) || 10, isMajorPair ? 20 : 10);
 
     // Load bot state from D1 once at start of tick
     const botStateRow = await getBotState(env, email);

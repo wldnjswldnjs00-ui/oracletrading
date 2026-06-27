@@ -2165,14 +2165,26 @@
     }
   }
 
+  function hasAltSelected() {
+    var sel = (typeof _botSelectedPairs !== 'undefined' && _botSelectedPairs.length) ? _botSelectedPairs : [(document.getElementById('botTradingPair')||{}).value || ''];
+    return sel.some(function(p){ p = (p||'').toUpperCase(); return p && p !== 'BTC-USDT-SWAP' && p !== 'ETH-USDT-SWAP'; });
+  }
   function onTradingPairChange(val) {
     var warnEl = document.getElementById('botAltcoinWarn');
-    var pair = (val || '').toUpperCase().trim();
-    var isMajor = pair === 'BTC-USDT-SWAP' || pair === 'ETH-USDT-SWAP';
-    if (warnEl) warnEl.style.display = (pair && !isMajor) ? 'block' : 'none';
-    // Re-evaluate leverage info with altcoin context
-    var levVal = (document.getElementById('botLeverage') || {}).value;
-    if (levVal) updateLeverageDisplay(levVal);
+    var anyAlt = hasAltSelected();
+    if (warnEl) {
+      warnEl.style.display = anyAlt ? 'block' : 'none';
+      warnEl.style.cssText = anyAlt ? 'margin-top:6px;padding:8px 10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:6px;font-size:11px;color:#f59e0b;line-height:1.6;' : 'display:none;';
+      warnEl.innerHTML = _L('⚠️ 알트코인은 변동성이 커서 레버리지가 <strong>최대 10배</strong>로 제한됩니다 (BTC·ETH 제외).', '⚠️ Altcoins are volatile — leverage is capped at <strong>10x</strong> (BTC·ETH excepted).');
+    }
+    // Altcoins: hard-cap leverage at 10x (matches server enforcement)
+    var levEl = document.getElementById('botLeverage');
+    if (levEl) {
+      if (anyAlt && parseInt(levEl.value) > 10) { levEl.value = 10; }
+      levEl.setAttribute('max', anyAlt ? '10' : '20');
+      var lvEl = document.getElementById('botLeverageVal'); if (lvEl) lvEl.textContent = levEl.value + 'x';
+      updateLeverageDisplay(levEl.value);
+    }
   }
 
   function onModeChange() {
