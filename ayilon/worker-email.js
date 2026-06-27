@@ -48,6 +48,7 @@ export default {
       if (path === '/admin-user-detail') return handleAdminUserDetail(request, env);
       if (path === '/admin/list-users')  return handleAdminListUsers(request, env);
       if (path === '/admin/set-plan')    return handleAdminSetPlan(request, env);
+      if (path === '/admin/set-referral') return handleAdminSetReferral(request, env);
       if (path === '/delete-account')    return handleDeleteAccount(request, env);
     }
 
@@ -880,6 +881,15 @@ async function handleSaveBotSettings(request, env) {
   return json({ ok: true, clientToken });
 }
 
+// OKX demo (simulated trading) only supports a limited set of major perps, but
+// the PUBLIC instruments endpoint ignores x-simulated-trading and returns every
+// live instrument — so for demo we intersect with a curated major whitelist.
+const DEMO_SYMBOLS = new Set([
+  'BTC','ETH','SOL','XRP','DOGE','ADA','AVAX','LINK','LTC','BCH','DOT','TRX','ATOM',
+  'ETC','FIL','UNI','APT','ARB','OP','NEAR','INJ','SUI','TIA','SEI','TON','BNB',
+  'MATIC','PEPE','SHIB','WLD','ORDI','AAVE','CRV','LDO','GMT','APE','SAND','MANA',
+  'FTM','ALGO','EGLD','XLM','ICP','HBAR','VET','GRT','RUNE','AXS','DYDX'
+]);
 async function handleOKXInstruments(request, env) {
   const body = await request.json().catch(() => ({}));
   const demo = body.demoMode === true;
@@ -888,10 +898,11 @@ async function handleOKXInstruments(request, env) {
     if (demo) hdrs['x-simulated-trading'] = '1';
     const res  = await fetch(`${OKX_BASE}/api/v5/public/instruments?instType=SWAP`, { headers: hdrs });
     const data = await res.json();
-    const pairs = (data.data || [])
+    let pairs = (data.data || [])
       .filter(inst => inst.instId.endsWith('-USDT-SWAP') && inst.state === 'live')
       .map(inst => inst.instId)
       .sort();
+    if (demo) pairs = pairs.filter(p => DEMO_SYMBOLS.has(p.replace('-USDT-SWAP', '')));
     return json({ pairs: pairs.length ? pairs : ['BTC-USDT-SWAP', 'ETH-USDT-SWAP'] });
   } catch(e) {
     return json({ pairs: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP'] });
@@ -2477,6 +2488,7 @@ async function handleAdminListUsers(request, env) {
         const cfg = await env.USERS_KV.get('bot:config:' + email, { type: 'json' });
         const botState = await getBotState(env, email);
         const sub = u.subscription || {};
+        const acc = accessStatus(u);
         users.push({
           email,
           plan: sub.plan || 'free',
@@ -2484,6 +2496,9 @@ async function handleAdminListUsers(request, env) {
           createdAt: u.createdAt || null,
           botRunning: cfg?.running === true && botState.running !== 0,
           verified: u.verified || false,
+          referralVerified: !!(u.referral && u.referral.verified),
+          trialEndsAt: acc.trialEndsAt || null,
+          canLive: acc.canLive,
         });
       } catch(e) {}
     }
@@ -2501,7 +2516,7 @@ async function handleAdminSetPlan(request, env) {
 
     const { email, plan } = body;
     if (!email || !plan) return json({ ok: false, error: 'email and plan required' }, 400);
-    if (!['starter', 'pro', 'elite'].includes(plan)) return json({ ok: false, error: 'invalid plan' }, 400);
+    if (!['free', 'starter', 'pro', 'elite'].includes(plan)) return json({ ok: false, error: 'invalid plan' }, 400);
 
     const userKey = 'user:' + email;
     const u = await env.USERS_KV.get(userKey, { type: 'json' });
@@ -2511,6 +2526,25 @@ async function handleAdminSetPlan(request, env) {
     u.subscription = { plan, expiresAt, grantedBy: 'admin', grantedAt: Date.now() };
     await env.USERS_KV.put(userKey, JSON.stringify(u));
     return json({ ok: true });
+  } catch(e) {
+    return json({ ok: false, error: e.message }, 500);
+  }
+}
+
+// Admin: mark/unmark a user as referral-verified (under your OKX referral → free Elite)
+async function handleAdminSetReferral(request, env) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const session = await requireSession(body, env, request);
+    if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
+    const { email, verified } = body;
+    if (!email) return json({ ok: false, error: 'email required' }, 400);
+    const userKey = 'user:' + email;
+    const u = await env.USERS_KV.get(userKey, { type: 'json' });
+    if (!u) return json({ ok: false, error: 'user not found' }, 404);
+    u.referral = { ...(u.referral || {}), verified: !!verified, verifiedBy: 'admin', verifiedAt: Date.now() };
+    await env.USERS_KV.put(userKey, JSON.stringify(u));
+    return json({ ok: true, verified: !!verified });
   } catch(e) {
     return json({ ok: false, error: e.message }, 500);
   }

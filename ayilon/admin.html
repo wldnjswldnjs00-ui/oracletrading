@@ -79,22 +79,34 @@
   <div id="setPlanPanel" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;">
     <div style="font-size:15px;font-weight:600;margin-bottom:16px;">플랜 설정</div>
     <div id="setPlanTarget" style="font-size:13px;color:var(--gray-400);margin-bottom:16px;"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <div style="font-size:11px;color:var(--gray-400);margin-bottom:8px;">구독 플랜 (30일)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
       <button onclick="doSetPlan('starter')"
         style="padding:8px 18px;background:none;border:1px solid rgba(34,197,94,0.3);border-radius:6px;color:#22c55e;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
-        Starter (30일)
-      </button>
-      <button onclick="doSetPlan('pro')"
-        style="padding:8px 18px;background:none;border:1px solid rgba(59,130,246,0.3);border-radius:6px;color:#3b82f6;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
-        Pro (30일)
+        Starter $39 (30일)
       </button>
       <button onclick="doSetPlan('elite')"
         style="padding:8px 18px;background:none;border:1px solid rgba(168,85,247,0.3);border-radius:6px;color:#a855f7;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
-        Elite (30일)
+        Elite $99 (30일)
+      </button>
+      <button onclick="doSetPlan('free')"
+        style="padding:8px 18px;background:none;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--gray-400);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
+        Free (구독 해제)
+      </button>
+    </div>
+    <div style="font-size:11px;color:var(--gray-400);margin-bottom:8px;">리퍼럴 인증 — 인증 시 Elite(전 종목) 영구 무료</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="doSetReferral(true)"
+        style="padding:8px 18px;background:none;border:1px solid rgba(245,158,11,0.4);border-radius:6px;color:#fbbf24;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">
+        ★ 리퍼럴 인증 (무료 Elite)
+      </button>
+      <button onclick="doSetReferral(false)"
+        style="padding:8px 18px;background:none;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--gray-400);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
+        리퍼럴 해제
       </button>
       <button onclick="document.getElementById('setPlanPanel').style.display='none'; _planTarget=null;"
         style="padding:8px 18px;background:none;border:1px solid rgba(239,68,68,0.2);border-radius:6px;color:var(--red);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
-        취소
+        닫기
       </button>
     </div>
   </div>
@@ -171,25 +183,28 @@
       '<thead><tr style="border-bottom:1px solid var(--border);color:var(--gray-400);">' +
       '<th style="padding:10px 12px;text-align:left;font-weight:500;">이메일</th>' +
       '<th style="padding:10px 12px;text-align:left;font-weight:500;">플랜</th>' +
-      '<th style="padding:10px 12px;text-align:left;font-weight:500;">만료일</th>' +
+      '<th style="padding:10px 12px;text-align:left;font-weight:500;">리퍼럴</th>' +
+      '<th style="padding:10px 12px;text-align:left;font-weight:500;">라이브</th>' +
       '<th style="padding:10px 12px;text-align:left;font-weight:500;">봇</th>' +
       '<th style="padding:10px 12px;text-align:left;font-weight:500;">가입일</th>' +
       '<th style="padding:10px 12px;text-align:left;font-weight:500;">관리</th>' +
       '</tr></thead><tbody>' +
       users.map(function(u) {
         var plan = u.plan || '';
-        var planLabel = plan ? plan.toUpperCase() : '미구독';
+        var planLabel = plan && plan !== 'free' ? plan.toUpperCase() : '미구독';
         var planStyle = planColor[plan] ? 'color:' + planColor[plan] + ';font-weight:600;' : 'color:var(--gray-400);';
-        var expiry = u.planExpiresAt ? new Date(u.planExpiresAt).toLocaleDateString('ko-KR') : '—';
+        var refBadge = u.referralVerified ? '<span style="color:#fbbf24;font-weight:600;">★ 인증</span>' : '<span style="color:var(--gray-400);">—</span>';
+        var liveBadge = u.canLive ? '<span style="color:#22c55e;">가능</span>' : '<span style="color:var(--gray-400);">데모</span>';
         var botBadge = u.botRunning ? '<span style="color:#22c55e;">실행 중</span>' : '<span style="color:var(--gray-400);">—</span>';
         var joined = u.createdAt ? new Date(u.createdAt).toLocaleDateString('ko-KR') : '—';
         return '<tr style="border-bottom:1px solid var(--border);">' +
           '<td style="padding:12px;">' + u.email + '</td>' +
           '<td style="padding:12px;"><span style="' + planStyle + '">' + planLabel + '</span></td>' +
-          '<td style="padding:12px;color:var(--gray-400);">' + expiry + '</td>' +
+          '<td style="padding:12px;">' + refBadge + '</td>' +
+          '<td style="padding:12px;">' + liveBadge + '</td>' +
           '<td style="padding:12px;">' + botBadge + '</td>' +
           '<td style="padding:12px;color:var(--gray-400);">' + joined + '</td>' +
-          '<td style="padding:12px;"><button onclick="showSetPlan(\'' + u.email.replace(/'/g, "\\'") + '\')" style="padding:4px 10px;background:none;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--text);font-size:11px;cursor:pointer;">플랜 설정</button></td>' +
+          '<td style="padding:12px;"><button onclick="showSetPlan(\'' + u.email.replace(/'/g, "\\'") + '\')" style="padding:4px 10px;background:none;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--text);font-size:11px;cursor:pointer;">관리</button></td>' +
           '</tr>';
       }).join('') + '</tbody></table>';
   }
@@ -213,7 +228,29 @@
       if (data.ok) {
         document.getElementById('setPlanPanel').style.display = 'none';
         _planTarget = null;
-        alert('플랜 설정 완료: ' + plan.toUpperCase() + ' (30일)');
+        alert('플랜 설정 완료: ' + plan.toUpperCase() + (plan === 'free' ? '' : ' (30일)'));
+        await loadUsers();
+      } else {
+        alert('실패: ' + (data.error || '알 수 없는 오류'));
+      }
+    } catch(e) {
+      alert('실패: ' + e.message);
+    }
+  }
+
+  async function doSetReferral(verified) {
+    if (!_planTarget) return;
+    try {
+      var res = await fetch(WORKER_URL + '/admin/set-referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: getToken(), email: _planTarget, verified: verified })
+      });
+      var data = await res.json();
+      if (data.ok) {
+        document.getElementById('setPlanPanel').style.display = 'none';
+        _planTarget = null;
+        alert(verified ? '리퍼럴 인증 완료 — Elite(전 종목) 영구 무료' : '리퍼럴 해제 완료');
         await loadUsers();
       } else {
         alert('실패: ' + (data.error || '알 수 없는 오류'));
