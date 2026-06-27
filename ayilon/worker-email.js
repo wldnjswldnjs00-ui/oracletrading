@@ -873,12 +873,52 @@ async function handleSaveBotSettings(request, env) {
     const p = String(body.tradingPair).toUpperCase().trim();
     body.tradingPair = /^[A-Z0-9]{2,15}-USDT-SWAP$/.test(p) ? p : 'BTC-USDT-SWAP';
   }
+  if (Array.isArray(body.tradingPairs)) {
+    body.tradingPairs = [...new Set(body.tradingPairs
+      .map(p => String(p).toUpperCase().trim())
+      .filter(p => /^[A-Z0-9]{2,15}-USDT-SWAP$/.test(p)))].slice(0, 8);
+    if (body.tradingPairs.length === 0) delete body.tradingPairs;
+  }
   if (body.entrySizing && !['equal','weighted','martingale'].includes(body.entrySizing)) body.entrySizing = 'equal';
 
   const { sessionToken: _, ...configBody } = body;
   // Merge: existing config as base so no field is accidentally wiped
-  await env.USERS_KV.put('bot:config:' + session.email, JSON.stringify({ ...existing, ...configBody, clientToken, updatedAt: Date.now() }));
+  const mergedCfg = { ...existing, ...configBody, clientToken, updatedAt: Date.now() };
+  await env.USERS_KV.put('bot:config:' + session.email, JSON.stringify(mergedCfg));
+
+  // Capture OKX UID on API connect + attempt referral auto-verification (best-effort)
+  if (mergedCfg.apiKey && mergedCfg.apiSecret && (mergedCfg.apiPassphrase || mergedCfg.apiPass)) {
+    try { await captureUidAndVerifyReferral(env, session.email, mergedCfg); } catch(e) {}
+  }
   return json({ ok: true, clientToken });
+}
+
+// Reads the connected account's OKX UID and, if an affiliate API key is configured
+// (OKX_AFFILIATE_KEY/SECRET/PASS secrets), checks whether that UID is under your
+// referral and sets referral.verified automatically. No-ops gracefully otherwise.
+async function captureUidAndVerifyReferral(env, email, cfg) {
+  const pass = cfg.apiPassphrase || cfg.apiPass;
+  const cfgRes = await okxGet(cfg.apiKey, cfg.apiSecret, pass, '/api/v5/account/config', cfg.demoMode === true);
+  const uid = cfgRes?.data?.[0]?.uid;
+  if (!uid) return;
+  const userKey = 'user:' + email;
+  const u = await env.USERS_KV.get(userKey, { type: 'json' }); if (!u) return;
+  let changed = false;
+  if (u.okxUid !== String(uid)) { u.okxUid = String(uid); changed = true; }
+
+  // Affiliate auto-verify (only if affiliate creds are configured + not already verified)
+  if (env.OKX_AFFILIATE_KEY && env.OKX_AFFILIATE_SECRET && env.OKX_AFFILIATE_PASS && !(u.referral && u.referral.verified)) {
+    try {
+      const inv = await okxGet(env.OKX_AFFILIATE_KEY, env.OKX_AFFILIATE_SECRET, env.OKX_AFFILIATE_PASS,
+        `/api/v5/affiliate/invitee/detail?uid=${uid}`, false);
+      // If OKX returns invitee details (code 0 with data), the UID is under your referral.
+      if (inv?.code === '0' && Array.isArray(inv.data) && inv.data.length > 0) {
+        u.referral = { ...(u.referral || {}), verified: true, verifiedBy: 'okx_affiliate', verifiedAt: Date.now(), uid: String(uid) };
+        changed = true;
+      }
+    } catch(e) {}
+  }
+  if (changed) await env.USERS_KV.put(userKey, JSON.stringify(u));
 }
 
 // OKX demo (simulated trading) only supports a limited set of major perps, but
@@ -1348,8 +1388,19 @@ async function runBot(env) {
       // Register log buffer — botLog writes here instead of KV during this cron tick
       const logBuf = [];
       _logBufs.set(email, logBuf);
+      // Multi-coin: run the strategy on each configured coin, reusing the single-coin
+      // executor with a per-coin cfg clone. Capital is split across coins (posSize/N)
+      // so total notional ≈ posSize; each coin keeps its own position state. Capped to
+      // keep OKX calls/CPU bounded; per-coin symbolAllowed() still enforces the plan.
+      const rawPairs = Array.isArray(cfg.tradingPairs) && cfg.tradingPairs.length
+        ? cfg.tradingPairs : [cfg.tradingPair || 'BTC-USDT-SWAP'];
+      const pairs = [...new Set(rawPairs.filter(p => /-USDT-SWAP$/.test(p)))].slice(0, 8);
+      const perPairPos = pairs.length > 1 ? (parseFloat(cfg.posSize) || 40) / pairs.length : (parseFloat(cfg.posSize) || 40);
       for (const strat of strategiesToRun) {
-        await runBotForUser(env, email, cfg, strat).catch(() => {});
+        for (const pair of pairs) {
+          const pairCfg = pairs.length > 1 ? { ...cfg, tradingPair: pair, posSize: perPairPos } : cfg;
+          await runBotForUser(env, email, pairCfg, strat).catch(() => {});
+        }
       }
       _logBufs.delete(email);
       // Flush all logs in one D1 write per user per cron tick

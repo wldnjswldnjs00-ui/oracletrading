@@ -2210,31 +2210,50 @@
         _botSymCache[key] = pairs;
       } catch(e) { pairs = ['BTC-USDT-SWAP','ETH-USDT-SWAP']; }
     }
-    // plan gate: Starter → BTC/ETH only
+    // plan gate: Starter → BTC/ETH only; Elite/referral → all + MULTI-select
     _botSymUniverse = all ? pairs : pairs.filter(function(p){ return p === 'BTC-USDT-SWAP' || p === 'ETH-USDT-SWAP'; });
+    _botCanMulti = all;
+    // drop any selected pairs no longer allowed
+    _botSelectedPairs = _botSelectedPairs.filter(function(p){ return _botSymUniverse.indexOf(p) !== -1; });
+    if (!_botSelectedPairs.length) _botSelectedPairs = [_botSymUniverse[0] || 'BTC-USDT-SWAP'];
     var note = document.getElementById('botSymPlanNote');
     if (note) {
-      if (all) { note.style.display='none'; }
-      else { note.style.display='block'; note.innerHTML = _L('ℹ️ 현재 플랜은 <strong>BTC·ETH</strong>만 거래할 수 있습니다. 전 종목은 <strong>Elite</strong> 또는 <a href="#" onclick="showPage(\'subscription\',null);return false;" style="color:#60a5fa;text-decoration:underline;">리퍼럴 가입</a>에서.',
-        'ℹ️ Your plan trades <strong>BTC·ETH</strong> only. For all symbols, go <strong>Elite</strong> or <a href="#" onclick="showPage(\'subscription\',null);return false;" style="color:#60a5fa;text-decoration:underline;">sign up via referral</a>.'); }
+      if (all) { note.style.display='block'; note.innerHTML = _L('★ Elite — 여러 코인을 선택하면 <strong>분산 포트폴리오</strong>로 동시 운용됩니다 (최대 8개, 자본은 균등 분할). 분산할수록 낙폭이 줄어듭니다.',
+        '★ Elite — select multiple coins to run a <strong>diversified portfolio</strong> (up to 8, capital split evenly). More diversification = lower drawdown.'); }
+      else { note.style.display='block'; note.innerHTML = _L('ℹ️ 현재 플랜은 <strong>BTC·ETH</strong>만 거래할 수 있습니다. 전 종목 + 다중코인은 <strong>Elite</strong> 또는 <a href="#" onclick="showPage(\'subscription\',null);return false;" style="color:#60a5fa;text-decoration:underline;">리퍼럴 가입</a>에서.',
+        'ℹ️ Your plan trades <strong>BTC·ETH</strong> only. All symbols + multi-coin: <strong>Elite</strong> or <a href="#" onclick="showPage(\'subscription\',null);return false;" style="color:#60a5fa;text-decoration:underline;">sign up via referral</a>.'); }
     }
+    renderSelectedPairs();
     filterBotSymbols();
   }
   var _botSymUniverse = ['BTC-USDT-SWAP','ETH-USDT-SWAP'];
+  var _botSelectedPairs = ['BTC-USDT-SWAP'];
+  var _botCanMulti = false;
+  function renderSelectedPairs() {
+    var disp = document.getElementById('botSymSelected');
+    if (disp) disp.textContent = _botSelectedPairs.join(', ') + (_botSelectedPairs.length > 1 ? '  (' + _botSelectedPairs.length + _L('개', '') + ')' : '');
+    var hid = document.getElementById('botTradingPair'); if (hid) hid.value = _botSelectedPairs[0] || 'BTC-USDT-SWAP';
+  }
   function filterBotSymbols() {
     var listEl = document.getElementById('botSymList'); if (!listEl) return;
     var q = ((document.getElementById('botSymSearch')||{}).value || '').toUpperCase().trim();
-    var sel = (document.getElementById('botTradingPair')||{}).value;
     var filtered = _botSymUniverse.filter(function(p){ return !q || p.indexOf(q) !== -1; }).slice(0, 300);
-    if (!filtered.length) { listEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--gray-600);">일치하는 종목이 없습니다.</div>'; return; }
+    if (!filtered.length) { listEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--gray-600);">'+_L('일치하는 종목이 없습니다.','No matching symbols.')+'</div>'; return; }
     listEl.innerHTML = filtered.map(function(p){
-      return '<div class="sb-sym'+(p===sel?' on':'')+'" onclick="pickBotSymbol(\''+p+'\')">'+p+(p===sel?'  ✓':'')+'</div>';
+      var on = _botSelectedPairs.indexOf(p) !== -1;
+      return '<div class="sb-sym'+(on?' on':'')+'" onclick="pickBotSymbol(\''+p+'\')">'+p+(on?'  ✓':'')+'</div>';
     }).join('');
   }
   function pickBotSymbol(sym) {
-    var hid = document.getElementById('botTradingPair'); if (hid) hid.value = sym;
-    var disp = document.getElementById('botSymSelected'); if (disp) disp.textContent = sym;
-    onTradingPairChange(sym);
+    if (_botCanMulti) {
+      var i = _botSelectedPairs.indexOf(sym);
+      if (i !== -1) { if (_botSelectedPairs.length > 1) _botSelectedPairs.splice(i, 1); }  // keep ≥1
+      else if (_botSelectedPairs.length < 8) _botSelectedPairs.push(sym);
+    } else {
+      _botSelectedPairs = [sym];   // Starter: single select
+    }
+    renderSelectedPairs();
+    onTradingPairChange(_botSelectedPairs[0]);
     filterBotSymbols();
   }
 
@@ -2318,6 +2337,7 @@
           lossLimit: parseFloat((document.getElementById('botLossLimit')||{}).value||5),
           mddLimit:  parseFloat((document.getElementById('botMddLimit')||{}).value||30),
           lossLimitEnabled: true,
+          tradingPairs: (typeof _botSelectedPairs !== 'undefined' && _botSelectedPairs.length) ? _botSelectedPairs : undefined,
           tradingPair: pair,
           mode: mode,
           demoMode: mode === 'demo'
@@ -2454,6 +2474,7 @@
           lossLimit: parseFloat((document.getElementById('botLossLimit')||{}).value||5),
           mddLimit:  parseFloat((document.getElementById('botMddLimit')||{}).value||30),
           lossLimitEnabled: true,
+          tradingPairs: (typeof _botSelectedPairs !== 'undefined' && _botSelectedPairs.length) ? _botSelectedPairs : undefined,
           tradingPair: (document.getElementById('botTradingPair') || {}).value || 'BTC-USDT-SWAP',
           mode: mode,
           demoMode: mode === 'demo'
@@ -2544,6 +2565,11 @@
       if (levEl) { levEl.value = cfgLev; if (levValEl) levValEl.textContent = cfgLev + 'x'; updateLeverageDisplay(cfgLev); }
       if (posEl) { posEl.value = cfgPos; if (posValEl) posValEl.textContent = cfgPos + '%'; updatePosSizeDisplay(cfgPos); }
       if (riskEl) riskEl.value = cfgRisk;
+      // restore selected coins (multi-coin aware)
+      if (typeof _botSelectedPairs !== 'undefined') {
+        _botSelectedPairs = (Array.isArray(cfg.tradingPairs) && cfg.tradingPairs.length) ? cfg.tradingPairs.slice() : [cfgPair];
+        if (typeof renderSelectedPairs === 'function') renderSelectedPairs();
+      }
       if (pairEl) { pairEl.value = cfgPair; onTradingPairChange(cfgPair); }
       if (cfgMode === 'demo') { if (demoRad) demoRad.checked = true; if (liveRad) liveRad.checked = false; }
       else { if (liveRad) liveRad.checked = true; if (demoRad) demoRad.checked = false; }
