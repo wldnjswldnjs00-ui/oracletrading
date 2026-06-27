@@ -824,6 +824,19 @@ function accessStatus(user) {
   return { canLive, canDemo: canLive || trialActive, subActive, referralOk, trialActive, trialEndsAt, plan };
 }
 
+// Symbol entitlement by plan (REAL enforcement, not just UI copy):
+//   • $39 Starter  → BTC/ETH only
+//   • $99 Elite OR verified referral OR admin → all OKX -USDT-SWAP symbols
+const BASIC_SYMBOLS = ['BTC-USDT-SWAP', 'ETH-USDT-SWAP'];
+function canTradeAllSymbols(user) {
+  const acc = accessStatus(user);
+  if (acc.admin || acc.referralOk) return true;
+  return acc.plan === 'elite';
+}
+function symbolAllowed(user, instId) {
+  return canTradeAllSymbols(user) ? /-USDT-SWAP$/.test(instId) : BASIC_SYMBOLS.includes(instId);
+}
+
 async function handleSaveBotSettings(request, env) {
   const body = await request.json();
   if (!env.USERS_KV) return json({ ok: false });
@@ -1012,6 +1025,9 @@ async function handleBotControl(request, env) {
       return json({ ok: false, error: 'trial_expired', message: '데모 체험 기간이 끝났습니다. 리퍼럴 가입(라이브) 또는 구독 후 이용하세요.' }, 402);
     if (!isDemo && !acc.canLive)
       return json({ ok: false, error: 'subscription_required', message: '라이브 거래는 구독 또는 리퍼럴 인증이 필요합니다. 데모는 체험 가능합니다.' }, 402);
+    const pair = config.tradingPair || 'BTC-USDT-SWAP';
+    if (!symbolAllowed(accUser, pair))
+      return json({ ok: false, error: 'symbol_not_allowed', message: `${pair}는 Elite 플랜(또는 리퍼럴)에서만 거래할 수 있습니다. Starter는 BTC/ETH만 가능합니다.` }, 402);
   }
 
   if (action === 'start') {
@@ -1349,7 +1365,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
       notifyEmail = true, notifyTelegram = false,
       telegramToken, telegramChatId, userEmail } = cfg;
     if (!apiKey || !apiSecret || !apiPassphrase) return;
-    if (!['BTC-USDT-SWAP', 'ETH-USDT-SWAP'].includes(tradingPair)) return;
+    if (!/-USDT-SWAP$/.test(tradingPair)) return;
     const stateKey = tradingPair + ':' + strategy;
 
     // Always derive plan from actual subscription — never trust client-provided value
@@ -1358,7 +1374,7 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
 
     // ── HARD ACCESS GATE — the bulletproof enforcement point (orders happen below) ──
     // Even if a config is started by bypassing the dashboard, the cron will not
-    // place a single order without valid access for the configured mode.
+    // place a single order without valid access for the configured mode or symbol.
     {
       const acc = accessStatus(userRecord);
       const isDemo = demoMode === true;
@@ -1367,6 +1383,14 @@ async function runBotForUser(env, email, cfg, strategyOverride) {
         await env.USERS_KV.put('bot:config:' + email, JSON.stringify(cfg));
         await upsertBotState(env, email, { running: 0 });
         await botLog(env, email, `Bot stopped: ${isDemo ? 'demo trial ended' : 'live needs subscription or verified referral'} — access required`);
+        return;
+      }
+      // Plan-based symbol entitlement (Starter = BTC/ETH; Elite/referral = all)
+      if (!symbolAllowed(userRecord, tradingPair)) {
+        cfg.running = false;
+        await env.USERS_KV.put('bot:config:' + email, JSON.stringify(cfg));
+        await upsertBotState(env, email, { running: 0 });
+        await botLog(env, email, `Bot stopped: ${tradingPair} requires the Elite plan (or referral). Starter trades BTC/ETH only.`);
         return;
       }
     }
