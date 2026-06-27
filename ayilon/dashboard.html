@@ -748,25 +748,25 @@
               💡 포지션 크기를 작게 유지할수록 복리 효과로 장기 수익이 극대화됩니다. 권장: 5~15%
             </div>
           </div>
+          <!-- Risk per Trade + Max Drawdown kept as hidden inputs (worker still uses sane defaults; removed from UI per simplification) -->
+          <input type="hidden" id="botRisk" value="2" />
+          <input type="hidden" id="botMddLimit" value="30" />
           <div class="d-form-group">
-            <label class="d-form-label">Risk per Trade (%) <span style="font-weight:400;color:var(--gray-400);font-size:11px;">— 거래 1회당 위험 (일일 한도 아님)</span></label>
-            <input type="number" class="d-form-input" id="botRisk" value="2" min="0.1" max="10" step="0.1" />
-          </div>
-          <div class="d-form-group">
-            <label class="d-form-label">일일 손실 한도 (%) <span style="font-weight:400;color:var(--gray-400);font-size:11px;">— 하루 누적 손실이 이만큼이면 봇 정지</span></label>
+            <label class="d-form-label" data-i18n="db.bots.daily_loss">일일 손실 한도 (%)</label>
             <input type="number" class="d-form-input" id="botLossLimit" value="5" min="1" max="50" step="0.5" />
+            <div style="margin-top:5px;font-size:11px;color:var(--gray-400);" data-i18n="db.bots.daily_loss_hint">하루 누적 손실이 이만큼이면 봇을 그날 정지합니다.</div>
           </div>
           <div class="d-form-group">
-            <label class="d-form-label">최대 낙폭 한도 (%) <span style="font-weight:400;color:var(--gray-400);font-size:11px;">— 누적 낙폭이 이만큼이면 봇 정지</span></label>
-            <input type="number" class="d-form-input" id="botMddLimit" value="30" min="5" max="100" step="1" />
-          </div>
-          <div class="d-form-group">
-            <label class="d-form-label">Trading Pair <span style="font-weight:400;color:var(--gray-400);font-size:11px;">— 추세추종은 BTC/ETH 지원</span></label>
-            <select id="botTradingPair" class="d-form-input" onchange="onTradingPairChange(this.value)"
-              style="background:#111;color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;width:100%;box-sizing:border-box;">
-              <option value="BTC-USDT-SWAP">BTC-USDT-SWAP</option>
-              <option value="ETH-USDT-SWAP">ETH-USDT-SWAP</option>
-            </select>
+            <label class="d-form-label" data-i18n="db.bots.symbol">Trading Pair</label>
+            <input type="hidden" id="botTradingPair" value="BTC-USDT-SWAP" />
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="font-size:11px;color:var(--gray-400);" data-i18n="db.bots.selected">선택됨</span>
+              <span id="botSymSelected" style="font-size:13px;font-weight:600;color:#93c5fd;">BTC-USDT-SWAP</span>
+            </div>
+            <input type="text" class="d-form-input" id="botSymSearch" placeholder="🔍 BTC, SOL, DOGE..." autocomplete="off" oninput="filterBotSymbols()"
+              style="background:#111;color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;width:100%;box-sizing:border-box;" />
+            <div id="botSymList" class="sb-sym-list" style="max-height:180px;"></div>
+            <div id="botSymPlanNote" style="display:none;margin-top:6px;padding:8px 10px;background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);border-radius:6px;font-size:11px;color:#93c5fd;line-height:1.5;"></div>
             <div id="botPairLoading" style="display:none;"></div>
             <datalist id="pairDatalist"></datalist>
             <div id="botAltcoinWarn" style="display:none;"></div>
@@ -1355,7 +1355,7 @@
     if (name !== 'terminal')     stopTermPosRefresh();
     if (name === 'dashboard')    initDashboard();
     if (name === 'terminal')     initTerminal();
-    if (name === 'bots')         { renderStrategyList(); loadMyBots(); loadOKXPairs(false); if (window.sbRenderMyStrategies) sbRenderMyStrategies(); }
+    if (name === 'bots')         { renderStrategyList(); loadMyBots(); loadBotSymbols(); if (window.sbRenderMyStrategies) sbRenderMyStrategies(); }
     if (name === 'subscription') initSubscriptionPage();
     if (name === 'settings')     initSettingsPage();
     if (name === 'guide')        renderGuide();
@@ -2166,8 +2166,65 @@
   }
 
   function onModeChange() {
-    var mode = (document.querySelector('input[name=botMode]:checked') || {}).value;
-    loadOKXPairs(mode === 'demo');
+    loadBotSymbols();
+  }
+
+  // ── Plan-gated symbol picker (live/demo, full OKX list filtered by subscription) ──
+  var _botAccess = null, _botSymCache = {};
+  async function getBotAccess() {
+    if (_botAccess) return _botAccess;
+    try {
+      var r = await fetch(WORKER_URL + '/me', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionToken: getSessionToken() }) });
+      var d = await r.json();
+      _botAccess = d.access || { plan:'free' };
+    } catch(e) { _botAccess = { plan:'free' }; }
+    return _botAccess;
+  }
+  function canTradeAll(acc) { return !!(acc && (acc.admin || acc.referralOk || acc.plan === 'elite')); }
+
+  async function loadBotSymbols() {
+    var listEl = document.getElementById('botSymList'); if (!listEl) return;
+    var mode = (document.querySelector('input[name=botMode]:checked') || {}).value || 'live';
+    var demo = mode === 'demo';
+    listEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--gray-400);">종목 불러오는 중...</div>';
+    var acc = await getBotAccess();
+    var all = canTradeAll(acc);
+    var key = demo ? 'demo' : 'live';
+    var pairs;
+    if (_botSymCache[key]) pairs = _botSymCache[key];
+    else {
+      try {
+        var res = await fetch(WORKER_URL + '/okx-instruments', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ demoMode: demo }) });
+        var data = await res.json();
+        pairs = (data.pairs && data.pairs.length) ? data.pairs : ['BTC-USDT-SWAP','ETH-USDT-SWAP'];
+        _botSymCache[key] = pairs;
+      } catch(e) { pairs = ['BTC-USDT-SWAP','ETH-USDT-SWAP']; }
+    }
+    // plan gate: Starter → BTC/ETH only
+    _botSymUniverse = all ? pairs : pairs.filter(function(p){ return p === 'BTC-USDT-SWAP' || p === 'ETH-USDT-SWAP'; });
+    var note = document.getElementById('botSymPlanNote');
+    if (note) {
+      if (all) { note.style.display='none'; }
+      else { note.style.display='block'; note.innerHTML = 'ℹ️ 현재 플랜은 <strong>BTC·ETH</strong>만 거래할 수 있습니다. 전 종목은 <strong>Elite</strong> 또는 <a href="#" onclick="showPage(\'subscription\',null);return false;" style="color:#60a5fa;text-decoration:underline;">리퍼럴 가입</a>에서.'; }
+    }
+    filterBotSymbols();
+  }
+  var _botSymUniverse = ['BTC-USDT-SWAP','ETH-USDT-SWAP'];
+  function filterBotSymbols() {
+    var listEl = document.getElementById('botSymList'); if (!listEl) return;
+    var q = ((document.getElementById('botSymSearch')||{}).value || '').toUpperCase().trim();
+    var sel = (document.getElementById('botTradingPair')||{}).value;
+    var filtered = _botSymUniverse.filter(function(p){ return !q || p.indexOf(q) !== -1; }).slice(0, 300);
+    if (!filtered.length) { listEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--gray-600);">일치하는 종목이 없습니다.</div>'; return; }
+    listEl.innerHTML = filtered.map(function(p){
+      return '<div class="sb-sym'+(p===sel?' on':'')+'" onclick="pickBotSymbol(\''+p+'\')">'+p+(p===sel?'  ✓':'')+'</div>';
+    }).join('');
+  }
+  function pickBotSymbol(sym) {
+    var hid = document.getElementById('botTradingPair'); if (hid) hid.value = sym;
+    var disp = document.getElementById('botSymSelected'); if (disp) disp.textContent = sym;
+    onTradingPairChange(sym);
+    filterBotSymbols();
   }
 
   async function loadOKXPairs(demo) {
@@ -2312,6 +2369,7 @@
         document.getElementById('botGuideSteps').style.display = 'none';
         document.getElementById('botStratConfig').style.display = 'block';
         if (typeof updateLiqWarn === 'function') updateLiqWarn();
+        if (typeof loadBotSymbols === 'function') loadBotSymbols();
         var namesStr = selectedStrategies.map(function(sid) {
           var s = STRATEGIES.filter(function(x){ return x.id === sid; })[0];
           return s ? s.name : sid;
