@@ -684,12 +684,7 @@
           <span class="card-title" data-i18n="db.bots.select_strategy">전략 선택</span>
         </div>
         <div class="strategy-list" id="strategyList"></div>
-        <div style="margin-top:14px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;color:rgba(255,255,255,0.4);line-height:1.6;">
-          <span style="color:rgba(255,255,255,0.6);font-weight:600;">ⓘ 공통 손익 구조</span><br>
-          모든 전략의 <span style="color:#ef4444;">손절</span>은 OKX 알고 주문으로 자동 집행됩니다.<br>
-          <span style="color:#22c55e;">익절</span>은 목표가 도달 시 <strong style="color:rgba(255,255,255,0.6);">50% 먼저 청산</strong> → 나머지는 10% 단위 트레일링 스탑.<br>
-          ⓘ 버튼을 눌러 각 전략의 상세 설명을 확인하세요.
-        </div>
+        <div id="stratPnlNote" style="margin-top:14px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;color:rgba(255,255,255,0.45);line-height:1.6;"></div>
       </div>
 
       <!-- Config Panel -->
@@ -835,57 +830,52 @@
       <div id="currentPlanBadgeWrap"></div>
     </div>
 
+    <!-- Referral hero -->
+    <div class="card" style="margin-bottom:20px;border:1px solid rgba(245,158,11,0.35);background:linear-gradient(180deg,rgba(245,158,11,0.06),transparent);">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#fbbf24;margin-bottom:6px;">⭐ <span data-i18n="db.sub.ref.badge">BEST VALUE</span></div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;" data-i18n="db.sub.ref.title">리퍼럴로 가입 → Elite 영구 무료</div>
+          <div style="font-size:12px;color:var(--gray-400);margin-top:6px;line-height:1.6;max-width:560px;" data-i18n="db.sub.ref.desc">아래 링크로 OKX에 가입하면 Elite(전 종목)를 영구 무료로 사용합니다. 봇은 해당 리퍼럴 계정에서만 작동합니다. 이미 OKX 계정이 있다면 아래 유료 플랜을 이용하세요.</div>
+        </div>
+        <a href="https://www.okx.com/join/AYILON" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;white-space:nowrap;" data-i18n="db.sub.ref.cta">리퍼럴로 무료 시작 →</a>
+      </div>
+    </div>
+
     <!-- Plan Cards -->
-    <div class="plans-grid" id="plansGrid">
+    <div class="plans-grid" id="plansGrid" style="grid-template-columns:repeat(2,1fr);max-width:720px;">
 
       <!-- Starter -->
       <div class="plan-card" id="plan-card-starter">
         <div>
           <div class="plan-name">Starter</div>
-          <div style="font-size:11px;color:var(--gray-400);margin-top:4px;" data-i18n="db.sub.starter_desc">기본 자동 거래 시작</div>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:4px;" data-i18n="db.sub.starter_desc">BTC·ETH 자동 거래</div>
         </div>
-        <div class="plan-price">$100<span>/mo</span></div>
+        <div class="plan-price">$39<span>/mo</span></div>
         <div class="plan-features">
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.starter.f1">시그널 봇 2개</span></div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.starter.f2">OKX 연동</span></div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.starter.f3">기본 전략 (SR Bounce, RSI DCA)</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.starter.f1">추세추종 봇 1개</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.starter.f2">BTC · ETH 거래</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.starter.f3">OKX 연동 · 데모/라이브</span></div>
           <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.starter.f4">이메일 알림</span></div>
         </div>
         <button class="btn-secondary" style="width:100%;" id="btn-upgrade-starter" onclick="upgradePlan('starter')">Upgrade</button>
       </div>
 
-      <!-- Pro (highlighted) -->
-      <div class="plan-card highlighted" id="plan-card-pro">
-        <div>
-          <div class="plan-name">Pro</div>
-          <div style="font-size:11px;color:var(--gray-400);margin-top:4px;" data-i18n="db.sub.pro_desc">전문 트레이더를 위한 플랜</div>
-        </div>
-        <div class="plan-price">$500<span>/mo</span></div>
-        <div class="plan-features">
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.pro.f1">시그널 봇 5개</span></div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.pro.f2">Starter 모든 기능</span></div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.pro.f3">Pro 전략 (MA Crossover, BB Reversion, Breakout, MA Ribbon)</span></div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.pro.f4">텔레그램 알림</span></div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.pro.f5">우선 지원</span></div>
-        </div>
-        <button class="btn-primary" style="width:100%;" id="btn-upgrade-pro" onclick="upgradePlan('pro')">Upgrade</button>
-      </div>
-
       <!-- Elite -->
-      <div class="plan-card" id="plan-card-elite">
+      <div class="plan-card highlighted" id="plan-card-elite">
         <div>
           <div class="plan-name">Elite</div>
-          <div style="font-size:11px;color:var(--gray-400);margin-top:4px;" data-i18n="db.sub.elite_desc">무제한 봇과 모든 전략</div>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:4px;" data-i18n="db.sub.elite_desc">전 종목 + 모든 기능</div>
         </div>
-        <div class="plan-price">$1,000<span>/mo</span></div>
+        <div class="plan-price">$99<span>/mo</span></div>
         <div class="plan-features">
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f1">무제한 봇</span></div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f2">Pro 모든 기능</span></div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f3">Elite 전략 (MACD Divergence, Funding Rate, ATR Trend)</span></div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span>API Analytics</div>
-          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f4">전담 지원</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f1">전 OKX 종목 거래</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f2">Starter 모든 기능</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f3">텔레그램 알림</span></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span><span data-i18n="db.sub.elite.f4">우선 지원</span></div>
+          <div class="plan-feature" style="color:#fbbf24;"><span class="plan-feature-check" style="color:#fbbf24;">★</span><span data-i18n="db.sub.elite.f5">리퍼럴 가입 시 무료</span></div>
         </div>
-        <button class="btn-secondary" style="width:100%;" id="btn-upgrade-elite" onclick="upgradePlan('elite')">Upgrade</button>
+        <button class="btn-primary" style="width:100%;" id="btn-upgrade-elite" onclick="upgradePlan('elite')">Upgrade</button>
       </div>
     </div>
 
@@ -1253,6 +1243,17 @@
 <script>
   var ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
   var WORKER_URL = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
+  // Bilingual helper for JS-injected strings (data-i18n covers static HTML; this covers dynamic text)
+  function _L(ko, en) { return (localStorage.getItem('ayilon_lang') || 'en') === 'ko' ? ko : en; }
+  // Re-render JS-injected dynamic strings when the language is switched
+  window.__onLangChange = function() {
+    try {
+      if (typeof renderStrategyList === 'function' && document.getElementById('strategyList')) renderStrategyList();
+      var lev = document.getElementById('botLeverage'); if (lev && typeof updateLeverageDisplay === 'function') updateLeverageDisplay(lev.value);
+      var pos = document.getElementById('botPosSize'); if (pos && typeof updatePosSizeDisplay === 'function') updatePosSizeDisplay(pos.value);
+      if (typeof loadBotSymbols === 'function' && document.getElementById('botSymList')) loadBotSymbols();
+    } catch(e) {}
+  };
 
   /* ── Helpers ── */
   function getSessionToken() { return localStorage.getItem('ayilon_session_token') || ''; }
@@ -1969,8 +1970,10 @@
   var _algoOrdersCacheRenderedTs = 0;
 
   var STRATEGIES = [
-    { id: 'trend-follow', name: '추세추종 (방어형)', tier: 'STARTER', type: 'SWING',
-      desc: '일봉 돈치안 돌파 + 200EMA 추세 필터. 폭락 방어형 — 수익 보장 아님, 낙폭을 줄이는 리스크관리 전략.' }
+    { id: 'trend-follow', tier: 'STARTER', type: 'SWING',
+      get name() { return _L('추세추종 (방어형)', 'Trend-Following (Defensive)'); },
+      get desc() { return _L('일봉 돈치안 돌파 + 200EMA 추세 필터. 폭락 방어형 — 수익 보장 아님, 낙폭을 줄이는 리스크관리 전략.',
+        'Daily Donchian breakout + 200-EMA trend filter. Crash-defensive — not a profit guarantee; a risk-management strategy that reduces drawdown.'); } }
   ];
 
   function getUserPlanLevel() {
@@ -2114,13 +2117,13 @@
       return;
     }
     if (v <= 5) {
-      infoEl.textContent = '✅ 안전 — 중장기 추세 전략(HA+EMA, ATR Trend 등)에 권장';
+      infoEl.textContent = _L('✅ 안전 — 중장기 추세 전략에 권장', '✅ Safe — recommended for medium/long-term trend strategies');
       infoEl.style.color = '#22c55e'; infoEl.style.background = 'rgba(34,197,94,0.06)'; infoEl.style.borderColor = 'rgba(34,197,94,0.15)';
     } else if (v <= 10) {
-      infoEl.textContent = '⚡ 보통 — 스캘핑·단타 전략(MA Cross, NY Open 등)에 적합';
+      infoEl.textContent = _L('⚡ 보통 — 단기 전략에 적합', '⚡ Moderate — suited to shorter-term strategies');
       infoEl.style.color = '#f59e0b'; infoEl.style.background = 'rgba(245,158,11,0.06)'; infoEl.style.borderColor = 'rgba(245,158,11,0.15)';
     } else {
-      infoEl.textContent = '⚠️ 고위험 — 충분한 경험 후 사용 권장. 손실 시 청산 속도가 빠릅니다';
+      infoEl.textContent = _L('⚠️ 고위험 — 충분한 경험 후 사용 권장. 손실 시 청산이 빠릅니다', '⚠️ High risk — use only with experience; fast liquidation on losses');
       infoEl.style.color = '#ef4444'; infoEl.style.background = 'rgba(239,68,68,0.06)'; infoEl.style.borderColor = 'rgba(239,68,68,0.15)';
     }
     updateLiqWarn();
@@ -2129,7 +2132,10 @@
   function updatePosSizeDisplay(val) {
     document.getElementById('botPosSizeVal').textContent = val + '%';
     var warnEl = document.getElementById('botPosSizeWarn');
-    if (warnEl) warnEl.style.display = parseInt(val) >= 35 ? 'block' : 'none';
+    if (warnEl) {
+      warnEl.style.display = parseInt(val) >= 35 ? 'block' : 'none';
+      warnEl.textContent = _L('⚠️ 40% 이상 진입은 연속 손실 시 수학적으로 회복이 어렵습니다', '⚠️ Entries above 40% are mathematically hard to recover from after a losing streak');
+    }
     updateLiqWarn();
   }
 
@@ -2147,7 +2153,8 @@
     el.style.color = sev;
     el.style.background = sev === '#ef4444' ? 'rgba(239,68,68,0.10)' : sev === '#f59e0b' ? 'rgba(245,158,11,0.08)' : 'rgba(34,197,94,0.06)';
     el.style.border = '1px solid ' + sev + '55';
-    el.innerHTML = '명목 노출 <strong>' + notional.toFixed(1) + '배</strong> — 가격이 약 <strong>' + liqMove.toFixed(1) + '% 역행 시 청산</strong> 위험' + (danger ? ' · ⚠️ 매우 공격적' : '');
+    el.innerHTML = _L('명목 노출 <strong>' + notional.toFixed(1) + '배</strong> — 가격이 약 <strong>' + liqMove.toFixed(1) + '% 역행 시 청산</strong> 위험' + (danger ? ' · ⚠️ 매우 공격적' : ''),
+      'Notional exposure <strong>' + notional.toFixed(1) + 'x</strong> — liquidation risk at about <strong>' + liqMove.toFixed(1) + '% adverse move</strong>' + (danger ? ' · ⚠️ very aggressive' : ''));
     var cw = document.getElementById('botConsentWrap');
     if (cw) {
       cw.style.display = danger ? 'block' : 'none';
@@ -2205,7 +2212,8 @@
     var note = document.getElementById('botSymPlanNote');
     if (note) {
       if (all) { note.style.display='none'; }
-      else { note.style.display='block'; note.innerHTML = 'ℹ️ 현재 플랜은 <strong>BTC·ETH</strong>만 거래할 수 있습니다. 전 종목은 <strong>Elite</strong> 또는 <a href="#" onclick="showPage(\'subscription\',null);return false;" style="color:#60a5fa;text-decoration:underline;">리퍼럴 가입</a>에서.'; }
+      else { note.style.display='block'; note.innerHTML = _L('ℹ️ 현재 플랜은 <strong>BTC·ETH</strong>만 거래할 수 있습니다. 전 종목은 <strong>Elite</strong> 또는 <a href="#" onclick="showPage(\'subscription\',null);return false;" style="color:#60a5fa;text-decoration:underline;">리퍼럴 가입</a>에서.',
+        'ℹ️ Your plan trades <strong>BTC·ETH</strong> only. For all symbols, go <strong>Elite</strong> or <a href="#" onclick="showPage(\'subscription\',null);return false;" style="color:#60a5fa;text-decoration:underline;">sign up via referral</a>.'); }
     }
     filterBotSymbols();
   }
@@ -2352,6 +2360,10 @@
         '</div>';
     });
     document.getElementById('strategyList').innerHTML = html;
+    var pnlNote = document.getElementById('stratPnlNote');
+    if (pnlNote) pnlNote.innerHTML = _L(
+      '<span style="color:rgba(255,255,255,0.6);font-weight:600;">ⓘ 손익 구조</span><br><span style="color:#ef4444;">손절</span>은 OKX 알고 주문으로 자동 집행됩니다.<br><span style="color:#22c55e;">청산</span>은 고정 익절 없이 <strong style="color:rgba(255,255,255,0.6);">ATR 트레일링 스탑</strong>으로 추세가 꺾일 때까지 보유합니다.<br>ⓘ 버튼으로 전략 상세를 확인하세요.',
+      '<span style="color:rgba(255,255,255,0.6);font-weight:600;">ⓘ Exit structure</span><br><span style="color:#ef4444;">Stop-loss</span> is placed automatically as an OKX algo order.<br><span style="color:#22c55e;">Exit</span> has no fixed take-profit — it rides an <strong style="color:rgba(255,255,255,0.6);">ATR trailing stop</strong> until the trend turns.<br>Click ⓘ for strategy details.');
   }
 
   function toggleStrategy(id) {
