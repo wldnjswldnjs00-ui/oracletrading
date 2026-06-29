@@ -59,6 +59,7 @@ export default {
       if (path === '/arena/season')      return handleArenaSeason(request, env);
       if (path === '/arena/winners')     return handleArenaWinners(request, env);
       if (path === '/admin/arena-config') return handleAdminArenaConfig(request, env);
+      if (path === '/admin/affiliate-test') return handleAdminAffiliateTest(request, env);
     }
 
     if (request.method === 'GET') {
@@ -1094,6 +1095,23 @@ async function arenaDeclareWinners(env, now) {
   if (changed) await env.USERS_KV.put('arena:declared', JSON.stringify(declared));
 }
 
+// Admin diagnostic: confirm the OKX affiliate API creds work + see the raw shape
+// (so we can fix the endpoint/path if OKX's response differs). Pass {uid} to test
+// a specific invitee, or omit to list invitees.
+async function handleAdminAffiliateTest(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
+  const hasCreds = !!(env.OKX_AFFILIATE_KEY && env.OKX_AFFILIATE_SECRET && env.OKX_AFFILIATE_PASS);
+  if (!hasCreds) return json({ ok: false, error: 'no_affiliate_creds', hint: 'Set OKX_AFFILIATE_KEY / OKX_AFFILIATE_SECRET / OKX_AFFILIATE_PASS as Cloudflare worker secrets.' });
+  const uid = String(body.uid || '').trim();
+  try {
+    const path = uid ? `/api/v5/affiliate/invitee/detail?uid=${uid}` : '/api/v5/affiliate/invitee/detail';
+    const r = await okxGet(env.OKX_AFFILIATE_KEY, env.OKX_AFFILIATE_SECRET, env.OKX_AFFILIATE_PASS, path, false);
+    return json({ ok: true, hasCreds: true, raw: r });
+  } catch (e) { return json({ ok: false, hasCreds: true, error: String(e.message).slice(0, 200) }); }
+}
+
 // Public: Hall of Fame (recent frozen winners) + champion (rank-1) counts.
 async function handleArenaWinners(request, env) {
   await initDB(env);
@@ -1124,6 +1142,20 @@ async function arenaScore(env) {
         await env.BOT_DB.prepare('UPDATE arena_participants SET err=? WHERE email=?')
           .bind('no_equity_or_key_invalid', p.email).run().catch(() => {});
         continue;
+      }
+      // Self-healing referral verification: once affiliate creds exist, verify any
+      // not-yet-verified participant against your OKX invitee list → prize-eligible.
+      if (p.referral_verified !== 1 && p.email.toLowerCase() !== ADMIN_EMAIL_CONST &&
+          env.OKX_AFFILIATE_KEY && env.OKX_AFFILIATE_SECRET && env.OKX_AFFILIATE_PASS && p.okx_uid) {
+        try {
+          const inv = await okxGet(env.OKX_AFFILIATE_KEY, env.OKX_AFFILIATE_SECRET, env.OKX_AFFILIATE_PASS,
+            `/api/v5/affiliate/invitee/detail?uid=${p.okx_uid}`, false);
+          if (inv?.code === '0' && Array.isArray(inv.data) && inv.data.length > 0) {
+            await env.BOT_DB.prepare('UPDATE arena_participants SET referral_verified=1 WHERE email=?').bind(p.email).run();
+            const u = await env.USERS_KV.get('user:' + p.email, { type: 'json' });
+            if (u) { u.referral = { ...(u.referral || {}), verified: true, verifiedBy: 'okx_affiliate', verifiedAt: Date.now(), uid: String(p.okx_uid) }; await env.USERS_KV.put('user:' + p.email, JSON.stringify(u)); }
+          }
+        } catch (_) {}
       }
       const nowTs = Date.now();
       const since = parseInt(p.last_flow_ts || 0);
