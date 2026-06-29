@@ -55,11 +55,14 @@ export default {
       if (path === '/arena/leave')       return handleArenaLeave(request, env);
       if (path === '/arena/me')          return handleArenaMe(request, env);
       if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
+      if (path === '/arena/season')      return handleArenaSeason(request, env);
+      if (path === '/admin/arena-config') return handleAdminArenaConfig(request, env);
     }
 
     if (request.method === 'GET') {
       if (path === '/bot-status') return handleBotStatus(request, env);
       if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
+      if (path === '/arena/season')      return handleArenaSeason(request, env);
     }
 
     return corsResponse(JSON.stringify({ error: 'Not found' }), 404);
@@ -1203,6 +1206,88 @@ async function handleArenaMe(request, env) {
     ok: true, joined: true, demo: p.demo === 1, referralVerified: p.referral_verified === 1,
     nickname: p.nickname, equity: p.last_equity, lastUpdate: p.last_update, err: p.err || null, scores: out
   });
+}
+
+// ── Prize pool config (admin-settable; affiliate-auto when creds present) ──
+const ARENA_DEFAULT_CONFIG = {
+  poolPct: 40,              // % of season referral commission that funds the pool
+  autoAffiliate: false,     // when true + affiliate creds → pool auto-computed
+  manualPool: { weekly: 0, monthly: 0 },      // admin-entered pool ($) until affiliate auto
+  cap:   { weekly: [1000, 500, 100], monthly: [1000, 500, 100, 0, 0] }, // max $ per rank
+  split: { weekly: [50, 30, 20], monthly: [40, 25, 15, 12, 8] },        // % of pool per rank
+  // weekly runs the return board only; monthly runs all three.
+  boards: { weekly: ['return'], monthly: ['return', 'profit', 'volume'] },
+  minBalance: 100,          // $ floor to be prize-eligible
+  minTrades: 3
+};
+async function getArenaConfig(env) {
+  try {
+    const c = await env.USERS_KV.get('arena:config', { type: 'json' });
+    if (c) return { ...ARENA_DEFAULT_CONFIG, ...c,
+      manualPool: { ...ARENA_DEFAULT_CONFIG.manualPool, ...(c.manualPool || {}) },
+      cap: { ...ARENA_DEFAULT_CONFIG.cap, ...(c.cap || {}) },
+      split: { ...ARENA_DEFAULT_CONFIG.split, ...(c.split || {}) } };
+  } catch (_) {}
+  return ARENA_DEFAULT_CONFIG;
+}
+function arenaSeasonEnds(now) {
+  // weekly: next Monday 00:00 UTC; monthly: 1st of next month 00:00 UTC
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const daysToMon = ((8 - d.getUTCDay()) % 7) || 7;   // 1..7 days ahead
+  const weekly = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysToMon);
+  const monthly = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
+  return { weekly, monthly };
+}
+// Each rank's prize = min(pool * split%/100, cap), so the cap is the advertised ceiling
+// while the live amount only grows with the actual pool — never overpays.
+function arenaPrizeBreakdown(pool, board, cfg) {
+  const split = cfg.split[board] || [], cap = cfg.cap[board] || [];
+  return split.map((pct, i) => {
+    const raw = pool * pct / 100;
+    const capped = cap[i] > 0 ? Math.min(raw, cap[i]) : raw;
+    return { rank: i + 1, pct, amount: Math.round(capped), cap: cap[i] || null };
+  });
+}
+
+// Public: current season pool, prize breakdown, countdown, eligibility rules.
+async function handleArenaSeason(request, env) {
+  const cfg = await getArenaConfig(env);
+  const now = new Date();
+  const ends = arenaSeasonEnds(now);
+  // Pool source: affiliate-auto (best effort) else admin manual.
+  const out = {};
+  for (const board of ['weekly', 'monthly']) {
+    let pool = parseFloat(cfg.manualPool[board] || 0);
+    // (affiliate-auto hook would overwrite `pool` here when creds + autoAffiliate)
+    out[board] = {
+      seasonId: board === 'monthly' ? arenaMonthId(now) : arenaWeekId(now),
+      endsAt: ends[board],
+      pool: Math.round(pool),
+      capTotal: (cfg.cap[board] || []).reduce((s, v) => s + (v || 0), 0),
+      prizes: arenaPrizeBreakdown(pool, board, cfg),
+      boards: cfg.boards[board] || []
+    };
+  }
+  return json({ ok: true, poolPct: cfg.poolPct, minBalance: cfg.minBalance, minTrades: cfg.minTrades, season: out });
+}
+
+// Admin: set manual pool / caps / splits.
+async function handleAdminArenaConfig(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
+  if (body.read) return json({ ok: true, config: await getArenaConfig(env) });
+  const cur = await getArenaConfig(env);
+  const next = { ...cur };
+  if (body.manualPool) next.manualPool = { ...cur.manualPool, ...body.manualPool };
+  if (body.cap)        next.cap        = { ...cur.cap, ...body.cap };
+  if (body.split)      next.split      = { ...cur.split, ...body.split };
+  if (body.poolPct != null)       next.poolPct = parseFloat(body.poolPct);
+  if (body.autoAffiliate != null) next.autoAffiliate = !!body.autoAffiliate;
+  if (body.minBalance != null)    next.minBalance = parseFloat(body.minBalance);
+  if (body.minTrades != null)     next.minTrades = parseInt(body.minTrades);
+  await env.USERS_KV.put('arena:config', JSON.stringify(next));
+  return json({ ok: true, config: next });
 }
 
 async function handleBotStatus(request, env) {

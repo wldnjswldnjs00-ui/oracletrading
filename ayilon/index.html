@@ -110,6 +110,20 @@
   .mine .m-l{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
   .mine .m-stat{font-size:13px;color:var(--mut)}
   .mine .m-stat b{display:block;color:var(--txt);font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+  /* prize pool */
+  .prize{background:linear-gradient(135deg,rgba(255,210,90,.1),rgba(10,224,160,.06));border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:18px}
+  .prize-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .prize-lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+  .prize-amt{font-size:clamp(30px,6vw,46px);font-weight:900;letter-spacing:-1px;background:linear-gradient(90deg,var(--gold),#ffb347);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.1;margin-top:2px}
+  .prize-cap{font-size:12.5px;color:var(--mut);margin-top:2px}
+  .cd{text-align:right}
+  .cd-time{font-size:clamp(20px,4vw,28px);font-weight:800;font-variant-numeric:tabular-nums;margin-top:4px}
+  .prize-breakdown{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .pz-rank{flex:1;min-width:88px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;text-align:center}
+  .pz-rank .r{font-size:12px;color:var(--mut);font-weight:600}
+  .pz-rank .a{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+  .pz-rank.r1 .a{color:var(--gold)} .pz-rank.r2 .a{color:var(--silver)} .pz-rank.r3 .a{color:var(--bronze)}
+  .prize-note{font-size:12px;color:var(--mut);margin-top:14px;line-height:1.5}
   footer{border-top:1px solid var(--line);padding:34px 0;color:var(--mut);font-size:13px;text-align:center}
   footer a{color:var(--mut);margin:0 8px}
   .disc{max-width:760px;margin:20px auto 0;font-size:11.5px;color:#5b626d;line-height:1.6;text-align:center}
@@ -157,6 +171,23 @@
     <div class="sec-h">
       <h2 data-i18n="lb.title">라이브 리더보드</h2>
       <p data-i18n="lb.sub">전체 참가자 실시간 순위 — 닉네임으로 본인을 검색하세요.</p>
+    </div>
+
+    <!-- PRIZE POOL -->
+    <div class="prize" id="prizeBox">
+      <div class="prize-top">
+        <div>
+          <div class="prize-lbl" id="prizeLbl" data-i18n="pz.pool">이번 시즌 상금 풀</div>
+          <div class="prize-amt" id="prizeAmt">$0</div>
+          <div class="prize-cap" id="prizeCap"></div>
+        </div>
+        <div class="cd">
+          <div class="prize-lbl" data-i18n="pz.ends">시즌 종료까지</div>
+          <div class="cd-time" id="cdTime">—</div>
+        </div>
+      </div>
+      <div class="prize-breakdown" id="prizeBreak"></div>
+      <div class="prize-note" id="prizeNote" data-i18n="pz.note">상금 풀은 리그 거래보상에서 적립되며, 리그가 커질수록 함께 커집니다. 상금은 AYILON 추천 가입자만 대상입니다.</div>
     </div>
 
     <div class="mine" id="mineBar">
@@ -292,6 +323,9 @@ const I18N = {
     'hero.p1':'✅ 참가비 무료','hero.p2':'🔒 읽기전용 연결 (자금 안전)','hero.p3':'⚡ 매일 자동 집계',
     'lb.title':'라이브 리더보드','lb.sub':'전체 참가자 실시간 순위 — 닉네임으로 본인을 검색하세요.',
     'lb.weekly':'주간','lb.monthly':'월간','lb.m.return':'수익률','lb.m.profit':'수익금','lb.m.volume':'거래량',
+    'pz.pool':'이번 주 상금 풀','pz.pool.m':'이번 달 상금 풀','pz.ends':'시즌 종료까지','pz.cap':'최대 $',
+    'pz.note':'상금 풀은 리그 거래보상에서 적립되며, 리그가 커질수록 함께 커집니다. 상금은 AYILON 추천 가입자만 대상입니다.',
+    'pz.r':'등','pz.live':'적립 중','pz.d':'일','pz.h':'시간',
     'lb.search':'닉네임 검색…','lb.h.rank':'순위','lb.h.trader':'트레이더','lb.h.eq':'평가금',
     'mine.rank':'내 순위','mine.ret':'수익률','mine.profit':'수익금','mine.eq':'평가금','mine.manage':'연결 관리',
     'how.title':'참가 방법','how.sub':'3분이면 끝. 코딩·입금 강요 없음.',
@@ -320,6 +354,9 @@ const I18N = {
     'hero.p1':'✅ Free entry','hero.p2':'🔒 Read-only (funds stay yours)','hero.p3':'⚡ Auto-scored daily',
     'lb.title':'Live Leaderboard','lb.sub':'All participants, ranked live — search your nickname.',
     'lb.weekly':'Weekly','lb.monthly':'Monthly','lb.m.return':'Return','lb.m.profit':'Profit','lb.m.volume':'Volume',
+    'pz.pool':'This week\'s prize pool','pz.pool.m':'This month\'s prize pool','pz.ends':'Season ends in','pz.cap':'up to $',
+    'pz.note':'The prize pool is funded by the league\'s trading rewards and grows as the league grows. Prizes are for AYILON-referred accounts only.',
+    'pz.r':'','pz.live':'accruing','pz.d':'d','pz.h':'h',
     'lb.search':'Search nickname…','lb.h.rank':'Rank','lb.h.trader':'Trader','lb.h.eq':'Equity',
     'mine.rank':'My rank','mine.ret':'Return','mine.profit':'Profit','mine.eq':'Equity','mine.manage':'Manage',
     'how.title':'How to join','how.sub':'Done in 3 minutes. No coding, no forced deposit.',
@@ -350,7 +387,7 @@ function applyLang(){
   document.getElementById('langBtn').textContent = LANG==='ko'?'EN':'한국어';
   syncMetricHeader();
 }
-document.getElementById('langBtn').onclick=()=>{ LANG=LANG==='ko'?'en':'ko'; localStorage.setItem('ayilon_lang',LANG); applyLang(); renderLB(); };
+document.getElementById('langBtn').onclick=()=>{ LANG=LANG==='ko'?'en':'ko'; localStorage.setItem('ayilon_lang',LANG); applyLang(); renderLB(); renderPrize(); };
 
 /* ---------- leaderboard ---------- */
 let state = { period:'weekly', metric:'return', q:'', rows:[], total:0 };
@@ -401,7 +438,38 @@ function renderLB(){
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-document.getElementById('periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;document.querySelectorAll('#periodSeg button').forEach(x=>x.classList.toggle('on',x===b));fetchLB();});
+/* ---------- prize pool + countdown ---------- */
+let season = null;
+async function fetchSeason(){
+  try{ const r=await fetch(`${API}/arena/season`); season=(await r.json()).season; }catch(e){ season=null; }
+  renderPrize();
+}
+function renderPrize(){
+  const d=I18N[LANG]; const box=document.getElementById('prizeBox');
+  if(!season||!season[state.period]){ box.style.display='none'; return; }
+  box.style.display='block';
+  const s=season[state.period];
+  document.getElementById('prizeLbl').textContent = state.period==='monthly'?d['pz.pool.m']:d['pz.pool'];
+  document.getElementById('prizeAmt').textContent = s.pool>0 ? ('$'+s.pool.toLocaleString()) : (LANG==='ko'?'적립 중':'Accruing');
+  document.getElementById('prizeCap').textContent = s.capTotal>0 ? ((LANG==='ko'?'최대 ':'up to ')+'$'+s.capTotal.toLocaleString()) : '';
+  document.getElementById('prizeBreak').innerHTML = (s.prizes||[]).map(p=>{
+    const amt = p.amount>0 ? '$'+p.amount.toLocaleString() : (p.cap?('$'+p.cap.toLocaleString()):'—');
+    const sub = p.amount>0 ? '' : (p.cap?`<div style="font-size:10px;color:var(--mut)">${LANG==='ko'?'최대':'max'}</div>`:'');
+    return `<div class="pz-rank r${p.rank}"><div class="r">${p.rank}${LANG==='ko'?'등':''}</div><div class="a">${amt}</div>${sub}</div>`;
+  }).join('');
+  tickCountdown();
+}
+function tickCountdown(){
+  if(!season||!season[state.period]){return;}
+  const end=season[state.period].endsAt; const now=Date.now();
+  let s=Math.max(0,Math.floor((end-now)/1000));
+  const dd=Math.floor(s/86400); s-=dd*86400; const hh=Math.floor(s/3600); s-=hh*3600; const mm=Math.floor(s/60); const ss=s-mm*60;
+  const pad=n=>String(n).padStart(2,'0');
+  document.getElementById('cdTime').textContent = dd>0?`${dd}${LANG==='ko'?'일':'d'} ${pad(hh)}:${pad(mm)}:${pad(ss)}`:`${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+}
+setInterval(tickCountdown,1000);
+
+document.getElementById('periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;document.querySelectorAll('#periodSeg button').forEach(x=>x.classList.toggle('on',x===b));renderPrize();fetchLB();});
 document.getElementById('metricSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.metric=b.dataset.metric;document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x===b));syncMetricHeader();fetchLB();});
 let qTimer; document.getElementById('lbSearch').addEventListener('input',e=>{clearTimeout(qTimer);qTimer=setTimeout(()=>{state.q=e.target.value.trim();renderLB();},150);});
 
@@ -479,8 +547,9 @@ if(authed()){
 }
 
 applyLang();
+fetchSeason();
 fetchLB().then(loadMine);
-setInterval(fetchLB, 60000);
+setInterval(()=>{fetchLB();fetchSeason();}, 60000);
 </script>
 </body>
 </html>
