@@ -986,23 +986,20 @@ function arenaMonthId(d) {
 // Net external cash flow into the trading account since `since` (ms), so it can be
 // removed from PnL — otherwise a deposit would look like a win. Best-effort: any
 // endpoint that errors just contributes 0 (return % still computed from equity).
-async function arenaFetchFlows(p, demo, since) {
-  let deposits = 0, withdrawals = 0;
+// Latest deposit/withdrawal timestamp on the account. We compare this against the
+// last value we saw to detect a NEW cash flow (robust — no accumulation that can
+// double-count and inflate returns).
+async function arenaLatestFlowTs(p, demo) {
+  let maxTs = 0;
   try {
-    const dep = await okxGet(p.api_key, p.api_secret, p.api_pass,
-      `/api/v5/asset/deposit-history${since ? `?before=${since}` : ''}`, demo);
-    for (const r of (dep?.data || [])) {
-      if (String(r.state) === '2' && parseInt(r.ts) > since) deposits += parseFloat(r.amt || '0');
-    }
+    const dep = await okxGet(p.api_key, p.api_secret, p.api_pass, '/api/v5/asset/deposit-history', demo);
+    for (const r of (dep?.data || [])) { if (String(r.state) === '2') maxTs = Math.max(maxTs, parseInt(r.ts) || 0); }
   } catch (_) {}
   try {
-    const wd = await okxGet(p.api_key, p.api_secret, p.api_pass,
-      `/api/v5/asset/withdrawal-history${since ? `?before=${since}` : ''}`, demo);
-    for (const r of (wd?.data || [])) {
-      if (parseInt(r.ts) > since) withdrawals += parseFloat(r.amt || '0');
-    }
+    const wd = await okxGet(p.api_key, p.api_secret, p.api_pass, '/api/v5/asset/withdrawal-history', demo);
+    for (const r of (wd?.data || [])) { maxTs = Math.max(maxTs, parseInt(r.ts) || 0); }
   } catch (_) {}
-  return { deposits, withdrawals };
+  return maxTs;
 }
 
 // Cumulative referred-account volume from the OKX affiliate API (authoritative).
@@ -1137,8 +1134,13 @@ async function arenaScore(env) {
         } catch (_) {}
       }
       const nowTs = Date.now();
-      const since = parseInt(p.last_flow_ts || 0);
-      const { deposits, withdrawals } = await arenaFetchFlows(p, demo, since);
+      // Detect a NEW deposit/withdrawal by comparing the latest flow timestamp
+      // to the one we last saw. A new flow re-baselines the season so moving cash
+      // never looks like profit, and nothing accumulates to double-count.
+      const latestFlow = await arenaLatestFlowTs(p, demo);
+      const prevFlow = parseInt(p.last_flow_ts || 0);
+      const flowDetected = prevFlow > 0 && latestFlow > prevFlow;
+      const newFlowTs = Math.max(prevFlow, latestFlow);
       const volRes = await arenaFetchVolumeDelta(env, p);
       const volDelta = volRes && volRes.delta ? volRes.delta : 0;
       const volCum   = volRes && volRes.cum   ? volRes.cum   : parseFloat(p.last_vol_cum || 0);
@@ -1146,25 +1148,31 @@ async function arenaScore(env) {
       for (const [board, sid] of boards) {
         const row = await env.BOT_DB.prepare('SELECT * FROM arena_score WHERE email=? AND board=?').bind(p.email, board).first();
         if (!row || row.season_id !== sid) {
-          // New season → re-baseline at current equity.
+          // New season → full reset, baseline at current equity.
           await env.BOT_DB.prepare(
             `INSERT INTO arena_score(email,board,season_id,start_equity,deposits,withdrawals,last_equity,volume,return_pct,profit,last_update)
              VALUES(?,?,?,?,0,0,?,0,0,0,?)
              ON CONFLICT(email,board) DO UPDATE SET season_id=excluded.season_id,start_equity=excluded.start_equity,
                deposits=0,withdrawals=0,last_equity=excluded.last_equity,volume=0,return_pct=0,profit=0,last_update=excluded.last_update`
           ).bind(p.email, board, sid, eq, eq, nowTs).run();
-        } else {
-          const dep = row.deposits + deposits, wd = row.withdrawals + withdrawals, vol = row.volume + volDelta;
-          const base = row.start_equity + dep;
-          const profit = eq - row.start_equity - dep + wd;
-          const ret = base > 0 ? profit / base : 0;
+        } else if (flowDetected) {
+          // Cash moved in/out → re-baseline equity; performance resets, not inflated. Volume is kept.
           await env.BOT_DB.prepare(
-            'UPDATE arena_score SET last_equity=?,deposits=?,withdrawals=?,volume=?,return_pct=?,profit=?,last_update=? WHERE email=? AND board=?'
-          ).bind(eq, dep, wd, vol, ret, profit, nowTs, p.email, board).run();
+            'UPDATE arena_score SET start_equity=?,last_equity=?,return_pct=0,profit=0,volume=?,last_update=? WHERE email=? AND board=?'
+          ).bind(eq, eq, (row.volume || 0) + volDelta, nowTs, p.email, board).run();
+        } else {
+          const start = row.start_equity || 0;
+          // Empty/dust accounts (under $1) always score 0 — no meaningful % to report.
+          const meaningful = start >= 1 && eq >= 1;
+          const profit = meaningful ? eq - start : 0;
+          const ret = meaningful ? profit / start : 0;
+          await env.BOT_DB.prepare(
+            'UPDATE arena_score SET last_equity=?,volume=?,return_pct=?,profit=?,last_update=? WHERE email=? AND board=?'
+          ).bind(eq, (row.volume || 0) + volDelta, ret, profit, nowTs, p.email, board).run();
         }
       }
       await env.BOT_DB.prepare('UPDATE arena_participants SET last_equity=?, last_flow_ts=?, last_vol_cum=?, last_update=?, err=NULL WHERE email=?')
-        .bind(eq, nowTs, volCum, nowTs, p.email).run();
+        .bind(eq, newFlowTs, volCum, nowTs, p.email).run();
     } catch (e) {
       try { await env.BOT_DB.prepare('UPDATE arena_participants SET err=? WHERE email=?').bind(String(e.message).slice(0, 120), p.email).run(); } catch (_) {}
     }
