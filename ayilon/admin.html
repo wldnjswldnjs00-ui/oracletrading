@@ -111,6 +111,41 @@
     </div>
   </div>
 
+  <!-- Arena Prize Pool Panel -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-top:20px;">
+    <div style="font-size:16px;font-weight:600;margin-bottom:4px;">아레나 상금 풀</div>
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:18px;">홈페이지에 실시간으로 표시되는 상금 금액입니다. 여기에 입력한 값이 즉시 반영됩니다. (어필리에이트 API 연동 전까지 수동 입력)</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:520px;margin-bottom:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">주간 상금 풀 ($) — 수익률 부문 Top3</div>
+        <input id="poolWeekly" type="number" min="0" placeholder="0"
+          style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:14px;outline:none;font-family:'Inter',sans-serif;" />
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">월간 상금 풀 ($) — 각 부문 Top5</div>
+        <input id="poolMonthly" type="number" min="0" placeholder="0"
+          style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:14px;outline:none;font-family:'Inter',sans-serif;" />
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:520px;margin-bottom:16px;">
+      <div>
+        <div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">상금 자격 최소 잔고 ($)</div>
+        <input id="poolMinBal" type="number" min="0" placeholder="100"
+          style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:14px;outline:none;font-family:'Inter',sans-serif;" />
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">풀 비율 (수수료의 %) — 참고용</div>
+        <input id="poolPct" type="number" min="0" max="100" placeholder="40"
+          style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:14px;outline:none;font-family:'Inter',sans-serif;" />
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button onclick="saveArenaConfig()"
+        style="padding:9px 20px;background:#22c55e;border:none;border-radius:7px;color:#04140e;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">저장</button>
+      <span id="arenaSaveMsg" style="font-size:12px;color:var(--gray-400);"></span>
+    </div>
+  </div>
+
 </div><!-- end main content -->
 
 <script>
@@ -138,7 +173,49 @@
     }
     document.getElementById('adminEmailDisplay').textContent = email;
     await loadUsers();
+    await loadArenaConfig();
   })();
+
+  async function loadArenaConfig() {
+    try {
+      var res = await fetch(WORKER_URL + '/admin/arena-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: getToken(), read: true })
+      });
+      var data = await res.json();
+      if (!data.ok || !data.config) return;
+      var c = data.config;
+      document.getElementById('poolWeekly').value  = (c.manualPool && c.manualPool.weekly)  || 0;
+      document.getElementById('poolMonthly').value = (c.manualPool && c.manualPool.monthly) || 0;
+      document.getElementById('poolMinBal').value  = c.minBalance != null ? c.minBalance : 100;
+      document.getElementById('poolPct').value     = c.poolPct != null ? c.poolPct : 40;
+    } catch(e) {}
+  }
+
+  async function saveArenaConfig() {
+    var msg = document.getElementById('arenaSaveMsg');
+    msg.style.color = 'var(--gray-400)'; msg.textContent = '저장 중...';
+    var payload = {
+      sessionToken: getToken(),
+      manualPool: {
+        weekly:  parseFloat(document.getElementById('poolWeekly').value)  || 0,
+        monthly: parseFloat(document.getElementById('poolMonthly').value) || 0
+      },
+      minBalance: parseFloat(document.getElementById('poolMinBal').value) || 0,
+      poolPct:    parseFloat(document.getElementById('poolPct').value)    || 0
+    };
+    try {
+      var res = await fetch(WORKER_URL + '/admin/arena-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json();
+      if (data.ok) { msg.style.color = '#22c55e'; msg.textContent = '저장 완료 — 홈페이지에 반영됩니다.'; }
+      else { msg.style.color = '#ef4444'; msg.textContent = '실패: ' + (data.error || '오류'); }
+    } catch(e) { msg.style.color = '#ef4444'; msg.textContent = '실패: ' + e.message; }
+  }
 
   function doLogout() {
     fetch(WORKER_URL + '/logout', {
