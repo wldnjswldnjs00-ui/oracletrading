@@ -325,6 +325,16 @@
     <div class="msg" id="jmMsg"></div>
 
     <div class="step">
+      <div class="st"><span class="b">★</span><span data-i18n="jm.nick">닉네임</span></div>
+      <p class="sub" data-i18n="jm.nickd">리더보드·명예의전당에 표시되는 이름입니다.</p>
+      <div style="display:flex;gap:8px">
+        <input id="jNick" maxlength="24" autocomplete="off" spellcheck="false" style="flex:1;background:var(--bg);border:1px solid var(--line2);color:var(--txt);border-radius:10px;padding:11px 13px;font-size:14px;font-family:inherit;outline:none">
+        <button class="btn btn-ghost btn-sm" id="jNickSave" data-i18n="jm.nicksave">저장</button>
+      </div>
+      <div class="msg" id="jNickMsg" style="margin-top:10px"></div>
+    </div>
+
+    <div class="step">
       <div class="st"><span class="b">1</span><span data-i18n="jm.s1">AYILON 추천으로 OKX 가입</span></div>
       <p class="sub" data-i18n="jm.s1d">이미 AYILON 추천으로 가입했다면 2단계로 넘어가세요.</p>
       <a class="ref-btn" href="https://www.okx.com/join/AYILON" target="_blank" rel="noopener">
@@ -375,6 +385,7 @@ const authed = () => !!token();
 const I18N = {
   ko:{
     'nav.board':'리더보드','nav.how':'참가방법','nav.hof':'명예의전당','nav.login':'로그인','nav.manage':'연결 관리',
+    'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다.','jm.nicksave':'저장',
     'jm.s3':'참가할 부문 선택','jm.s3d':'원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.',
     'jm.b.rw':'수익률 · 주간','jm.b.rm':'수익률 · 월간','jm.b.pm':'수익금 · 월간','jm.b.vm':'거래량 · 월간',
     'hof.title':'명예의 전당','hof.sub':'시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.',
@@ -409,6 +420,7 @@ const I18N = {
   },
   en:{
     'nav.board':'Leaderboard','nav.how':'How it works','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage',
+    'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame.','jm.nicksave':'Save',
     'jm.s3':'Choose your competitions','jm.s3d':'Enter only the boards you want. You appear only on the boards you select.',
     'jm.b.rw':'Return · Weekly','jm.b.rm':'Return · Monthly','jm.b.pm':'Profit · Monthly','jm.b.vm':'Volume · Monthly',
     'hof.title':'Hall of Fame','hof.sub':'Past champions, frozen automatically as each season ends.',
@@ -529,7 +541,18 @@ setInterval(tickCountdown,1000);
 
 /* ---------- join ---------- */
 const joinModal=document.getElementById('joinModal'),authModal=document.getElementById('authModal');
-function openJoin(){ if(!authed()){authModal.classList.add('open');return;} joinModal.classList.add('open'); loadMine(); }
+function openJoin(){ if(!authed()){authModal.classList.add('open');return;} document.getElementById('jNick').value=localStorage.getItem('ayilon_username')||''; document.getElementById('jNickMsg').className='msg'; joinModal.classList.add('open'); loadMine(); }
+document.getElementById('jNickSave').onclick=async()=>{
+  const m=document.getElementById('jNickMsg');m.className='msg';
+  const nickname=document.getElementById('jNick').value.trim();
+  if(nickname.length<2){m.className='msg err';m.textContent=LANG==='ko'?'2자 이상 입력하세요.':'At least 2 characters.';return;}
+  try{
+    const r=await fetch(`${API}/arena/nickname`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({nickname,sessionToken:token()})});
+    const j=await r.json();
+    if(j.ok){ localStorage.setItem('ayilon_username',j.nickname); m.className='msg ok'; m.textContent=LANG==='ko'?'닉네임 저장됨':'Nickname saved'; fetchLB(); loadMine(); }
+    else{ m.className='msg err'; m.textContent=({taken:LANG==='ko'?'이미 사용 중인 닉네임입니다.':'That nickname is taken.',bad_length:LANG==='ko'?'2~24자로 입력하세요.':'Use 2–24 characters.',bad_chars:LANG==='ko'?'사용할 수 없는 문자가 있습니다.':'Contains invalid characters.'}[j.error])||(LANG==='ko'?'저장 실패':'Failed'); }
+  }catch(e){ m.className='msg err'; m.textContent=LANG==='ko'?'네트워크 오류':'Network error'; }
+};
 // Auth-aware UI: logged out → Login (no OKX). Logged in → Join/OKX connect.
 function setAuthUI(){
   const d=I18N[LANG];

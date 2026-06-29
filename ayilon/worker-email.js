@@ -52,6 +52,7 @@ export default {
       if (path === '/admin/set-referral') return handleAdminSetReferral(request, env);
       if (path === '/delete-account')    return handleDeleteAccount(request, env);
       if (path === '/arena/join')        return handleArenaJoin(request, env);
+      if (path === '/arena/nickname')    return handleArenaNickname(request, env);
       if (path === '/arena/leave')       return handleArenaLeave(request, env);
       if (path === '/arena/me')          return handleArenaMe(request, env);
       if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
@@ -1215,6 +1216,37 @@ async function handleArenaJoin(request, env) {
   ).bind(session.email, nickname, freshUser.country || '', String(uid), apiKey, apiSecret, apiPass, demo ? 1 : 0, refVerified, JSON.stringify(boards), Date.now()).run();
 
   return json({ ok: true, uid: String(uid), equity: eq, referralVerified: refVerified === 1, boards, nickname });
+}
+
+// Set/change the display nickname. Enforces uniqueness and propagates the new
+// name to the user record, the session, AND the arena participant row so the
+// leaderboard + Hall of Fame reflect it immediately.
+async function handleArenaNickname(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  let nick = String(body.nickname || '').trim().replace(/\s+/g, ' ');
+  if (nick.length < 2 || nick.length > 24) return json({ ok: false, error: 'bad_length' });
+  if (!/^[\w .\-가-힣]+$/u.test(nick)) return json({ ok: false, error: 'bad_chars' });
+
+  const user = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || {};
+  const cur = user.username || '';
+  if (nick.toLowerCase() !== cur.toLowerCase()) {
+    const key = 'username:' + nick.toLowerCase();
+    if (await env.USERS_KV.get(key)) return json({ ok: false, error: 'taken' });
+    if (cur) await env.USERS_KV.delete('username:' + cur.toLowerCase());
+    await env.USERS_KV.put(key, session.email.toLowerCase());
+  }
+  user.username = nick;
+  await env.USERS_KV.put('user:' + session.email, JSON.stringify(user));
+  await initDB(env);
+  await env.BOT_DB.prepare('UPDATE arena_participants SET nickname=? WHERE email=?').bind(nick, session.email).run().catch(() => {});
+  await env.BOT_DB.prepare('UPDATE sessions SET username=? WHERE email=?').bind(nick, session.email).run().catch(() => {});
+  if (body.sessionToken) {
+    const s = await env.USERS_KV.get('session:' + body.sessionToken, { type: 'json' });
+    if (s) { s.username = nick; await env.USERS_KV.put('session:' + body.sessionToken, JSON.stringify(s), { expirationTtl: 604800 }); }
+  }
+  return json({ ok: true, nickname: nick });
 }
 
 // Disconnect / leave the arena.
