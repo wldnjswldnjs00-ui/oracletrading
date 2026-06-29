@@ -1262,6 +1262,9 @@ const _lastHb = new Map();
 
 const OKX_BASE = 'https://www.okx.com';
 
+// Scalp strategies close 100% at TP (module-scope so checkSL can read it).
+const SCALP_STRATS = ['ma50_bounce'];
+
 // ── D1 HELPERS ────────────────────────────────────────────────
 
 let _dbReady = false;
