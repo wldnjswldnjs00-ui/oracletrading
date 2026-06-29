@@ -101,6 +101,8 @@
   .rk.r1{color:var(--gold)} .rk.r2{color:var(--silver)} .rk.r3{color:var(--bronze)}
   .who{display:flex;align-items:center;gap:9px;min-width:0}
   .who .nm{font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lbav{width:26px;height:26px;border-radius:50%;flex:none;object-fit:cover;background:var(--line2)}
+  .lbav.ini{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--mut)}
   .vb{font-size:10px;color:var(--accent);border:1px solid rgba(52,211,154,.35);border-radius:6px;padding:1px 6px;letter-spacing:.04em;white-space:nowrap}
   .crown{opacity:.85}
   .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:650}
@@ -351,6 +353,13 @@
     <div class="step">
       <div class="st"><span class="b">★</span><span data-i18n="jm.nick">닉네임</span></div>
       <p class="sub" data-i18n="jm.nickd">리더보드·명예의전당에 표시되는 이름입니다.</p>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+        <div id="jAvatarPrev" style="width:54px;height:54px;border-radius:50%;background:var(--line2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:21px;color:var(--txt);overflow:hidden;flex:none;background-size:cover;background-position:center"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0"><span data-i18n="jm.avatar">이미지 변경</span><input id="jAvatarFile" type="file" accept="image/*" style="display:none"></label>
+          <button class="btn btn-ghost btn-sm" id="jAvatarRemove" data-i18n="jm.avatarrm">제거</button>
+        </div>
+      </div>
       <div style="display:flex;gap:8px">
         <input id="jNick" maxlength="24" autocomplete="off" spellcheck="false" style="flex:1;background:var(--bg);border:1px solid var(--line2);color:var(--txt);border-radius:10px;padding:11px 13px;font-size:14px;font-family:inherit;outline:none">
         <button class="btn btn-ghost btn-sm" id="jNickSave" data-i18n="jm.nicksave">저장</button>
@@ -409,7 +418,7 @@ const authed = () => !!token();
 const I18N = {
   ko:{
     'nav.board':'리더보드','nav.how':'참가방법','nav.hof':'명예의전당','nav.login':'로그인','nav.manage':'연결 관리','nav.logout':'로그아웃',
-    'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다.','jm.nicksave':'저장',
+    'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다.','jm.nicksave':'저장','jm.avatar':'이미지 변경','jm.avatarrm':'제거','av.large':'이미지가 너무 큽니다.',
     'jm.s3':'참가할 부문 선택','jm.s3d':'원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.',
     'jm.b.rw':'수익률 · 주간','jm.b.rm':'수익률 · 월간','jm.b.pm':'수익금 · 월간','jm.b.vm':'거래량 · 월간',
     'hof.title':'명예의 전당','hof.sub':'시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.',
@@ -451,7 +460,7 @@ const I18N = {
   },
   en:{
     'nav.board':'Leaderboard','nav.how':'How it works','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage','nav.logout':'Log out',
-    'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame.','jm.nicksave':'Save',
+    'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame.','jm.nicksave':'Save','jm.avatar':'Change image','jm.avatarrm':'Remove','av.large':'Image too large.',
     'jm.s3':'Choose your competitions','jm.s3d':'Enter only the boards you want. You appear only on the boards you select.',
     'jm.b.rw':'Return · Weekly','jm.b.rm':'Return · Monthly','jm.b.pm':'Profit · Monthly','jm.b.vm':'Volume · Monthly',
     'hof.title':'Hall of Fame','hof.sub':'Past champions, frozen automatically as each season ends.',
@@ -493,7 +502,7 @@ const I18N = {
   },
   zh:{
     'nav.board':'排行榜','nav.how':'参与方式','nav.hof':'名人堂','nav.login':'登录','nav.manage':'管理','nav.logout':'退出',
-    'jm.nick':'昵称','jm.nickd':'显示在排行榜和名人堂上的名称。','jm.nicksave':'保存',
+    'jm.nick':'昵称','jm.nickd':'显示在排行榜和名人堂上的名称。','jm.nicksave':'保存','jm.avatar':'更换头像','jm.avatarrm':'移除','av.large':'图片太大。',
     'jm.s3':'选择参赛项目','jm.s3d':'仅参加你选择的项目，只会出现在所选榜单中。',
     'jm.b.rw':'收益率 · 周赛','jm.b.rm':'收益率 · 月赛','jm.b.pm':'盈利额 · 月赛','jm.b.vm':'交易量 · 月赛',
     'hof.title':'名人堂','hof.sub':'每个赛季结束时自动定格的历届冠军。',
@@ -535,7 +544,7 @@ const I18N = {
   },
   es:{
     'nav.board':'Clasificación','nav.how':'Cómo funciona','nav.hof':'Salón de la Fama','nav.login':'Entrar','nav.manage':'Gestionar','nav.logout':'Salir',
-    'jm.nick':'Apodo','jm.nickd':'El nombre que se muestra en la clasificación y el Salón de la Fama.','jm.nicksave':'Guardar',
+    'jm.nick':'Apodo','jm.nickd':'El nombre que se muestra en la clasificación y el Salón de la Fama.','jm.nicksave':'Guardar','jm.avatar':'Cambiar imagen','jm.avatarrm':'Quitar','av.large':'Imagen demasiado grande.',
     'jm.s3':'Elige tus competiciones','jm.s3d':'Participa solo en las que elijas. Apareces solo en esos rankings.',
     'jm.b.rw':'Rentabilidad · Semanal','jm.b.rm':'Rentabilidad · Mensual','jm.b.pm':'Beneficio · Mensual','jm.b.vm':'Volumen · Mensual',
     'hof.title':'Salón de la Fama','hof.sub':'Campeones pasados, fijados automáticamente al terminar cada temporada.',
@@ -577,7 +586,7 @@ const I18N = {
   },
   vi:{
     'nav.board':'Bảng xếp hạng','nav.how':'Cách tham gia','nav.hof':'Đại sảnh Danh vọng','nav.login':'Đăng nhập','nav.manage':'Quản lý','nav.logout':'Đăng xuất',
-    'jm.nick':'Biệt danh','jm.nickd':'Tên hiển thị trên bảng xếp hạng và Đại sảnh Danh vọng.','jm.nicksave':'Lưu',
+    'jm.nick':'Biệt danh','jm.nickd':'Tên hiển thị trên bảng xếp hạng và Đại sảnh Danh vọng.','jm.nicksave':'Lưu','jm.avatar':'Đổi ảnh','jm.avatarrm':'Xóa','av.large':'Ảnh quá lớn.',
     'jm.s3':'Chọn hạng mục tham gia','jm.s3d':'Chỉ tham gia hạng mục bạn chọn. Bạn chỉ xuất hiện ở các bảng đã chọn.',
     'jm.b.rw':'Lợi nhuận % · Tuần','jm.b.rm':'Lợi nhuận % · Tháng','jm.b.pm':'Tiền lãi · Tháng','jm.b.vm':'Khối lượng · Tháng',
     'hof.title':'Đại sảnh Danh vọng','hof.sub':'Các nhà vô địch trước đây, được lưu tự động khi mỗi mùa giải kết thúc.',
@@ -619,7 +628,7 @@ const I18N = {
   },
   ru:{
     'nav.board':'Рейтинг','nav.how':'Как участвовать','nav.hof':'Зал славы','nav.login':'Войти','nav.manage':'Управление','nav.logout':'Выйти',
-    'jm.nick':'Никнейм','jm.nickd':'Имя, отображаемое в рейтинге и Зале славы.','jm.nicksave':'Сохранить',
+    'jm.nick':'Никнейм','jm.nickd':'Имя, отображаемое в рейтинге и Зале славы.','jm.nicksave':'Сохранить','jm.avatar':'Сменить фото','jm.avatarrm':'Удалить','av.large':'Изображение слишком большое.',
     'jm.s3':'Выберите номинации','jm.s3d':'Участвуете только в выбранных. Появляетесь только в выбранных таблицах.',
     'jm.b.rw':'Доходность · Неделя','jm.b.rm':'Доходность · Месяц','jm.b.pm':'Прибыль · Месяц','jm.b.vm':'Объём · Месяц',
     'hof.title':'Зал славы','hof.sub':'Прошлые чемпионы, фиксируются автоматически в конце каждого сезона.',
@@ -709,7 +718,8 @@ function renderLB(){
       const rk=r.rank<=3?`rk r${r.rank}`:'rk';
       const me=r.nickname.toLowerCase()===myNick?'me':'';
       const vb=r.eligible?`<span class="vb" title="${t('lb.prize')}">AYILON</span>`:(r.verified?`<span class="vb" style="color:var(--mut);border-color:var(--line2)" title="${t('lb.minbal')}">$100+</span>`:'');
-      return `<div class="lb-r ${me}"><div class="${rk}">${r.rank}</div><div class="who"><span class="nm">${esc(r.nickname)}</span>${vb}</div><div class="val ${cls}">${mv}</div><div class="val sub c-eq h-eq">${fmtEq(r.equity)}</div></div>`;
+      const av=r.avatar?`<img class="lbav" src="${API}/arena/avatar?n=${encodeURIComponent(r.nickname)}" alt="" onerror="this.style.display='none'">`:`<span class="lbav ini">${esc((r.nickname[0]||'?').toUpperCase())}</span>`;
+      return `<div class="lb-r ${me}"><div class="${rk}">${r.rank}</div><div class="who">${av}<span class="nm">${esc(r.nickname)}</span>${vb}</div><div class="val ${cls}">${mv}</div><div class="val sub c-eq h-eq">${fmtEq(r.equity)}</div></div>`;
     }).join('');
   }
   document.getElementById('lbMeta').textContent=t('lb.meta').replace('{s}',state.seasonId).replace('{n}',state.total);
@@ -827,6 +837,35 @@ document.getElementById('jLeave').onclick=async(e)=>{
   joinModal.classList.remove('open');fetchLB();loadMine();
 };
 
+/* ---------- avatar ---------- */
+function setAvatarPreview(hasAvatar,nick){
+  const p=document.getElementById('jAvatarPrev');const n=nick||localStorage.getItem('ayilon_username')||'?';
+  if(hasAvatar){ p.style.backgroundImage=`url(${API}/arena/avatar?n=${encodeURIComponent(n)}&t=${Date.now()})`; p.textContent=''; }
+  else { p.style.backgroundImage=''; p.textContent=(n[0]||'?').toUpperCase(); }
+}
+document.getElementById('jAvatarFile').onchange=function(){
+  const f=this.files&&this.files[0]; if(!f) return;
+  const img=new Image();
+  img.onload=async()=>{
+    const c=document.createElement('canvas');c.width=c.height=128;const ctx=c.getContext('2d');
+    const s=Math.min(img.width,img.height),sx=(img.width-s)/2,sy=(img.height-s)/2;
+    ctx.drawImage(img,sx,sy,s,s,0,0,128,128);
+    const data=c.toDataURL('image/jpeg',0.82);
+    const m=document.getElementById('jNickMsg');m.className='msg';
+    try{
+      const r=await fetch(`${API}/arena/set-avatar`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({avatar:data})});
+      const j=await r.json();
+      if(j.ok){ const p=document.getElementById('jAvatarPrev');p.style.backgroundImage=`url(${data})`;p.textContent=''; fetchLB(); m.className='msg ok';m.textContent=t('nick.saved'); }
+      else{ m.className='msg err';m.textContent=j.error==='too_large'?t('av.large'):t('nick.fail'); }
+    }catch(e){ m.className='msg err';m.textContent=t('err.net'); }
+  };
+  img.src=URL.createObjectURL(f);
+};
+document.getElementById('jAvatarRemove').onclick=async()=>{
+  try{ await fetch(`${API}/arena/set-avatar`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({avatar:''})}); }catch(e){}
+  setAvatarPreview(false,localStorage.getItem('ayilon_username')); fetchLB();
+};
+
 /* ---------- my standing ---------- */
 async function loadMine(){
   if(!authed()){document.getElementById('mineBar').classList.remove('show');return;}
@@ -840,6 +879,7 @@ async function loadMine(){
     if(Array.isArray(j.boards)&&j.boards.length){const idmap={rw:'bRw',rm:'bRm',pm:'bPm',vm:'bVm'};Object.entries(idmap).forEach(([v,id])=>{const el=document.getElementById(id);if(el)el.checked=j.boards.includes(v);});}
     if(j.nickname)document.getElementById('jNick').value=j.nickname;
     const sh=document.getElementById('mineShare');sh.href='/card.html?type=rank&period=weekly&nick='+encodeURIComponent(j.nickname||localStorage.getItem('ayilon_username')||'');sh.target='_blank';
+    setAvatarPreview(j.hasAvatar,j.nickname);
     const wk=(j.scores&&j.scores.weekly)?j.scores.weekly:{returnPct:0,profit:0};
     document.getElementById('mRet').textContent=fmtPct(wk.returnPct||0);
     document.getElementById('mRet').style.color=(wk.returnPct||0)>=0?'var(--accent)':'var(--red)';

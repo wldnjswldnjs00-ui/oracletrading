@@ -53,6 +53,7 @@ export default {
       if (path === '/delete-account')    return handleDeleteAccount(request, env);
       if (path === '/arena/join')        return handleArenaJoin(request, env);
       if (path === '/arena/nickname')    return handleArenaNickname(request, env);
+      if (path === '/arena/set-avatar')  return handleArenaSetAvatar(request, env);
       if (path === '/arena/leave')       return handleArenaLeave(request, env);
       if (path === '/arena/me')          return handleArenaMe(request, env);
       if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
@@ -67,6 +68,7 @@ export default {
       if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
       if (path === '/arena/season')      return handleArenaSeason(request, env);
       if (path === '/arena/winners')     return handleArenaWinners(request, env);
+      if (path === '/arena/avatar')      return handleArenaGetAvatar(request, env);
     }
 
     return corsResponse(JSON.stringify({ error: 'Not found' }), 404);
@@ -1293,6 +1295,41 @@ async function handleArenaNickname(request, env) {
   return json({ ok: true, nickname: nick });
 }
 
+// Set/remove the profile avatar (small square image as a data URL). Stored on the
+// participant row + user record; served separately so the leaderboard stays light.
+async function handleArenaSetAvatar(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  let avatar = body.avatar;
+  if (avatar === '' || avatar === null) avatar = null;
+  if (avatar != null) {
+    if (typeof avatar !== 'string' || !/^data:image\/(png|jpeg|webp);base64,/.test(avatar)) return json({ ok: false, error: 'bad_image' });
+    if (avatar.length > 120000) return json({ ok: false, error: 'too_large' }); // ~90KB
+  }
+  await initDB(env);
+  await env.BOT_DB.prepare('UPDATE arena_participants SET avatar=? WHERE email=?').bind(avatar, session.email).run().catch(() => {});
+  const u = await env.USERS_KV.get('user:' + session.email, { type: 'json' });
+  if (u) { u.avatar = avatar; await env.USERS_KV.put('user:' + session.email, JSON.stringify(u)); }
+  return json({ ok: true });
+}
+
+// Serve a participant's avatar image by nickname. Public, cacheable.
+async function handleArenaGetAvatar(request, env) {
+  await initDB(env);
+  const url = new URL(request.url);
+  const nick = String(url.searchParams.get('n') || '').trim();
+  if (!nick) return new Response('', { status: 404 });
+  let row = null;
+  try { row = await env.BOT_DB.prepare('SELECT avatar FROM arena_participants WHERE LOWER(nickname)=LOWER(?)').bind(nick).first(); } catch (_) {}
+  const av = row && row.avatar;
+  if (!av) return new Response('', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+  const m = av.match(/^data:(image\/[a-z]+);base64,(.*)$/);
+  if (!m) return new Response('', { status: 404 });
+  const bytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
+  return new Response(bytes, { headers: { 'Content-Type': m[1], 'Cache-Control': 'public, max-age=300', 'Access-Control-Allow-Origin': '*' } });
+}
+
 // Disconnect / leave the arena.
 async function handleArenaLeave(request, env) {
   const body = await request.json().catch(() => ({}));
@@ -1323,7 +1360,7 @@ async function handleArenaLeaderboard(request, env) {
   try {
     rows = (await env.BOT_DB.prepare(
       `SELECT s.email,s.return_pct,s.profit,s.volume,s.last_equity,s.start_equity,s.last_update,
-              p.nickname,p.country,p.referral_verified,p.boards
+              p.nickname,p.country,p.referral_verified,p.boards,(p.avatar IS NOT NULL) AS has_avatar
        FROM arena_score s JOIN arena_participants p ON p.email=s.email
        WHERE s.board=? AND s.season_id=?`
     ).bind(period, sid).all()).results || [];
@@ -1339,6 +1376,7 @@ async function handleArenaLeaderboard(request, env) {
     nickname: r.nickname || (r.email || '').split('@')[0],
     country: r.country || '',
     verified: r.referral_verified === 1,
+    avatar: r.has_avatar ? 1 : 0,
     // Prize-eligible = AYILON-referred AND started the season with ≥ min balance.
     eligible: r.referral_verified === 1 && (r.start_equity || 0) >= minBal,
     returnPct: r.return_pct || 0,
@@ -1364,7 +1402,7 @@ async function handleArenaMe(request, env) {
   for (const s of scores) out[s.board] = { returnPct: s.return_pct, profit: s.profit, volume: s.volume, equity: s.last_equity, seasonId: s.season_id };
   let boards = []; try { boards = JSON.parse(p.boards || '[]'); } catch (_) {}
   return json({
-    ok: true, joined: true, demo: p.demo === 1, referralVerified: p.referral_verified === 1, boards,
+    ok: true, joined: true, demo: p.demo === 1, referralVerified: p.referral_verified === 1, boards, hasAvatar: !!p.avatar,
     nickname: p.nickname, equity: p.last_equity, lastUpdate: p.last_update, err: p.err || null, scores: out
   });
 }
@@ -1808,6 +1846,7 @@ async function initDB(env) {
       err TEXT DEFAULT NULL
     )`).run();
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN boards TEXT DEFAULT '["rw","rm","pm","vm"]'`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN avatar TEXT DEFAULT NULL`).run().catch(() => {});
     // Hall of Fame — winners frozen at each season's end.
     await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_winners (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
