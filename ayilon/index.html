@@ -147,19 +147,37 @@
   .chk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
   .hint{font-size:12px;color:var(--dim);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin:2px 0 14px;line-height:1.55}
   /* hall of fame */
-  .hof{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-  .hof-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
-  .hof-card .ht{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:12px}
-  .hof-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-size:14px;border-bottom:1px solid var(--line)}
-  .hof-row:last-child{border-bottom:none}
-  .hof-row .l{display:flex;align-items:center;gap:9px;min-width:0}
-  .hof-row .rk{font-weight:700;width:18px;font-variant-numeric:tabular-nums}
-  .hof-row .rk.r1{color:var(--gold)}.hof-row .rk.r2{color:var(--silver)}.hof-row .rk.r3{color:var(--bronze)}
-  .hof-row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .hof-row .tt{font-size:10px;color:var(--gold);border:1px solid rgba(216,180,106,.35);border-radius:6px;padding:1px 6px;margin-left:2px}
-  .hof-row .v{color:var(--mut);font-variant-numeric:tabular-nums;font-weight:600}
-  .hof-empty{color:var(--mut);font-size:14px;text-align:center;padding:30px}
-  @media(max-width:760px){.hof{grid-template-columns:1fr}}
+  .hof-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:30px}
+  .hof-tabs button{background:var(--panel2);border:1px solid var(--line);color:var(--mut);font-weight:600;font-size:13px;padding:9px 16px;border-radius:30px;cursor:pointer;font-family:inherit;transition:.15s}
+  .hof-tabs button.on{background:linear-gradient(180deg,#e8c97a,#caa24e);color:#2a2208;border-color:transparent}
+  .hof-stage{background:radial-gradient(560px 280px at 50% 0%,rgba(216,180,106,.12),transparent 70%);border:1px solid var(--line);border-radius:22px;padding:36px 24px 28px;position:relative;overflow:hidden}
+  .hof-season{text-align:center;color:var(--gold);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:26px}
+  .podium{display:flex;align-items:flex-end;justify-content:center;gap:14px;max-width:640px;margin:0 auto}
+  .pod{flex:1;max-width:190px;display:flex;flex-direction:column;align-items:center}
+  .pcrown{font-size:26px;line-height:1;margin-bottom:8px}
+  .pava{width:62px;height:62px;border-radius:50%;position:relative;overflow:hidden;border:2px solid var(--line2);background:var(--line2);display:flex;align-items:center;justify-content:center}
+  .pod.p1 .pava{width:82px;height:82px;border-color:var(--gold);box-shadow:0 0 26px rgba(216,180,106,.4)}
+  .pod.p2 .pava{border-color:var(--silver)} .pod.p3 .pava{border-color:var(--bronze)}
+  .pava .ini{font-size:22px;font-weight:800;color:var(--mut)}
+  .pava img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .pname{margin-top:12px;font-weight:700;font-size:15px;text-align:center;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pod.p1 .pname{font-size:17px}
+  .pval{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:3px}
+  .pod.p1 .pval{font-size:22px;color:var(--gold)}.pod.p2 .pval{color:var(--silver)}.pod.p3 .pval{color:var(--bronze)}
+  .pbase{margin-top:14px;width:100%;border-radius:10px 10px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:12px;font-size:30px;font-weight:900;font-variant-numeric:tabular-nums}
+  .pod.p1 .pbase{height:120px;background:linear-gradient(180deg,rgba(216,180,106,.5),rgba(216,180,106,.08));color:var(--gold)}
+  .pod.p2 .pbase{height:88px;background:linear-gradient(180deg,rgba(196,201,210,.4),rgba(196,201,210,.06));color:var(--silver)}
+  .pod.p3 .pbase{height:64px;background:linear-gradient(180deg,rgba(194,137,90,.4),rgba(194,137,90,.06));color:var(--bronze)}
+  .hof-rest{max-width:520px;margin:22px auto 0;display:flex;flex-direction:column}
+  .hof-rrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 4px;border-top:1px solid var(--line);font-size:14px}
+  .hof-rrow .l{display:flex;align-items:center;gap:10px;min-width:0}
+  .hof-rrow .rk{width:20px;font-weight:700;color:var(--mut);font-variant-numeric:tabular-nums}
+  .hof-rrow .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hof-rrow .tt{font-size:10px;color:var(--gold);border:1px solid rgba(216,180,106,.35);border-radius:6px;padding:1px 6px}
+  .hof-rrow .v{color:var(--mut);font-weight:600;font-variant-numeric:tabular-nums}
+  .hof-empty{text-align:center;color:var(--mut);padding:30px 10px}
+  .hof-empty .tro{font-size:40px;opacity:.4;margin-bottom:12px}
+  @media(max-width:560px){.pod.p1 .pava{width:64px;height:64px}.pava{width:50px;height:50px}.pbase{font-size:24px}}
   .hint b{color:var(--accent)}
   .msg{font-size:13.5px;padding:11px 13px;border-radius:10px;margin-bottom:13px;display:none}
   .msg.err{display:block;background:rgba(236,106,114,.09);color:var(--red);border:1px solid rgba(236,106,114,.28)}
@@ -321,8 +339,14 @@
 <section id="hof" style="background:var(--panel2);border-top:1px solid var(--line)">
   <div class="wrap">
     <div class="sec-h"><h2 data-i18n="hof.title">명예의 전당</h2><p data-i18n="hof.sub">시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.</p></div>
-    <div class="hof" id="hofGrid"></div>
-    <div style="text-align:center;margin-top:22px"><a class="btn btn-ghost" href="/card.html?type=winner&period=weekly" target="_blank" data-i18n="hof.card">우승자 카드 만들기</a></div>
+    <div class="hof-tabs" id="hofTabs">
+      <button data-g="rw" class="on" data-i18n="hof.rw">수익률 · 주간</button>
+      <button data-g="rm" data-i18n="hof.rm">수익률 · 월간</button>
+      <button data-g="pm" data-i18n="hof.pm">수익금 · 월간</button>
+      <button data-g="vm" data-i18n="hof.vm">거래량 · 월간</button>
+    </div>
+    <div id="hofStage"></div>
+    <div style="text-align:center;margin-top:24px"><a class="btn btn-ghost" href="/card.html?type=winner&period=weekly" target="_blank" data-i18n="hof.card">우승자 카드 만들기</a></div>
   </div>
 </section>
 
@@ -890,31 +914,39 @@ async function loadMine(){
   }catch(e){}
 }
 
-/* ---------- hall of fame ---------- */
-const HOF_GROUPS=[['rw','weekly','return'],['rm','monthly','return'],['pm','monthly','profit'],['vm','monthly','volume']];
+/* ---------- hall of fame (podium) ---------- */
+const HOF_MAP={rw:['weekly','return'],rm:['monthly','return'],pm:['monthly','profit'],vm:['monthly','volume']};
+let hofData={winners:[],champions:{}}, hofG='rw';
 const hofVal=(metric,v)=>metric==='volume'?fmtVol(v):metric==='profit'?fmtUsd(v):fmtPct(v);
+const hofAva=nick=>`<div class="pava"><span class="ini">${esc((nick[0]||'?').toUpperCase())}</span><img src="${API}/arena/avatar?n=${encodeURIComponent(nick)}" alt="" onerror="this.remove()"></div>`;
 async function fetchHOF(){
-  let data={winners:[],champions:{}};
-  try{ data=await (await fetch(`${API}/arena/winners`)).json(); }catch(e){}
-  const d=I18N[LANG];const grid=document.getElementById('hofGrid');
-  const champs=data.champions||{};
-  const cards=HOF_GROUPS.map(([code,board,metric])=>{
-    // latest declared season for this group
-    const all=(data.winners||[]).filter(w=>w.board===board&&w.metric===metric);
-    let inner;
-    if(!all.length){ inner=`<div class="hof-empty" style="padding:18px">${d['hof.empty']}</div>`; }
-    else{
-      const latest=all[0].season_id;
-      const rows=all.filter(w=>w.season_id===latest).sort((a,b)=>a.rank-b.rank);
-      inner=rows.map(w=>{
-        const tt=(champs[w.nickname]&&w.rank===1&&champs[w.nickname]>1)?`<span class="tt">${champs[w.nickname]}${d['hof.titles']}</span>`:'';
-        return `<div class="hof-row"><div class="l"><span class="rk r${w.rank}">${w.rank}</span><span class="nm">${esc(w.nickname)}</span>${tt}</div><span class="v">${hofVal(metric,w.value)}</span></div>`;
-      }).join('')+`<div style="font-size:11px;color:var(--dim);margin-top:8px">${latest}</div>`;
-    }
-    return `<div class="hof-card"><div class="ht">${d['hof.'+code]}</div>${inner}</div>`;
-  }).join('');
-  grid.innerHTML=cards;
+  try{ hofData=await (await fetch(`${API}/arena/winners`)).json(); }catch(e){ hofData={winners:[],champions:{}}; }
+  renderHOF();
 }
+function renderHOF(){
+  const stage=document.getElementById('hofStage'); const [board,metric]=HOF_MAP[hofG];
+  const champs=hofData.champions||{};
+  const all=(hofData.winners||[]).filter(w=>w.board===board&&w.metric===metric);
+  if(!all.length){
+    stage.className=''; stage.innerHTML=`<div class="hof-stage"><div class="hof-empty"><div class="tro">🏆</div>${t('hof.empty')}</div></div>`;
+    return;
+  }
+  const latest=all[0].season_id;
+  const rows=all.filter(w=>w.season_id===latest).sort((a,b)=>a.rank-b.rank);
+  const byRank=r=>rows.find(w=>w.rank===r);
+  const crown={1:'👑',2:'🥈',3:'🥉'};
+  const podCol=r=>{ const w=byRank(r); if(!w) return `<div class="pod p${r}"></div>`;
+    const tt=(champs[w.nickname]>1)?` · ${champs[w.nickname]}${t('hof.titles')}`:'';
+    return `<div class="pod p${r}"><div class="pcrown">${crown[r]}</div>${hofAva(w.nickname)}<div class="pname">${esc(w.nickname)}${r===1?tt:''}</div><div class="pval">${hofVal(metric,w.value)}</div><div class="pbase">${r}</div></div>`; };
+  const rest=rows.filter(w=>w.rank>=4).map(w=>{
+    const tt=(champs[w.nickname]>1)?`<span class="tt">${champs[w.nickname]}${t('hof.titles')}</span>`:'';
+    return `<div class="hof-rrow"><div class="l"><span class="rk">${w.rank}</span><span class="nm">${esc(w.nickname)}</span>${tt}</div><span class="v">${hofVal(metric,w.value)}</span></div>`;
+  }).join('');
+  stage.innerHTML=`<div class="hof-stage"><div class="hof-season">${t('hof.'+hofG)} · ${esc(latest)}</div>
+    <div class="podium">${podCol(2)}${podCol(1)}${podCol(3)}</div>
+    ${rest?`<div class="hof-rest">${rest}</div>`:''}</div>`;
+}
+document.getElementById('hofTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;hofG=b.dataset.g;document.querySelectorAll('#hofTabs button').forEach(x=>x.classList.toggle('on',x===b));renderHOF();});
 
 applyLang();
 setAuthUI();
