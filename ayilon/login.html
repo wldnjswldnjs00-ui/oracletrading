@@ -104,6 +104,10 @@
           </div>
           <button type="submit" class="btn-submit" data-i18n="login.submit">Log In</button>
         </form>
+        <div id="googleWrap" style="display:none;margin-top:20px">
+          <div style="text-align:center;color:var(--gray-400);font-size:12px;letter-spacing:.08em;margin-bottom:14px">OR</div>
+          <div id="gbtn" style="display:flex;justify-content:center"></div>
+        </div>
       </div>
 
       <div class="step" id="step2">
@@ -195,6 +199,36 @@
 
     </div>
   </div>
+
+  <!-- Google Sign-In: paste your OAuth Client ID below to enable the button -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    var GOOGLE_CLIENT_ID = ''; // ← e.g. '1234567890-abc.apps.googleusercontent.com'
+    function onGoogleCredential(resp){
+      fetch('https://ayilon-email.wldnjswldnjs00.workers.dev/auth/google',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({credential:resp.credential})
+      }).then(function(r){return r.json();}).then(function(d){
+        if(d.ok&&d.sessionToken){
+          localStorage.setItem('ayilon_session_token',d.sessionToken);
+          localStorage.setItem('ayilon_email',d.email||'');
+          localStorage.setItem('ayilon_username',d.username||'');
+          localStorage.setItem('ayilon_name',d.name||'');
+          localStorage.setItem('ayilon_logged_in','true');
+          window.location.href = /(^|\.)ayiloncompany\.xyz$/.test(location.hostname)?'admin.html':'/';
+        } else { alert('Google sign-in failed.'); }
+      }).catch(function(){ alert('Google sign-in failed.'); });
+    }
+    function initGoogle(tries){
+      if(!GOOGLE_CLIENT_ID) return;
+      if(window.google&&google.accounts&&google.accounts.id){
+        google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onGoogleCredential});
+        google.accounts.id.renderButton(document.getElementById('gbtn'),{theme:'filled_black',size:'large',width:320,text:'continue_with',shape:'pill'});
+        document.getElementById('googleWrap').style.display='';
+      } else if((tries||0)<25){ setTimeout(function(){initGoogle((tries||0)+1);},200); }
+    }
+    window.addEventListener('load',function(){ initGoogle(0); });
+  </script>
 
   <script>
     function _t(k) { return (window.__t ? window.__t(k) : k); }

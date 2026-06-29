@@ -24,6 +24,7 @@ export default {
       if (path === '/verify-payment')     return handleVerifyPayment(request, env);
       if (path === '/check-payment')      return handleCheckPayment(request, env);
       if (path === '/login')             return handleLogin(request, env);
+      if (path === '/auth/google')       return handleGoogleAuth(request, env);
       if (path === '/logout')            return handleLogout(request, env);
       if (path === '/me')                return handleMe(request, env);
       if (path === '/change-password')   return handleChangePassword(request, env);
@@ -1328,6 +1329,45 @@ async function handleArenaGetAvatar(request, env) {
   if (!m) return new Response('', { status: 404 });
   const bytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
   return new Response(bytes, { headers: { 'Content-Type': m[1], 'Cache-Control': 'public, max-age=300', 'Access-Control-Allow-Origin': '*' } });
+}
+
+// Sign in / sign up with Google. The frontend (Google Identity Services) sends the
+// ID token; we verify it with Google, then create-or-login the user and issue a
+// session. Activates once GOOGLE_CLIENT_ID is set as a worker var.
+async function handleGoogleAuth(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const idToken = body.credential || body.idToken;
+  if (!idToken) return json({ ok: false, error: 'no_token' }, 400);
+  if (!env.USERS_KV) return json({ ok: false, error: 'service_unavailable' }, 503);
+  let p;
+  try {
+    const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken));
+    p = await r.json();
+  } catch (e) { return json({ ok: false, error: 'verify_failed' }, 400); }
+  if (!p || p.error || p.error_description || !p.email) return json({ ok: false, error: 'invalid_token' }, 400);
+  if (env.GOOGLE_CLIENT_ID && p.aud !== env.GOOGLE_CLIENT_ID) return json({ ok: false, error: 'aud_mismatch' }, 400);
+  if (!(p.email_verified === true || p.email_verified === 'true')) return json({ ok: false, error: 'email_unverified' }, 400);
+
+  const email = String(p.email).toLowerCase();
+  let user = await env.USERS_KV.get('user:' + email, { type: 'json' });
+  if (!user) {
+    const nick = await genUniqueNickname(env);
+    user = { email, username: nick, name: p.name || '', country: '', password: null, passwordSalt: null, createdAt: Date.now(), googleId: p.sub };
+    await env.USERS_KV.put('user:' + email, JSON.stringify(user));
+    await env.USERS_KV.put('username:' + nick.toLowerCase(), email);
+  } else if (!user.googleId) {
+    user.googleId = p.sub; await env.USERS_KV.put('user:' + email, JSON.stringify(user));
+  }
+  const sessionToken = crypto.randomUUID();
+  const expiresAt = Date.now() + 604800 * 1000;
+  await ensureDB(env);
+  try {
+    await env.BOT_DB.prepare('INSERT OR REPLACE INTO sessions(token,email,username,name,expires_at) VALUES(?,?,?,?,?)')
+      .bind(sessionToken, user.email, user.username || '', user.name || '', expiresAt).run();
+  } catch (e) {
+    await env.USERS_KV.put('session:' + sessionToken, JSON.stringify({ email: user.email, username: user.username, name: user.name }), { expirationTtl: 604800 });
+  }
+  return json({ ok: true, sessionToken, email: user.email, username: user.username || '', name: user.name || '' });
 }
 
 // Disconnect / leave the arena.
