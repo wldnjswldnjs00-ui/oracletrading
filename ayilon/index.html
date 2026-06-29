@@ -5,268 +5,291 @@
 <script>if(/(^|\.)ayiloncompany\.xyz$/.test(location.hostname)){location.replace(localStorage.getItem('ayilon_session_token')?'/admin.html':'/login.html');}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AYILON Arena — 실전 트레이딩 리그</title>
-<meta name="description" content="실전 트레이딩 대회. 매주·매달 수익률·수익금·거래량으로 경쟁하고 상금을 가져가세요.">
+<title>AYILON Arena — Global Trading League</title>
+<meta name="description" content="A global real-money trading league. Compete on return, profit and volume every week and month.">
 <style>
   :root{
-    --bg:#07080a; --bg2:#0d0f13; --card:#12151b; --line:#1e232c;
-    --txt:#f4f6f8; --mut:#8b93a1; --accent:#0ae0a0; --accent2:#37b6ff;
-    --gold:#ffd25a; --silver:#cfd6df; --bronze:#e8954f; --red:#ff5a6a;
-    --radius:18px;
+    --bg:#0a0a0c; --panel:#121216; --panel2:#0e0e12; --line:#22232b; --line2:#2c2d37;
+    --txt:#f1f2f4; --mut:#8a8b95; --dim:#5d5e69;
+    --accent:#34d39a; --accent-d:#1f9e74;
+    --gold:#d8b46a; --silver:#c4c9d2; --bronze:#c2895a; --red:#ec6a72;
+    --r:16px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Pretendard","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Pretendard","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.55;letter-spacing:-.01em}
   a{color:inherit;text-decoration:none}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  ::selection{background:rgba(52,211,154,.25)}
   /* nav */
-  nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(18px);background:rgba(7,8,10,.72);border-bottom:1px solid var(--line)}
-  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
-  .logo{font-weight:800;letter-spacing:.5px;font-size:19px}
-  .logo span{color:var(--accent)}
-  .nav-r{display:flex;align-items:center;gap:14px}
-  .lang{cursor:pointer;color:var(--mut);font-size:13px;border:1px solid var(--line);padding:5px 10px;border-radius:20px}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;font-weight:600;font-size:14px;padding:11px 20px;border-radius:30px;transition:.15s;font-family:inherit}
-  .btn-primary{background:var(--accent);color:#04140e}
-  .btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
-  .btn-ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
-  .btn-ghost:hover{border-color:var(--accent)}
-  .btn-sm{padding:8px 14px;font-size:13px}
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(20px);background:rgba(10,10,12,.7);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+  .logo{font-weight:700;letter-spacing:.14em;font-size:17px}
+  .logo i{font-style:normal;color:var(--accent)}
+  .nav-r{display:flex;align-items:center;gap:18px}
+  .nav-lnk{color:var(--mut);font-size:14px;transition:.15s}
+  .nav-lnk:hover{color:var(--txt)}
+  .lang{cursor:pointer;color:var(--mut);font-size:13px;transition:.15s}
+  .lang:hover{color:var(--txt)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;font-weight:600;font-size:14px;padding:11px 22px;border-radius:11px;transition:.16s;font-family:inherit;letter-spacing:0}
+  .btn-primary{background:var(--accent);color:#06140e}
+  .btn-primary:hover{background:#43e0a8;transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--txt);border:1px solid var(--line2)}
+  .btn-ghost:hover{border-color:var(--mut)}
+  .btn-sm{padding:9px 16px;font-size:13px;border-radius:9px}
   /* hero */
-  .hero{text-align:center;padding:88px 0 56px;background:radial-gradient(900px 420px at 50% -8%,rgba(10,224,160,.14),transparent 70%)}
-  .hero .tag{display:inline-block;color:var(--accent);font-size:13px;font-weight:600;border:1px solid rgba(10,224,160,.35);padding:6px 14px;border-radius:30px;margin-bottom:22px}
-  .hero h1{font-size:clamp(34px,6vw,62px);font-weight:800;letter-spacing:-1.5px;line-height:1.05}
-  .hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .hero p{color:var(--mut);font-size:clamp(15px,2.5vw,19px);margin:22px auto 0;max-width:600px}
-  .hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:34px}
-  .pillrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:30px}
-  .pill{font-size:12.5px;color:var(--mut);background:var(--card);border:1px solid var(--line);padding:8px 14px;border-radius:30px}
-  .pill b{color:var(--txt)}
+  .hero{text-align:center;padding:100px 0 64px;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:0;background:radial-gradient(680px 340px at 50% -10%,rgba(52,211,154,.10),transparent 65%);pointer-events:none}
+  .hero .kicker{position:relative;display:inline-block;color:var(--accent);font-size:12.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin-bottom:26px}
+  .hero h1{position:relative;font-size:clamp(36px,6.5vw,66px);font-weight:760;letter-spacing:-.035em;line-height:1.04}
+  .hero h1 b{font-weight:760;color:var(--accent)}
+  .hero p{position:relative;color:var(--mut);font-size:clamp(15px,2.4vw,18px);margin:24px auto 0;max-width:560px;font-weight:400}
+  .hero-cta{position:relative;display:flex;gap:11px;justify-content:center;flex-wrap:wrap;margin-top:36px}
+  .meta{position:relative;display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin-top:40px;color:var(--dim);font-size:13px}
+  .meta span b{color:var(--mut);font-weight:500}
   /* sections */
-  section{padding:56px 0}
-  .sec-h{text-align:center;margin-bottom:34px}
-  .sec-h h2{font-size:clamp(26px,4vw,40px);font-weight:800;letter-spacing:-.8px}
-  .sec-h p{color:var(--mut);margin-top:10px;font-size:15px}
-  /* leaderboard */
-  .lb-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
-  .seg{display:inline-flex;background:var(--bg2);border:1px solid var(--line);border-radius:30px;padding:4px}
-  .seg button{background:transparent;border:none;color:var(--mut);font-weight:600;font-size:13px;padding:8px 16px;border-radius:30px;cursor:pointer;font-family:inherit;transition:.15s}
-  .seg button.on{background:var(--accent);color:#04140e}
-  .seg.alt button.on{background:var(--accent2);color:#02121f}
-  .search{flex:1;min-width:180px;max-width:280px;position:relative}
-  .search input{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:30px;padding:10px 16px 10px 38px;font-size:14px;font-family:inherit;outline:none}
-  .search input:focus{border-color:var(--accent)}
-  .search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.5}
-  .lb{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
-  .lb-head,.lb-row{display:grid;grid-template-columns:64px 1fr 130px 120px;align-items:center;gap:10px;padding:14px 20px}
-  .lb-head{color:var(--mut);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line);background:var(--bg2)}
-  .lb-row{border-bottom:1px solid var(--line);font-size:15px}
-  .lb-row:last-child{border-bottom:none}
-  .lb-row.me{background:rgba(10,224,160,.07)}
-  .rank{font-weight:800;font-variant-numeric:tabular-nums}
-  .rank.r1{color:var(--gold)} .rank.r2{color:var(--silver)} .rank.r3{color:var(--bronze)}
-  .who{display:flex;align-items:center;gap:9px;min-width:0}
-  .who .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .vbadge{font-size:10px;color:var(--accent);border:1px solid rgba(10,224,160,.4);border-radius:20px;padding:2px 7px;white-space:nowrap}
-  .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
-  .val.pos{color:var(--accent)} .val.neg{color:var(--red)}
-  .val.sub{color:var(--mut);font-weight:500;font-size:13.5px}
-  .lb-empty{padding:54px 20px;text-align:center;color:var(--mut)}
-  .lb-empty b{color:var(--txt);display:block;margin-bottom:6px;font-size:16px}
-  /* steps */
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
-  .card .n{width:34px;height:34px;border-radius:10px;background:rgba(10,224,160,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;margin-bottom:16px}
-  .card h3{font-size:18px;font-weight:700;margin-bottom:8px}
-  .card p{color:var(--mut);font-size:14px}
-  /* prize cards */
-  .grid3b{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-  .pcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;text-align:center}
-  .pcard .ic{font-size:30px;margin-bottom:10px}
-  .pcard h3{font-size:17px;margin-bottom:6px}
-  .pcard p{color:var(--mut);font-size:13.5px}
-  /* modal */
-  .modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
-  .modal.open{display:flex}
-  .sheet{background:var(--bg2);border:1px solid var(--line);border-radius:22px;max-width:460px;width:100%;padding:30px;max-height:90vh;overflow:auto}
-  .sheet h3{font-size:21px;font-weight:800;margin-bottom:6px}
-  .sheet .lead{color:var(--mut);font-size:14px;margin-bottom:20px}
-  .field{margin-bottom:14px}
-  .field label{display:block;font-size:13px;color:var(--mut);margin-bottom:6px}
-  .field input,.field select{width:100%;background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:12px 14px;font-size:14px;font-family:inherit;outline:none}
-  .field input:focus{border-color:var(--accent)}
-  .note{font-size:12.5px;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:6px 0 16px}
-  .note b{color:var(--accent2)}
-  .toggle{display:flex;gap:8px;margin-bottom:14px}
-  .toggle button{flex:1;background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:12px;padding:11px;font-weight:600;cursor:pointer;font-family:inherit;font-size:13px}
-  .toggle button.on{border-color:var(--accent);color:var(--txt)}
-  .msg{font-size:13.5px;padding:11px 14px;border-radius:12px;margin-bottom:14px;display:none}
-  .msg.err{display:block;background:rgba(255,90,106,.1);color:var(--red);border:1px solid rgba(255,90,106,.3)}
-  .msg.ok{display:block;background:rgba(10,224,160,.1);color:var(--accent);border:1px solid rgba(10,224,160,.3)}
-  .x{float:right;cursor:pointer;color:var(--mut);font-size:22px;line-height:1;margin-top:-4px}
-  /* mine bar */
-  .mine{background:linear-gradient(90deg,rgba(10,224,160,.1),rgba(55,182,255,.07));border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin-bottom:18px;display:none;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-  .mine.show{display:flex}
-  .mine .m-l{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-  .mine .m-stat{font-size:13px;color:var(--mut)}
-  .mine .m-stat b{display:block;color:var(--txt);font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
-  /* prize pool */
-  .prize{background:linear-gradient(135deg,rgba(255,210,90,.1),rgba(10,224,160,.06));border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:18px}
-  .prize-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-  .prize-lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
-  .prize-amt{font-size:clamp(30px,6vw,46px);font-weight:900;letter-spacing:-1px;background:linear-gradient(90deg,var(--gold),#ffb347);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.1;margin-top:2px}
-  .prize-cap{font-size:12.5px;color:var(--mut);margin-top:2px}
+  section{padding:64px 0}
+  .sec-h{margin-bottom:32px}
+  .sec-h h2{font-size:clamp(24px,3.6vw,34px);font-weight:720;letter-spacing:-.03em}
+  .sec-h p{color:var(--mut);margin-top:9px;font-size:15px}
+  .center{text-align:center}
+  .center .sec-h{display:flex;flex-direction:column;align-items:center}
+  /* prize */
+  .prize{background:linear-gradient(160deg,rgba(216,180,106,.07),rgba(52,211,154,.03));border:1px solid var(--line);border-radius:var(--r);padding:24px 26px;margin-bottom:16px}
+  .prize-top{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
+  .lbl{font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.13em;font-weight:600}
+  .prize-amt{font-size:clamp(28px,5.5vw,42px);font-weight:780;letter-spacing:-.03em;color:var(--gold);line-height:1.1;margin-top:4px}
+  .prize-cap{font-size:12.5px;color:var(--dim);margin-top:3px}
   .cd{text-align:right}
-  .cd-time{font-size:clamp(20px,4vw,28px);font-weight:800;font-variant-numeric:tabular-nums;margin-top:4px}
-  .prize-breakdown{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
-  .pz-rank{flex:1;min-width:88px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:11px 12px;text-align:center}
-  .pz-rank .r{font-size:12px;color:var(--mut);font-weight:600}
-  .pz-rank .a{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
-  .pz-rank.r1 .a{color:var(--gold)} .pz-rank.r2 .a{color:var(--silver)} .pz-rank.r3 .a{color:var(--bronze)}
-  .prize-note{font-size:12px;color:var(--mut);margin-top:14px;line-height:1.5}
-  footer{border-top:1px solid var(--line);padding:34px 0;color:var(--mut);font-size:13px;text-align:center}
-  footer a{color:var(--mut);margin:0 8px}
-  .disc{max-width:760px;margin:20px auto 0;font-size:11.5px;color:#5b626d;line-height:1.6;text-align:center}
+  .cd-time{font-size:clamp(19px,3.6vw,26px);font-weight:680;font-variant-numeric:tabular-nums;margin-top:5px;letter-spacing:.01em}
+  .cd-utc{font-size:11px;color:var(--dim);margin-top:2px}
+  .prize-break{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+  .pz{flex:1;min-width:84px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px 12px;text-align:center}
+  .pz .r{font-size:11.5px;color:var(--dim);font-weight:600;letter-spacing:.04em}
+  .pz .a{font-size:16px;font-weight:720;font-variant-numeric:tabular-nums;margin-top:3px}
+  .pz.r1 .a{color:var(--gold)} .pz.r2 .a{color:var(--silver)} .pz.r3 .a{color:var(--bronze)}
+  .prize-note{font-size:12px;color:var(--dim);margin-top:15px;line-height:1.6}
+  /* leaderboard controls */
+  .lb-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:3px}
+  .seg button{background:transparent;border:none;color:var(--mut);font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;transition:.15s}
+  .seg button.on{background:var(--line2);color:var(--txt)}
+  .seg.metric button.on{background:var(--accent);color:#06140e}
+  .search{flex:1;min-width:170px;max-width:260px;position:relative}
+  .search input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:11px;padding:10px 14px 10px 36px;font-size:14px;font-family:inherit;outline:none;transition:.15s}
+  .search input:focus{border-color:var(--line2)}
+  .search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);opacity:.45}
+  /* leaderboard table */
+  .lb{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .lb-h,.lb-r{display:grid;grid-template-columns:58px 1fr 128px 120px;align-items:center;gap:10px;padding:14px 22px}
+  .lb-h{color:var(--dim);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid var(--line);background:var(--panel2)}
+  .lb-r{border-bottom:1px solid var(--line);font-size:15px}
+  .lb-r:last-child{border-bottom:none}
+  .lb-r.me{background:rgba(52,211,154,.06)}
+  .rk{font-weight:700;font-variant-numeric:tabular-nums;color:var(--mut)}
+  .rk.r1{color:var(--gold)} .rk.r2{color:var(--silver)} .rk.r3{color:var(--bronze)}
+  .who{display:flex;align-items:center;gap:9px;min-width:0}
+  .who .nm{font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vb{font-size:10px;color:var(--accent);border:1px solid rgba(52,211,154,.35);border-radius:6px;padding:1px 6px;letter-spacing:.04em;white-space:nowrap}
+  .crown{opacity:.85}
+  .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:650}
+  .val.pos{color:var(--accent)} .val.neg{color:var(--red)}
+  .val.sub{color:var(--mut);font-weight:450;font-size:13.5px}
+  .lb-empty{padding:56px 22px;text-align:center;color:var(--mut)}
+  .lb-empty b{color:var(--txt);display:block;margin-bottom:6px;font-size:16px;font-weight:600}
+  .lb-meta{text-align:center;color:var(--dim);font-size:12.5px;margin-top:14px}
+  /* my bar */
+  .mine{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:17px 22px;margin-bottom:16px;display:none;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .mine.show{display:flex}
+  .mine .l{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .mst{font-size:12px;color:var(--dim)}
+  .mst b{display:block;color:var(--txt);font-size:17px;font-weight:720;font-variant-numeric:tabular-nums;margin-top:1px}
+  /* steps / cards */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:26px}
+  .card .ico{width:38px;height:38px;border-radius:10px;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:var(--accent)}
+  .card h3{font-size:17px;font-weight:640;margin-bottom:7px;letter-spacing:-.01em}
+  .card p{color:var(--mut);font-size:14px}
+  .card p b{color:var(--txt);font-weight:600}
+  .num{font-size:12px;color:var(--dim);font-weight:600;letter-spacing:.1em;margin-bottom:13px}
+  /* modal */
+  .modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.62);backdrop-filter:blur(7px);display:none;align-items:center;justify-content:center;padding:20px}
+  .modal.open{display:flex}
+  .sheet{background:var(--panel);border:1px solid var(--line2);border-radius:18px;max-width:470px;width:100%;padding:30px;max-height:92vh;overflow:auto}
+  .sheet h3{font-size:20px;font-weight:680;margin-bottom:6px;letter-spacing:-.02em}
+  .sheet .lead{color:var(--mut);font-size:14px;margin-bottom:22px}
+  .step{border:1px solid var(--line);border-radius:13px;padding:17px;margin-bottom:13px;background:var(--panel2)}
+  .step .st{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:620;margin-bottom:11px}
+  .step .st .b{width:21px;height:21px;border-radius:6px;background:var(--line2);color:var(--txt);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:none}
+  .step .st .b.done{background:var(--accent);color:#06140e}
+  .step p.sub{font-size:12.5px;color:var(--dim);margin:-4px 0 12px 30px}
+  .field{margin-bottom:11px}
+  .field label{display:block;font-size:12.5px;color:var(--mut);margin-bottom:5px}
+  .field input{width:100%;background:var(--bg);border:1px solid var(--line2);color:var(--txt);border-radius:10px;padding:11px 13px;font-size:14px;font-family:inherit;outline:none}
+  .field input:focus{border-color:var(--accent)}
+  .ref-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:12px 14px;font-size:14px;font-weight:600}
+  .ref-btn:hover{border-color:var(--accent)}
+  .ref-btn .ar{color:var(--accent);font-size:13px}
+  .hint{font-size:12px;color:var(--dim);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin:2px 0 14px;line-height:1.55}
+  .hint b{color:var(--accent)}
+  .msg{font-size:13.5px;padding:11px 13px;border-radius:10px;margin-bottom:13px;display:none}
+  .msg.err{display:block;background:rgba(236,106,114,.09);color:var(--red);border:1px solid rgba(236,106,114,.28)}
+  .msg.ok{display:block;background:rgba(52,211,154,.09);color:var(--accent);border:1px solid rgba(52,211,154,.28)}
+  .x{float:right;cursor:pointer;color:var(--dim);font-size:24px;line-height:1;margin-top:-6px}
+  .x:hover{color:var(--txt)}
+  footer{border-top:1px solid var(--line);padding:38px 0;color:var(--dim);font-size:13px;text-align:center}
+  footer a{color:var(--mut);margin:0 9px}
+  footer a:hover{color:var(--txt)}
+  .disc{max-width:740px;margin:18px auto 0;font-size:11.5px;color:#4d4e58;line-height:1.65}
   @media(max-width:760px){
-    .grid3,.grid3b{grid-template-columns:1fr}
-    .lb-head,.lb-row{grid-template-columns:48px 1fr 96px;}
-    .lb-head .h-vol,.lb-row .c-vol{display:none}
-    .hero{padding:60px 0 40px}
+    .grid3{grid-template-columns:1fr}
+    .lb-h,.lb-r{grid-template-columns:42px 1fr 96px}
+    .lb-h .h-eq,.lb-r .c-eq{display:none}
+    .hero{padding:66px 0 44px}
+    .nav-lnk.hide-m{display:none}
   }
 </style>
 </head>
 <body>
 <nav>
   <div class="wrap">
-    <a href="/" class="logo">AY<span>I</span>LON</a>
+    <a href="/" class="logo">AY<i>I</i>LON</a>
     <div class="nav-r">
+      <a href="#leaderboard" class="nav-lnk hide-m" data-i18n="nav.board">리더보드</a>
+      <a href="#how" class="nav-lnk hide-m" data-i18n="nav.how">참가방법</a>
       <span class="lang" id="langBtn">EN</span>
-      <a id="navAuth" class="btn btn-ghost btn-sm" href="/login.html" data-i18n="nav.login">로그인</a>
-      <button class="btn btn-primary btn-sm" id="navJoin" data-i18n="nav.join">대회 참가</button>
+      <a id="navAuth" class="nav-lnk" href="/login.html" data-i18n="nav.login">로그인</a>
+      <button class="btn btn-primary btn-sm" id="navJoin" data-i18n="nav.join">참가하기</button>
     </div>
   </div>
 </nav>
 
-<!-- HERO -->
 <header class="hero">
   <div class="wrap">
-    <span class="tag" data-i18n="hero.tag">🏆 실전 트레이딩 리그</span>
-    <h1 data-i18n="hero.title">진짜 실력을<br><em>증명하는</em> 무대</h1>
-    <p data-i18n="hero.sub">매주·매달, 실제 OKX 계좌의 수익률·수익금·거래량으로 경쟁합니다. 참가비 0원. 우승하면 상금과 명예를 가져가세요.</p>
+    <span class="kicker" data-i18n="hero.kicker">Global Trading League</span>
+    <h1 data-i18n="hero.title">실력을 <b>증명</b>하는<br>글로벌 트레이딩 리그</h1>
+    <p data-i18n="hero.sub">매주·매달, 실제 OKX 계좌의 성과로 전 세계 트레이더와 경쟁합니다. 참가비는 없습니다. 자금은 당신의 계좌에 그대로 있습니다.</p>
     <div class="hero-cta">
-      <button class="btn btn-primary" id="heroJoin" data-i18n="hero.cta1">지금 참가하기</button>
+      <button class="btn btn-primary" id="heroJoin" data-i18n="hero.cta1">대회 참가하기</button>
       <a class="btn btn-ghost" href="#leaderboard" data-i18n="hero.cta2">리더보드 보기</a>
     </div>
-    <div class="pillrow">
-      <span class="pill" data-i18n="hero.p1">✅ 참가비 무료</span>
-      <span class="pill" data-i18n="hero.p2">🔒 읽기전용 연결 (자금 안전)</span>
-      <span class="pill" data-i18n="hero.p3">⚡ 매일 자동 집계</span>
+    <div class="meta">
+      <span data-i18n="hero.m1">참가비 무료</span>
+      <span data-i18n="hero.m2">읽기전용 연결 · 자금 안전</span>
+      <span data-i18n="hero.m3">매일 자동 집계</span>
     </div>
   </div>
 </header>
 
-<!-- LEADERBOARD -->
 <section id="leaderboard">
   <div class="wrap">
     <div class="sec-h">
       <h2 data-i18n="lb.title">라이브 리더보드</h2>
-      <p data-i18n="lb.sub">전체 참가자 실시간 순위 — 닉네임으로 본인을 검색하세요.</p>
+      <p data-i18n="lb.sub">전체 참가자 실시간 순위. 닉네임으로 본인을 검색하세요.</p>
     </div>
 
-    <!-- PRIZE POOL -->
     <div class="prize" id="prizeBox">
       <div class="prize-top">
         <div>
-          <div class="prize-lbl" id="prizeLbl" data-i18n="pz.pool">이번 시즌 상금 풀</div>
-          <div class="prize-amt" id="prizeAmt">$0</div>
+          <div class="lbl" id="prizeLbl" data-i18n="pz.pool">이번 주 상금 풀</div>
+          <div class="prize-amt" id="prizeAmt">—</div>
           <div class="prize-cap" id="prizeCap"></div>
         </div>
         <div class="cd">
-          <div class="prize-lbl" data-i18n="pz.ends">시즌 종료까지</div>
+          <div class="lbl" data-i18n="pz.ends">시즌 종료까지</div>
           <div class="cd-time" id="cdTime">—</div>
+          <div class="cd-utc" id="cdUtc"></div>
         </div>
       </div>
-      <div class="prize-breakdown" id="prizeBreak"></div>
-      <div class="prize-note" id="prizeNote" data-i18n="pz.note">상금 풀은 리그 거래보상에서 적립되며, 리그가 커질수록 함께 커집니다. 상금은 AYILON 추천 가입자만 대상입니다.</div>
+      <div class="prize-break" id="prizeBreak"></div>
+      <div class="prize-note" id="prizeNote" data-i18n="pz.note">상금 풀은 리그 거래보상에서 적립되며 리그가 커질수록 함께 커집니다. 상금은 AYILON 추천으로 가입한 계정만 대상입니다.</div>
     </div>
 
     <div class="mine" id="mineBar">
-      <div class="m-l">
-        <div class="m-stat"><span data-i18n="mine.rank">내 순위</span><b id="mRank">—</b></div>
-        <div class="m-stat"><span data-i18n="mine.ret">수익률</span><b id="mRet">—</b></div>
-        <div class="m-stat"><span data-i18n="mine.profit">수익금</span><b id="mProfit">—</b></div>
-        <div class="m-stat"><span data-i18n="mine.eq">평가금</span><b id="mEq">—</b></div>
+      <div class="l">
+        <div class="mst"><span data-i18n="mine.rank">내 순위</span><b id="mRank">—</b></div>
+        <div class="mst"><span data-i18n="mine.ret">수익률</span><b id="mRet">—</b></div>
+        <div class="mst"><span data-i18n="mine.profit">수익금</span><b id="mProfit">—</b></div>
+        <div class="mst"><span data-i18n="mine.eq">평가금</span><b id="mEq">—</b></div>
       </div>
       <button class="btn btn-ghost btn-sm" id="mineManage" data-i18n="mine.manage">연결 관리</button>
     </div>
 
-    <div class="lb-controls">
+    <div class="lb-ctl">
       <div class="seg" id="periodSeg">
         <button data-period="weekly" class="on" data-i18n="lb.weekly">주간</button>
         <button data-period="monthly" data-i18n="lb.monthly">월간</button>
       </div>
-      <div class="seg alt" id="metricSeg">
+      <div class="seg metric" id="metricSeg">
         <button data-metric="return" class="on" data-i18n="lb.m.return">수익률</button>
-        <button data-metric="profit" data-i18n="lb.m.profit">수익금</button>
-        <button data-metric="volume" data-i18n="lb.m.volume">거래량</button>
+        <button data-metric="profit" class="m-only" data-i18n="lb.m.profit">수익금</button>
+        <button data-metric="volume" class="m-only" data-i18n="lb.m.volume">거래량</button>
       </div>
       <div class="search">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input id="lbSearch" type="text" data-i18n-ph="lb.search" placeholder="닉네임 검색…">
+        <input id="lbSearch" type="text" data-i18n-ph="lb.search" placeholder="닉네임 검색">
       </div>
     </div>
 
     <div class="lb">
-      <div class="lb-head">
+      <div class="lb-h">
         <div data-i18n="lb.h.rank">순위</div>
         <div data-i18n="lb.h.trader">트레이더</div>
         <div class="val" id="hMetric" data-i18n="lb.m.return">수익률</div>
-        <div class="val c-vol h-vol" data-i18n="lb.h.eq">평가금</div>
+        <div class="val c-eq h-eq" data-i18n="lb.h.eq">평가금</div>
       </div>
       <div id="lbBody"></div>
     </div>
-    <p style="text-align:center;color:var(--mut);font-size:12.5px;margin-top:14px" id="lbMeta"></p>
+    <p class="lb-meta" id="lbMeta"></p>
   </div>
 </section>
 
-<!-- HOW -->
-<section style="background:var(--bg2)">
+<section id="how" style="background:var(--panel2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
   <div class="wrap">
-    <div class="sec-h"><h2 data-i18n="how.title">참가 방법</h2><p data-i18n="how.sub">3분이면 끝. 코딩·입금 강요 없음.</p></div>
+    <div class="sec-h"><h2 data-i18n="how.title">참가 방법</h2><p data-i18n="how.sub">로그인하고, 추천으로 가입하고, 키를 연결하면 끝입니다.</p></div>
     <div class="grid3">
-      <div class="card"><div class="n">1</div><h3 data-i18n="how.1.t">OKX 계정 만들기</h3><p data-i18n="how.1.d">AYILON 링크로 OKX에 가입하세요. 이미 있으면 그대로 연결해도 됩니다.</p></div>
-      <div class="card"><div class="n">2</div><h3 data-i18n="how.2.t">읽기전용 키 연결</h3><p data-i18n="how.2.d">거래·출금 권한 없는 <b>읽기전용</b> API 키만 연결합니다. 우리는 당신의 자금을 절대 건드릴 수 없습니다.</p></div>
-      <div class="card"><div class="n">3</div><h3 data-i18n="how.3.t">거래하고 순위에 오르기</h3><p data-i18n="how.3.d">평소처럼 거래하면 매일 자동 집계되어 리더보드에 반영됩니다. 끝.</p></div>
+      <div class="card">
+        <div class="num">STEP 01</div>
+        <h3 data-i18n="how.1.t">AYILON 추천으로 가입</h3>
+        <p data-i18n="how.1.d">AYILON 추천 링크로 OKX 계정을 만드세요. 상금은 추천 가입 계정만 받을 수 있습니다.</p>
+      </div>
+      <div class="card">
+        <div class="num">STEP 02</div>
+        <h3 data-i18n="how.2.t">읽기전용 키 연결</h3>
+        <p data-i18n="how.2.d">거래·출금 권한이 없는 <b>읽기전용</b> 키만 연결합니다. 자금은 절대 건드릴 수 없습니다.</p>
+      </div>
+      <div class="card">
+        <div class="num">STEP 03</div>
+        <h3 data-i18n="how.3.t">거래하고 순위에 오르기</h3>
+        <p data-i18n="how.3.d">평소처럼 거래하면 매일 자동 집계되어 리더보드에 반영됩니다.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- PRIZE / CATEGORIES -->
 <section>
   <div class="wrap">
-    <div class="sec-h"><h2 data-i18n="cat.title">3개 부문, 3배의 기회</h2><p data-i18n="cat.sub">한 부문은 못 먹어도 다른 부문은 노릴 수 있습니다.</p></div>
-    <div class="grid3b">
-      <div class="pcard"><div class="ic">📈</div><h3 data-i18n="cat.1.t">수익률 부문</h3><p data-i18n="cat.1.d">기간 내 % 수익률. 소액으로도 한 방을 노리는 고위험 부문.</p></div>
-      <div class="pcard"><div class="ic">💰</div><h3 data-i18n="cat.2.t">수익금 부문</h3><p data-i18n="cat.2.d">절대 수익 금액. 실력과 자본으로 꾸준히 버는 사람의 무대.</p></div>
-      <div class="pcard"><div class="ic">🔥</div><h3 data-i18n="cat.3.t">거래량 부문</h3><p data-i18n="cat.3.d">기간 내 누적 거래량. 가장 활발한 트레이더에게.</p></div>
+    <div class="sec-h"><h2 data-i18n="cat.title">부문</h2><p data-i18n="cat.sub">수익률은 주간·월간, 수익금과 거래량은 월간으로 진행됩니다.</p></div>
+    <div class="grid3">
+      <div class="card"><h3 data-i18n="cat.1.t">수익률</h3><p data-i18n="cat.1.d">기간 내 수익률. 주간과 월간 두 가지로 열립니다.</p></div>
+      <div class="card"><h3 data-i18n="cat.2.t">수익금</h3><p data-i18n="cat.2.d">절대 수익 금액. 월간으로만 진행됩니다.</p></div>
+      <div class="card"><h3 data-i18n="cat.3.t">거래량</h3><p data-i18n="cat.3.d">기간 내 누적 거래량. 월간으로만 진행됩니다.</p></div>
     </div>
   </div>
 </section>
 
-<!-- CTA -->
-<section style="text-align:center;background:radial-gradient(700px 320px at 50% 120%,rgba(55,182,255,.12),transparent 70%)">
+<section class="center" style="background:var(--panel2);border-top:1px solid var(--line)">
   <div class="wrap">
-    <h2 style="font-size:clamp(26px,4vw,40px);font-weight:800;letter-spacing:-.8px" data-i18n="cta.title">이번 시즌, 당신의 이름을 올리세요</h2>
-    <p style="color:var(--mut);margin:14px auto 28px;max-width:520px" data-i18n="cta.sub">매주 월요일 새 시즌이 시작됩니다. 지금 참가하면 이번 주부터 집계됩니다.</p>
-    <button class="btn btn-primary" id="ctaJoin" data-i18n="cta.btn">무료로 참가하기</button>
+    <div class="sec-h"><h2 data-i18n="cta.title">이번 시즌, 당신의 이름을 올리세요</h2><p data-i18n="cta.sub">매주 월요일 00:00 UTC에 새 시즌이 시작됩니다.</p></div>
+    <button class="btn btn-primary" id="ctaJoin" data-i18n="cta.btn">대회 참가하기</button>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
     <div><a href="/about.html" data-i18n="ft.about">소개</a><a href="/terms.html" data-i18n="ft.terms">약관</a><a href="/privacy.html" data-i18n="ft.privacy">개인정보</a></div>
-    <p style="margin-top:14px">© 2026 AYILON. All rights reserved.</p>
-    <p class="disc" data-i18n="ft.disc">투자에는 원금 손실 위험이 따릅니다. AYILON 아레나는 트레이딩 대회 플랫폼이며 투자 자문이나 수익을 보장하지 않습니다. 모든 거래 결정과 그 결과는 전적으로 참가자 본인의 책임입니다. 리더보드는 참가자 본인의 거래 실적이며, 특정 매매 방식을 권유하지 않습니다.</p>
+    <p style="margin-top:14px">© 2026 AYILON</p>
+    <p class="disc" data-i18n="ft.disc">투자에는 원금 손실 위험이 따릅니다. AYILON 아레나는 트레이딩 대회 플랫폼이며 투자 자문이나 수익을 보장하지 않습니다. 모든 거래 결정과 결과는 전적으로 참가자 본인의 책임입니다. 리더보드는 참가자 본인의 실거래 성과이며 특정 매매 방식을 권유하지 않습니다.</p>
   </div>
 </footer>
 
@@ -274,35 +297,39 @@
 <div class="modal" id="joinModal">
   <div class="sheet">
     <span class="x" id="closeJoin">&times;</span>
-    <h3 data-i18n="jm.title">대회 참가 — 읽기전용 키 연결</h3>
-    <p class="lead" data-i18n="jm.lead">거래·출금 권한이 없는 읽기전용 키만 연결하세요. 자금은 100% 당신의 OKX 계좌에 있습니다.</p>
+    <h3 data-i18n="jm.title">대회 참가</h3>
+    <p class="lead" data-i18n="jm.lead">아래 순서대로 진행하세요. 자금은 100% 당신의 OKX 계좌에 있습니다.</p>
     <div class="msg" id="jmMsg"></div>
 
-    <div class="toggle" id="modeToggle">
-      <button data-mode="live" class="on" data-i18n="jm.live">실전</button>
-      <button data-mode="demo" data-i18n="jm.demo">데모(체험)</button>
+    <div class="step">
+      <div class="st"><span class="b">1</span><span data-i18n="jm.s1">AYILON 추천으로 OKX 가입</span></div>
+      <p class="sub" data-i18n="jm.s1d">이미 AYILON 추천으로 가입했다면 2단계로 넘어가세요.</p>
+      <a class="ref-btn" href="https://www.okx.com/join/AYILON" target="_blank" rel="noopener">
+        <span>okx.com/join/AYILON</span><span class="ar" data-i18n="jm.open">가입하기 ↗</span>
+      </a>
     </div>
 
-    <div class="field"><label data-i18n="jm.k">API Key</label><input id="jKey" autocomplete="off" spellcheck="false"></div>
-    <div class="field"><label data-i18n="jm.s">Secret Key</label><input id="jSecret" type="password" autocomplete="off" spellcheck="false"></div>
-    <div class="field"><label data-i18n="jm.p">Passphrase</label><input id="jPass" type="password" autocomplete="off" spellcheck="false"></div>
-
-    <div class="note" data-i18n="jm.note">💡 OKX → 우측상단 프로필 → API → 키 생성 시 <b>읽기(Read) 권한만</b> 체크하세요. 거래/출금은 절대 체크하지 마세요.</div>
-    <div class="note" id="refNote" data-i18n="jm.ref">🏆 상금과 우승자 노출은 <b>AYILON 추천(okx.com/join/AYILON)</b>으로 가입한 계정만 대상입니다. 누구나 참가·순위 등재는 가능합니다.</div>
+    <div class="step">
+      <div class="st"><span class="b">2</span><span data-i18n="jm.s2">읽기전용 API 키 연결</span></div>
+      <div class="field"><label data-i18n="jm.k">API Key</label><input id="jKey" autocomplete="off" spellcheck="false"></div>
+      <div class="field"><label data-i18n="jm.s">Secret Key</label><input id="jSecret" type="password" autocomplete="off" spellcheck="false"></div>
+      <div class="field"><label data-i18n="jm.p">Passphrase</label><input id="jPass" type="password" autocomplete="off" spellcheck="false"></div>
+      <div class="hint" data-i18n="jm.hint">OKX → 프로필 → API → 키 생성 시 <b>읽기(Read) 권한만</b> 체크하세요. 거래·출금 권한은 절대 체크하지 마세요.</div>
+    </div>
 
     <button class="btn btn-primary" id="jSubmit" style="width:100%" data-i18n="jm.submit">연결하고 참가</button>
-    <p style="text-align:center;margin-top:14px;font-size:13px;color:var(--mut)" id="jLeaveWrap" hidden>
-      <a href="#" id="jLeave" style="color:var(--red)" data-i18n="jm.leave">대회에서 나가기 (연결 해제)</a>
+    <p style="text-align:center;margin-top:14px;font-size:13px" id="jLeaveWrap" hidden>
+      <a href="#" id="jLeave" style="color:var(--red)" data-i18n="jm.leave">대회에서 나가기</a>
     </p>
   </div>
 </div>
 
 <!-- LOGIN-REQUIRED MODAL -->
 <div class="modal" id="authModal">
-  <div class="sheet" style="text-align:center">
+  <div class="sheet" style="text-align:center;max-width:400px">
     <span class="x" id="closeAuth">&times;</span>
-    <h3 data-i18n="am.title">로그인이 필요해요</h3>
-    <p class="lead" data-i18n="am.lead">대회 참가는 로그인 후 진행됩니다. 1분이면 가입할 수 있어요.</p>
+    <h3 data-i18n="am.title">로그인이 필요합니다</h3>
+    <p class="lead" data-i18n="am.lead">대회 참가는 로그인 후 진행됩니다.</p>
     <a class="btn btn-primary" href="/login.html" style="width:100%;margin-bottom:10px" data-i18n="am.login">로그인</a>
     <a class="btn btn-ghost" href="/signup.html" style="width:100%" data-i18n="am.signup">회원가입</a>
   </div>
@@ -313,243 +340,215 @@ const API = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
 const token = () => localStorage.getItem('ayilon_session_token');
 const authed = () => !!token();
 
-/* ---------- i18n ---------- */
 const I18N = {
   ko:{
-    'nav.login':'로그인','nav.join':'대회 참가',
-    'hero.tag':'🏆 실전 트레이딩 리그','hero.title':'진짜 실력을<br><em>증명하는</em> 무대',
-    'hero.sub':'매주·매달, 실제 OKX 계좌의 수익률·수익금·거래량으로 경쟁합니다. 참가비 0원. 우승하면 상금과 명예를 가져가세요.',
-    'hero.cta1':'지금 참가하기','hero.cta2':'리더보드 보기',
-    'hero.p1':'✅ 참가비 무료','hero.p2':'🔒 읽기전용 연결 (자금 안전)','hero.p3':'⚡ 매일 자동 집계',
-    'lb.title':'라이브 리더보드','lb.sub':'전체 참가자 실시간 순위 — 닉네임으로 본인을 검색하세요.',
+    'nav.board':'리더보드','nav.how':'참가방법','nav.login':'로그인','nav.join':'참가하기',
+    'hero.kicker':'Global Trading League','hero.title':'실력을 <b>증명</b>하는<br>글로벌 트레이딩 리그',
+    'hero.sub':'매주·매달, 실제 OKX 계좌의 성과로 전 세계 트레이더와 경쟁합니다. 참가비는 없습니다. 자금은 당신의 계좌에 그대로 있습니다.',
+    'hero.cta1':'대회 참가하기','hero.cta2':'리더보드 보기',
+    'hero.m1':'참가비 무료','hero.m2':'읽기전용 연결 · 자금 안전','hero.m3':'매일 자동 집계',
+    'lb.title':'라이브 리더보드','lb.sub':'전체 참가자 실시간 순위. 닉네임으로 본인을 검색하세요.',
     'lb.weekly':'주간','lb.monthly':'월간','lb.m.return':'수익률','lb.m.profit':'수익금','lb.m.volume':'거래량',
-    'pz.pool':'이번 주 상금 풀','pz.pool.m':'이번 달 상금 풀','pz.ends':'시즌 종료까지','pz.cap':'최대 $',
-    'pz.note':'상금 풀은 리그 거래보상에서 적립되며, 리그가 커질수록 함께 커집니다. 상금은 AYILON 추천 가입자만 대상입니다.',
-    'pz.r':'등','pz.live':'적립 중','pz.d':'일','pz.h':'시간',
-    'lb.search':'닉네임 검색…','lb.h.rank':'순위','lb.h.trader':'트레이더','lb.h.eq':'평가금',
+    'lb.search':'닉네임 검색','lb.h.rank':'순위','lb.h.trader':'트레이더','lb.h.eq':'평가금',
+    'pz.pool':'이번 주 상금 풀','pz.pool.m':'이번 달 상금 풀','pz.ends':'시즌 종료까지',
+    'pz.note':'상금 풀은 리그 거래보상에서 적립되며 리그가 커질수록 함께 커집니다. 상금은 AYILON 추천으로 가입한 계정만 대상입니다.',
     'mine.rank':'내 순위','mine.ret':'수익률','mine.profit':'수익금','mine.eq':'평가금','mine.manage':'연결 관리',
-    'how.title':'참가 방법','how.sub':'3분이면 끝. 코딩·입금 강요 없음.',
-    'how.1.t':'OKX 계정 만들기','how.1.d':'AYILON 링크로 OKX에 가입하세요. 이미 있으면 그대로 연결해도 됩니다.',
-    'how.2.t':'읽기전용 키 연결','how.2.d':'거래·출금 권한 없는 읽기전용 API 키만 연결합니다. 우리는 당신의 자금을 절대 건드릴 수 없습니다.',
-    'how.3.t':'거래하고 순위에 오르기','how.3.d':'평소처럼 거래하면 매일 자동 집계되어 리더보드에 반영됩니다. 끝.',
-    'cat.title':'3개 부문, 3배의 기회','cat.sub':'한 부문은 못 먹어도 다른 부문은 노릴 수 있습니다.',
-    'cat.1.t':'수익률 부문','cat.1.d':'기간 내 % 수익률. 소액으로도 한 방을 노리는 고위험 부문.',
-    'cat.2.t':'수익금 부문','cat.2.d':'절대 수익 금액. 실력과 자본으로 꾸준히 버는 사람의 무대.',
-    'cat.3.t':'거래량 부문','cat.3.d':'기간 내 누적 거래량. 가장 활발한 트레이더에게.',
-    'cta.title':'이번 시즌, 당신의 이름을 올리세요','cta.sub':'매주 월요일 새 시즌이 시작됩니다. 지금 참가하면 이번 주부터 집계됩니다.','cta.btn':'무료로 참가하기',
+    'how.title':'참가 방법','how.sub':'로그인하고, 추천으로 가입하고, 키를 연결하면 끝입니다.',
+    'how.1.t':'AYILON 추천으로 가입','how.1.d':'AYILON 추천 링크로 OKX 계정을 만드세요. 상금은 추천 가입 계정만 받을 수 있습니다.',
+    'how.2.t':'읽기전용 키 연결','how.2.d':'거래·출금 권한이 없는 읽기전용 키만 연결합니다. 자금은 절대 건드릴 수 없습니다.',
+    'how.3.t':'거래하고 순위에 오르기','how.3.d':'평소처럼 거래하면 매일 자동 집계되어 리더보드에 반영됩니다.',
+    'cat.title':'부문','cat.sub':'수익률은 주간·월간, 수익금과 거래량은 월간으로 진행됩니다.',
+    'cat.1.t':'수익률','cat.1.d':'기간 내 수익률. 주간과 월간 두 가지로 열립니다.',
+    'cat.2.t':'수익금','cat.2.d':'절대 수익 금액. 월간으로만 진행됩니다.',
+    'cat.3.t':'거래량','cat.3.d':'기간 내 누적 거래량. 월간으로만 진행됩니다.',
+    'cta.title':'이번 시즌, 당신의 이름을 올리세요','cta.sub':'매주 월요일 00:00 UTC에 새 시즌이 시작됩니다.','cta.btn':'대회 참가하기',
     'ft.about':'소개','ft.terms':'약관','ft.privacy':'개인정보',
-    'ft.disc':'투자에는 원금 손실 위험이 따릅니다. AYILON 아레나는 트레이딩 대회 플랫폼이며 투자 자문이나 수익을 보장하지 않습니다. 모든 거래 결정과 그 결과는 전적으로 참가자 본인의 책임입니다. 리더보드는 참가자 본인의 거래 실적이며, 특정 매매 방식을 권유하지 않습니다.',
-    'jm.title':'대회 참가 — 읽기전용 키 연결','jm.lead':'거래·출금 권한이 없는 읽기전용 키만 연결하세요. 자금은 100% 당신의 OKX 계좌에 있습니다.',
-    'jm.live':'실전','jm.demo':'데모(체험)','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
-    'jm.note':'💡 OKX → 우측상단 프로필 → API → 키 생성 시 읽기(Read) 권한만 체크하세요. 거래/출금은 절대 체크하지 마세요.',
-    'jm.ref':'🏆 상금과 우승자 노출은 AYILON 추천(okx.com/join/AYILON)으로 가입한 계정만 대상입니다. 누구나 참가·순위 등재는 가능합니다.',
-    'jm.submit':'연결하고 참가','jm.leave':'대회에서 나가기 (연결 해제)',
-    'am.title':'로그인이 필요해요','am.lead':'대회 참가는 로그인 후 진행됩니다. 1분이면 가입할 수 있어요.','am.login':'로그인','am.signup':'회원가입'
+    'ft.disc':'투자에는 원금 손실 위험이 따릅니다. AYILON 아레나는 트레이딩 대회 플랫폼이며 투자 자문이나 수익을 보장하지 않습니다. 모든 거래 결정과 결과는 전적으로 참가자 본인의 책임입니다. 리더보드는 참가자 본인의 실거래 성과이며 특정 매매 방식을 권유하지 않습니다.',
+    'jm.title':'대회 참가','jm.lead':'아래 순서대로 진행하세요. 자금은 100% 당신의 OKX 계좌에 있습니다.',
+    'jm.s1':'AYILON 추천으로 OKX 가입','jm.s1d':'이미 AYILON 추천으로 가입했다면 2단계로 넘어가세요.','jm.open':'가입하기 ↗',
+    'jm.s2':'읽기전용 API 키 연결','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
+    'jm.hint':'OKX → 프로필 → API → 키 생성 시 읽기(Read) 권한만 체크하세요. 거래·출금 권한은 절대 체크하지 마세요.',
+    'jm.submit':'연결하고 참가','jm.leave':'대회에서 나가기',
+    'am.title':'로그인이 필요합니다','am.lead':'대회 참가는 로그인 후 진행됩니다.','am.login':'로그인','am.signup':'회원가입'
   },
   en:{
-    'nav.login':'Log in','nav.join':'Join',
-    'hero.tag':'🏆 Real-money Trading League','hero.title':'The stage to<br><em>prove</em> your edge',
-    'hero.sub':'Compete every week and month on real OKX account return, profit and volume. Free to enter. Win the prize and the glory.',
-    'hero.cta1':'Join now','hero.cta2':'View leaderboard',
-    'hero.p1':'✅ Free entry','hero.p2':'🔒 Read-only (funds stay yours)','hero.p3':'⚡ Auto-scored daily',
-    'lb.title':'Live Leaderboard','lb.sub':'All participants, ranked live — search your nickname.',
+    'nav.board':'Leaderboard','nav.how':'How it works','nav.login':'Log in','nav.join':'Join',
+    'hero.kicker':'Global Trading League','hero.title':'Prove your edge in the<br><b>global</b> trading league',
+    'hero.sub':'Compete with traders worldwide on your real OKX account, every week and month. No entry fee. Your funds stay in your account.',
+    'hero.cta1':'Join the league','hero.cta2':'View leaderboard',
+    'hero.m1':'Free entry','hero.m2':'Read-only · funds stay yours','hero.m3':'Auto-scored daily',
+    'lb.title':'Live Leaderboard','lb.sub':'All participants, ranked live. Search your nickname.',
     'lb.weekly':'Weekly','lb.monthly':'Monthly','lb.m.return':'Return','lb.m.profit':'Profit','lb.m.volume':'Volume',
-    'pz.pool':'This week\'s prize pool','pz.pool.m':'This month\'s prize pool','pz.ends':'Season ends in','pz.cap':'up to $',
+    'lb.search':'Search nickname','lb.h.rank':'Rank','lb.h.trader':'Trader','lb.h.eq':'Equity',
+    'pz.pool':'This week\'s prize pool','pz.pool.m':'This month\'s prize pool','pz.ends':'Season ends in',
     'pz.note':'The prize pool is funded by the league\'s trading rewards and grows as the league grows. Prizes are for AYILON-referred accounts only.',
-    'pz.r':'','pz.live':'accruing','pz.d':'d','pz.h':'h',
-    'lb.search':'Search nickname…','lb.h.rank':'Rank','lb.h.trader':'Trader','lb.h.eq':'Equity',
     'mine.rank':'My rank','mine.ret':'Return','mine.profit':'Profit','mine.eq':'Equity','mine.manage':'Manage',
-    'how.title':'How to join','how.sub':'Done in 3 minutes. No coding, no forced deposit.',
-    'how.1.t':'Create an OKX account','how.1.d':'Sign up to OKX via the AYILON link. Already have one? Just connect it.',
-    'how.2.t':'Connect a read-only key','how.2.d':'Only a read-only API key (no trade/withdraw). We can never touch your funds.',
-    'how.3.t':'Trade and climb','how.3.d':'Trade as usual — your stats are auto-scored daily onto the board. That\'s it.',
-    'cat.title':'3 categories, 3x the chances','cat.sub':'Miss one board, still win another.',
-    'cat.1.t':'Return %','cat.1.d':'% return over the period. The high-risk board where small accounts can spike.',
-    'cat.2.t':'Profit','cat.2.d':'Absolute profit. For those who grind it out with skill and size.',
-    'cat.3.t':'Volume','cat.3.d':'Cumulative volume over the period. For the most active trader.',
-    'cta.title':'Put your name on the board this season','cta.sub':'A new season starts every Monday. Join now and you\'re scored from this week.','cta.btn':'Join free',
+    'how.title':'How it works','how.sub':'Log in, sign up via referral, connect your key. Done.',
+    'how.1.t':'Sign up via AYILON','how.1.d':'Create an OKX account through the AYILON referral link. Prizes are for referred accounts only.',
+    'how.2.t':'Connect a read-only key','how.2.d':'Only a read-only key (no trade/withdraw). We can never touch your funds.',
+    'how.3.t':'Trade and climb','how.3.d':'Trade as usual — your stats are auto-scored daily onto the board.',
+    'cat.title':'Categories','cat.sub':'Return runs weekly and monthly; profit and volume run monthly.',
+    'cat.1.t':'Return','cat.1.d':'Return over the period. Runs both weekly and monthly.',
+    'cat.2.t':'Profit','cat.2.d':'Absolute profit. Runs monthly only.',
+    'cat.3.t':'Volume','cat.3.d':'Cumulative volume over the period. Runs monthly only.',
+    'cta.title':'Put your name on the board this season','cta.sub':'A new season starts every Monday at 00:00 UTC.','cta.btn':'Join the league',
     'ft.about':'About','ft.terms':'Terms','ft.privacy':'Privacy',
-    'ft.disc':'Trading involves risk of loss of principal. AYILON Arena is a trading-competition platform and does not provide investment advice or guarantee profit. All trading decisions and outcomes are solely the participant\'s responsibility. Leaderboards reflect participants\' own trading and do not endorse any strategy.',
-    'jm.title':'Join — connect a read-only key','jm.lead':'Connect only a read-only key (no trade/withdraw). Your funds stay 100% in your OKX account.',
-    'jm.live':'Live','jm.demo':'Demo','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
-    'jm.note':'💡 OKX → profile → API → when creating the key, check Read permission only. Never check trade/withdraw.',
-    'jm.ref':'🏆 Prizes and winner features are only for accounts signed up via AYILON (okx.com/join/AYILON). Anyone may participate and appear on the board.',
-    'jm.submit':'Connect & join','jm.leave':'Leave the arena (disconnect)',
-    'am.title':'Login required','am.lead':'Joining requires login. Signing up takes a minute.','am.login':'Log in','am.signup':'Sign up'
+    'ft.disc':'Trading involves risk of loss of principal. AYILON Arena is a trading-competition platform and does not provide investment advice or guarantee profit. All trading decisions and outcomes are solely the participant\'s responsibility. Leaderboards reflect participants\' own real trading and do not endorse any strategy.',
+    'jm.title':'Join the league','jm.lead':'Follow the steps below. Your funds stay 100% in your OKX account.',
+    'jm.s1':'Sign up to OKX via AYILON','jm.s1d':'Already signed up via AYILON? Skip to step 2.','jm.open':'Sign up ↗',
+    'jm.s2':'Connect a read-only API key','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
+    'jm.hint':'OKX → profile → API → when creating the key, check Read permission only. Never check trade/withdraw.',
+    'jm.submit':'Connect & join','jm.leave':'Leave the arena',
+    'am.title':'Login required','am.lead':'Joining requires login.','am.login':'Log in','am.signup':'Sign up'
   }
 };
 let LANG = localStorage.getItem('ayilon_lang') || 'ko';
 function applyLang(){
-  const d = I18N[LANG];
-  document.documentElement.lang = LANG;
-  document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(d[k]!=null) el.innerHTML=d[k]; });
-  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(d[k]!=null) el.placeholder=d[k]; });
-  document.getElementById('langBtn').textContent = LANG==='ko'?'EN':'한국어';
+  const d=I18N[LANG]; document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(d[k]!=null)el.innerHTML=d[k];});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{const k=el.getAttribute('data-i18n-ph');if(d[k]!=null)el.placeholder=d[k];});
+  document.getElementById('langBtn').textContent=LANG==='ko'?'EN':'한국어';
   syncMetricHeader();
 }
-document.getElementById('langBtn').onclick=()=>{ LANG=LANG==='ko'?'en':'ko'; localStorage.setItem('ayilon_lang',LANG); applyLang(); renderLB(); renderPrize(); };
+document.getElementById('langBtn').onclick=()=>{LANG=LANG==='ko'?'en':'ko';localStorage.setItem('ayilon_lang',LANG);applyLang();renderLB();renderPrize();};
 
 /* ---------- leaderboard ---------- */
-let state = { period:'weekly', metric:'return', q:'', rows:[], total:0 };
-const fmtPct = v => (v>=0?'+':'')+(v*100).toFixed(1)+'%';
-const fmtUsd = v => (v>=0?'+':'-')+'$'+Math.abs(v).toLocaleString(undefined,{maximumFractionDigits:0});
-const fmtVol = v => '$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
-const fmtEq  = v => '$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
+let state={period:'weekly',metric:'return',q:'',rows:[],total:0,seasonId:''};
+const fmtPct=v=>(v>=0?'+':'')+(v*100).toFixed(1)+'%';
+const fmtUsd=v=>(v>=0?'+':'-')+'$'+Math.abs(v).toLocaleString(undefined,{maximumFractionDigits:0});
+const fmtVol=v=>'$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
+const fmtEq=v=>'$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
 
-function syncMetricHeader(){
-  const d=I18N[LANG];
-  const m=state.metric;
-  document.getElementById('hMetric').textContent = m==='volume'?d['lb.m.volume']:m==='profit'?d['lb.m.profit']:d['lb.m.return'];
+function syncMetricHeader(){const d=I18N[LANG];const m=state.metric;document.getElementById('hMetric').textContent=m==='volume'?d['lb.m.volume']:m==='profit'?d['lb.m.profit']:d['lb.m.return'];}
+// Weekly = return only; monthly = all three.
+function updateMetricTabs(){
+  const monthly=state.period==='monthly';
+  document.querySelectorAll('#metricSeg .m-only').forEach(b=>b.style.display=monthly?'':'none');
+  if(!monthly && state.metric!=='return'){
+    state.metric='return';
+    document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x.dataset.metric==='return'));
+    syncMetricHeader();
+  }
 }
 async function fetchLB(){
   try{
-    const r = await fetch(`${API}/arena/leaderboard?period=${state.period}&metric=${state.metric}`);
-    const j = await r.json();
-    state.rows = j.leaderboard||[]; state.total=j.total||0; state.seasonId=j.seasonId||'';
+    const r=await fetch(`${API}/arena/leaderboard?period=${state.period}&metric=${state.metric}`);
+    const j=await r.json(); state.rows=j.leaderboard||[]; state.total=j.total||0; state.seasonId=j.seasonId||'';
   }catch(e){ state.rows=[]; state.total=0; }
   renderLB();
 }
 function renderLB(){
-  const d=I18N[LANG];
   const myNick=(localStorage.getItem('ayilon_username')||'').toLowerCase();
-  let rows=state.rows;
-  if(state.q) rows=rows.filter(r=>r.nickname.toLowerCase().includes(state.q));
+  let rows=state.rows; if(state.q) rows=rows.filter(r=>r.nickname.toLowerCase().includes(state.q));
   const body=document.getElementById('lbBody');
   if(!rows.length){
     body.innerHTML=`<div class="lb-empty"><b>${state.q?(LANG==='ko'?'검색 결과 없음':'No results'):(LANG==='ko'?'아직 참가자가 없습니다':'No participants yet')}</b>${state.q?'':(LANG==='ko'?'첫 번째 도전자가 되어보세요.':'Be the first challenger.')}</div>`;
-  } else {
+  }else{
     body.innerHTML=rows.map(r=>{
-      const mainVal = state.metric==='volume'?fmtVol(r.volume):state.metric==='profit'?fmtUsd(r.profit):fmtPct(r.returnPct);
-      const cls = state.metric==='volume'?'':(  (state.metric==='profit'?r.profit:r.returnPct)>=0?'pos':'neg');
-      const rk = r.rank<=3?`rank r${r.rank}`:'rank';
-      const me = r.nickname.toLowerCase()===myNick?'me':'';
-      const vb = r.verified?`<span class="vbadge">AYILON</span>`:'';
-      const flag = r.country?`<span style="opacity:.7;font-size:13px">${r.country}</span>`:'';
-      return `<div class="lb-row ${me}">
-        <div class="${rk}">${r.rank}</div>
-        <div class="who"><span class="nm">${escapeHtml(r.nickname)}</span>${vb}${flag}</div>
-        <div class="val ${cls}">${mainVal}</div>
-        <div class="val sub c-vol h-vol">${fmtEq(r.equity)}</div>
-      </div>`;
+      const mv=state.metric==='volume'?fmtVol(r.volume):state.metric==='profit'?fmtUsd(r.profit):fmtPct(r.returnPct);
+      const cls=state.metric==='volume'?'':((state.metric==='profit'?r.profit:r.returnPct)>=0?'pos':'neg');
+      const rk=r.rank<=3?`rk r${r.rank}`:'rk';
+      const me=r.nickname.toLowerCase()===myNick?'me':'';
+      const vb=r.verified?`<span class="vb">AYILON</span>`:'';
+      return `<div class="lb-r ${me}"><div class="${rk}">${r.rank}</div><div class="who"><span class="nm">${esc(r.nickname)}</span>${vb}</div><div class="val ${cls}">${mv}</div><div class="val sub c-eq h-eq">${fmtEq(r.equity)}</div></div>`;
     }).join('');
   }
-  document.getElementById('lbMeta').textContent =
-    (LANG==='ko'?`시즌 ${state.seasonId||''} · 총 ${state.total}명 참가`:`Season ${state.seasonId||''} · ${state.total} participants`);
+  document.getElementById('lbMeta').textContent=(LANG==='ko'?`시즌 ${state.seasonId} · 총 ${state.total}명 참가`:`Season ${state.seasonId} · ${state.total} participants`);
 }
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-/* ---------- prize pool + countdown ---------- */
-let season = null;
-async function fetchSeason(){
-  try{ const r=await fetch(`${API}/arena/season`); season=(await r.json()).season; }catch(e){ season=null; }
-  renderPrize();
-}
+document.getElementById('periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;document.querySelectorAll('#periodSeg button').forEach(x=>x.classList.toggle('on',x===b));updateMetricTabs();renderPrize();fetchLB();});
+document.getElementById('metricSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.style.display==='none')return;state.metric=b.dataset.metric;document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x===b));syncMetricHeader();fetchLB();});
+let qT;document.getElementById('lbSearch').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{state.q=e.target.value.trim();renderLB();},150);});
+
+/* ---------- prize + countdown ---------- */
+let season=null;
+async function fetchSeason(){ try{const r=await fetch(`${API}/arena/season`);season=(await r.json()).season;}catch(e){season=null;} renderPrize(); }
 function renderPrize(){
-  const d=I18N[LANG]; const box=document.getElementById('prizeBox');
-  if(!season||!season[state.period]){ box.style.display='none'; return; }
-  box.style.display='block';
-  const s=season[state.period];
-  document.getElementById('prizeLbl').textContent = state.period==='monthly'?d['pz.pool.m']:d['pz.pool'];
-  document.getElementById('prizeAmt').textContent = s.pool>0 ? ('$'+s.pool.toLocaleString()) : (LANG==='ko'?'적립 중':'Accruing');
-  document.getElementById('prizeCap').textContent = s.capTotal>0 ? ((LANG==='ko'?'최대 ':'up to ')+'$'+s.capTotal.toLocaleString()) : '';
-  document.getElementById('prizeBreak').innerHTML = (s.prizes||[]).map(p=>{
-    const amt = p.amount>0 ? '$'+p.amount.toLocaleString() : (p.cap?('$'+p.cap.toLocaleString()):'—');
-    const sub = p.amount>0 ? '' : (p.cap?`<div style="font-size:10px;color:var(--mut)">${LANG==='ko'?'최대':'max'}</div>`:'');
-    return `<div class="pz-rank r${p.rank}"><div class="r">${p.rank}${LANG==='ko'?'등':''}</div><div class="a">${amt}</div>${sub}</div>`;
+  const d=I18N[LANG];const box=document.getElementById('prizeBox');
+  if(!season||!season[state.period]){box.style.display='none';return;}
+  box.style.display='block';const s=season[state.period];
+  document.getElementById('prizeLbl').textContent=state.period==='monthly'?d['pz.pool.m']:d['pz.pool'];
+  document.getElementById('prizeAmt').textContent=s.pool>0?('$'+s.pool.toLocaleString()):(LANG==='ko'?'적립 중':'Accruing');
+  document.getElementById('prizeCap').textContent=s.capTotal>0?((LANG==='ko'?'최대 ':'up to ')+'$'+s.capTotal.toLocaleString()):'';
+  document.getElementById('prizeBreak').innerHTML=(s.prizes||[]).map(p=>{
+    const amt=p.amount>0?'$'+p.amount.toLocaleString():(p.cap?'$'+p.cap.toLocaleString():'—');
+    return `<div class="pz r${p.rank}"><div class="r">${p.rank}${LANG==='ko'?'등':''}</div><div class="a">${amt}</div></div>`;
   }).join('');
+  document.getElementById('cdUtc').textContent=(LANG==='ko'?'월요일 00:00 UTC 기준':'resets Mon 00:00 UTC');
   tickCountdown();
 }
 function tickCountdown(){
-  if(!season||!season[state.period]){return;}
-  const end=season[state.period].endsAt; const now=Date.now();
-  let s=Math.max(0,Math.floor((end-now)/1000));
-  const dd=Math.floor(s/86400); s-=dd*86400; const hh=Math.floor(s/3600); s-=hh*3600; const mm=Math.floor(s/60); const ss=s-mm*60;
-  const pad=n=>String(n).padStart(2,'0');
-  document.getElementById('cdTime').textContent = dd>0?`${dd}${LANG==='ko'?'일':'d'} ${pad(hh)}:${pad(mm)}:${pad(ss)}`:`${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+  if(!season||!season[state.period])return;
+  let s=Math.max(0,Math.floor((season[state.period].endsAt-Date.now())/1000));
+  const dd=Math.floor(s/86400);s-=dd*86400;const hh=Math.floor(s/3600);s-=hh*3600;const mm=Math.floor(s/60);const ss=s-mm*60;
+  const p=n=>String(n).padStart(2,'0');
+  document.getElementById('cdTime').textContent=dd>0?`${dd}${LANG==='ko'?'일':'d'} ${p(hh)}:${p(mm)}:${p(ss)}`:`${p(hh)}:${p(mm)}:${p(ss)}`;
 }
 setInterval(tickCountdown,1000);
 
-document.getElementById('periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;document.querySelectorAll('#periodSeg button').forEach(x=>x.classList.toggle('on',x===b));renderPrize();fetchLB();});
-document.getElementById('metricSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.metric=b.dataset.metric;document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x===b));syncMetricHeader();fetchLB();});
-let qTimer; document.getElementById('lbSearch').addEventListener('input',e=>{clearTimeout(qTimer);qTimer=setTimeout(()=>{state.q=e.target.value.trim();renderLB();},150);});
-
-/* ---------- join flow ---------- */
-const joinModal=document.getElementById('joinModal'), authModal=document.getElementById('authModal');
-let joinMode='live';
-function openJoin(){
-  if(!authed()){ authModal.classList.add('open'); return; }
-  joinModal.classList.add('open'); loadMine();
-}
+/* ---------- join ---------- */
+const joinModal=document.getElementById('joinModal'),authModal=document.getElementById('authModal');
+function openJoin(){ if(!authed()){authModal.classList.add('open');return;} joinModal.classList.add('open'); loadMine(); }
 ['navJoin','heroJoin','ctaJoin'].forEach(id=>document.getElementById(id).onclick=openJoin);
 document.getElementById('closeJoin').onclick=()=>joinModal.classList.remove('open');
 document.getElementById('closeAuth').onclick=()=>authModal.classList.remove('open');
 document.getElementById('mineManage').onclick=openJoin;
 [joinModal,authModal].forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
-document.getElementById('modeToggle').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;joinMode=b.dataset.mode;document.querySelectorAll('#modeToggle button').forEach(x=>x.classList.toggle('on',x===b));});
 
 document.getElementById('jSubmit').onclick=async()=>{
-  const msg=document.getElementById('jmMsg'); msg.className='msg'; msg.textContent='';
-  const apiKey=document.getElementById('jKey').value.trim();
-  const apiSecret=document.getElementById('jSecret').value.trim();
-  const apiPassphrase=document.getElementById('jPass').value.trim();
-  if(!apiKey||!apiSecret||!apiPassphrase){ msg.className='msg err'; msg.textContent=LANG==='ko'?'모든 키를 입력하세요.':'Enter all key fields.'; return; }
-  const btn=document.getElementById('jSubmit'); btn.disabled=true; btn.textContent='…';
+  const msg=document.getElementById('jmMsg');msg.className='msg';msg.textContent='';
+  const apiKey=document.getElementById('jKey').value.trim(),apiSecret=document.getElementById('jSecret').value.trim(),apiPassphrase=document.getElementById('jPass').value.trim();
+  if(!apiKey||!apiSecret||!apiPassphrase){msg.className='msg err';msg.textContent=LANG==='ko'?'API 키를 모두 입력하세요.':'Enter all key fields.';return;}
+  const btn=document.getElementById('jSubmit');btn.disabled=true;btn.textContent='…';
   try{
-    const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},
-      body:JSON.stringify({apiKey,apiSecret,apiPassphrase,demoMode:joinMode==='demo'})});
+    const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({apiKey,apiSecret,apiPassphrase,demoMode:false})});
     const j=await r.json();
     if(j.ok){
       msg.className='msg ok';
-      msg.textContent=(LANG==='ko'?'연결 완료! ':'Connected! ')+(j.referralVerified?(LANG==='ko'?'AYILON 추천 인증됨 — 상금 대상입니다.':'AYILON referral verified — prize-eligible.'):(LANG==='ko'?'순위 등재 가능. 상금은 AYILON 추천 가입자만.':'On the board. Prizes require AYILON referral.'));
+      msg.textContent=(LANG==='ko'?'연결 완료. ':'Connected. ')+(j.referralVerified?(LANG==='ko'?'AYILON 추천 인증됨 — 상금 대상입니다.':'AYILON referral verified — prize-eligible.'):(LANG==='ko'?'순위 등재 완료. 상금은 AYILON 추천 가입 계정만 대상입니다.':'On the board. Prizes require an AYILON-referred account.'));
       document.getElementById('jKey').value='';document.getElementById('jSecret').value='';document.getElementById('jPass').value='';
-      setTimeout(()=>{joinModal.classList.remove('open');fetchLB();loadMine();},1600);
-    } else {
+      setTimeout(()=>{joinModal.classList.remove('open');fetchLB();loadMine();},1800);
+    }else{
       msg.className='msg err';
-      msg.textContent=({key_invalid:LANG==='ko'?'API 키가 유효하지 않거나 권한이 없습니다.':'Invalid API key or missing read permission.',
-        missing_key:LANG==='ko'?'키를 모두 입력하세요.':'Enter all key fields.',
-        unauthorized:LANG==='ko'?'다시 로그인해주세요.':'Please log in again.'}[j.error])||(LANG==='ko'?'연결 실패: ':'Failed: ')+(j.error||'');
+      msg.textContent=({key_invalid:LANG==='ko'?'API 키가 유효하지 않거나 읽기 권한이 없습니다.':'Invalid API key or missing read permission.',missing_key:LANG==='ko'?'키를 모두 입력하세요.':'Enter all key fields.',unauthorized:LANG==='ko'?'다시 로그인해주세요.':'Please log in again.'}[j.error])||((LANG==='ko'?'연결 실패: ':'Failed: ')+(j.error||''));
     }
-  }catch(e){ msg.className='msg err'; msg.textContent=LANG==='ko'?'네트워크 오류':'Network error'; }
-  btn.disabled=false; btn.textContent=I18N[LANG]['jm.submit'];
+  }catch(e){msg.className='msg err';msg.textContent=LANG==='ko'?'네트워크 오류':'Network error';}
+  btn.disabled=false;btn.textContent=I18N[LANG]['jm.submit'];
 };
 document.getElementById('jLeave').onclick=async(e)=>{
   e.preventDefault();
   if(!confirm(LANG==='ko'?'대회에서 나가고 연결을 해제할까요?':'Leave the arena and disconnect?'))return;
   await fetch(`${API}/arena/leave`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:'{}'});
-  joinModal.classList.remove('open'); fetchLB(); loadMine();
+  joinModal.classList.remove('open');fetchLB();loadMine();
 };
 
 /* ---------- my standing ---------- */
 async function loadMine(){
-  if(!authed()){ document.getElementById('mineBar').classList.remove('show'); return; }
+  if(!authed()){document.getElementById('mineBar').classList.remove('show');return;}
   try{
     const r=await fetch(`${API}/arena/me`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:'{}'});
-    const j=await r.json();
-    const bar=document.getElementById('mineBar');
-    document.getElementById('jLeaveWrap').hidden = !(j.joined);
-    if(!j.ok||!j.joined){ bar.classList.remove('show'); return; }
+    const j=await r.json();const bar=document.getElementById('mineBar');
+    document.getElementById('jLeaveWrap').hidden=!j.joined;
+    if(!j.ok||!j.joined){bar.classList.remove('show');return;}
     bar.classList.add('show');
-    const wk=j.scores&&j.scores.weekly?j.scores.weekly:{returnPct:0,profit:0};
+    const wk=(j.scores&&j.scores.weekly)?j.scores.weekly:{returnPct:0,profit:0};
     document.getElementById('mRet').textContent=fmtPct(wk.returnPct||0);
     document.getElementById('mRet').style.color=(wk.returnPct||0)>=0?'var(--accent)':'var(--red)';
     document.getElementById('mProfit').textContent=fmtUsd(wk.profit||0);
     document.getElementById('mEq').textContent=fmtEq(j.equity||0);
-    // find my rank in current board
-    const myNick=(j.nickname||'').toLowerCase();
-    const idx=state.rows.findIndex(x=>x.nickname.toLowerCase()===myNick);
+    const myNick=(j.nickname||'').toLowerCase();const idx=state.rows.findIndex(x=>x.nickname.toLowerCase()===myNick);
     document.getElementById('mRank').textContent=idx>=0?('#'+state.rows[idx].rank):'—';
   }catch(e){}
 }
 
-/* ---------- nav auth state ---------- */
-if(authed()){
-  const a=document.getElementById('navAuth'); a.textContent=I18N[LANG]['mine.manage']; a.href='#'; a.onclick=(e)=>{e.preventDefault();openJoin();};
-}
+if(authed()){const a=document.getElementById('navAuth');a.textContent=I18N[LANG]['mine.manage'];a.href='#';a.onclick=(e)=>{e.preventDefault();openJoin();};}
 
 applyLang();
+updateMetricTabs();
 fetchSeason();
 fetchLB().then(loadMine);
-setInterval(()=>{fetchLB();fetchSeason();}, 60000);
+setInterval(()=>{fetchLB();fetchSeason();},60000);
 </script>
 </body>
 </html>
