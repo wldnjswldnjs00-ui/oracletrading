@@ -70,6 +70,22 @@
   .prize-top{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
   .lbl{font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.13em;font-weight:600}
   .prize-amt{font-size:clamp(28px,5.5vw,42px);font-weight:780;letter-spacing:-.03em;color:var(--gold);line-height:1.1;margin-top:4px}
+  /* 3D accruing animation */
+  .prize-amt.accruing{display:flex;align-items:center;gap:16px;font-size:24px}
+  .coinwrap{width:50px;height:50px;perspective:260px;flex:none}
+  .coin3d{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:#7a5d20;
+    background:radial-gradient(circle at 34% 28%,#f7e3a6,#d8b46a 58%,#b0883a);
+    box-shadow:inset 0 0 0 3px rgba(255,255,255,.26),0 8px 18px rgba(216,180,106,.4);
+    animation:coinspin 2.4s linear infinite}
+  @keyframes coinspin{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}
+  .acc-t{display:flex;flex-direction:column;line-height:1.2}
+  .acc-t b{font-weight:800;background:linear-gradient(90deg,var(--gold),#ffcf7a);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .acc-t span{font-size:11px;color:var(--dim);letter-spacing:.04em}
+  .spark{position:relative;width:2px;height:50px;flex:none}
+  .spark i{position:absolute;left:0;bottom:6px;color:var(--gold);font-size:12px;opacity:0;animation:rise 2.1s ease-in infinite}
+  .spark i:nth-child(2){animation-delay:.7s;left:8px}
+  .spark i:nth-child(3){animation-delay:1.4s;left:-6px}
+  @keyframes rise{0%{transform:translateY(6px) scale(.6);opacity:0}25%{opacity:1}100%{transform:translateY(-38px) scale(1);opacity:0}}
   .prize-cap{font-size:12.5px;color:var(--dim);margin-top:3px}
   .cd{text-align:right}
   .cd-time{font-size:clamp(19px,3.6vw,26px);font-weight:680;font-variant-numeric:tabular-nums;margin-top:5px;letter-spacing:.01em}
@@ -764,7 +780,9 @@ function renderPrize(){
   if(!season||!season[state.period]){box.style.display='none';return;}
   box.style.display='block';const s=season[state.period];
   document.getElementById('prizeLbl').textContent=state.period==='monthly'?d['pz.pool.m']:d['pz.pool'];
-  document.getElementById('prizeAmt').textContent=s.pool>0?('$'+s.pool.toLocaleString()):t('pz.accruing');
+  const pa=document.getElementById('prizeAmt');
+  if(s.pool>0){ pa.classList.remove('accruing'); pa.textContent='$'+s.pool.toLocaleString(); }
+  else { pa.classList.add('accruing'); pa.innerHTML=`<span class="coinwrap"><span class="coin3d">$</span></span><span class="spark"><i>$</i><i>+</i><i>$</i></span><span class="acc-t"><b>${t('pz.accruing')}</b><span>${t('pz.utc')}</span></span>`; }
   document.getElementById('prizeCap').textContent=s.capTotal>0?(t('pz.upto')+'$'+s.capTotal.toLocaleString()):'';
   document.getElementById('prizeBreak').innerHTML=(s.prizes||[]).map(p=>{
     const amt=p.amount>0?'$'+p.amount.toLocaleString():(p.cap?'$'+p.cap.toLocaleString():'—');

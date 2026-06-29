@@ -519,8 +519,28 @@ async function handleLogin(request, env) {
     }
     try { await env.USERS_KV.delete(loginRateKey); } catch(e) {}
 
-    // 2FA removed — AYILON is a read-only competition platform (no custody),
-    // so email + password is sufficient. Log in directly.
+    // Mandatory email verification on every login (TOTP/authenticator 2FA was
+    // removed; this email code is required for all users).
+    {
+      await ensureDB(env);
+      const challengeToken = crypto.randomUUID();
+      const emailCode = String(Math.floor(100000 + Math.random() * 900000));
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'), to: [user.email],
+            subject: 'AYILON Login Verification Code',
+            html: `<div style="font-family:sans-serif;padding:24px;"><h2>Login Code</h2><p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#111;">${emailCode}</p><p style="color:#666;">This code expires in 10 minutes.</p></div>`
+          })
+        });
+      } catch (e) {}
+      await env.BOT_DB.prepare('INSERT OR REPLACE INTO challenges VALUES (?,?,?,?,?)').bind(
+        challengeToken, user.email.toLowerCase(), 'login', emailCode, Date.now() + 600000
+      ).run();
+      return json({ ok: true, requires2FA: true, methods: ['email'], challengeToken });
+    }
 
     const sessionToken = crypto.randomUUID();
     const expiresAt = Date.now() + 604800 * 1000; // 7 days
@@ -572,7 +592,8 @@ async function handleVerify2FALogin(request, env) {
     if (!hasEmailCode && !hasTotpCode) return json({ ok: false, error: 'missing_code' }, 400);
 
     let verified = false;
-    if (hasEmailCode && tf.email) {
+    if (hasEmailCode) {
+      // Email verification is mandatory for all logins — verify against the challenge code.
       if (String(emailCode).trim() === String(challenge.code)) verified = true;
       else return json({ ok: false, error: 'invalid_email_code' }, 401);
     }
@@ -604,7 +625,7 @@ async function handleResend2FACode(request, env) {
     const ch = await env.BOT_DB.prepare('SELECT * FROM challenges WHERE token=? AND type=?').bind(challengeToken, 'login').first();
     if (!ch) return json({ ok: false, error: 'challenge_not_found' }, 400);
     const user = await env.USERS_KV.get('user:' + ch.email, { type: 'json' });
-    if (!user || !(user.twoFactor && user.twoFactor.email)) return json({ ok: false, error: 'no_email_2fa' }, 400);
+    if (!user) return json({ ok: false, error: 'user_not_found' }, 400);
     const code = String(Math.floor(100000 + Math.random() * 900000));
     await env.BOT_DB.prepare('UPDATE challenges SET code=?, expires_at=? WHERE token=?')
       .bind(code, Date.now() + 600000, challengeToken).run();
