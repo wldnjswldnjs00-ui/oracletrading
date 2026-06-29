@@ -64,6 +64,26 @@
     .otp-inputs { display: flex; gap: 10px; justify-content: center; margin: 24px 0; }
     .otp-digit { width: 52px; height: 60px; text-align: center; font-size: 22px; font-weight: 700; background: var(--gray-900); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: var(--white); font-family: 'Space Grotesk', sans-serif; outline: none; transition: border-color 0.2s; }
     .otp-digit:focus { border-color: rgba(255,255,255,0.4); }
+    /* slide puzzle captcha */
+    .cap { margin: 4px 0 18px; user-select: none; }
+    .cap-stage { position: relative; height: 96px; border-radius: 10px; overflow: hidden;
+      background: linear-gradient(135deg,#15303f,#0e2233 45%,#1d2a3a); border: 1px solid rgba(255,255,255,0.08); }
+    .cap-stage::after { content:''; position:absolute; inset:0; background:
+      radial-gradient(140px 90px at 20% 20%, rgba(52,211,154,.18), transparent 60%),
+      radial-gradient(160px 80px at 80% 70%, rgba(55,182,255,.16), transparent 60%); }
+    .cap-slot { position:absolute; top:28px; width:40px; height:40px; border-radius:8px;
+      background: rgba(0,0,0,0.34); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
+    .cap-piece { position:absolute; top:28px; left:0; width:40px; height:40px; border-radius:8px; z-index:2;
+      background: linear-gradient(135deg,#34d39a,#2aa,#37b6ff); box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+    .cap-track { position:relative; height:42px; margin-top:8px; border-radius:10px;
+      background: var(--gray-900); border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; }
+    .cap-label { font-size:13px; color: var(--gray-400); pointer-events:none; }
+    .cap-handle { position:absolute; left:0; top:0; height:100%; width:46px; border-radius:10px;
+      background:#fff; color:#111; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; cursor:grab; box-shadow:0 2px 8px rgba(0,0,0,.4); }
+    .cap.ok .cap-track { border-color: rgba(52,211,154,.5); }
+    .cap.ok .cap-handle { background:#34d39a; color:#06140e; cursor:default; }
+    .cap.ok .cap-label { color:#34d39a; }
+    .cap.ok .cap-piece { background:#34d39a; }
 
     .back-btn { background: none; border: none; color: var(--gray-400); font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 28px; font-family: 'Inter', sans-serif; padding: 0; }
     .back-btn:hover { color: var(--white); }
@@ -102,6 +122,16 @@
               <button type="button" class="password-toggle" onclick="togglePassword()" data-i18n="login.show">Show</button>
             </div>
             <div class="forgot"><a href="#" onclick="startForgot(); return false;" data-i18n="login.forgot">Forgot your password?</a></div>
+          </div>
+          <div class="cap" id="cap">
+            <div class="cap-stage">
+              <div class="cap-slot" id="capSlot"></div>
+              <div class="cap-piece" id="capPiece"></div>
+            </div>
+            <div class="cap-track" id="capTrack">
+              <span class="cap-label" id="capLabel">Slide to complete the puzzle</span>
+              <div class="cap-handle" id="capHandle">›</div>
+            </div>
           </div>
           <button type="submit" class="btn-submit" data-i18n="login.submit">Log In</button>
         </form>
@@ -267,6 +297,11 @@
 
       var errEl = document.getElementById('errorMsg');
       errEl.classList.remove('show');
+
+      if (!window.__capSolved) {
+        errEl.textContent = capText('fail'); errEl.classList.add('show');
+        return;
+      }
 
       var btn = document.getElementById('loginBtn');
       if (btn) { btn.textContent = 'Signing in...'; btn.disabled = true; }
@@ -540,6 +575,57 @@
       if (document.getElementById('step3').classList.contains('active') && e.key === 'Enter') verifyOTP();
       if (document.getElementById('step5').classList.contains('active') && e.key === 'Enter') verifyForgotOTP();
     });
+
+    /* OTP boxes: Backspace on an empty box clears + jumps to the previous box */
+    document.querySelectorAll('.otp-digit').forEach(function (d) {
+      d.addEventListener('keydown', function (e) {
+        if (e.key === 'Backspace' && this.value === '') {
+          var prev = this.previousElementSibling;
+          if (prev && prev.classList.contains('otp-digit')) { prev.value = ''; prev.focus(); e.preventDefault(); }
+        }
+      });
+    });
+
+    /* ── Slide puzzle captcha ───────────────────────────────── */
+    var CAP_T = {
+      label: { en:'Slide to complete the puzzle', ko:'밀어서 퍼즐을 맞추세요', zh:'滑动完成拼图', es:'Desliza para completar el puzzle', vi:'Trượt để hoàn thành câu đố', ru:'Сдвиньте, чтобы собрать пазл' },
+      ok:    { en:'Verified ✓', ko:'확인됨 ✓', zh:'已验证 ✓', es:'Verificado ✓', vi:'Đã xác minh ✓', ru:'Подтверждено ✓' },
+      fail:  { en:'Please complete the puzzle.', ko:'퍼즐을 완료해주세요.', zh:'请完成拼图。', es:'Completa el puzzle.', vi:'Vui lòng hoàn thành câu đố.', ru:'Пожалуйста, соберите пазл.' }
+    };
+    function capLang(){ var l=(localStorage.getItem('ayilon_lang')||'en'); return CAP_T.label[l]?l:'en'; }
+    function capText(k){ return CAP_T[k][capLang()]; }
+    (function initCaptcha(){
+      var cap=document.getElementById('cap'), stage=document.querySelector('.cap-stage'),
+          slot=document.getElementById('capSlot'), piece=document.getElementById('capPiece'),
+          handle=document.getElementById('capHandle'), track=document.getElementById('capTrack'),
+          label=document.getElementById('capLabel');
+      if(!cap) return;
+      window.__capSolved=false;
+      var targetX=0, maxX=0, dragging=false, startX=0, curX=0;
+      function layout(){
+        var sw=stage.clientWidth, tw=track.clientWidth, hw=handle.offsetWidth, pw=piece.offsetWidth;
+        maxX=tw-hw;
+        targetX=Math.round((0.45+Math.random()*0.42)*(sw-pw));   // random slot position
+        slot.style.left=targetX+'px';
+        label.textContent=capText('label');
+      }
+      function setX(x){ x=Math.max(0,Math.min(maxX,x)); curX=x; handle.style.left=x+'px';
+        var sw=stage.clientWidth, pw=piece.offsetWidth; piece.style.left=Math.round(x/maxX*(sw-pw))+'px'; }
+      function down(e){ if(window.__capSolved) return; dragging=true; handle.style.cursor='grabbing';
+        startX=(e.touches?e.touches[0].clientX:e.clientX)-curX; e.preventDefault(); }
+      function move(e){ if(!dragging) return; var cx=(e.touches?e.touches[0].clientX:e.clientX); setX(cx-startX); }
+      function up(){ if(!dragging) return; dragging=false; handle.style.cursor='grab';
+        var sw=stage.clientWidth, pw=piece.offsetWidth, px=curX/maxX*(sw-pw);
+        if(Math.abs(px-targetX)<10){ window.__capSolved=true; cap.classList.add('ok'); label.textContent=capText('ok'); handle.textContent='✓'; }
+        else { setX(0); label.textContent=capText('label'); }
+      }
+      handle.addEventListener('mousedown',down); document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+      handle.addEventListener('touchstart',down,{passive:false}); document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('touchend',up);
+      window.addEventListener('resize',function(){ if(!window.__capSolved){ layout(); setX(0); } });
+      var prevOLC=window.__onLangChange;
+      window.__onLangChange=function(l){ if(typeof prevOLC==='function') prevOLC(l); if(!window.__capSolved) label.textContent=capText('label'); else label.textContent=capText('ok'); };
+      setTimeout(function(){ layout(); setX(0); }, 60);
+    })();
   </script>
 </body>
 </html>

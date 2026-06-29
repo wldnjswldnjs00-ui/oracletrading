@@ -519,35 +519,8 @@ async function handleLogin(request, env) {
     }
     try { await env.USERS_KV.delete(loginRateKey); } catch(e) {}
 
-    // Check if user has 2FA enabled
-    const tf = user.twoFactor || {};
-    const tfMethods = [];
-    if (tf.email)  tfMethods.push('email');
-    if (tf.totp)   tfMethods.push('totp');
-    if (tfMethods.length > 0) {
-      await ensureDB(env);
-      const challengeToken = crypto.randomUUID();
-      let emailCode = null;
-      if (tf.email) {
-        emailCode = String(Math.floor(100000 + Math.random() * 900000));
-        // Send email with code
-        try {
-          await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'), to: [user.email],
-              subject: 'AYILON Login Verification Code',
-              html: `<div style="font-family:sans-serif;padding:24px;"><h2>Login Code</h2><p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#111;">${emailCode}</p><p style="color:#666;">This code expires in 10 minutes.</p></div>`
-            })
-          });
-        } catch(e) {}
-      }
-      await env.BOT_DB.prepare('INSERT OR REPLACE INTO challenges VALUES (?,?,?,?,?)').bind(
-        challengeToken, user.email.toLowerCase(), 'login', emailCode, Date.now() + 600000
-      ).run();
-      return json({ ok: true, requires2FA: true, methods: tfMethods, challengeToken });
-    }
+    // 2FA removed — AYILON is a read-only competition platform (no custody),
+    // so email + password is sufficient. Log in directly.
 
     const sessionToken = crypto.randomUUID();
     const expiresAt = Date.now() + 604800 * 1000; // 7 days
