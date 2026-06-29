@@ -51,10 +51,15 @@ export default {
       if (path === '/admin/set-plan')    return handleAdminSetPlan(request, env);
       if (path === '/admin/set-referral') return handleAdminSetReferral(request, env);
       if (path === '/delete-account')    return handleDeleteAccount(request, env);
+      if (path === '/arena/join')        return handleArenaJoin(request, env);
+      if (path === '/arena/leave')       return handleArenaLeave(request, env);
+      if (path === '/arena/me')          return handleArenaMe(request, env);
+      if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
     }
 
     if (request.method === 'GET') {
       if (path === '/bot-status') return handleBotStatus(request, env);
+      if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
     }
 
     return corsResponse(JSON.stringify({ error: 'Not found' }), 404);
@@ -62,7 +67,7 @@ export default {
 
   async scheduled(event, env, ctx) {
     ctx.waitUntil(cronCheckPayments(env));
-    ctx.waitUntil(runBot(env));
+    ctx.waitUntil(arenaScore(env));   // Arena replaces the auto-trading engine
   }
 };
 
@@ -978,6 +983,228 @@ async function handleOKXInstruments(request, env) {
   }
 }
 
+// ════════════════════════════════════════════════════════════
+// ARENA — trading competition (replaces the auto-trading engine)
+// Read-only OKX keys → cron ranks real accounts by 3 metrics.
+// ════════════════════════════════════════════════════════════
+
+function arenaWeekId(d) {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNum = (date.getUTCDay() + 6) % 7;        // Mon=0..Sun=6
+  date.setUTCDate(date.getUTCDate() - dayNum + 3);  // nearest Thursday
+  const firstThu = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+  const week = 1 + Math.round(((date - firstThu) / 86400000 - 3 + ((firstThu.getUTCDay() + 6) % 7)) / 7);
+  return `${date.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+function arenaMonthId(d) {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+// Net external cash flow into the trading account since `since` (ms), so it can be
+// removed from PnL — otherwise a deposit would look like a win. Best-effort: any
+// endpoint that errors just contributes 0 (return % still computed from equity).
+async function arenaFetchFlows(p, demo, since) {
+  let deposits = 0, withdrawals = 0;
+  try {
+    const dep = await okxGet(p.api_key, p.api_secret, p.api_pass,
+      `/api/v5/asset/deposit-history${since ? `?before=${since}` : ''}`, demo);
+    for (const r of (dep?.data || [])) {
+      if (String(r.state) === '2' && parseInt(r.ts) > since) deposits += parseFloat(r.amt || '0');
+    }
+  } catch (_) {}
+  try {
+    const wd = await okxGet(p.api_key, p.api_secret, p.api_pass,
+      `/api/v5/asset/withdrawal-history${since ? `?before=${since}` : ''}`, demo);
+    for (const r of (wd?.data || [])) {
+      if (parseInt(r.ts) > since) withdrawals += parseFloat(r.amt || '0');
+    }
+  } catch (_) {}
+  return { deposits, withdrawals };
+}
+
+// Cumulative referred-account volume from the OKX affiliate API (authoritative).
+// Returns the delta since the last reading. 0 until affiliate creds are set.
+async function arenaFetchVolumeDelta(env, p) {
+  if (!env.OKX_AFFILIATE_KEY || !env.OKX_AFFILIATE_SECRET || !env.OKX_AFFILIATE_PASS || !p.okx_uid) return 0;
+  try {
+    const inv = await okxGet(env.OKX_AFFILIATE_KEY, env.OKX_AFFILIATE_SECRET, env.OKX_AFFILIATE_PASS,
+      `/api/v5/affiliate/invitee/detail?uid=${p.okx_uid}`, false);
+    const d = inv?.data?.[0] || {};
+    const cum = parseFloat(d.totalTradingVolume || d.volAmt || d.accVolume || '0');
+    const prev = parseFloat(p.last_vol_cum || 0);
+    const delta = cum > prev ? cum - prev : 0;
+    return { delta, cum };
+  } catch (_) { return 0; }
+}
+
+// Cron: snapshot every connected account, accumulate metrics per board.
+async function arenaScore(env) {
+  if (!env.BOT_DB) return;
+  await initDB(env);
+  const now = new Date();
+  const boards = [['weekly', arenaWeekId(now)], ['monthly', arenaMonthId(now)]];
+  let parts = [];
+  try { parts = (await env.BOT_DB.prepare('SELECT * FROM arena_participants').all()).results || []; } catch (_) { return; }
+
+  for (const p of parts) {
+    try {
+      if (!p.api_key || !p.api_secret || !p.api_pass) continue;
+      const demo = p.demo === 1;
+      const bal = await okxGet(p.api_key, p.api_secret, p.api_pass, '/api/v5/account/balance', demo).catch(() => null);
+      const eq = parseFloat(bal?.data?.[0]?.totalEq || '0');
+      if (!(eq > 0)) {
+        await env.BOT_DB.prepare('UPDATE arena_participants SET err=? WHERE email=?')
+          .bind('no_equity_or_key_invalid', p.email).run().catch(() => {});
+        continue;
+      }
+      const nowTs = Date.now();
+      const since = parseInt(p.last_flow_ts || 0);
+      const { deposits, withdrawals } = await arenaFetchFlows(p, demo, since);
+      const volRes = await arenaFetchVolumeDelta(env, p);
+      const volDelta = volRes && volRes.delta ? volRes.delta : 0;
+      const volCum   = volRes && volRes.cum   ? volRes.cum   : parseFloat(p.last_vol_cum || 0);
+
+      for (const [board, sid] of boards) {
+        const row = await env.BOT_DB.prepare('SELECT * FROM arena_score WHERE email=? AND board=?').bind(p.email, board).first();
+        if (!row || row.season_id !== sid) {
+          // New season → re-baseline at current equity.
+          await env.BOT_DB.prepare(
+            `INSERT INTO arena_score(email,board,season_id,start_equity,deposits,withdrawals,last_equity,volume,return_pct,profit,last_update)
+             VALUES(?,?,?,?,0,0,?,0,0,0,?)
+             ON CONFLICT(email,board) DO UPDATE SET season_id=excluded.season_id,start_equity=excluded.start_equity,
+               deposits=0,withdrawals=0,last_equity=excluded.last_equity,volume=0,return_pct=0,profit=0,last_update=excluded.last_update`
+          ).bind(p.email, board, sid, eq, eq, nowTs).run();
+        } else {
+          const dep = row.deposits + deposits, wd = row.withdrawals + withdrawals, vol = row.volume + volDelta;
+          const base = row.start_equity + dep;
+          const profit = eq - row.start_equity - dep + wd;
+          const ret = base > 0 ? profit / base : 0;
+          await env.BOT_DB.prepare(
+            'UPDATE arena_score SET last_equity=?,deposits=?,withdrawals=?,volume=?,return_pct=?,profit=?,last_update=? WHERE email=? AND board=?'
+          ).bind(eq, dep, wd, vol, ret, profit, nowTs, p.email, board).run();
+        }
+      }
+      await env.BOT_DB.prepare('UPDATE arena_participants SET last_equity=?, last_flow_ts=?, last_vol_cum=?, last_update=?, err=NULL WHERE email=?')
+        .bind(eq, nowTs, volCum, nowTs, p.email).run();
+    } catch (e) {
+      try { await env.BOT_DB.prepare('UPDATE arena_participants SET err=? WHERE email=?').bind(String(e.message).slice(0, 120), p.email).run(); } catch (_) {}
+    }
+  }
+}
+
+// Join / connect a read-only OKX key. Captures UID + attempts referral auto-verify.
+async function handleArenaJoin(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  await initDB(env);
+
+  const apiKey = (body.apiKey || '').trim();
+  const apiSecret = (body.apiSecret || '').trim();
+  const apiPass = (body.apiPassphrase || body.apiPass || '').trim();
+  const demo = body.demoMode === true;
+  if (!apiKey || !apiSecret || !apiPass) return json({ ok: false, error: 'missing_key' });
+
+  // Validate the key is real + read it (UID). Reject if OKX rejects.
+  let uid = '';
+  try {
+    const cfg = await okxGet(apiKey, apiSecret, apiPass, '/api/v5/account/config', demo);
+    uid = cfg?.data?.[0]?.uid || '';
+    if (!uid) return json({ ok: false, error: 'key_invalid' });
+  } catch (e) {
+    return json({ ok: false, error: 'key_invalid', detail: String(e.message).slice(0, 100) });
+  }
+  // Confirm we can read equity (read permission present).
+  let eq = 0;
+  try {
+    const bal = await okxGet(apiKey, apiSecret, apiPass, '/api/v5/account/balance', demo);
+    eq = parseFloat(bal?.data?.[0]?.totalEq || '0');
+  } catch (_) {}
+
+  const user = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || {};
+  // Mirror UID onto the user record + try affiliate auto-verify (reuses existing engine).
+  try { await captureUidAndVerifyReferral(env, session.email, { apiKey, apiSecret, apiPassphrase: apiPass, demoMode: demo }); } catch (_) {}
+  const freshUser = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || user;
+  const refVerified = !!(freshUser.referral && freshUser.referral.verified) || session.email.toLowerCase() === ADMIN_EMAIL_CONST ? 1 : 0;
+  const nickname = freshUser.username || session.email.split('@')[0];
+
+  await env.BOT_DB.prepare(
+    `INSERT INTO arena_participants(email,nickname,country,okx_uid,api_key,api_secret,api_pass,demo,referral_verified,joined_at,last_flow_ts)
+     VALUES(?,?,?,?,?,?,?,?,?,?,0)
+     ON CONFLICT(email) DO UPDATE SET nickname=excluded.nickname,country=excluded.country,okx_uid=excluded.okx_uid,
+       api_key=excluded.api_key,api_secret=excluded.api_secret,api_pass=excluded.api_pass,demo=excluded.demo,
+       referral_verified=excluded.referral_verified`
+  ).bind(session.email, nickname, freshUser.country || '', String(uid), apiKey, apiSecret, apiPass, demo ? 1 : 0, refVerified, Date.now()).run();
+
+  return json({ ok: true, uid: String(uid), equity: eq, referralVerified: refVerified === 1, demo });
+}
+
+// Disconnect / leave the arena.
+async function handleArenaLeave(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  await initDB(env);
+  await env.BOT_DB.prepare('DELETE FROM arena_participants WHERE email=?').bind(session.email).run().catch(() => {});
+  await env.BOT_DB.prepare('DELETE FROM arena_score WHERE email=?').bind(session.email).run().catch(() => {});
+  return json({ ok: true });
+}
+
+// Public leaderboard — full list, 3 boards, optional ?board=&period=&q= search.
+async function handleArenaLeaderboard(request, env) {
+  await initDB(env);
+  const body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
+  const url = new URL(request.url);
+  const period = (body.period || url.searchParams.get('period') || 'weekly').toLowerCase() === 'monthly' ? 'monthly' : 'weekly';
+  const metric = (body.metric || url.searchParams.get('metric') || 'return').toLowerCase();
+  const q = String(body.q || url.searchParams.get('q') || '').trim().toLowerCase();
+  const now = new Date();
+  const sid = period === 'monthly' ? arenaMonthId(now) : arenaWeekId(now);
+
+  let rows = [];
+  try {
+    rows = (await env.BOT_DB.prepare(
+      `SELECT s.email,s.return_pct,s.profit,s.volume,s.last_equity,s.start_equity,s.last_update,
+              p.nickname,p.country,p.referral_verified
+       FROM arena_score s JOIN arena_participants p ON p.email=s.email
+       WHERE s.board=? AND s.season_id=?`
+    ).bind(period, sid).all()).results || [];
+  } catch (_) {}
+
+  const sortKey = metric === 'volume' ? 'volume' : metric === 'profit' ? 'profit' : 'return_pct';
+  rows.sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
+  const ranked = rows.map((r, i) => ({
+    rank: i + 1,
+    nickname: r.nickname || (r.email || '').split('@')[0],
+    country: r.country || '',
+    verified: r.referral_verified === 1,
+    returnPct: r.return_pct || 0,
+    profit: r.profit || 0,
+    volume: r.volume || 0,
+    equity: r.last_equity || 0,
+    updated: r.last_update || 0
+  }));
+  const filtered = q ? ranked.filter(r => r.nickname.toLowerCase().includes(q)) : ranked;
+  return json({ ok: true, period, metric, seasonId: sid, total: ranked.length, leaderboard: filtered });
+}
+
+// A participant's own standing across all boards.
+async function handleArenaMe(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  await initDB(env);
+  const p = await env.BOT_DB.prepare('SELECT * FROM arena_participants WHERE email=?').bind(session.email).first();
+  if (!p) return json({ ok: true, joined: false });
+  const scores = (await env.BOT_DB.prepare('SELECT * FROM arena_score WHERE email=?').bind(session.email).all()).results || [];
+  const out = {};
+  for (const s of scores) out[s.board] = { returnPct: s.return_pct, profit: s.profit, volume: s.volume, equity: s.last_equity, seasonId: s.season_id };
+  return json({
+    ok: true, joined: true, demo: p.demo === 1, referralVerified: p.referral_verified === 1,
+    nickname: p.nickname, equity: p.last_equity, lastUpdate: p.last_update, err: p.err || null, scores: out
+  });
+}
+
 async function handleBotStatus(request, env) {
   if (!env.USERS_KV) return json({ running: false, logs: [] });
   const body = request.method === 'GET' ? {} : await request.json().catch(() => ({}));
@@ -1315,6 +1542,40 @@ async function initDB(env) {
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN total_win_pnl REAL DEFAULT 0`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN total_loss_pnl REAL DEFAULT 0`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE bot_state ADD COLUMN ny_ref TEXT DEFAULT NULL`).run().catch(() => {});
+
+    // ── ARENA (trading competition) ──────────────────────────────
+    // One connected read-only OKX account per participant.
+    await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_participants (
+      email TEXT PRIMARY KEY,
+      nickname TEXT DEFAULT '',
+      country TEXT DEFAULT '',
+      okx_uid TEXT DEFAULT '',
+      api_key TEXT, api_secret TEXT, api_pass TEXT,
+      demo INTEGER DEFAULT 0,
+      referral_verified INTEGER DEFAULT 0,
+      joined_at INTEGER DEFAULT 0,
+      last_equity REAL DEFAULT 0,
+      last_flow_ts INTEGER DEFAULT 0,
+      last_vol_cum REAL DEFAULT 0,
+      last_update INTEGER DEFAULT 0,
+      err TEXT DEFAULT NULL
+    )`).run();
+    // Per-board (weekly/monthly) running season metrics.
+    await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_score (
+      email TEXT NOT NULL,
+      board TEXT NOT NULL,
+      season_id TEXT NOT NULL,
+      start_equity REAL DEFAULT 0,
+      deposits REAL DEFAULT 0,
+      withdrawals REAL DEFAULT 0,
+      last_equity REAL DEFAULT 0,
+      volume REAL DEFAULT 0,
+      return_pct REAL DEFAULT 0,
+      profit REAL DEFAULT 0,
+      last_update INTEGER DEFAULT 0,
+      PRIMARY KEY (email, board)
+    )`).run();
+
     _dbReady = true;
   } catch(e) {}
 }
