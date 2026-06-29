@@ -1173,14 +1173,16 @@ async function handleArenaJoin(request, env) {
   const demo = body.demoMode === true;
   if (!apiKey || !apiSecret || !apiPass) return json({ ok: false, error: 'missing_key' });
 
-  // Validate the key is real + read it (UID). Reject if OKX rejects.
+  // Validate the key is real + read it (UID). Surface OKX's real reason so the
+  // user can fix it (most common: IP whitelist on the key, wrong passphrase).
   let uid = '';
   try {
     const cfg = await okxGet(apiKey, apiSecret, apiPass, '/api/v5/account/config', demo);
+    if (cfg?.code && cfg.code !== '0') return json({ ok: false, error: 'okx', code: String(cfg.code), detail: cfg.msg || '' });
     uid = cfg?.data?.[0]?.uid || '';
-    if (!uid) return json({ ok: false, error: 'key_invalid' });
+    if (!uid) return json({ ok: false, error: 'okx', code: '0', detail: 'no account data' });
   } catch (e) {
-    return json({ ok: false, error: 'key_invalid', detail: String(e.message).slice(0, 100) });
+    return json({ ok: false, error: 'okx', detail: String(e.message).slice(0, 140) });
   }
   // Confirm we can read equity (read permission present).
   let eq = 0;
@@ -1314,8 +1316,9 @@ async function handleArenaMe(request, env) {
   const scores = (await env.BOT_DB.prepare('SELECT * FROM arena_score WHERE email=?').bind(session.email).all()).results || [];
   const out = {};
   for (const s of scores) out[s.board] = { returnPct: s.return_pct, profit: s.profit, volume: s.volume, equity: s.last_equity, seasonId: s.season_id };
+  let boards = []; try { boards = JSON.parse(p.boards || '[]'); } catch (_) {}
   return json({
-    ok: true, joined: true, demo: p.demo === 1, referralVerified: p.referral_verified === 1,
+    ok: true, joined: true, demo: p.demo === 1, referralVerified: p.referral_verified === 1, boards,
     nickname: p.nickname, equity: p.last_equity, lastUpdate: p.last_update, err: p.err || null, scores: out
   });
 }

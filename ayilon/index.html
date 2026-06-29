@@ -415,7 +415,7 @@ const I18N = {
     'jm.title':'대회 참가','jm.lead':'아래 순서대로 진행하세요. 자금은 100% 당신의 OKX 계좌에 있습니다.',
     'jm.s1':'AYILON 추천으로 OKX 가입','jm.s1d':'이미 AYILON 추천으로 가입했다면 2단계로 넘어가세요.','jm.open':'가입하기 ↗',
     'jm.s2':'읽기전용 API 키 연결','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
-    'jm.hint':'OKX → 프로필 → API → 키 생성 시 읽기(Read) 권한만 체크하세요. 거래·출금 권한은 절대 체크하지 마세요.',
+    'jm.hint':'OKX → 프로필 → API → 읽기(Read) 권한만 체크. 거래·출금은 절대 체크 금지. <b>IP 제한은 비워두세요</b>(우리 서버 IP가 고정이 아니라 IP를 묶으면 연결이 거부됩니다). Passphrase는 키 만들 때 직접 정한 문구입니다.',
     'jm.submit':'연결하고 참가','jm.leave':'대회에서 나가기',
     'am.title':'로그인이 필요합니다','am.lead':'대회 참가는 로그인 후 진행됩니다.','am.login':'로그인','am.signup':'회원가입'
   },
@@ -450,7 +450,7 @@ const I18N = {
     'jm.title':'Join the league','jm.lead':'Follow the steps below. Your funds stay 100% in your OKX account.',
     'jm.s1':'Sign up to OKX via AYILON','jm.s1d':'Already signed up via AYILON? Skip to step 2.','jm.open':'Sign up ↗',
     'jm.s2':'Connect a read-only API key','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
-    'jm.hint':'OKX → profile → API → when creating the key, check Read permission only. Never check trade/withdraw.',
+    'jm.hint':'OKX → profile → API → check Read permission only. Never check trade/withdraw. <b>Leave the IP whitelist empty</b> (our server IP is not fixed, so binding an IP blocks the connection). The Passphrase is the phrase you set when creating the key.',
     'jm.submit':'Connect & join','jm.leave':'Leave the arena',
     'am.title':'Login required','am.lead':'Joining requires login.','am.login':'Log in','am.signup':'Sign up'
   }
@@ -598,7 +598,15 @@ document.getElementById('jSubmit').onclick=async()=>{
       setTimeout(()=>{joinModal.classList.remove('open');fetchLB();loadMine();},1800);
     }else{
       msg.className='msg err';
-      msg.textContent=({key_invalid:LANG==='ko'?'API 키가 유효하지 않거나 읽기 권한이 없습니다.':'Invalid API key or missing read permission.',missing_key:LANG==='ko'?'키를 모두 입력하세요.':'Enter all key fields.',unauthorized:LANG==='ko'?'다시 로그인해주세요.':'Please log in again.'}[j.error])||((LANG==='ko'?'연결 실패: ':'Failed: ')+(j.error||''));
+      if(j.error==='okx'){
+        const code=j.code||'';
+        const mapKo={'50110':'이 API 키에 IP 제한이 걸려 있습니다. OKX에서 키의 IP 화이트리스트를 비운 채로 다시 만들어 연결하세요.','50111':'API Key가 올바르지 않습니다.','50113':'Secret Key가 올바르지 않습니다.','50105':'Passphrase가 올바르지 않습니다(로그인 비번 아님, 키 만들 때 정한 문구).','50104':'시간 동기화 오류입니다. 잠시 후 다시 시도하세요.'};
+        const mapEn={'50110':'This API key is IP-restricted. Recreate it in OKX with no IP whitelist, then connect.','50111':'Invalid API Key.','50113':'Invalid Secret Key.','50105':'Invalid Passphrase (the phrase you set when creating the key, not your login password).','50104':'Time sync error. Try again shortly.'};
+        const base=(LANG==='ko'?mapKo:mapEn)[code]||(LANG==='ko'?'API 키 검증에 실패했습니다.':'API key verification failed.');
+        msg.textContent=base+(j.detail?` (${j.detail})`:code?` (OKX ${code})`:'');
+      }else{
+        msg.textContent=({missing_key:LANG==='ko'?'키를 모두 입력하세요.':'Enter all key fields.',unauthorized:LANG==='ko'?'다시 로그인해주세요.':'Please log in again.'}[j.error])||((LANG==='ko'?'연결 실패: ':'Failed: ')+(j.error||''));
+      }
     }
   }catch(e){msg.className='msg err';msg.textContent=LANG==='ko'?'네트워크 오류':'Network error';}
   btn.disabled=false;btn.textContent=I18N[LANG]['jm.submit'];
@@ -619,6 +627,9 @@ async function loadMine(){
     document.getElementById('jLeaveWrap').hidden=!j.joined;
     if(!j.ok||!j.joined){bar.classList.remove('show');return;}
     bar.classList.add('show');
+    // Reflect saved selections so re-opening shows what you actually chose.
+    if(Array.isArray(j.boards)&&j.boards.length){const idmap={rw:'bRw',rm:'bRm',pm:'bPm',vm:'bVm'};Object.entries(idmap).forEach(([v,id])=>{const el=document.getElementById(id);if(el)el.checked=j.boards.includes(v);});}
+    if(j.nickname)document.getElementById('jNick').value=j.nickname;
     const wk=(j.scores&&j.scores.weekly)?j.scores.weekly:{returnPct:0,profit:0};
     document.getElementById('mRet').textContent=fmtPct(wk.returnPct||0);
     document.getElementById('mRet').style.color=(wk.returnPct||0)>=0?'var(--accent)':'var(--red)';
