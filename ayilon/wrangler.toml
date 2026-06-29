@@ -11,5 +11,8 @@ binding = "BOT_DB"
 database_name = "ayilon-bot"
 database_id = "ebd7c041-063f-4fb2-857e-8a98db9603e4"
 
+[vars]
+GOOGLE_CLIENT_ID = "1034458772823-ueabquu9735ansahig1vinuqac8qmj4m.apps.googleusercontent.com"
+
 [triggers]
 crons = ["*/1 * * * *"]
