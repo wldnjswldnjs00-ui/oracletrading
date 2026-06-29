@@ -29,8 +29,9 @@
   .nav-r{display:flex;align-items:center;gap:18px}
   .nav-lnk{color:var(--mut);font-size:14px;transition:.15s}
   .nav-lnk:hover{color:var(--txt)}
-  .lang{cursor:pointer;color:var(--mut);font-size:13px;transition:.15s}
-  .lang:hover{color:var(--txt)}
+  .lang{cursor:pointer;color:var(--mut);font-size:13px;transition:.15s;background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-family:inherit;outline:none}
+  .lang:hover{color:var(--txt);border-color:var(--line2)}
+  .lang option{background:var(--panel);color:var(--txt)}
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;font-weight:600;font-size:14px;padding:11px 22px;border-radius:11px;transition:.16s;font-family:inherit;letter-spacing:0}
   .btn-primary{background:var(--accent);color:#06140e}
   .btn-primary:hover{background:#43e0a8;transform:translateY(-1px)}
@@ -174,7 +175,14 @@
       <a href="#leaderboard" class="nav-lnk hide-m" data-i18n="nav.board">리더보드</a>
       <a href="#how" class="nav-lnk hide-m" data-i18n="nav.how">참가방법</a>
       <a href="#hof" class="nav-lnk hide-m" data-i18n="nav.hof">명예의전당</a>
-      <span class="lang" id="langBtn">EN</span>
+      <select class="lang" id="langSel" aria-label="Language">
+        <option value="en">English</option>
+        <option value="ko">한국어</option>
+        <option value="zh">中文</option>
+        <option value="es">Español</option>
+        <option value="vi">Tiếng Việt</option>
+        <option value="ru">Русский</option>
+      </select>
       <a id="navLogout" class="nav-lnk" href="#" style="display:none" data-i18n="nav.logout">로그아웃</a>
       <a id="navAuth" class="btn btn-primary btn-sm" href="/login.html">로그인</a>
     </div>
@@ -417,7 +425,13 @@ const I18N = {
     'jm.s2':'읽기전용 API 키 연결','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
     'jm.hint':'OKX → 프로필 → API → 읽기(Read) 권한만 체크. 거래·출금은 절대 체크 금지. <b>IP 제한은 비워두세요</b>(우리 서버 IP가 고정이 아니라 IP를 묶으면 연결이 거부됩니다). Passphrase는 키 만들 때 직접 정한 문구입니다.',
     'jm.submit':'연결하고 참가','jm.leave':'대회에서 나가기',
-    'am.title':'로그인이 필요합니다','am.lead':'대회 참가는 로그인 후 진행됩니다.','am.login':'로그인','am.signup':'회원가입'
+    'am.title':'로그인이 필요합니다','am.lead':'대회 참가는 로그인 후 진행됩니다.','am.login':'로그인','am.signup':'회원가입',
+    'lb.noresults':'검색 결과 없음','lb.empty':'아직 참가자가 없습니다','lb.befirst':'첫 번째 도전자가 되어보세요.','lb.meta':'시즌 {s} · 총 {n}명 참가',
+    'pz.accruing':'적립 중','pz.upto':'최대 ','pz.utc':'월요일 00:00 UTC 기준','pz.rank':'등','pz.dunit':'일',
+    'nick.min':'2자 이상 입력하세요.','nick.saved':'닉네임 저장됨','nick.taken':'이미 사용 중인 닉네임입니다.','nick.len':'2~24자로 입력하세요.','nick.chars':'사용할 수 없는 문자가 있습니다.','nick.fail':'저장 실패',
+    'err.net':'네트워크 오류',
+    'jm.allfields':'API 키를 모두 입력하세요.','jm.pickone':'참가할 부문을 하나 이상 선택하세요.','jm.connected':'연결 완료. ','jm.refok':'AYILON 추천 인증됨 — 상금 대상입니다.','jm.refno':'순위 등재 완료. 상금은 AYILON 추천 가입 계정만 대상입니다.','jm.missing':'키를 모두 입력하세요.','jm.relogin':'다시 로그인해주세요.','jm.failprefix':'연결 실패: ','jm.leaveconfirm':'대회에서 나가고 연결을 해제할까요?',
+    'okx.50110':'이 API 키에 IP 제한이 걸려 있습니다. OKX에서 키의 IP 화이트리스트를 비운 채로 다시 만들어 연결하세요.','okx.50111':'API Key가 올바르지 않습니다.','okx.50113':'Secret Key가 올바르지 않습니다.','okx.50105':'Passphrase가 올바르지 않습니다(로그인 비번 아님, 키 만들 때 정한 문구).','okx.50104':'시간 동기화 오류입니다. 잠시 후 다시 시도하세요.','okx.fail':'API 키 검증에 실패했습니다.'
   },
   en:{
     'nav.board':'Leaderboard','nav.how':'How it works','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage','nav.logout':'Log out',
@@ -452,18 +466,189 @@ const I18N = {
     'jm.s2':'Connect a read-only API key','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
     'jm.hint':'OKX → profile → API → check Read permission only. Never check trade/withdraw. <b>Leave the IP whitelist empty</b> (our server IP is not fixed, so binding an IP blocks the connection). The Passphrase is the phrase you set when creating the key.',
     'jm.submit':'Connect & join','jm.leave':'Leave the arena',
-    'am.title':'Login required','am.lead':'Joining requires login.','am.login':'Log in','am.signup':'Sign up'
+    'am.title':'Login required','am.lead':'Joining requires login.','am.login':'Log in','am.signup':'Sign up',
+    'lb.noresults':'No results','lb.empty':'No participants yet','lb.befirst':'Be the first challenger.','lb.meta':'Season {s} · {n} participants',
+    'pz.accruing':'Accruing','pz.upto':'up to ','pz.utc':'resets Mon 00:00 UTC','pz.rank':'','pz.dunit':'d',
+    'nick.min':'At least 2 characters.','nick.saved':'Nickname saved','nick.taken':'That nickname is taken.','nick.len':'Use 2-24 characters.','nick.chars':'Contains invalid characters.','nick.fail':'Failed',
+    'err.net':'Network error',
+    'jm.allfields':'Enter all key fields.','jm.pickone':'Select at least one competition.','jm.connected':'Connected. ','jm.refok':'AYILON referral verified — prize-eligible.','jm.refno':'On the board. Prizes require an AYILON-referred account.','jm.missing':'Enter all key fields.','jm.relogin':'Please log in again.','jm.failprefix':'Failed: ','jm.leaveconfirm':'Leave the arena and disconnect?',
+    'okx.50110':'This API key is IP-restricted. Recreate it in OKX with no IP whitelist, then connect.','okx.50111':'Invalid API Key.','okx.50113':'Invalid Secret Key.','okx.50105':'Invalid Passphrase (the phrase you set when creating the key, not your login password).','okx.50104':'Time sync error. Try again shortly.','okx.fail':'API key verification failed.'
+  },
+  zh:{
+    'nav.board':'排行榜','nav.how':'参与方式','nav.hof':'名人堂','nav.login':'登录','nav.manage':'管理','nav.logout':'退出',
+    'jm.nick':'昵称','jm.nickd':'显示在排行榜和名人堂上的名称。','jm.nicksave':'保存',
+    'jm.s3':'选择参赛项目','jm.s3d':'仅参加你选择的项目，只会出现在所选榜单中。',
+    'jm.b.rw':'收益率 · 周赛','jm.b.rm':'收益率 · 月赛','jm.b.pm':'盈利额 · 月赛','jm.b.vm':'交易量 · 月赛',
+    'hof.title':'名人堂','hof.sub':'每个赛季结束时自动定格的历届冠军。',
+    'hof.rw':'收益率 · 周赛','hof.rm':'收益率 · 月赛','hof.pm':'盈利额 · 月赛','hof.vm':'交易量 · 月赛','hof.empty':'暂无冠军——首个赛季正在进行中。','hof.titles':'次冠军',
+    'hero.kicker':'Global Trading League','hero.title':'证明实力的<br><b>全球</b>交易联赛',
+    'hero.sub':'每周、每月，用你真实的 OKX 账户与全球交易者竞争。无报名费。资金始终在你的账户里。',
+    'hero.cta1':'参加联赛','hero.cta2':'查看排行榜','hero.login':'登录后开始',
+    'hero.m1':'免费参加','hero.m2':'只读连接 · 资金安全','hero.m3':'每日自动统计',
+    'lb.title':'实时排行榜','lb.sub':'全部参赛者实时排名。用昵称搜索自己。',
+    'lb.weekly':'周赛','lb.monthly':'月赛','lb.m.return':'收益率','lb.m.profit':'盈利额','lb.m.volume':'交易量',
+    'lb.search':'搜索昵称','lb.h.rank':'排名','lb.h.trader':'交易者','lb.h.eq':'净值',
+    'pz.pool':'本周奖池','pz.pool.m':'本月奖池','pz.ends':'赛季结束倒计时',
+    'pz.note':'奖池来自联赛交易返佣，随联赛成长而增加。奖金仅限通过 AYILON 推荐注册的账户。',
+    'mine.rank':'我的排名','mine.ret':'收益率','mine.profit':'盈利额','mine.eq':'净值','mine.manage':'管理',
+    'how.title':'参与方式','how.sub':'登录、通过推荐注册、连接密钥即可。',
+    'how.1.t':'通过 AYILON 推荐注册','how.1.d':'用 AYILON 推荐链接创建 OKX 账户。奖金仅限推荐注册账户。',
+    'how.2.t':'连接只读密钥','how.2.d':'仅连接只读密钥（无交易/提现权限）。我们绝不会动用你的资金。',
+    'how.3.t':'交易并冲榜','how.3.d':'像平常一样交易——你的数据每天自动统计上榜。',
+    'cat.title':'比赛项目','cat.sub':'收益率有周赛和月赛；盈利额和交易量仅月赛。',
+    'cat.1.t':'收益率','cat.1.d':'赛期内的收益率。周赛和月赛都有。',
+    'cat.2.t':'盈利额','cat.2.d':'绝对盈利金额。仅月赛。',
+    'cat.3.t':'交易量','cat.3.d':'赛期内累计交易量。仅月赛。',
+    'cta.title':'本赛季，把你的名字留在榜上','cta.sub':'每周一 00:00 UTC 开启新赛季。','cta.btn':'参加联赛',
+    'ft.about':'关于','ft.terms':'条款','ft.privacy':'隐私',
+    'ft.disc':'交易存在本金损失风险。AYILON Arena 是交易竞赛平台，不提供投资建议，也不保证盈利。所有交易决策及结果完全由参赛者本人负责。排行榜反映参赛者自身的真实交易，不推荐任何交易策略。',
+    'jm.title':'参加联赛','jm.lead':'请按以下步骤操作。资金 100% 留在你的 OKX 账户中。',
+    'jm.s1':'通过 AYILON 注册 OKX','jm.s1d':'已通过 AYILON 注册？请跳到第 2 步。','jm.open':'去注册 ↗',
+    'jm.s2':'连接只读 API 密钥','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
+    'jm.hint':'OKX → 个人资料 → API → 仅勾选“读取(Read)”权限。切勿勾选交易/提现。<b>请留空 IP 白名单</b>（我们的服务器 IP 不固定，绑定 IP 会导致连接被拒）。Passphrase 是你创建密钥时自设的口令。',
+    'jm.submit':'连接并参加','jm.leave':'退出联赛',
+    'am.title':'需要登录','am.lead':'参加联赛需先登录。','am.login':'登录','am.signup':'注册',
+    'lb.noresults':'无搜索结果','lb.empty':'暂无参赛者','lb.befirst':'成为第一个挑战者。','lb.meta':'赛季 {s} · 共 {n} 人参加',
+    'pz.accruing':'累积中','pz.upto':'最高 ','pz.utc':'每周一 00:00 UTC 重置','pz.rank':'名','pz.dunit':'天',
+    'nick.min':'请至少输入 2 个字符。','nick.saved':'昵称已保存','nick.taken':'该昵称已被占用。','nick.len':'请使用 2-24 个字符。','nick.chars':'包含无效字符。','nick.fail':'保存失败',
+    'err.net':'网络错误',
+    'jm.allfields':'请填写所有密钥字段。','jm.pickone':'请至少选择一个参赛项目。','jm.connected':'连接成功。','jm.refok':'AYILON 推荐已验证——具备领奖资格。','jm.refno':'已上榜。奖金仅限 AYILON 推荐注册账户。','jm.missing':'请填写所有密钥字段。','jm.relogin':'请重新登录。','jm.failprefix':'失败：','jm.leaveconfirm':'确定退出联赛并断开连接？',
+    'okx.50110':'该 API 密钥设置了 IP 限制。请在 OKX 重新创建一个不绑定 IP 的密钥再连接。','okx.50111':'API Key 无效。','okx.50113':'Secret Key 无效。','okx.50105':'Passphrase 无效（不是登录密码，而是创建密钥时自设的口令）。','okx.50104':'时间同步错误，请稍后重试。','okx.fail':'API 密钥验证失败。'
+  },
+  es:{
+    'nav.board':'Clasificación','nav.how':'Cómo funciona','nav.hof':'Salón de la Fama','nav.login':'Entrar','nav.manage':'Gestionar','nav.logout':'Salir',
+    'jm.nick':'Apodo','jm.nickd':'El nombre que se muestra en la clasificación y el Salón de la Fama.','jm.nicksave':'Guardar',
+    'jm.s3':'Elige tus competiciones','jm.s3d':'Participa solo en las que elijas. Apareces solo en esos rankings.',
+    'jm.b.rw':'Rentabilidad · Semanal','jm.b.rm':'Rentabilidad · Mensual','jm.b.pm':'Beneficio · Mensual','jm.b.vm':'Volumen · Mensual',
+    'hof.title':'Salón de la Fama','hof.sub':'Campeones pasados, fijados automáticamente al terminar cada temporada.',
+    'hof.rw':'Rentabilidad · Semanal','hof.rm':'Rentabilidad · Mensual','hof.pm':'Beneficio · Mensual','hof.vm':'Volumen · Mensual','hof.empty':'Aún no hay campeones: la primera temporada está en curso.','hof.titles':'× campeón',
+    'hero.kicker':'Global Trading League','hero.title':'Demuestra tu nivel en la<br>liga <b>global</b> de trading',
+    'hero.sub':'Cada semana y mes, compite con traders de todo el mundo con tu cuenta real de OKX. Sin cuota. Tus fondos siguen en tu cuenta.',
+    'hero.cta1':'Unirse a la liga','hero.cta2':'Ver clasificación','hero.login':'Entra para empezar',
+    'hero.m1':'Entrada gratis','hero.m2':'Solo lectura · fondos seguros','hero.m3':'Puntuación diaria automática',
+    'lb.title':'Clasificación en vivo','lb.sub':'Todos los participantes, en tiempo real. Busca tu apodo.',
+    'lb.weekly':'Semanal','lb.monthly':'Mensual','lb.m.return':'Rentab.','lb.m.profit':'Beneficio','lb.m.volume':'Volumen',
+    'lb.search':'Buscar apodo','lb.h.rank':'Pos.','lb.h.trader':'Trader','lb.h.eq':'Capital',
+    'pz.pool':'Bote de esta semana','pz.pool.m':'Bote de este mes','pz.ends':'La temporada termina en',
+    'pz.note':'El bote se financia con las recompensas de trading de la liga y crece con ella. Los premios son solo para cuentas referidas por AYILON.',
+    'mine.rank':'Mi posición','mine.ret':'Rentab.','mine.profit':'Beneficio','mine.eq':'Capital','mine.manage':'Gestionar',
+    'how.title':'Cómo funciona','how.sub':'Entra, regístrate por referido y conecta tu clave. Listo.',
+    'how.1.t':'Regístrate vía AYILON','how.1.d':'Crea una cuenta OKX con el enlace de referido de AYILON. Los premios son solo para cuentas referidas.',
+    'how.2.t':'Conecta una clave de solo lectura','how.2.d':'Solo una clave de solo lectura (sin trading/retiro). Nunca podemos tocar tus fondos.',
+    'how.3.t':'Opera y sube','how.3.d':'Opera como siempre: tus datos se puntúan a diario en la tabla.',
+    'cat.title':'Categorías','cat.sub':'Rentabilidad es semanal y mensual; beneficio y volumen son mensuales.',
+    'cat.1.t':'Rentabilidad','cat.1.d':'Rentabilidad del periodo. Semanal y mensual.',
+    'cat.2.t':'Beneficio','cat.2.d':'Beneficio absoluto. Solo mensual.',
+    'cat.3.t':'Volumen','cat.3.d':'Volumen acumulado del periodo. Solo mensual.',
+    'cta.title':'Esta temporada, pon tu nombre en la tabla','cta.sub':'Una nueva temporada empieza cada lunes a las 00:00 UTC.','cta.btn':'Unirse a la liga',
+    'ft.about':'Acerca de','ft.terms':'Términos','ft.privacy':'Privacidad',
+    'ft.disc':'Operar conlleva riesgo de pérdida del capital. AYILON Arena es una plataforma de competición de trading y no ofrece asesoramiento de inversión ni garantiza beneficios. Todas las decisiones y resultados son responsabilidad exclusiva del participante. La clasificación refleja el trading real de los participantes y no respalda ninguna estrategia.',
+    'jm.title':'Unirse a la liga','jm.lead':'Sigue los pasos. Tus fondos siguen 100% en tu cuenta de OKX.',
+    'jm.s1':'Regístrate en OKX vía AYILON','jm.s1d':'¿Ya te registraste vía AYILON? Pasa al paso 2.','jm.open':'Registrarse ↗',
+    'jm.s2':'Conecta una clave API de solo lectura','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
+    'jm.hint':'OKX → perfil → API → marca solo el permiso de Lectura (Read). Nunca marques trading/retiro. <b>Deja vacía la lista de IP</b> (la IP de nuestro servidor no es fija; vincular una IP bloquea la conexión). La Passphrase es la frase que tú definiste al crear la clave.',
+    'jm.submit':'Conectar y unirse','jm.leave':'Salir de la arena',
+    'am.title':'Inicia sesión','am.lead':'Para unirte debes iniciar sesión.','am.login':'Entrar','am.signup':'Registrarse',
+    'lb.noresults':'Sin resultados','lb.empty':'Aún no hay participantes','lb.befirst':'Sé el primer retador.','lb.meta':'Temporada {s} · {n} participantes',
+    'pz.accruing':'Acumulando','pz.upto':'hasta ','pz.utc':'se reinicia lun 00:00 UTC','pz.rank':'º','pz.dunit':'d',
+    'nick.min':'Al menos 2 caracteres.','nick.saved':'Apodo guardado','nick.taken':'Ese apodo ya está en uso.','nick.len':'Usa 2-24 caracteres.','nick.chars':'Contiene caracteres no válidos.','nick.fail':'Error',
+    'err.net':'Error de red',
+    'jm.allfields':'Rellena todos los campos de la clave.','jm.pickone':'Selecciona al menos una competición.','jm.connected':'Conectado. ','jm.refok':'Referido AYILON verificado: con derecho a premio.','jm.refno':'En la tabla. Los premios requieren una cuenta referida por AYILON.','jm.missing':'Rellena todos los campos de la clave.','jm.relogin':'Inicia sesión de nuevo.','jm.failprefix':'Error: ','jm.leaveconfirm':'¿Salir de la arena y desconectar?',
+    'okx.50110':'Esta clave API tiene restricción de IP. Vuelve a crearla en OKX sin lista de IP y conéctala.','okx.50111':'API Key no válida.','okx.50113':'Secret Key no válida.','okx.50105':'Passphrase no válida (la frase que definiste al crear la clave, no tu contraseña de acceso).','okx.50104':'Error de sincronización horaria. Inténtalo pronto.','okx.fail':'Error al verificar la clave API.'
+  },
+  vi:{
+    'nav.board':'Bảng xếp hạng','nav.how':'Cách tham gia','nav.hof':'Đại sảnh Danh vọng','nav.login':'Đăng nhập','nav.manage':'Quản lý','nav.logout':'Đăng xuất',
+    'jm.nick':'Biệt danh','jm.nickd':'Tên hiển thị trên bảng xếp hạng và Đại sảnh Danh vọng.','jm.nicksave':'Lưu',
+    'jm.s3':'Chọn hạng mục tham gia','jm.s3d':'Chỉ tham gia hạng mục bạn chọn. Bạn chỉ xuất hiện ở các bảng đã chọn.',
+    'jm.b.rw':'Lợi nhuận % · Tuần','jm.b.rm':'Lợi nhuận % · Tháng','jm.b.pm':'Tiền lãi · Tháng','jm.b.vm':'Khối lượng · Tháng',
+    'hof.title':'Đại sảnh Danh vọng','hof.sub':'Các nhà vô địch trước đây, được lưu tự động khi mỗi mùa giải kết thúc.',
+    'hof.rw':'Lợi nhuận % · Tuần','hof.rm':'Lợi nhuận % · Tháng','hof.pm':'Tiền lãi · Tháng','hof.vm':'Khối lượng · Tháng','hof.empty':'Chưa có nhà vô địch — mùa giải đầu tiên đang diễn ra.','hof.titles':'× vô địch',
+    'hero.kicker':'Global Trading League','hero.title':'Chứng minh đẳng cấp ở<br>giải đấu <b>toàn cầu</b>',
+    'hero.sub':'Mỗi tuần và mỗi tháng, thi đấu với trader toàn cầu bằng tài khoản OKX thật. Miễn phí tham gia. Tiền vẫn nằm trong tài khoản của bạn.',
+    'hero.cta1':'Tham gia giải','hero.cta2':'Xem bảng xếp hạng','hero.login':'Đăng nhập để bắt đầu',
+    'hero.m1':'Miễn phí tham gia','hero.m2':'Chỉ đọc · tiền an toàn','hero.m3':'Tự động tính mỗi ngày',
+    'lb.title':'Bảng xếp hạng trực tiếp','lb.sub':'Toàn bộ người chơi, xếp hạng trực tiếp. Tìm biệt danh của bạn.',
+    'lb.weekly':'Tuần','lb.monthly':'Tháng','lb.m.return':'Lợi nhuận','lb.m.profit':'Tiền lãi','lb.m.volume':'Khối lượng',
+    'lb.search':'Tìm biệt danh','lb.h.rank':'Hạng','lb.h.trader':'Trader','lb.h.eq':'Tài sản',
+    'pz.pool':'Quỹ thưởng tuần này','pz.pool.m':'Quỹ thưởng tháng này','pz.ends':'Mùa giải kết thúc sau',
+    'pz.note':'Quỹ thưởng đến từ phần thưởng giao dịch của giải và tăng theo quy mô giải. Giải thưởng chỉ dành cho tài khoản đăng ký qua AYILON.',
+    'mine.rank':'Hạng của tôi','mine.ret':'Lợi nhuận','mine.profit':'Tiền lãi','mine.eq':'Tài sản','mine.manage':'Quản lý',
+    'how.title':'Cách tham gia','how.sub':'Đăng nhập, đăng ký qua giới thiệu, kết nối khóa. Xong.',
+    'how.1.t':'Đăng ký qua AYILON','how.1.d':'Tạo tài khoản OKX qua link giới thiệu AYILON. Giải thưởng chỉ cho tài khoản được giới thiệu.',
+    'how.2.t':'Kết nối khóa chỉ đọc','how.2.d':'Chỉ khóa chỉ đọc (không giao dịch/rút). Chúng tôi không bao giờ động tới tiền của bạn.',
+    'how.3.t':'Giao dịch và leo hạng','how.3.d':'Giao dịch như bình thường — số liệu tự động lên bảng mỗi ngày.',
+    'cat.title':'Hạng mục','cat.sub':'Lợi nhuận có tuần và tháng; tiền lãi và khối lượng chỉ theo tháng.',
+    'cat.1.t':'Lợi nhuận %','cat.1.d':'Lợi nhuận trong kỳ. Có cả tuần và tháng.',
+    'cat.2.t':'Tiền lãi','cat.2.d':'Lợi nhuận tuyệt đối. Chỉ theo tháng.',
+    'cat.3.t':'Khối lượng','cat.3.d':'Khối lượng tích lũy trong kỳ. Chỉ theo tháng.',
+    'cta.title':'Mùa này, ghi tên bạn lên bảng','cta.sub':'Mùa giải mới bắt đầu mỗi thứ Hai lúc 00:00 UTC.','cta.btn':'Tham gia giải',
+    'ft.about':'Giới thiệu','ft.terms':'Điều khoản','ft.privacy':'Bảo mật',
+    'ft.disc':'Giao dịch có rủi ro mất vốn. AYILON Arena là nền tảng thi đấu giao dịch, không tư vấn đầu tư và không bảo đảm lợi nhuận. Mọi quyết định và kết quả hoàn toàn do người tham gia chịu trách nhiệm. Bảng xếp hạng phản ánh giao dịch thật của người chơi và không khuyến nghị bất kỳ chiến lược nào.',
+    'jm.title':'Tham gia giải','jm.lead':'Làm theo các bước dưới đây. Tiền của bạn vẫn nằm 100% trong tài khoản OKX.',
+    'jm.s1':'Đăng ký OKX qua AYILON','jm.s1d':'Đã đăng ký qua AYILON? Bỏ qua bước 2.','jm.open':'Đăng ký ↗',
+    'jm.s2':'Kết nối khóa API chỉ đọc','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
+    'jm.hint':'OKX → hồ sơ → API → chỉ tích quyền Đọc (Read). Tuyệt đối không tích giao dịch/rút tiền. <b>Để trống danh sách IP</b> (IP máy chủ của chúng tôi không cố định; ràng buộc IP sẽ chặn kết nối). Passphrase là cụm từ bạn tự đặt khi tạo khóa.',
+    'jm.submit':'Kết nối và tham gia','jm.leave':'Rời giải',
+    'am.title':'Cần đăng nhập','am.lead':'Tham gia giải cần đăng nhập trước.','am.login':'Đăng nhập','am.signup':'Đăng ký',
+    'lb.noresults':'Không có kết quả','lb.empty':'Chưa có người tham gia','lb.befirst':'Hãy là người thách đấu đầu tiên.','lb.meta':'Mùa {s} · {n} người tham gia',
+    'pz.accruing':'Đang tích lũy','pz.upto':'tối đa ','pz.utc':'đặt lại Thứ Hai 00:00 UTC','pz.rank':'','pz.dunit':'ngày',
+    'nick.min':'Nhập ít nhất 2 ký tự.','nick.saved':'Đã lưu biệt danh','nick.taken':'Biệt danh đã có người dùng.','nick.len':'Dùng 2-24 ký tự.','nick.chars':'Có ký tự không hợp lệ.','nick.fail':'Lưu thất bại',
+    'err.net':'Lỗi mạng',
+    'jm.allfields':'Nhập đủ tất cả các trường khóa.','jm.pickone':'Chọn ít nhất một hạng mục.','jm.connected':'Đã kết nối. ','jm.refok':'Đã xác minh giới thiệu AYILON — đủ điều kiện nhận thưởng.','jm.refno':'Đã lên bảng. Giải thưởng cần tài khoản đăng ký qua AYILON.','jm.missing':'Nhập đủ tất cả các trường khóa.','jm.relogin':'Vui lòng đăng nhập lại.','jm.failprefix':'Thất bại: ','jm.leaveconfirm':'Rời giải và ngắt kết nối?',
+    'okx.50110':'Khóa API này bị giới hạn IP. Hãy tạo lại khóa trong OKX không có danh sách IP rồi kết nối.','okx.50111':'API Key không hợp lệ.','okx.50113':'Secret Key không hợp lệ.','okx.50105':'Passphrase không hợp lệ (cụm từ bạn đặt khi tạo khóa, không phải mật khẩu đăng nhập).','okx.50104':'Lỗi đồng bộ thời gian. Thử lại sau giây lát.','okx.fail':'Xác minh khóa API thất bại.'
+  },
+  ru:{
+    'nav.board':'Рейтинг','nav.how':'Как участвовать','nav.hof':'Зал славы','nav.login':'Войти','nav.manage':'Управление','nav.logout':'Выйти',
+    'jm.nick':'Никнейм','jm.nickd':'Имя, отображаемое в рейтинге и Зале славы.','jm.nicksave':'Сохранить',
+    'jm.s3':'Выберите номинации','jm.s3d':'Участвуете только в выбранных. Появляетесь только в выбранных таблицах.',
+    'jm.b.rw':'Доходность · Неделя','jm.b.rm':'Доходность · Месяц','jm.b.pm':'Прибыль · Месяц','jm.b.vm':'Объём · Месяц',
+    'hof.title':'Зал славы','hof.sub':'Прошлые чемпионы, фиксируются автоматически в конце каждого сезона.',
+    'hof.rw':'Доходность · Неделя','hof.rm':'Доходность · Месяц','hof.pm':'Прибыль · Месяц','hof.vm':'Объём · Месяц','hof.empty':'Чемпионов пока нет — идёт первый сезон.','hof.titles':'× чемпион',
+    'hero.kicker':'Global Trading League','hero.title':'Докажи мастерство в<br><b>глобальной</b> лиге трейдинга',
+    'hero.sub':'Каждую неделю и месяц соревнуйтесь с трейдерами со всего мира на реальном счёте OKX. Без взноса. Средства остаются на вашем счёте.',
+    'hero.cta1':'Вступить в лигу','hero.cta2':'Смотреть рейтинг','hero.login':'Войдите, чтобы начать',
+    'hero.m1':'Участие бесплатно','hero.m2':'Только чтение · средства в безопасности','hero.m3':'Ежедневный авто-подсчёт',
+    'lb.title':'Живой рейтинг','lb.sub':'Все участники в реальном времени. Найдите свой никнейм.',
+    'lb.weekly':'Неделя','lb.monthly':'Месяц','lb.m.return':'Доходн.','lb.m.profit':'Прибыль','lb.m.volume':'Объём',
+    'lb.search':'Поиск никнейма','lb.h.rank':'Место','lb.h.trader':'Трейдер','lb.h.eq':'Капитал',
+    'pz.pool':'Призовой фонд недели','pz.pool.m':'Призовой фонд месяца','pz.ends':'До конца сезона',
+    'pz.note':'Призовой фонд формируется из торговых вознаграждений лиги и растёт вместе с ней. Призы только для аккаунтов, зарегистрированных по реферальной ссылке AYILON.',
+    'mine.rank':'Моё место','mine.ret':'Доходн.','mine.profit':'Прибыль','mine.eq':'Капитал','mine.manage':'Управление',
+    'how.title':'Как участвовать','how.sub':'Войдите, зарегистрируйтесь по реферальной ссылке, подключите ключ. Готово.',
+    'how.1.t':'Регистрация через AYILON','how.1.d':'Создайте счёт OKX по реферальной ссылке AYILON. Призы только для рефералов.',
+    'how.2.t':'Подключите ключ «только чтение»','how.2.d':'Только ключ для чтения (без торговли/вывода). Мы никогда не трогаем ваши средства.',
+    'how.3.t':'Торгуйте и поднимайтесь','how.3.d':'Торгуйте как обычно — данные автоматически попадают в таблицу каждый день.',
+    'cat.title':'Номинации','cat.sub':'Доходность — неделя и месяц; прибыль и объём — только месяц.',
+    'cat.1.t':'Доходность','cat.1.d':'Доходность за период. И неделя, и месяц.',
+    'cat.2.t':'Прибыль','cat.2.d':'Абсолютная прибыль. Только месяц.',
+    'cat.3.t':'Объём','cat.3.d':'Накопленный объём за период. Только месяц.',
+    'cta.title':'В этом сезоне впишите своё имя в таблицу','cta.sub':'Новый сезон стартует каждый понедельник в 00:00 UTC.','cta.btn':'Вступить в лигу',
+    'ft.about':'О нас','ft.terms':'Условия','ft.privacy':'Конфиденциальность',
+    'ft.disc':'Торговля сопряжена с риском потери капитала. AYILON Arena — платформа торговых соревнований, не предоставляет инвестиционных советов и не гарантирует прибыль. Все решения и результаты — исключительно ответственность участника. Рейтинг отражает реальную торговлю участников и не рекомендует никакую стратегию.',
+    'jm.title':'Вступить в лигу','jm.lead':'Следуйте шагам ниже. Ваши средства на 100% остаются на счёте OKX.',
+    'jm.s1':'Регистрация в OKX через AYILON','jm.s1d':'Уже зарегистрированы через AYILON? Перейдите к шагу 2.','jm.open':'Регистрация ↗',
+    'jm.s2':'Подключите API-ключ «только чтение»','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
+    'jm.hint':'OKX → профиль → API → отметьте только право Чтение (Read). Никогда не отмечайте торговлю/вывод. <b>Оставьте список IP пустым</b> (IP нашего сервера не фиксирован, привязка IP блокирует подключение). Passphrase — это фраза, которую вы задали при создании ключа.',
+    'jm.submit':'Подключить и вступить','jm.leave':'Покинуть арену',
+    'am.title':'Нужен вход','am.lead':'Для участия необходимо войти.','am.login':'Войти','am.signup':'Регистрация',
+    'lb.noresults':'Ничего не найдено','lb.empty':'Пока нет участников','lb.befirst':'Станьте первым претендентом.','lb.meta':'Сезон {s} · участников: {n}',
+    'pz.accruing':'Накапливается','pz.upto':'до ','pz.utc':'сброс в пн 00:00 UTC','pz.rank':'место','pz.dunit':'д',
+    'nick.min':'Минимум 2 символа.','nick.saved':'Никнейм сохранён','nick.taken':'Этот никнейм занят.','nick.len':'Используйте 2-24 символа.','nick.chars':'Содержит недопустимые символы.','nick.fail':'Ошибка',
+    'err.net':'Ошибка сети',
+    'jm.allfields':'Заполните все поля ключа.','jm.pickone':'Выберите хотя бы одну номинацию.','jm.connected':'Подключено. ','jm.refok':'Реферал AYILON подтверждён — есть право на приз.','jm.refno':'Вы в таблице. Призы требуют аккаунт, зарегистрированный через AYILON.','jm.missing':'Заполните все поля ключа.','jm.relogin':'Войдите снова.','jm.failprefix':'Ошибка: ','jm.leaveconfirm':'Покинуть арену и отключить ключ?',
+    'okx.50110':'У этого API-ключа ограничение по IP. Создайте в OKX ключ без списка IP и подключите.','okx.50111':'Неверный API Key.','okx.50113':'Неверный Secret Key.','okx.50105':'Неверный Passphrase (фраза, заданная при создании ключа, не пароль входа).','okx.50104':'Ошибка синхронизации времени. Повторите позже.','okx.fail':'Не удалось проверить API-ключ.'
   }
 };
-let LANG = localStorage.getItem('ayilon_lang') || 'ko';
+function t(k){ return (I18N[LANG]&&I18N[LANG][k]!=null)?I18N[LANG][k]:(I18N.en[k]!=null?I18N.en[k]:k); }
+let LANG = localStorage.getItem('ayilon_lang') || (()=>{const l=(navigator.language||'en').slice(0,2).toLowerCase();return ['en','ko','zh','es','vi','ru'].includes(l)?l:'en';})();
 function applyLang(){
-  const d=I18N[LANG]; document.documentElement.lang=LANG;
-  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(d[k]!=null)el.innerHTML=d[k];});
-  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{const k=el.getAttribute('data-i18n-ph');if(d[k]!=null)el.placeholder=d[k];});
-  document.getElementById('langBtn').textContent=LANG==='ko'?'EN':'한국어';
+  document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.innerHTML=t(el.getAttribute('data-i18n'));});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});
+  const sel=document.getElementById('langSel'); if(sel) sel.value=LANG;
   syncMetricHeader();
 }
-document.getElementById('langBtn').onclick=()=>{LANG=LANG==='ko'?'en':'ko';localStorage.setItem('ayilon_lang',LANG);applyLang();setAuthUI();renderLB();renderPrize();if(window.fetchHOF)fetchHOF();};
+document.getElementById('langSel').onchange=(e)=>{LANG=e.target.value;localStorage.setItem('ayilon_lang',LANG);applyLang();setAuthUI();renderLB();renderPrize();if(window.fetchHOF)fetchHOF();};
 
 /* ---------- leaderboard ---------- */
 let state={period:'weekly',metric:'return',q:'',rows:[],total:0,seasonId:''};
@@ -495,7 +680,7 @@ function renderLB(){
   let rows=state.rows; if(state.q) rows=rows.filter(r=>r.nickname.toLowerCase().includes(state.q));
   const body=document.getElementById('lbBody');
   if(!rows.length){
-    body.innerHTML=`<div class="lb-empty"><b>${state.q?(LANG==='ko'?'검색 결과 없음':'No results'):(LANG==='ko'?'아직 참가자가 없습니다':'No participants yet')}</b>${state.q?'':(LANG==='ko'?'첫 번째 도전자가 되어보세요.':'Be the first challenger.')}</div>`;
+    body.innerHTML=`<div class="lb-empty"><b>${state.q?t('lb.noresults'):t('lb.empty')}</b>${state.q?'':t('lb.befirst')}</div>`;
   }else{
     body.innerHTML=rows.map(r=>{
       const mv=state.metric==='volume'?fmtVol(r.volume):state.metric==='profit'?fmtUsd(r.profit):fmtPct(r.returnPct);
@@ -506,7 +691,7 @@ function renderLB(){
       return `<div class="lb-r ${me}"><div class="${rk}">${r.rank}</div><div class="who"><span class="nm">${esc(r.nickname)}</span>${vb}</div><div class="val ${cls}">${mv}</div><div class="val sub c-eq h-eq">${fmtEq(r.equity)}</div></div>`;
     }).join('');
   }
-  document.getElementById('lbMeta').textContent=(LANG==='ko'?`시즌 ${state.seasonId} · 총 ${state.total}명 참가`:`Season ${state.seasonId} · ${state.total} participants`);
+  document.getElementById('lbMeta').textContent=t('lb.meta').replace('{s}',state.seasonId).replace('{n}',state.total);
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
@@ -522,13 +707,13 @@ function renderPrize(){
   if(!season||!season[state.period]){box.style.display='none';return;}
   box.style.display='block';const s=season[state.period];
   document.getElementById('prizeLbl').textContent=state.period==='monthly'?d['pz.pool.m']:d['pz.pool'];
-  document.getElementById('prizeAmt').textContent=s.pool>0?('$'+s.pool.toLocaleString()):(LANG==='ko'?'적립 중':'Accruing');
-  document.getElementById('prizeCap').textContent=s.capTotal>0?((LANG==='ko'?'최대 ':'up to ')+'$'+s.capTotal.toLocaleString()):'';
+  document.getElementById('prizeAmt').textContent=s.pool>0?('$'+s.pool.toLocaleString()):t('pz.accruing');
+  document.getElementById('prizeCap').textContent=s.capTotal>0?(t('pz.upto')+'$'+s.capTotal.toLocaleString()):'';
   document.getElementById('prizeBreak').innerHTML=(s.prizes||[]).map(p=>{
     const amt=p.amount>0?'$'+p.amount.toLocaleString():(p.cap?'$'+p.cap.toLocaleString():'—');
-    return `<div class="pz r${p.rank}"><div class="r">${p.rank}${LANG==='ko'?'등':''}</div><div class="a">${amt}</div></div>`;
+    return `<div class="pz r${p.rank}"><div class="r">${p.rank}${t('pz.rank')}</div><div class="a">${amt}</div></div>`;
   }).join('');
-  document.getElementById('cdUtc').textContent=(LANG==='ko'?'월요일 00:00 UTC 기준':'resets Mon 00:00 UTC');
+  document.getElementById('cdUtc').textContent=t('pz.utc');
   tickCountdown();
 }
 function tickCountdown(){
@@ -536,7 +721,7 @@ function tickCountdown(){
   let s=Math.max(0,Math.floor((season[state.period].endsAt-Date.now())/1000));
   const dd=Math.floor(s/86400);s-=dd*86400;const hh=Math.floor(s/3600);s-=hh*3600;const mm=Math.floor(s/60);const ss=s-mm*60;
   const p=n=>String(n).padStart(2,'0');
-  document.getElementById('cdTime').textContent=dd>0?`${dd}${LANG==='ko'?'일':'d'} ${p(hh)}:${p(mm)}:${p(ss)}`:`${p(hh)}:${p(mm)}:${p(ss)}`;
+  document.getElementById('cdTime').textContent=dd>0?`${dd}${t('pz.dunit')} ${p(hh)}:${p(mm)}:${p(ss)}`:`${p(hh)}:${p(mm)}:${p(ss)}`;
 }
 setInterval(tickCountdown,1000);
 
@@ -546,13 +731,13 @@ function openJoin(){ if(!authed()){authModal.classList.add('open');return;} docu
 document.getElementById('jNickSave').onclick=async()=>{
   const m=document.getElementById('jNickMsg');m.className='msg';
   const nickname=document.getElementById('jNick').value.trim();
-  if(nickname.length<2){m.className='msg err';m.textContent=LANG==='ko'?'2자 이상 입력하세요.':'At least 2 characters.';return;}
+  if(nickname.length<2){m.className='msg err';m.textContent=t('nick.min');return;}
   try{
     const r=await fetch(`${API}/arena/nickname`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({nickname,sessionToken:token()})});
     const j=await r.json();
-    if(j.ok){ localStorage.setItem('ayilon_username',j.nickname); m.className='msg ok'; m.textContent=LANG==='ko'?'닉네임 저장됨':'Nickname saved'; fetchLB(); loadMine(); }
-    else{ m.className='msg err'; m.textContent=({taken:LANG==='ko'?'이미 사용 중인 닉네임입니다.':'That nickname is taken.',bad_length:LANG==='ko'?'2~24자로 입력하세요.':'Use 2–24 characters.',bad_chars:LANG==='ko'?'사용할 수 없는 문자가 있습니다.':'Contains invalid characters.'}[j.error])||(LANG==='ko'?'저장 실패':'Failed'); }
-  }catch(e){ m.className='msg err'; m.textContent=LANG==='ko'?'네트워크 오류':'Network error'; }
+    if(j.ok){ localStorage.setItem('ayilon_username',j.nickname); m.className='msg ok'; m.textContent=t('nick.saved'); fetchLB(); loadMine(); }
+    else{ m.className='msg err'; m.textContent=({taken:t('nick.taken'),bad_length:t('nick.len'),bad_chars:t('nick.chars')}[j.error])||t('nick.fail'); }
+  }catch(e){ m.className='msg err'; m.textContent=t('err.net'); }
 };
 // Auth-aware UI: logged out → Login (no OKX). Logged in → Join/OKX connect.
 function setAuthUI(){
@@ -584,36 +769,35 @@ document.getElementById('mineManage').onclick=openJoin;
 document.getElementById('jSubmit').onclick=async()=>{
   const msg=document.getElementById('jmMsg');msg.className='msg';msg.textContent='';
   const apiKey=document.getElementById('jKey').value.trim(),apiSecret=document.getElementById('jSecret').value.trim(),apiPassphrase=document.getElementById('jPass').value.trim();
-  if(!apiKey||!apiSecret||!apiPassphrase){msg.className='msg err';msg.textContent=LANG==='ko'?'API 키를 모두 입력하세요.':'Enter all key fields.';return;}
+  if(!apiKey||!apiSecret||!apiPassphrase){msg.className='msg err';msg.textContent=t('jm.allfields');return;}
   const boards=['bRw','bRm','bPm','bVm'].filter(id=>document.getElementById(id).checked).map(id=>document.getElementById(id).value);
-  if(!boards.length){msg.className='msg err';msg.textContent=LANG==='ko'?'참가할 부문을 하나 이상 선택하세요.':'Select at least one competition.';return;}
+  if(!boards.length){msg.className='msg err';msg.textContent=t('jm.pickone');return;}
   const btn=document.getElementById('jSubmit');btn.disabled=true;btn.textContent='…';
   try{
     const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({apiKey,apiSecret,apiPassphrase,demoMode:false,boards})});
     const j=await r.json();
     if(j.ok){
       msg.className='msg ok';
-      msg.textContent=(LANG==='ko'?'연결 완료. ':'Connected. ')+(j.referralVerified?(LANG==='ko'?'AYILON 추천 인증됨 — 상금 대상입니다.':'AYILON referral verified — prize-eligible.'):(LANG==='ko'?'순위 등재 완료. 상금은 AYILON 추천 가입 계정만 대상입니다.':'On the board. Prizes require an AYILON-referred account.'));
+      msg.textContent=t('jm.connected')+(j.referralVerified?t('jm.refok'):t('jm.refno'));
       document.getElementById('jKey').value='';document.getElementById('jSecret').value='';document.getElementById('jPass').value='';
       setTimeout(()=>{joinModal.classList.remove('open');fetchLB();loadMine();},1800);
     }else{
       msg.className='msg err';
       if(j.error==='okx'){
         const code=j.code||'';
-        const mapKo={'50110':'이 API 키에 IP 제한이 걸려 있습니다. OKX에서 키의 IP 화이트리스트를 비운 채로 다시 만들어 연결하세요.','50111':'API Key가 올바르지 않습니다.','50113':'Secret Key가 올바르지 않습니다.','50105':'Passphrase가 올바르지 않습니다(로그인 비번 아님, 키 만들 때 정한 문구).','50104':'시간 동기화 오류입니다. 잠시 후 다시 시도하세요.'};
-        const mapEn={'50110':'This API key is IP-restricted. Recreate it in OKX with no IP whitelist, then connect.','50111':'Invalid API Key.','50113':'Invalid Secret Key.','50105':'Invalid Passphrase (the phrase you set when creating the key, not your login password).','50104':'Time sync error. Try again shortly.'};
-        const base=(LANG==='ko'?mapKo:mapEn)[code]||(LANG==='ko'?'API 키 검증에 실패했습니다.':'API key verification failed.');
+        const known=['50110','50111','50113','50105','50104'].includes(code);
+        const base=known?t('okx.'+code):t('okx.fail');
         msg.textContent=base+(j.detail?` (${j.detail})`:code?` (OKX ${code})`:'');
       }else{
-        msg.textContent=({missing_key:LANG==='ko'?'키를 모두 입력하세요.':'Enter all key fields.',unauthorized:LANG==='ko'?'다시 로그인해주세요.':'Please log in again.'}[j.error])||((LANG==='ko'?'연결 실패: ':'Failed: ')+(j.error||''));
+        msg.textContent=({missing_key:t('jm.missing'),unauthorized:t('jm.relogin')}[j.error])||(t('jm.failprefix')+(j.error||''));
       }
     }
-  }catch(e){msg.className='msg err';msg.textContent=LANG==='ko'?'네트워크 오류':'Network error';}
+  }catch(e){msg.className='msg err';msg.textContent=t('err.net');}
   btn.disabled=false;btn.textContent=I18N[LANG]['jm.submit'];
 };
 document.getElementById('jLeave').onclick=async(e)=>{
   e.preventDefault();
-  if(!confirm(LANG==='ko'?'대회에서 나가고 연결을 해제할까요?':'Leave the arena and disconnect?'))return;
+  if(!confirm(t('jm.leaveconfirm')))return;
   await fetch(`${API}/arena/leave`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:'{}'});
   joinModal.classList.remove('open');fetchLB();loadMine();
 };
