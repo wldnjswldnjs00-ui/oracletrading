@@ -1,1578 +1,486 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-  <!-- ayiloncompany.xyz is the admin-only entry point → route its root to admin (or login first) -->
-  <script>if(/(^|\.)ayiloncompany\.xyz$/.test(location.hostname)){location.replace(localStorage.getItem('ayilon_session_token')?'/admin.html':'/login.html');}</script>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AYILON — The end of effort.</title>
-  <meta name="description" content="AYILON automates your crypto trading on OKX 24/7. Set, forget, grow." />
-  <meta property="og:title" content="AYILON — The end of effort." />
-  <meta property="og:description" content="Automated crypto trading bots running 24/7 on OKX. 10 strategies across 3 plan tiers." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://oracletrading-01o.pages.dev" />
-  <meta property="og:image" content="https://oracletrading-01o.pages.dev/og-image.png" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="AYILON — The end of effort." />
-  <meta name="twitter:description" content="Automated crypto trading bots running 24/7 on OKX." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="i18n.js?v=20260627"></script>
-  <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-    :root {
-      --black: #000000; --white: #ffffff;
-      --gray-100: #f5f5f5; --gray-200: #e5e5e5;
-      --gray-400: #a3a3a3; --gray-600: #525252;
-      --gray-800: #262626; --gray-900: #111111;
-      --green: #22c55e; --orange: #f97316;
-    }
-
-    html { scroll-behavior: smooth; }
-    body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); overflow-x: hidden; }
-
-    /* ── WRAP ── */
-    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
-
-    /* ── NAV ── */
-    nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      background: rgba(0,0,0,0.88); backdrop-filter: blur(16px);
-    }
-    .nav-inner {
-      max-width: 1080px; margin: 0 auto; padding: 0 40px;
-      display: flex; align-items: center; justify-content: space-between;
-      height: 54px;
-    }
-    .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
-    .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
-    .nav-links a { font-size: 13px; font-weight: 400; color: var(--gray-400); text-decoration: none; letter-spacing: 0.01em; transition: color 0.2s; }
-    .nav-links a:hover { color: var(--white); }
-    .nav-actions { display: flex; gap: 8px; align-items: center; }
-    .btn-ghost { padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--white); background: transparent; border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; cursor: pointer; text-decoration: none; transition: border-color 0.2s, background 0.2s; }
-    .btn-ghost:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.04); }
-    .btn-white { padding: 7px 14px; font-size: 13px; font-weight: 600; color: var(--black); background: var(--white); border: none; border-radius: 6px; cursor: pointer; text-decoration: none; transition: opacity 0.2s; }
-    .btn-white:hover { opacity: 0.88; }
-    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
-    .hamburger span { display: block; width: 20px; height: 2px; background: var(--white); border-radius: 2px; }
-    .mobile-menu { display: none; position: fixed; top: 54px; left: 0; right: 0; background: rgba(0,0,0,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.06); padding: 8px 30px 20px; z-index: 99; }
-    .mobile-menu.open { display: block; }
-    .mobile-menu a { display: block; padding: 13px 0; font-size: 14px; color: var(--gray-400); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.04); transition: color 0.2s; }
-    .mobile-menu a:last-child { border-bottom: none; color: var(--white); font-weight: 600; }
-    .mobile-menu a:hover { color: var(--white); }
-    .lang-switcher { display: flex; gap: 4px; align-items: center; }
-    .lang-btn { background: none; border: 1px solid transparent; color: var(--gray-400); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
-    .lang-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
-    .lang-btn.active { color: var(--white); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
-
-    /* ── HERO ── */
-    .hero { padding: 88px 0 60px; position: relative; overflow: hidden; }
-    .hero-inner { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 48px; }
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 100px; font-size: 11px; font-weight: 500; color: var(--gray-400);
-      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 20px;
-    }
-    .hero-dot { width: 5px; height: 5px; background: var(--green); border-radius: 50%; display: inline-block; flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
-    .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700; line-height: 1.0; letter-spacing: -0.03em; margin-bottom: 12px; }
-    .hero h1 em { font-style: normal; color: var(--gray-400); }
-    .hero-tagline { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 500; color: var(--gray-400); letter-spacing: -0.01em; margin-bottom: 14px; }
-    .hero-desc { font-size: 14px; color: var(--gray-600); line-height: 1.75; margin-bottom: 28px; max-width: 380px; }
-    .hero-cta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .btn-primary { padding: 10px 20px; font-size: 13px; font-weight: 600; color: var(--black); background: var(--white); border: none; border-radius: 7px; cursor: pointer; text-decoration: none; transition: opacity 0.2s; letter-spacing: 0.01em; white-space: nowrap; }
-    .btn-primary:hover { opacity: 0.88; }
-    .btn-secondary { padding: 10px 20px; font-size: 13px; font-weight: 500; color: var(--white); background: transparent; border: 1px solid rgba(255,255,255,0.18); border-radius: 7px; cursor: pointer; text-decoration: none; transition: border-color 0.2s; white-space: nowrap; }
-    .btn-secondary:hover { border-color: rgba(255,255,255,0.45); }
-    .hero-visual { display: flex; align-items: center; justify-content: center; }
-
-    /* ── HERO 3D CANVAS ── */
-    #ayilon-3d { width: 100%; max-width: 480px; height: 480px; display: block; cursor: grab; }
-
-
-    /* ── MARQUEE ── */
-    .marquee-section { padding: 44px 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .marquee-text { font-family: 'Space Grotesk', sans-serif; font-size: 52px; font-weight: 700; letter-spacing: -0.03em; color: rgba(255,255,255,0.12); line-height: 1; transition: color 0.4s; }
-    .marquee-text:hover { color: rgba(255,255,255,0.22); }
-
-    /* ── STATS ── */
-    .stats { border-bottom: 1px solid rgba(255,255,255,0.06); padding: 36px 0; }
-    .stats-inner { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
-    .stat-item { padding: 0 28px; border-right: 1px solid rgba(255,255,255,0.06); text-align: center; }
-    .stat-item:first-child { padding-left: 0; }
-    .stat-item:last-child { border-right: none; padding-right: 0; }
-    .stat-number { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
-    .stat-label { font-size: 12px; color: var(--gray-400); font-weight: 400; }
-
-    /* ── SECTION ── */
-    section { padding: 60px 0; }
-    .section-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 12px; }
-    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 12px; max-width: 500px; }
-    .section-desc { font-size: 14px; color: var(--gray-400); line-height: 1.7; max-width: 420px; margin-bottom: 40px; }
-
-    /* ── FEATURES ── */
-    .features-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 36px; }
-    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; }
-    .feature-card { background: var(--black); padding: 28px 22px; transition: background 0.25s; position: relative; }
-    .feature-card:hover { background: #080808; }
-    .feature-num { font-size: 11px; font-weight: 600; color: var(--gray-600); letter-spacing: 0.1em; margin-bottom: 18px; font-family: 'Space Grotesk', sans-serif; }
-    .feature-icon { width: 22px; height: 22px; margin-bottom: 12px; }
-    .feature-icon svg { width: 22px; height: 22px; stroke: var(--gray-400); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.25s; }
-    .feature-card:hover .feature-icon svg { stroke: var(--white); }
-    .feature-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; margin-bottom: 7px; letter-spacing: -0.01em; }
-    .feature-card p { font-size: 13px; color: var(--gray-600); line-height: 1.65; }
-
-    /* ── TRUST SECTION ── */
-    .trust-section { padding: 60px 0; border-top: 1px solid rgba(255,255,255,0.06); }
-    .trust-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
-    .trust-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green); margin-bottom: 12px; }
-    .trust-title { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 14px; }
-    .trust-desc { font-size: 14px; color: var(--gray-400); line-height: 1.8; }
-    .trust-visual { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 24px; }
-    .trust-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
-    .trust-item:last-child { margin-bottom: 0; }
-    .trust-icon { width: 30px; height: 30px; border-radius: 8px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .trust-icon svg { width: 14px; height: 14px; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .trust-item-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
-    .trust-item-desc { font-size: 12px; color: var(--gray-400); line-height: 1.55; }
-
-    /* ── HOW IT WORKS ── */
-    .how-section { padding: 60px 0; }
-    .how { background: var(--gray-900); border-radius: 16px; }
-    .how-inner { padding: 52px 48px; }
-    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 40px; }
-    .step { position: relative; }
-    .step-num { font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: var(--gray-600); margin-bottom: 14px; }
-    .step h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.01em; }
-    .step p { font-size: 13px; color: var(--gray-400); line-height: 1.65; }
-    .step::after { content: '→'; position: absolute; top: 0; right: -14px; color: var(--gray-600); font-size: 12px; }
-    .step:last-child::after { display: none; }
-
-    /* ── EXCHANGE ── */
-    .exchanges { text-align: center; padding: 44px 0; }
-    .exchanges h2 { font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 500; color: var(--gray-600); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 24px; }
-    .exchange-list { display: flex; gap: 36px; align-items: center; justify-content: center; }
-    .exchange-name { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: var(--gray-600); letter-spacing: 0.02em; transition: color 0.2s; }
-    .exchange-name:hover { color: var(--white); }
-
-    /* ── STRATEGY SIMULATION ── */
-    .strat-sim { padding: 60px 0; border-top: 1px solid rgba(255,255,255,0.06); }
-    .strat-sim-head { text-align: center; margin-bottom: 28px; }
-    .strat-sim-head .section-title { max-width: 100%; text-align: center; margin: 0 auto; }
-    .sim-tabs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; padding: 0 16px; }
-    .sim-tab { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 100px; background: transparent; color: var(--gray-400); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.18s; white-space: nowrap; }
-    .sim-tab:hover { border-color: rgba(255,255,255,0.25); color: #fff; }
-    .sim-tab.active { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.28); color: #fff; }
-    .sim-tier { font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .sim-tier-starter { background: rgba(34,197,94,0.15);  color: #22c55e; }
-    .sim-tier-pro   { background: rgba(59,130,246,0.15);  color: #3b82f6; }
-    .sim-tier-elite { background: rgba(168,85,247,0.15); color: #a855f7; }
-    .sim-chart-outer { }
-    .sim-card { background: #080808; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; }
-    .sim-card-header { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .sim-pair-label { display: flex; align-items: center; gap: 6px; font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.7); }
-    .sim-pair-dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 5px #22c55e; }
-    .sim-logic-label { font-size: 11px; color: var(--gray-400); }
-    .sim-canvas-wrap { position: relative; height: 260px; }
-    #sim-chart { display: block; width: 100%; height: 100%; }
-
-    /* ── QUOTE SECTION ── */
-    .quote-section { padding: 60px 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .quote-main { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 10px; }
-    .quote-sub { font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 500; color: var(--gray-400); letter-spacing: -0.02em; }
-
-    /* ── PRICING ── */
-    .pricing { background: var(--black); }
-    .pricing-header { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 32px; }
-    .pricing-header .section-title { max-width: 100%; }
-    .pricing-header .section-desc { margin-bottom: 0; }
-    .billing-toggle { display: inline-flex; align-items: center; gap: 0; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; padding: 4px; margin: 20px 0 0; }
-    .toggle-btn { padding: 6px 16px; font-size: 13px; font-weight: 500; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s, color 0.2s; background: transparent; color: var(--gray-400); font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
-    .toggle-btn.active { background: var(--white); color: var(--black); }
-    .save-tag { font-size: 10px; font-weight: 700; padding: 2px 7px; background: rgba(255,255,255,0.1); border-radius: 100px; color: var(--gray-400); }
-    .toggle-btn.active .save-tag { background: rgba(0,0,0,0.1); color: var(--gray-600); }
-    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 28px; }
-    .pricing-card { border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 26px; transition: border-color 0.2s; position: relative; }
-    .pricing-card:hover { border-color: rgba(255,255,255,0.18); }
-    .pricing-card.featured { background: var(--white); color: var(--black); border-color: var(--white); }
-    .pricing-plan { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px; color: inherit; }
-    .pricing-card.featured .pricing-plan { color: var(--gray-600); }
-    .pricing-price { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; color: inherit; }
-    .pricing-period { font-size: 12px; color: var(--gray-400); margin-bottom: 4px; }
-    .pricing-card.featured .pricing-period { color: var(--gray-600); }
-    .pricing-annual-note { font-size: 11px; color: var(--gray-600); margin-bottom: 18px; min-height: 16px; }
-    .save-badge { display: inline-block; padding: 2px 7px; background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); border-radius: 100px; font-size: 10px; font-weight: 600; color: var(--green); }
-    .pricing-features { list-style: none; margin-bottom: 20px; }
-    .pricing-features li { font-size: 13px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); color: var(--gray-400); display: flex; gap: 8px; align-items: flex-start; }
-    .pricing-card.featured .pricing-features li { border-bottom-color: rgba(0,0,0,0.08); color: var(--gray-600); }
-    .pricing-features li::before { content: '✓'; font-weight: 700; color: var(--white); flex-shrink: 0; margin-top: 1px; }
-    .pricing-card.featured .pricing-features li::before { color: var(--black); }
-    .pricing-card .btn-primary { width: 100%; text-align: center; display: block; }
-    .btn-outline { display: block; width: 100%; text-align: center; padding: 10px; border: 1px solid rgba(255,255,255,0.18); border-radius: 7px; color: var(--white); font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color 0.2s; }
-    .btn-outline:hover { border-color: rgba(255,255,255,0.45); }
-    .strategy-compare { margin-top: 36px; }
-    .strategy-compare-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-600); text-align: center; margin-bottom: 12px; }
-    .strategy-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .strategy-table th { padding: 8px 12px; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-600); border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .strategy-table th:first-child { text-align: left; }
-    .strategy-table td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--gray-400); }
-    .strategy-table td:first-child { color: var(--white); font-weight: 500; }
-    .strategy-table td:not(:first-child) { text-align: center; }
-    .strategy-table tr:last-child td { border-bottom: none; }
-    .st-check { color: #34c759; font-weight: 700; font-size: 14px; }
-    .st-dash { color: rgba(255,255,255,0.13); font-size: 14px; }
-    .st-risk { font-size: 10px; padding: 2px 6px; border-radius: 100px; font-weight: 600; }
-    .st-risk.low { background: rgba(52,199,89,0.13); color: #34c759; }
-    .st-risk.med { background: rgba(255,149,0,0.13); color: #ff9500; }
-    .st-risk.high { background: rgba(255,59,48,0.13); color: #ff3b30; }
-
-    /* ── REFERRAL BANNER ── */
-    .referral-banner { margin: 40px 0 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 36px 40px; background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.01) 100%); display: flex; align-items: center; justify-content: space-between; gap: 28px; position: relative; overflow: hidden; }
-    .referral-banner::before { content: 'LIFETIME'; position: absolute; right: -16px; top: 50%; transform: translateY(-50%) rotate(90deg); font-family: 'Space Grotesk', sans-serif; font-size: 60px; font-weight: 900; letter-spacing: 0.05em; color: rgba(255,255,255,0.02); pointer-events: none; white-space: nowrap; }
-    .referral-left { flex: 1; }
-    .referral-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 8px; }
-    .referral-title { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 8px; }
-    .referral-desc { font-size: 13px; color: var(--gray-400); line-height: 1.65; max-width: 460px; }
-    .referral-steps { display: flex; gap: 18px; margin-top: 16px; flex-wrap: wrap; }
-    .referral-step { display: flex; align-items: flex-start; gap: 8px; }
-    .referral-step-num { width: 18px; height: 18px; border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
-    .referral-step p { font-size: 12px; color: var(--gray-400); line-height: 1.5; }
-    .referral-right { flex-shrink: 0; text-align: center; }
-    .btn-referral { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; background: var(--white); color: var(--black); border: none; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
-    .btn-referral:hover { opacity: 0.88; }
-    .referral-note { font-size: 11px; color: var(--gray-600); margin-top: 7px; }
-
-    /* ── FAQ ── */
-    .faq-wrap { padding: 60px 0; max-width: 760px; margin: 0 auto; }
-    .faq-list { margin-top: 32px; }
-    .faq-item { border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .faq-question { width: 100%; background: none; border: none; color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; text-align: left; padding: 16px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 18px; transition: color 0.2s; }
-    .faq-question:hover { color: rgba(255,255,255,0.7); }
-    .faq-icon { flex-shrink: 0; width: 18px; height: 18px; border: 1px solid rgba(255,255,255,0.13); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: transform 0.25s, background 0.2s; }
-    .faq-item.open .faq-icon { transform: rotate(45deg); background: rgba(255,255,255,0.07); }
-    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-    .faq-answer p { font-size: 13px; color: var(--gray-400); line-height: 1.75; padding-bottom: 14px; }
-    .faq-answer a { color: var(--white); }
-
-    /* ── CTA ── */
-    .cta-wrap { padding: 0 0 60px; }
-    .cta-section { border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 64px 52px; text-align: center; background: var(--gray-900); position: relative; overflow: hidden; }
-    .cta-section::before { content: ''; position: absolute; bottom: -160px; left: 50%; transform: translateX(-50%); width: 420px; height: 300px; background: radial-gradient(ellipse, rgba(34,197,94,0.04) 0%, transparent 70%); pointer-events: none; }
-    .cta-section h2 { font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; margin-bottom: 12px; }
-    .cta-section p { font-size: 14px; color: var(--gray-400); margin-bottom: 28px; font-family: 'Space Grotesk', sans-serif; font-weight: 500; letter-spacing: -0.01em; }
-
-    /* ── FOOTER ── */
-    footer { border-top: 1px solid rgba(255,255,255,0.06); padding: 44px 0; }
-    .footer-inner { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 28px; }
-    .footer-brand .nav-logo { font-size: 16px; display: block; margin-bottom: 8px; }
-    .footer-brand p { font-size: 12px; color: var(--gray-600); line-height: 1.6; max-width: 200px; }
-    .footer-links { display: flex; gap: 44px; flex-wrap: wrap; }
-    .footer-col h4 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-600); margin-bottom: 10px; }
-    .footer-col ul { list-style: none; }
-    .footer-col li { margin-bottom: 7px; }
-    .footer-col a { font-size: 13px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
-    .footer-col a:hover { color: var(--white); }
-    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.06); padding: 14px 0; display: flex; justify-content: space-between; align-items: center; }
-    .footer-bottom p { font-size: 12px; color: var(--gray-600); }
-    .legal-disclaimer { padding: 6px 0 12px; }
-    .legal-disclaimer p { font-size: 10px; color: var(--gray-600); line-height: 1.6; max-width: 760px; margin: 0 auto; text-align: center; }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 1024px) {
-      .wrap { padding: 0 24px; }
-      .nav-inner { padding: 0 24px; }
-      .nav-links { display: none; }
-      .nav-actions { display: none; }
-      .hamburger { display: flex; }
-      .hero-inner { grid-template-columns: 1fr; text-align: center; }
-      .hero-content { order: 1; display: flex; flex-direction: column; align-items: center; }
-      .hero-desc { margin: 0 auto 24px; }
-      .hero-cta { justify-content: center; }
-      .hero-visual { order: 0; margin-bottom: 12px; }
-      #ayilon-3d { max-width: 300px; height: 300px; }
-      .marquee-text { font-size: 36px; }
-      .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 24px; }
-      .stat-item { border-right: none; padding: 0; }
-      .features-grid { grid-template-columns: 1fr; }
-      .trust-inner { grid-template-columns: 1fr; gap: 32px; }
-      .how-inner { padding: 36px 28px; }
-      .steps { grid-template-columns: 1fr 1fr; gap: 22px; }
-      .step::after { display: none; }
-      .pricing-grid { grid-template-columns: 1fr; }
-      .referral-banner { flex-direction: column; padding: 28px 22px; }
-      .referral-banner::before { display: none; }
-      .cta-section { padding: 44px 24px; }
-      .features-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-    }
-    @media (max-width: 640px) {
-      .hero h1 { font-size: 32px; }
-      .marquee-text { font-size: 26px; }
-      .quote-main { font-size: 26px; }
-      .cta-section h2 { font-size: 24px; }
-      .steps { grid-template-columns: 1fr; }
-      .footer-links { gap: 24px; }
-      .pricing-card { padding: 20px; }
-      .referral-steps { flex-direction: column; gap: 12px; }
-    }
-  </style>
+<!-- ayiloncompany.xyz is the admin-only entry point → route its root to admin (or login first) -->
+<script>if(/(^|\.)ayiloncompany\.xyz$/.test(location.hostname)){location.replace(localStorage.getItem('ayilon_session_token')?'/admin.html':'/login.html');}</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AYILON Arena — 실전 트레이딩 리그</title>
+<meta name="description" content="실전 트레이딩 대회. 매주·매달 수익률·수익금·거래량으로 경쟁하고 상금을 가져가세요.">
+<style>
+  :root{
+    --bg:#07080a; --bg2:#0d0f13; --card:#12151b; --line:#1e232c;
+    --txt:#f4f6f8; --mut:#8b93a1; --accent:#0ae0a0; --accent2:#37b6ff;
+    --gold:#ffd25a; --silver:#cfd6df; --bronze:#e8954f; --red:#ff5a6a;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Pretendard","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(18px);background:rgba(7,8,10,.72);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .logo{font-weight:800;letter-spacing:.5px;font-size:19px}
+  .logo span{color:var(--accent)}
+  .nav-r{display:flex;align-items:center;gap:14px}
+  .lang{cursor:pointer;color:var(--mut);font-size:13px;border:1px solid var(--line);padding:5px 10px;border-radius:20px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;font-weight:600;font-size:14px;padding:11px 20px;border-radius:30px;transition:.15s;font-family:inherit}
+  .btn-primary{background:var(--accent);color:#04140e}
+  .btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+  .btn-ghost:hover{border-color:var(--accent)}
+  .btn-sm{padding:8px 14px;font-size:13px}
+  /* hero */
+  .hero{text-align:center;padding:88px 0 56px;background:radial-gradient(900px 420px at 50% -8%,rgba(10,224,160,.14),transparent 70%)}
+  .hero .tag{display:inline-block;color:var(--accent);font-size:13px;font-weight:600;border:1px solid rgba(10,224,160,.35);padding:6px 14px;border-radius:30px;margin-bottom:22px}
+  .hero h1{font-size:clamp(34px,6vw,62px);font-weight:800;letter-spacing:-1.5px;line-height:1.05}
+  .hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{color:var(--mut);font-size:clamp(15px,2.5vw,19px);margin:22px auto 0;max-width:600px}
+  .hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+  .pillrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+  .pill{font-size:12.5px;color:var(--mut);background:var(--card);border:1px solid var(--line);padding:8px 14px;border-radius:30px}
+  .pill b{color:var(--txt)}
+  /* sections */
+  section{padding:56px 0}
+  .sec-h{text-align:center;margin-bottom:34px}
+  .sec-h h2{font-size:clamp(26px,4vw,40px);font-weight:800;letter-spacing:-.8px}
+  .sec-h p{color:var(--mut);margin-top:10px;font-size:15px}
+  /* leaderboard */
+  .lb-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .seg{display:inline-flex;background:var(--bg2);border:1px solid var(--line);border-radius:30px;padding:4px}
+  .seg button{background:transparent;border:none;color:var(--mut);font-weight:600;font-size:13px;padding:8px 16px;border-radius:30px;cursor:pointer;font-family:inherit;transition:.15s}
+  .seg button.on{background:var(--accent);color:#04140e}
+  .seg.alt button.on{background:var(--accent2);color:#02121f}
+  .search{flex:1;min-width:180px;max-width:280px;position:relative}
+  .search input{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:30px;padding:10px 16px 10px 38px;font-size:14px;font-family:inherit;outline:none}
+  .search input:focus{border-color:var(--accent)}
+  .search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.5}
+  .lb{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .lb-head,.lb-row{display:grid;grid-template-columns:64px 1fr 130px 120px;align-items:center;gap:10px;padding:14px 20px}
+  .lb-head{color:var(--mut);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line);background:var(--bg2)}
+  .lb-row{border-bottom:1px solid var(--line);font-size:15px}
+  .lb-row:last-child{border-bottom:none}
+  .lb-row.me{background:rgba(10,224,160,.07)}
+  .rank{font-weight:800;font-variant-numeric:tabular-nums}
+  .rank.r1{color:var(--gold)} .rank.r2{color:var(--silver)} .rank.r3{color:var(--bronze)}
+  .who{display:flex;align-items:center;gap:9px;min-width:0}
+  .who .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vbadge{font-size:10px;color:var(--accent);border:1px solid rgba(10,224,160,.4);border-radius:20px;padding:2px 7px;white-space:nowrap}
+  .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+  .val.pos{color:var(--accent)} .val.neg{color:var(--red)}
+  .val.sub{color:var(--mut);font-weight:500;font-size:13.5px}
+  .lb-empty{padding:54px 20px;text-align:center;color:var(--mut)}
+  .lb-empty b{color:var(--txt);display:block;margin-bottom:6px;font-size:16px}
+  /* steps */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+  .card .n{width:34px;height:34px;border-radius:10px;background:rgba(10,224,160,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;margin-bottom:16px}
+  .card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+  .card p{color:var(--mut);font-size:14px}
+  /* prize cards */
+  .grid3b{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;text-align:center}
+  .pcard .ic{font-size:30px;margin-bottom:10px}
+  .pcard h3{font-size:17px;margin-bottom:6px}
+  .pcard p{color:var(--mut);font-size:13.5px}
+  /* modal */
+  .modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
+  .modal.open{display:flex}
+  .sheet{background:var(--bg2);border:1px solid var(--line);border-radius:22px;max-width:460px;width:100%;padding:30px;max-height:90vh;overflow:auto}
+  .sheet h3{font-size:21px;font-weight:800;margin-bottom:6px}
+  .sheet .lead{color:var(--mut);font-size:14px;margin-bottom:20px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13px;color:var(--mut);margin-bottom:6px}
+  .field input,.field select{width:100%;background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:12px 14px;font-size:14px;font-family:inherit;outline:none}
+  .field input:focus{border-color:var(--accent)}
+  .note{font-size:12.5px;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:6px 0 16px}
+  .note b{color:var(--accent2)}
+  .toggle{display:flex;gap:8px;margin-bottom:14px}
+  .toggle button{flex:1;background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:12px;padding:11px;font-weight:600;cursor:pointer;font-family:inherit;font-size:13px}
+  .toggle button.on{border-color:var(--accent);color:var(--txt)}
+  .msg{font-size:13.5px;padding:11px 14px;border-radius:12px;margin-bottom:14px;display:none}
+  .msg.err{display:block;background:rgba(255,90,106,.1);color:var(--red);border:1px solid rgba(255,90,106,.3)}
+  .msg.ok{display:block;background:rgba(10,224,160,.1);color:var(--accent);border:1px solid rgba(10,224,160,.3)}
+  .x{float:right;cursor:pointer;color:var(--mut);font-size:22px;line-height:1;margin-top:-4px}
+  /* mine bar */
+  .mine{background:linear-gradient(90deg,rgba(10,224,160,.1),rgba(55,182,255,.07));border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin-bottom:18px;display:none;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .mine.show{display:flex}
+  .mine .m-l{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .mine .m-stat{font-size:13px;color:var(--mut)}
+  .mine .m-stat b{display:block;color:var(--txt);font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+  footer{border-top:1px solid var(--line);padding:34px 0;color:var(--mut);font-size:13px;text-align:center}
+  footer a{color:var(--mut);margin:0 8px}
+  .disc{max-width:760px;margin:20px auto 0;font-size:11.5px;color:#5b626d;line-height:1.6;text-align:center}
+  @media(max-width:760px){
+    .grid3,.grid3b{grid-template-columns:1fr}
+    .lb-head,.lb-row{grid-template-columns:48px 1fr 96px;}
+    .lb-head .h-vol,.lb-row .c-vol{display:none}
+    .hero{padding:60px 0 40px}
+  }
+</style>
 </head>
 <body>
-
-  <nav>
-    <div class="nav-inner">
-      <a href="index.html" class="nav-logo">AYILON</a>
-      <ul class="nav-links">
-        <li><a href="#features" data-i18n="nav.features">Features</a></li>
-        <li><a href="#how" data-i18n="nav.how">How It Works</a></li>
-        <li><a href="#pricing" data-i18n="nav.pricing">Pricing</a></li>
-        <li><a href="bot-guide.html" data-i18n="nav.botguide">Bot Guide</a></li>
-        <li><a href="about.html" data-i18n="nav.about">About</a></li>
-      </ul>
-      <div class="lang-switcher">
-        <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
-        <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
-      </div>
-      <div class="nav-actions" id="navActions">
-        <a href="login.html" class="btn-ghost" data-i18n="nav.login">Log In</a>
-        <a href="signup.html" class="btn-white" data-i18n="nav.getstarted">Get Started</a>
-      </div>
-      <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-  </nav>
-
-  <div class="mobile-menu" id="mobileMenu">
-    <a href="#features" onclick="closeMobileMenu()" data-i18n="mobile.features">Features</a>
-    <a href="#how" onclick="closeMobileMenu()" data-i18n="mobile.how">How It Works</a>
-    <a href="#pricing" onclick="closeMobileMenu()" data-i18n="mobile.pricing">Pricing</a>
-    <a href="bot-guide.html" data-i18n="mobile.botguide">Bot Guide</a>
-    <a href="login.html" data-i18n="mobile.login">Log In</a>
-    <a href="signup.html" data-i18n="mobile.getstarted">Get Started →</a>
-  </div>
-  <script>
-    (function() {
-      if (localStorage.getItem('ayilon_logged_in') === 'true') {
-        document.getElementById('navActions').innerHTML =
-          '<a href="dashboard.html" class="btn-white" data-i18n="nav.dashboard">Dashboard →</a>';
-      }
-    })();
-    function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('open'); }
-    function closeMobileMenu() { document.getElementById('mobileMenu').classList.remove('open'); }
-    document.addEventListener('click', function(e) {
-      var menu = document.getElementById('mobileMenu');
-      var btn = document.getElementById('hamburger');
-      if (menu.classList.contains('open') && !menu.contains(e.target) && !btn.contains(e.target)) {
-        menu.classList.remove('open');
-      }
-    });
-  </script>
-
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-inner wrap">
-      <div class="hero-content">
-        <div class="hero-badge">
-          <span class="hero-dot"></span>
-          <span data-i18n="hero.badge">Automated Crypto Trading — 24/7</span>
-        </div>
-        <h1>
-          <span data-i18n="hero.title1">당신이 쉬는 동안,</span><br />
-          <em data-i18n="hero.title2">알고리즘이 일한다.</em>
-        </h1>
-        <p class="hero-tagline" data-i18n="hero.tagline">Set, forget, grow.</p>
-        <p class="hero-desc" data-i18n="hero.desc">Connect your OKX API key. AYILON's algorithmic bots trade 24/7 on your behalf — no downloads, no setup, no effort.</p>
-        <div class="hero-cta">
-          <a href="signup.html" class="btn-primary" data-i18n="hero.cta1">Automate My Account →</a>
-          <a href="#how" class="btn-secondary" data-i18n="hero.cta2">See How It Works</a>
-        </div>
-      </div>
-      <div class="hero-visual">
-        <canvas id="ayilon-3d"></canvas>
-      </div>
-    </div>
-  </section>
-
-  <!-- MARQUEE -->
-  <div class="marquee-section">
-    <div class="wrap">
-      <div class="marquee-text" data-i18n="slogan.marquee">Nothing to Everything.</div>
+<nav>
+  <div class="wrap">
+    <a href="/" class="logo">AY<span>I</span>LON</a>
+    <div class="nav-r">
+      <span class="lang" id="langBtn">EN</span>
+      <a id="navAuth" class="btn btn-ghost btn-sm" href="/login.html" data-i18n="nav.login">로그인</a>
+      <button class="btn btn-primary btn-sm" id="navJoin" data-i18n="nav.join">대회 참가</button>
     </div>
   </div>
+</nav>
 
-  <!-- STATS -->
-  <div class="stats">
-    <div class="stats-inner wrap">
-      <div class="stat-item">
-        <div class="stat-number">$2.4B+</div>
-        <div class="stat-label" data-i18n="stats.vol.label">Total Volume Traded</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-number">38,000+</div>
-        <div class="stat-label" data-i18n="stats.bots.label">Active Bots</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-number">12,000+</div>
-        <div class="stat-label" data-i18n="stats.traders.label">Traders Worldwide</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-number">99.9%</div>
-        <div class="stat-label" data-i18n="stats.uptime.label">Server Uptime</div>
-      </div>
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap">
+    <span class="tag" data-i18n="hero.tag">🏆 실전 트레이딩 리그</span>
+    <h1 data-i18n="hero.title">진짜 실력을<br><em>증명하는</em> 무대</h1>
+    <p data-i18n="hero.sub">매주·매달, 실제 OKX 계좌의 수익률·수익금·거래량으로 경쟁합니다. 참가비 0원. 우승하면 상금과 명예를 가져가세요.</p>
+    <div class="hero-cta">
+      <button class="btn btn-primary" id="heroJoin" data-i18n="hero.cta1">지금 참가하기</button>
+      <a class="btn btn-ghost" href="#leaderboard" data-i18n="hero.cta2">리더보드 보기</a>
+    </div>
+    <div class="pillrow">
+      <span class="pill" data-i18n="hero.p1">✅ 참가비 무료</span>
+      <span class="pill" data-i18n="hero.p2">🔒 읽기전용 연결 (자금 안전)</span>
+      <span class="pill" data-i18n="hero.p3">⚡ 매일 자동 집계</span>
     </div>
   </div>
+</header>
 
-  <!-- FEATURES -->
-  <section id="features">
-    <div class="wrap">
-      <div class="features-header">
-        <div>
-          <div class="section-tag" data-i18n="feat.tag">Core Features</div>
-          <h2 class="section-title" data-i18n="feat.title">Everything you need to automate trading</h2>
-        </div>
-        <p class="section-desc" data-i18n="feat.desc">From strategy selection to execution and profit tracking — AYILON handles it all while you sleep.</p>
+<!-- LEADERBOARD -->
+<section id="leaderboard">
+  <div class="wrap">
+    <div class="sec-h">
+      <h2 data-i18n="lb.title">라이브 리더보드</h2>
+      <p data-i18n="lb.sub">전체 참가자 실시간 순위 — 닉네임으로 본인을 검색하세요.</p>
+    </div>
+
+    <div class="mine" id="mineBar">
+      <div class="m-l">
+        <div class="m-stat"><span data-i18n="mine.rank">내 순위</span><b id="mRank">—</b></div>
+        <div class="m-stat"><span data-i18n="mine.ret">수익률</span><b id="mRet">—</b></div>
+        <div class="m-stat"><span data-i18n="mine.profit">수익금</span><b id="mProfit">—</b></div>
+        <div class="m-stat"><span data-i18n="mine.eq">평가금</span><b id="mEq">—</b></div>
       </div>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-num">01</div>
-          <div class="feature-icon"><svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-          <h3 data-i18n="feat.1.title">Automated Trading</h3>
-          <p data-i18n="feat.1.desc">Algorithmic bots that never stop. 24/7/365 market monitoring with instant execution at the optimal moment.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-num">02</div>
-          <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
-          <h3 data-i18n="feat.2.title">OKX Integration</h3>
-          <p data-i18n="feat.2.desc">Connect to OKX in seconds via API key. Your funds stay on the exchange — AYILON only trades, never withdraws.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-num">03</div>
-          <div class="feature-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-          <h3 data-i18n="feat.3.title">Multiple Strategies</h3>
-          <p data-i18n="feat.3.desc">Support/resistance entries, fractional DCA, Kelly-sized positions — proven strategies configurable in one click.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-num">04</div>
-          <div class="feature-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-          <h3 data-i18n="feat.4.title">Backtesting</h3>
-          <p data-i18n="feat.4.desc">Simulate strategy performance on historical data before committing real capital. Verify before you deploy.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-num">05</div>
-          <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
-          <h3 data-i18n="feat.5.title">Real-Time Alerts</h3>
-          <p data-i18n="feat.5.desc">Instant notifications for fills, stop-losses, and profit targets via email and Telegram.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-num">06</div>
-          <div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-          <h3 data-i18n="feat.6.title">Asset Protection</h3>
-          <p data-i18n="feat.6.desc">API keys stored with trading-only permissions. Withdrawal access is never requested — your funds stay yours.</p>
-        </div>
+      <button class="btn btn-ghost btn-sm" id="mineManage" data-i18n="mine.manage">연결 관리</button>
+    </div>
+
+    <div class="lb-controls">
+      <div class="seg" id="periodSeg">
+        <button data-period="weekly" class="on" data-i18n="lb.weekly">주간</button>
+        <button data-period="monthly" data-i18n="lb.monthly">월간</button>
+      </div>
+      <div class="seg alt" id="metricSeg">
+        <button data-metric="return" class="on" data-i18n="lb.m.return">수익률</button>
+        <button data-metric="profit" data-i18n="lb.m.profit">수익금</button>
+        <button data-metric="volume" data-i18n="lb.m.volume">거래량</button>
+      </div>
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="lbSearch" type="text" data-i18n-ph="lb.search" placeholder="닉네임 검색…">
       </div>
     </div>
-  </section>
 
-  <!-- TRUST SECTION -->
-  <div class="trust-section">
-    <div class="trust-inner wrap">
-      <div>
-        <div class="trust-eyebrow" data-i18n="slogan.trust.tag">Asset Protection</div>
-        <div class="trust-title" data-i18n="slogan.trust.title">We trade. You keep.</div>
-        <p class="trust-desc" data-i18n="slogan.trust.desc">Your funds never leave your OKX account. AYILON connects via API key with trade-only permissions — withdrawal access is never requested. Your capital stays exactly where you put it.</p>
+    <div class="lb">
+      <div class="lb-head">
+        <div data-i18n="lb.h.rank">순위</div>
+        <div data-i18n="lb.h.trader">트레이더</div>
+        <div class="val" id="hMetric" data-i18n="lb.m.return">수익률</div>
+        <div class="val c-vol h-vol" data-i18n="lb.h.eq">평가금</div>
       </div>
-      <div class="trust-visual">
-        <div class="trust-item">
-          <div class="trust-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-          <div>
-            <div class="trust-item-title" data-i18n="feat.6.title">Zero custody risk</div>
-            <div class="trust-item-desc" data-i18n="trust.item1.desc">AYILON never touches your funds. Trade permissions only — no withdraw, no transfer.</div>
-          </div>
-        </div>
-        <div class="trust-item">
-          <div class="trust-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-          <div>
-            <div class="trust-item-title" data-i18n="trust.item2.title">Encrypted API storage</div>
-            <div class="trust-item-desc" data-i18n="trust.item2.desc">Your API keys are encrypted at rest and in transit. Never shared with third parties.</div>
-          </div>
-        </div>
-        <div class="trust-item">
-          <div class="trust-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-          <div>
-            <div class="trust-item-title" data-i18n="trust.item3.title">24/7 monitoring</div>
-            <div class="trust-item-desc" data-i18n="trust.item3.desc">Real-time position monitoring with automatic circuit breakers on extreme market conditions.</div>
-          </div>
-        </div>
-      </div>
+      <div id="lbBody"></div>
+    </div>
+    <p style="text-align:center;color:var(--mut);font-size:12.5px;margin-top:14px" id="lbMeta"></p>
+  </div>
+</section>
+
+<!-- HOW -->
+<section style="background:var(--bg2)">
+  <div class="wrap">
+    <div class="sec-h"><h2 data-i18n="how.title">참가 방법</h2><p data-i18n="how.sub">3분이면 끝. 코딩·입금 강요 없음.</p></div>
+    <div class="grid3">
+      <div class="card"><div class="n">1</div><h3 data-i18n="how.1.t">OKX 계정 만들기</h3><p data-i18n="how.1.d">AYILON 링크로 OKX에 가입하세요. 이미 있으면 그대로 연결해도 됩니다.</p></div>
+      <div class="card"><div class="n">2</div><h3 data-i18n="how.2.t">읽기전용 키 연결</h3><p data-i18n="how.2.d">거래·출금 권한 없는 <b>읽기전용</b> API 키만 연결합니다. 우리는 당신의 자금을 절대 건드릴 수 없습니다.</p></div>
+      <div class="card"><div class="n">3</div><h3 data-i18n="how.3.t">거래하고 순위에 오르기</h3><p data-i18n="how.3.d">평소처럼 거래하면 매일 자동 집계되어 리더보드에 반영됩니다. 끝.</p></div>
     </div>
   </div>
+</section>
 
-  <!-- HOW IT WORKS -->
-  <div id="how" class="how-section">
-    <div class="wrap">
-      <div class="how">
-        <div class="how-inner">
-          <div class="section-tag" data-i18n="how.tag">How It Works</div>
-          <h2 class="section-title" data-i18n="how.title">Up and running in 4 steps</h2>
-          <div class="steps">
-            <div class="step">
-              <div class="step-num">01</div>
-              <h3 data-i18n="how.step1.title">Create Account</h3>
-              <p data-i18n="how.step1.desc">Sign up with your email in under 30 seconds.</p>
-            </div>
-            <div class="step">
-              <div class="step-num">02</div>
-              <h3 data-i18n="how.step2.title">Connect OKX</h3>
-              <p data-i18n="how.step2.desc">Paste your OKX API key and secret. Read + trade permissions only.</p>
-            </div>
-            <div class="step">
-              <div class="step-num">03</div>
-              <h3 data-i18n="how.step3.title">Choose Strategy</h3>
-              <p data-i18n="how.step3.desc">Pick a strategy, select your pairs, and set your capital allocation.</p>
-            </div>
-            <div class="step">
-              <div class="step-num">04</div>
-              <h3 data-i18n="how.step4.title">Let It Run</h3>
-              <p data-i18n="how.step4.desc">Hit start. Your bot trades 24/7 on AYILON's servers — nothing to install or maintain.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+<!-- PRIZE / CATEGORIES -->
+<section>
+  <div class="wrap">
+    <div class="sec-h"><h2 data-i18n="cat.title">3개 부문, 3배의 기회</h2><p data-i18n="cat.sub">한 부문은 못 먹어도 다른 부문은 노릴 수 있습니다.</p></div>
+    <div class="grid3b">
+      <div class="pcard"><div class="ic">📈</div><h3 data-i18n="cat.1.t">수익률 부문</h3><p data-i18n="cat.1.d">기간 내 % 수익률. 소액으로도 한 방을 노리는 고위험 부문.</p></div>
+      <div class="pcard"><div class="ic">💰</div><h3 data-i18n="cat.2.t">수익금 부문</h3><p data-i18n="cat.2.d">절대 수익 금액. 실력과 자본으로 꾸준히 버는 사람의 무대.</p></div>
+      <div class="pcard"><div class="ic">🔥</div><h3 data-i18n="cat.3.t">거래량 부문</h3><p data-i18n="cat.3.d">기간 내 누적 거래량. 가장 활발한 트레이더에게.</p></div>
     </div>
   </div>
+</section>
 
-  <!-- EXCHANGES -->
-  <div class="exchanges">
-    <div class="wrap">
-      <h2 data-i18n="exch.header">Supported Exchange</h2>
-      <div class="exchange-list">
-        <span class="exchange-name">OKX</span>
-      </div>
-    </div>
+<!-- CTA -->
+<section style="text-align:center;background:radial-gradient(700px 320px at 50% 120%,rgba(55,182,255,.12),transparent 70%)">
+  <div class="wrap">
+    <h2 style="font-size:clamp(26px,4vw,40px);font-weight:800;letter-spacing:-.8px" data-i18n="cta.title">이번 시즌, 당신의 이름을 올리세요</h2>
+    <p style="color:var(--mut);margin:14px auto 28px;max-width:520px" data-i18n="cta.sub">매주 월요일 새 시즌이 시작됩니다. 지금 참가하면 이번 주부터 집계됩니다.</p>
+    <button class="btn btn-primary" id="ctaJoin" data-i18n="cta.btn">무료로 참가하기</button>
   </div>
+</section>
 
-  <!-- STRATEGY SIMULATION -->
-  <section class="strat-sim" id="strategy-sim">
-    <div class="strat-sim-head wrap">
-      <div class="section-tag" data-i18n="sim.tag">전략 시뮬레이션</div>
-      <h2 class="section-title" data-i18n="sim.title">각 전략이 실제로 어떻게 작동하는지 보세요</h2>
-      <p class="section-desc" style="text-align:center;margin:8px auto 0;" data-i18n="sim.desc">전략을 선택하면 해당 전략의 진입·청산 로직이 실시간으로 시뮬레이션됩니다.</p>
-    </div>
-    <div class="sim-tabs" id="sim-tabs"></div>
-    <div class="sim-chart-outer wrap">
-      <div class="sim-card">
-        <div class="sim-card-header">
-          <div class="sim-pair-label"><span class="sim-pair-dot"></span>BTC/USDT</div>
-          <span class="sim-logic-label" id="sim-logic-label" data-i18n="strat.chart.entrylogic">ENTRY LOGIC</span>
-        </div>
-        <div class="sim-canvas-wrap">
-          <canvas id="sim-chart"></canvas>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- QUOTE SECTION -->
-  <div class="quote-section">
-    <div class="wrap">
-      <div class="quote-main" data-i18n="slogan.never_stop">거래는 멈추지 않는다.</div>
-      <div class="quote-sub" data-i18n="slogan.always_on">365일, 24시간, 쉬지 않는 알고리즘.</div>
-    </div>
+<footer>
+  <div class="wrap">
+    <div><a href="/about.html" data-i18n="ft.about">소개</a><a href="/terms.html" data-i18n="ft.terms">약관</a><a href="/privacy.html" data-i18n="ft.privacy">개인정보</a></div>
+    <p style="margin-top:14px">© 2026 AYILON. All rights reserved.</p>
+    <p class="disc" data-i18n="ft.disc">투자에는 원금 손실 위험이 따릅니다. AYILON 아레나는 트레이딩 대회 플랫폼이며 투자 자문이나 수익을 보장하지 않습니다. 모든 거래 결정과 그 결과는 전적으로 참가자 본인의 책임입니다. 리더보드는 참가자 본인의 거래 실적이며, 특정 매매 방식을 권유하지 않습니다.</p>
   </div>
+</footer>
 
-  <!-- PRICING -->
-  <section class="pricing" id="pricing">
-    <div class="wrap">
-      <div class="pricing-header">
-        <div class="section-tag" data-i18n="price.tag">Pricing</div>
-        <h2 class="section-title" data-i18n="price.title">Simple, transparent pricing</h2>
-        <p class="section-desc" data-i18n="price.desc">No hidden fees. Your trading profit — 100% yours.</p>
-        <div class="billing-toggle">
-          <button class="toggle-btn active" id="btn-monthly" onclick="setPeriod('monthly')" data-i18n="price.toggle.mo">Monthly</button>
-          <button class="toggle-btn" id="btn-annual" onclick="setPeriod('annual')"><span data-i18n="price.toggle.yr">Annual</span> <span class="save-tag" data-i18n="price.toggle.save">Save up to 15%</span></button>
-        </div>
-      </div>
+<!-- JOIN MODAL -->
+<div class="modal" id="joinModal">
+  <div class="sheet">
+    <span class="x" id="closeJoin">&times;</span>
+    <h3 data-i18n="jm.title">대회 참가 — 읽기전용 키 연결</h3>
+    <p class="lead" data-i18n="jm.lead">거래·출금 권한이 없는 읽기전용 키만 연결하세요. 자금은 100% 당신의 OKX 계좌에 있습니다.</p>
+    <div class="msg" id="jmMsg"></div>
 
-      <div class="pricing-grid">
-        <div class="pricing-card">
-          <div class="pricing-plan" data-i18n="price.plan.starter">Starter</div>
-          <div class="pricing-price" id="price-starter">$100</div>
-          <div class="pricing-period" data-i18n="price.period">/ month</div>
-          <div class="pricing-annual-note" id="note-starter"></div>
-          <ul class="pricing-features">
-            <li data-i18n="price.starter.f1">1 active trading bot</li>
-            <li data-i18n="price.starter.f2">OKX perpetual swaps</li>
-            <li data-i18n="price.starter.f3">3 strategies: RSI DCA · MA Support · S/R Bounce</li>
-            <li data-i18n="price.starter.f4">Fixed Fractional risk sizing</li>
-            <li data-i18n="price.starter.f5">Real-time dashboard</li>
-            <li data-i18n="price.starter.f6">Email notifications</li>
-          </ul>
-          <a href="payment.html?plan=starter" class="btn-outline" data-i18n="price.cta" onclick="return planCta(event,'starter')">Get Started</a>
-        </div>
-
-        <div class="pricing-card featured">
-          <div class="pricing-plan" data-i18n="price.plan.pro">Pro</div>
-          <div class="pricing-price" id="price-pro">$500</div>
-          <div class="pricing-period" data-i18n="price.period">/ month</div>
-          <div class="pricing-annual-note" id="note-pro"></div>
-          <ul class="pricing-features">
-            <li data-i18n="price.pro.f1">5 active trading bots</li>
-            <li data-i18n="price.pro.f2">OKX perpetual swaps</li>
-            <li data-i18n="price.pro.f3">7 strategies: all Starter + MA Crossover · Bollinger Band · Breakout + Volume · MA Ribbon</li>
-            <li data-i18n="price.pro.f4">Backtesting engine</li>
-            <li data-i18n="price.pro.f5">Email &amp; Telegram alerts</li>
-            <li data-i18n="price.pro.f6">Custom entry sizing: equal / weighted / martingale</li>
-            <li data-i18n="price.pro.f7">Priority support</li>
-          </ul>
-          <a href="payment.html?plan=pro" class="btn-primary" data-i18n="price.cta" onclick="return planCta(event,'pro')">Get Started</a>
-        </div>
-
-        <div class="pricing-card">
-          <div class="pricing-plan" data-i18n="price.plan.elite">Elite</div>
-          <div class="pricing-price" id="price-elite">$1,000</div>
-          <div class="pricing-period" data-i18n="price.period">/ month</div>
-          <div class="pricing-annual-note" id="note-elite"></div>
-          <ul class="pricing-features">
-            <li data-i18n="price.elite.f1">Unlimited trading bots</li>
-            <li data-i18n="price.elite.f2">OKX perpetual swaps</li>
-            <li data-i18n="price.elite.f3">All 10 strategies: MACD Divergence · Funding Rate · ATR Trend + all Pro</li>
-            <li data-i18n="price.elite.f4">Full analytics suite</li>
-            <li data-i18n="price.elite.f5">Email, Telegram &amp; SMS alerts</li>
-            <li data-i18n="price.elite.f6">Dedicated account manager</li>
-            <li data-i18n="price.elite.f7">24/7 premium support</li>
-          </ul>
-          <a href="payment.html?plan=elite" class="btn-outline" data-i18n="price.cta" onclick="return planCta(event,'elite')">Get Started</a>
-        </div>
-      </div>
-
-      <div class="strategy-compare">
-        <div class="strategy-compare-title" data-i18n="strat.compare.title">Strategy availability by plan</div>
-        <table class="strategy-table">
-          <thead>
-            <tr>
-              <th data-i18n="strat.col.strategy">Strategy</th>
-              <th data-i18n="strat.col.dir">Direction</th>
-              <th data-i18n="strat.col.risk">Risk</th>
-              <th data-i18n="price.plan.starter">Starter</th>
-              <th data-i18n="price.plan.pro">Pro</th>
-              <th data-i18n="price.plan.elite">Elite</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td data-i18n="strat.1">RSI Oversold DCA Long</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-            <tr><td data-i18n="strat.2">MA Support DCA</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-            <tr><td data-i18n="strat.3">S/R Bounce</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-            <tr><td data-i18n="strat.4">MA Crossover + RSI</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-            <tr><td data-i18n="strat.5">Bollinger Band Mean Reversion</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-            <tr><td data-i18n="strat.6">Breakout + Volume</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-            <tr><td data-i18n="strat.7">MA Ribbon Long</td><td data-i18n="strat.dir.long">Long Only</td><td><span class="st-risk low" data-i18n="strat.risk.low">Low</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td><td><span class="st-check">✓</span></td></tr>
-            <tr><td data-i18n="strat.8">MACD Divergence</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk high" data-i18n="strat.risk.high">High</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
-            <tr><td data-i18n="strat.9">Funding Rate Contrarian</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk high" data-i18n="strat.risk.high">High</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
-            <tr><td data-i18n="strat.10">ATR Trend Following</td><td data-i18n="strat.dir.ls">Long / Short</td><td><span class="st-risk med" data-i18n="strat.risk.med">Medium</span></td><td><span class="st-dash">—</span></td><td><span class="st-dash">—</span></td><td><span class="st-check">✓</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- REFERRAL BANNER -->
-      <div class="referral-banner">
-        <div class="referral-left">
-          <div class="referral-tag" data-i18n="ref.tag">Special Offer</div>
-          <div class="referral-title" data-i18n="ref.title">Elite plan. Free forever.</div>
-          <div class="referral-desc" data-i18n="ref.desc">Sign up for OKX through our referral link, complete your registration, and unlock permanent lifetime Elite access at absolutely no cost.</div>
-          <div class="referral-steps">
-            <div class="referral-step">
-              <div class="referral-step-num">1</div>
-              <p data-i18n="ref.s1">Open an OKX account via our referral link</p>
-            </div>
-            <div class="referral-step">
-              <div class="referral-step-num">2</div>
-              <p data-i18n="ref.s2">Complete identity verification on OKX</p>
-            </div>
-            <div class="referral-step">
-              <div class="referral-step-num">3</div>
-              <p data-i18n="ref.s3">Contact AYILON support with your OKX UID</p>
-            </div>
-          </div>
-        </div>
-        <div class="referral-right">
-          <a href="https://okx.com/join/AYILON" target="_blank" class="btn-referral" data-i18n="ref.cta">
-            Open OKX Account →
-          </a>
-          <div class="referral-note" data-i18n="ref.code">Referral code: AYILON</div>
-        </div>
-      </div>
+    <div class="toggle" id="modeToggle">
+      <button data-mode="live" class="on" data-i18n="jm.live">실전</button>
+      <button data-mode="demo" data-i18n="jm.demo">데모(체험)</button>
     </div>
-  </section>
 
-  <!-- FAQ -->
-  <div id="faq">
-    <div class="faq-wrap wrap">
-      <div class="section-tag" data-i18n="faq.tag">FAQ</div>
-      <h2 class="section-title" data-i18n="faq.title">Everything you need to know</h2>
-      <div class="faq-list">
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q1">What is AYILON?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a1">AYILON is a fully automated crypto trading platform that runs bots on your OKX account 24/7. You connect your API key, and the bot handles everything — entries, exits, and position management — while you sleep.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q2">Is my money safe? Does AYILON hold my funds?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a2">No — AYILON never holds or touches your funds. All trades happen directly on your OKX account via an API key that you create and control. We strongly recommend enabling Trade-only permissions (no Withdraw access) on your API key so that funds can never leave your exchange account.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q3">What exchanges are supported?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a3">Currently AYILON supports OKX. Support for Binance, Bybit, and other major exchanges is on our roadmap.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q4">What trading strategies are available?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a4">AYILON offers 10 trading strategies available across plan tiers. Starter includes RSI Oversold DCA, MA Support DCA, and S/R Bounce. Pro adds MA Crossover + RSI, Bollinger Band Reversion, Breakout + Volume, and MA Ribbon Long. Elite unlocks all 10 strategies, including MACD Divergence, Funding Rate Contrarian, and ATR Trend Following.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q5">Do I need any trading experience?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a5">No. AYILON is built for everyone — from complete beginners to experienced traders. Each bot comes with default parameters tuned for safety. Advanced users can customise leverage, position size, and stop-loss levels.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q6">Can I get a refund?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a6">Yes — if you have not yet connected an API key and your request is within 7 days of purchase, you are eligible for a full refund. After 7 days or after connecting an API key, only cancellation is available.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q7">How do I cancel my subscription?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a7">Go to Dashboard → My Account → Subscription and click "Cancel Subscription." Your access continues until the end of the current billing period.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q8">What is the minimum amount to start?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a8">There is no minimum set by AYILON. OKX has minimum order sizes per pair (typically $5–$10). For bots to work effectively we recommend starting with at least $500–$1,000 per active bot.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq.q9">Is there a demo or trial mode?</span><span class="faq-icon">+</span></button><div class="faq-answer"><p data-i18n="faq.a9">Yes — you can connect OKX's Demo Trading account (free virtual $100,000 USDT) to test any strategy risk-free before going live. Demo mode is available on all plans.</p></div></div>
-      </div>
-    </div>
-  </div>
+    <div class="field"><label data-i18n="jm.k">API Key</label><input id="jKey" autocomplete="off" spellcheck="false"></div>
+    <div class="field"><label data-i18n="jm.s">Secret Key</label><input id="jSecret" type="password" autocomplete="off" spellcheck="false"></div>
+    <div class="field"><label data-i18n="jm.p">Passphrase</label><input id="jPass" type="password" autocomplete="off" spellcheck="false"></div>
 
-  <!-- CTA -->
-  <div class="cta-wrap wrap">
-    <div class="cta-section">
-      <h2 data-i18n="cta.title">Nothing to Everything.</h2>
-      <p data-i18n="cta.subtitle">Simply, more.</p>
-      <a href="signup.html" class="btn-primary" data-i18n="cta.btn">Automate My Account →</a>
-    </div>
-  </div>
+    <div class="note" data-i18n="jm.note">💡 OKX → 우측상단 프로필 → API → 키 생성 시 <b>읽기(Read) 권한만</b> 체크하세요. 거래/출금은 절대 체크하지 마세요.</div>
+    <div class="note" id="refNote" data-i18n="jm.ref">🏆 상금과 우승자 노출은 <b>AYILON 추천(okx.com/join/AYILON)</b>으로 가입한 계정만 대상입니다. 누구나 참가·순위 등재는 가능합니다.</div>
 
-  <!-- FOOTER -->
-  <footer>
-    <div class="footer-inner wrap">
-      <div class="footer-brand">
-        <a href="index.html" class="nav-logo">AYILON</a>
-        <p data-i18n="footer.tagline">Creating profit from nothing.<br />Automated crypto trading platform powered by algorithmic intelligence.</p>
-      </div>
-      <div class="footer-links">
-        <div class="footer-col">
-          <h4 data-i18n="footer.product">Product</h4>
-          <ul>
-            <li><a href="#features" data-i18n="footer.features">Features</a></li>
-            <li><a href="#pricing" data-i18n="footer.pricing">Pricing</a></li>
-            <li><a href="#how" data-i18n="footer.how">How It Works</a></li>
-            <li><a href="bot-guide.html" data-i18n="footer.botguide">Bot Guide</a></li>
-          </ul>
-        </div>
-        <div class="footer-col">
-          <h4 data-i18n="footer.support">Support</h4>
-          <ul>
-            <li><a href="bot-guide.html" data-i18n="footer.logic">Trading Logic</a></li>
-            <li><a href="dashboard.html" data-i18n="footer.dashboard">Dashboard</a></li>
-            <li><a href="about.html" data-i18n="footer.about">About Us</a></li>
-            <li><a href="signup.html" data-i18n="footer.getstarted">Get Started</a></li>
-          </ul>
-        </div>
-        <div class="footer-col">
-          <h4 data-i18n="footer.company">Company</h4>
-          <ul>
-            <li><a href="about.html" data-i18n="footer.aboutco">About</a></li>
-            <li><a href="privacy.html" data-i18n="footer.privacy">Privacy Policy</a></li>
-            <li><a href="terms.html" data-i18n="footer.terms">Terms of Service</a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </footer>
-  <div class="footer-bottom wrap">
-    <p data-i18n="footer.copy">© 2026 AYILON. All rights reserved.</p>
-    <p data-i18n="footer.risk">Trading involves risk. Past performance does not guarantee future results.</p>
+    <button class="btn btn-primary" id="jSubmit" style="width:100%" data-i18n="jm.submit">연결하고 참가</button>
+    <p style="text-align:center;margin-top:14px;font-size:13px;color:var(--mut)" id="jLeaveWrap" hidden>
+      <a href="#" id="jLeave" style="color:var(--red)" data-i18n="jm.leave">대회에서 나가기 (연결 해제)</a>
+    </p>
   </div>
-  <div class="legal-disclaimer wrap">
-    <p data-i18n="legal_disclaimer">AYILON is a software tool, not a registered investment advisor or asset manager. Cryptocurrency trading involves substantial risk of loss. Past performance is not indicative of future results. AYILON does not hold your funds. All trading decisions are executed by algorithms you configure — not by AYILON. By using this service you acknowledge that all investment decisions and their consequences are your sole responsibility.</p>
-  </div>
+</div>
 
-  <script>
-    function toggleFaq(btn) {
-      var item = btn.closest('.faq-item');
-      var answer = item.querySelector('.faq-answer');
-      var isOpen = item.classList.contains('open');
-      document.querySelectorAll('.faq-item.open').forEach(function(el) {
-        el.classList.remove('open');
-        el.querySelector('.faq-answer').style.maxHeight = '0';
-      });
-      if (!isOpen) {
-        item.classList.add('open');
-        answer.style.maxHeight = answer.scrollHeight + 'px';
-      }
+<!-- LOGIN-REQUIRED MODAL -->
+<div class="modal" id="authModal">
+  <div class="sheet" style="text-align:center">
+    <span class="x" id="closeAuth">&times;</span>
+    <h3 data-i18n="am.title">로그인이 필요해요</h3>
+    <p class="lead" data-i18n="am.lead">대회 참가는 로그인 후 진행됩니다. 1분이면 가입할 수 있어요.</p>
+    <a class="btn btn-primary" href="/login.html" style="width:100%;margin-bottom:10px" data-i18n="am.login">로그인</a>
+    <a class="btn btn-ghost" href="/signup.html" style="width:100%" data-i18n="am.signup">회원가입</a>
+  </div>
+</div>
+
+<script>
+const API = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
+const token = () => localStorage.getItem('ayilon_session_token');
+const authed = () => !!token();
+
+/* ---------- i18n ---------- */
+const I18N = {
+  ko:{
+    'nav.login':'로그인','nav.join':'대회 참가',
+    'hero.tag':'🏆 실전 트레이딩 리그','hero.title':'진짜 실력을<br><em>증명하는</em> 무대',
+    'hero.sub':'매주·매달, 실제 OKX 계좌의 수익률·수익금·거래량으로 경쟁합니다. 참가비 0원. 우승하면 상금과 명예를 가져가세요.',
+    'hero.cta1':'지금 참가하기','hero.cta2':'리더보드 보기',
+    'hero.p1':'✅ 참가비 무료','hero.p2':'🔒 읽기전용 연결 (자금 안전)','hero.p3':'⚡ 매일 자동 집계',
+    'lb.title':'라이브 리더보드','lb.sub':'전체 참가자 실시간 순위 — 닉네임으로 본인을 검색하세요.',
+    'lb.weekly':'주간','lb.monthly':'월간','lb.m.return':'수익률','lb.m.profit':'수익금','lb.m.volume':'거래량',
+    'lb.search':'닉네임 검색…','lb.h.rank':'순위','lb.h.trader':'트레이더','lb.h.eq':'평가금',
+    'mine.rank':'내 순위','mine.ret':'수익률','mine.profit':'수익금','mine.eq':'평가금','mine.manage':'연결 관리',
+    'how.title':'참가 방법','how.sub':'3분이면 끝. 코딩·입금 강요 없음.',
+    'how.1.t':'OKX 계정 만들기','how.1.d':'AYILON 링크로 OKX에 가입하세요. 이미 있으면 그대로 연결해도 됩니다.',
+    'how.2.t':'읽기전용 키 연결','how.2.d':'거래·출금 권한 없는 읽기전용 API 키만 연결합니다. 우리는 당신의 자금을 절대 건드릴 수 없습니다.',
+    'how.3.t':'거래하고 순위에 오르기','how.3.d':'평소처럼 거래하면 매일 자동 집계되어 리더보드에 반영됩니다. 끝.',
+    'cat.title':'3개 부문, 3배의 기회','cat.sub':'한 부문은 못 먹어도 다른 부문은 노릴 수 있습니다.',
+    'cat.1.t':'수익률 부문','cat.1.d':'기간 내 % 수익률. 소액으로도 한 방을 노리는 고위험 부문.',
+    'cat.2.t':'수익금 부문','cat.2.d':'절대 수익 금액. 실력과 자본으로 꾸준히 버는 사람의 무대.',
+    'cat.3.t':'거래량 부문','cat.3.d':'기간 내 누적 거래량. 가장 활발한 트레이더에게.',
+    'cta.title':'이번 시즌, 당신의 이름을 올리세요','cta.sub':'매주 월요일 새 시즌이 시작됩니다. 지금 참가하면 이번 주부터 집계됩니다.','cta.btn':'무료로 참가하기',
+    'ft.about':'소개','ft.terms':'약관','ft.privacy':'개인정보',
+    'ft.disc':'투자에는 원금 손실 위험이 따릅니다. AYILON 아레나는 트레이딩 대회 플랫폼이며 투자 자문이나 수익을 보장하지 않습니다. 모든 거래 결정과 그 결과는 전적으로 참가자 본인의 책임입니다. 리더보드는 참가자 본인의 거래 실적이며, 특정 매매 방식을 권유하지 않습니다.',
+    'jm.title':'대회 참가 — 읽기전용 키 연결','jm.lead':'거래·출금 권한이 없는 읽기전용 키만 연결하세요. 자금은 100% 당신의 OKX 계좌에 있습니다.',
+    'jm.live':'실전','jm.demo':'데모(체험)','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
+    'jm.note':'💡 OKX → 우측상단 프로필 → API → 키 생성 시 읽기(Read) 권한만 체크하세요. 거래/출금은 절대 체크하지 마세요.',
+    'jm.ref':'🏆 상금과 우승자 노출은 AYILON 추천(okx.com/join/AYILON)으로 가입한 계정만 대상입니다. 누구나 참가·순위 등재는 가능합니다.',
+    'jm.submit':'연결하고 참가','jm.leave':'대회에서 나가기 (연결 해제)',
+    'am.title':'로그인이 필요해요','am.lead':'대회 참가는 로그인 후 진행됩니다. 1분이면 가입할 수 있어요.','am.login':'로그인','am.signup':'회원가입'
+  },
+  en:{
+    'nav.login':'Log in','nav.join':'Join',
+    'hero.tag':'🏆 Real-money Trading League','hero.title':'The stage to<br><em>prove</em> your edge',
+    'hero.sub':'Compete every week and month on real OKX account return, profit and volume. Free to enter. Win the prize and the glory.',
+    'hero.cta1':'Join now','hero.cta2':'View leaderboard',
+    'hero.p1':'✅ Free entry','hero.p2':'🔒 Read-only (funds stay yours)','hero.p3':'⚡ Auto-scored daily',
+    'lb.title':'Live Leaderboard','lb.sub':'All participants, ranked live — search your nickname.',
+    'lb.weekly':'Weekly','lb.monthly':'Monthly','lb.m.return':'Return','lb.m.profit':'Profit','lb.m.volume':'Volume',
+    'lb.search':'Search nickname…','lb.h.rank':'Rank','lb.h.trader':'Trader','lb.h.eq':'Equity',
+    'mine.rank':'My rank','mine.ret':'Return','mine.profit':'Profit','mine.eq':'Equity','mine.manage':'Manage',
+    'how.title':'How to join','how.sub':'Done in 3 minutes. No coding, no forced deposit.',
+    'how.1.t':'Create an OKX account','how.1.d':'Sign up to OKX via the AYILON link. Already have one? Just connect it.',
+    'how.2.t':'Connect a read-only key','how.2.d':'Only a read-only API key (no trade/withdraw). We can never touch your funds.',
+    'how.3.t':'Trade and climb','how.3.d':'Trade as usual — your stats are auto-scored daily onto the board. That\'s it.',
+    'cat.title':'3 categories, 3x the chances','cat.sub':'Miss one board, still win another.',
+    'cat.1.t':'Return %','cat.1.d':'% return over the period. The high-risk board where small accounts can spike.',
+    'cat.2.t':'Profit','cat.2.d':'Absolute profit. For those who grind it out with skill and size.',
+    'cat.3.t':'Volume','cat.3.d':'Cumulative volume over the period. For the most active trader.',
+    'cta.title':'Put your name on the board this season','cta.sub':'A new season starts every Monday. Join now and you\'re scored from this week.','cta.btn':'Join free',
+    'ft.about':'About','ft.terms':'Terms','ft.privacy':'Privacy',
+    'ft.disc':'Trading involves risk of loss of principal. AYILON Arena is a trading-competition platform and does not provide investment advice or guarantee profit. All trading decisions and outcomes are solely the participant\'s responsibility. Leaderboards reflect participants\' own trading and do not endorse any strategy.',
+    'jm.title':'Join — connect a read-only key','jm.lead':'Connect only a read-only key (no trade/withdraw). Your funds stay 100% in your OKX account.',
+    'jm.live':'Live','jm.demo':'Demo','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
+    'jm.note':'💡 OKX → profile → API → when creating the key, check Read permission only. Never check trade/withdraw.',
+    'jm.ref':'🏆 Prizes and winner features are only for accounts signed up via AYILON (okx.com/join/AYILON). Anyone may participate and appear on the board.',
+    'jm.submit':'Connect & join','jm.leave':'Leave the arena (disconnect)',
+    'am.title':'Login required','am.lead':'Joining requires login. Signing up takes a minute.','am.login':'Log in','am.signup':'Sign up'
+  }
+};
+let LANG = localStorage.getItem('ayilon_lang') || 'ko';
+function applyLang(){
+  const d = I18N[LANG];
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(d[k]!=null) el.innerHTML=d[k]; });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(d[k]!=null) el.placeholder=d[k]; });
+  document.getElementById('langBtn').textContent = LANG==='ko'?'EN':'한국어';
+  syncMetricHeader();
+}
+document.getElementById('langBtn').onclick=()=>{ LANG=LANG==='ko'?'en':'ko'; localStorage.setItem('ayilon_lang',LANG); applyLang(); renderLB(); };
+
+/* ---------- leaderboard ---------- */
+let state = { period:'weekly', metric:'return', q:'', rows:[], total:0 };
+const fmtPct = v => (v>=0?'+':'')+(v*100).toFixed(1)+'%';
+const fmtUsd = v => (v>=0?'+':'-')+'$'+Math.abs(v).toLocaleString(undefined,{maximumFractionDigits:0});
+const fmtVol = v => '$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
+const fmtEq  = v => '$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
+
+function syncMetricHeader(){
+  const d=I18N[LANG];
+  const m=state.metric;
+  document.getElementById('hMetric').textContent = m==='volume'?d['lb.m.volume']:m==='profit'?d['lb.m.profit']:d['lb.m.return'];
+}
+async function fetchLB(){
+  try{
+    const r = await fetch(`${API}/arena/leaderboard?period=${state.period}&metric=${state.metric}`);
+    const j = await r.json();
+    state.rows = j.leaderboard||[]; state.total=j.total||0; state.seasonId=j.seasonId||'';
+  }catch(e){ state.rows=[]; state.total=0; }
+  renderLB();
+}
+function renderLB(){
+  const d=I18N[LANG];
+  const myNick=(localStorage.getItem('ayilon_username')||'').toLowerCase();
+  let rows=state.rows;
+  if(state.q) rows=rows.filter(r=>r.nickname.toLowerCase().includes(state.q));
+  const body=document.getElementById('lbBody');
+  if(!rows.length){
+    body.innerHTML=`<div class="lb-empty"><b>${state.q?(LANG==='ko'?'검색 결과 없음':'No results'):(LANG==='ko'?'아직 참가자가 없습니다':'No participants yet')}</b>${state.q?'':(LANG==='ko'?'첫 번째 도전자가 되어보세요.':'Be the first challenger.')}</div>`;
+  } else {
+    body.innerHTML=rows.map(r=>{
+      const mainVal = state.metric==='volume'?fmtVol(r.volume):state.metric==='profit'?fmtUsd(r.profit):fmtPct(r.returnPct);
+      const cls = state.metric==='volume'?'':(  (state.metric==='profit'?r.profit:r.returnPct)>=0?'pos':'neg');
+      const rk = r.rank<=3?`rank r${r.rank}`:'rank';
+      const me = r.nickname.toLowerCase()===myNick?'me':'';
+      const vb = r.verified?`<span class="vbadge">AYILON</span>`:'';
+      const flag = r.country?`<span style="opacity:.7;font-size:13px">${r.country}</span>`:'';
+      return `<div class="lb-row ${me}">
+        <div class="${rk}">${r.rank}</div>
+        <div class="who"><span class="nm">${escapeHtml(r.nickname)}</span>${vb}${flag}</div>
+        <div class="val ${cls}">${mainVal}</div>
+        <div class="val sub c-vol h-vol">${fmtEq(r.equity)}</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('lbMeta').textContent =
+    (LANG==='ko'?`시즌 ${state.seasonId||''} · 총 ${state.total}명 참가`:`Season ${state.seasonId||''} · ${state.total} participants`);
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+document.getElementById('periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;document.querySelectorAll('#periodSeg button').forEach(x=>x.classList.toggle('on',x===b));fetchLB();});
+document.getElementById('metricSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.metric=b.dataset.metric;document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x===b));syncMetricHeader();fetchLB();});
+let qTimer; document.getElementById('lbSearch').addEventListener('input',e=>{clearTimeout(qTimer);qTimer=setTimeout(()=>{state.q=e.target.value.trim();renderLB();},150);});
+
+/* ---------- join flow ---------- */
+const joinModal=document.getElementById('joinModal'), authModal=document.getElementById('authModal');
+let joinMode='live';
+function openJoin(){
+  if(!authed()){ authModal.classList.add('open'); return; }
+  joinModal.classList.add('open'); loadMine();
+}
+['navJoin','heroJoin','ctaJoin'].forEach(id=>document.getElementById(id).onclick=openJoin);
+document.getElementById('closeJoin').onclick=()=>joinModal.classList.remove('open');
+document.getElementById('closeAuth').onclick=()=>authModal.classList.remove('open');
+document.getElementById('mineManage').onclick=openJoin;
+[joinModal,authModal].forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+document.getElementById('modeToggle').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;joinMode=b.dataset.mode;document.querySelectorAll('#modeToggle button').forEach(x=>x.classList.toggle('on',x===b));});
+
+document.getElementById('jSubmit').onclick=async()=>{
+  const msg=document.getElementById('jmMsg'); msg.className='msg'; msg.textContent='';
+  const apiKey=document.getElementById('jKey').value.trim();
+  const apiSecret=document.getElementById('jSecret').value.trim();
+  const apiPassphrase=document.getElementById('jPass').value.trim();
+  if(!apiKey||!apiSecret||!apiPassphrase){ msg.className='msg err'; msg.textContent=LANG==='ko'?'모든 키를 입력하세요.':'Enter all key fields.'; return; }
+  const btn=document.getElementById('jSubmit'); btn.disabled=true; btn.textContent='…';
+  try{
+    const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},
+      body:JSON.stringify({apiKey,apiSecret,apiPassphrase,demoMode:joinMode==='demo'})});
+    const j=await r.json();
+    if(j.ok){
+      msg.className='msg ok';
+      msg.textContent=(LANG==='ko'?'연결 완료! ':'Connected! ')+(j.referralVerified?(LANG==='ko'?'AYILON 추천 인증됨 — 상금 대상입니다.':'AYILON referral verified — prize-eligible.'):(LANG==='ko'?'순위 등재 가능. 상금은 AYILON 추천 가입자만.':'On the board. Prizes require AYILON referral.'));
+      document.getElementById('jKey').value='';document.getElementById('jSecret').value='';document.getElementById('jPass').value='';
+      setTimeout(()=>{joinModal.classList.remove('open');fetchLB();loadMine();},1600);
+    } else {
+      msg.className='msg err';
+      msg.textContent=({key_invalid:LANG==='ko'?'API 키가 유효하지 않거나 권한이 없습니다.':'Invalid API key or missing read permission.',
+        missing_key:LANG==='ko'?'키를 모두 입력하세요.':'Enter all key fields.',
+        unauthorized:LANG==='ko'?'다시 로그인해주세요.':'Please log in again.'}[j.error])||(LANG==='ko'?'연결 실패: ':'Failed: ')+(j.error||'');
     }
-  </script>
-
-  <script>
-    const pricing = {
-      starter: { monthly: 100, annual: 95, save: 5 },
-      pro:     { monthly: 500, annual: 450, save: 10 },
-      elite:   { monthly: 1000, annual: 850, save: 15 }
-    };
-    function planCta(e, plan) {
-      if (localStorage.getItem('ayilon_logged_in') !== 'true') {
-        e.preventDefault();
-        location.href = 'signup.html';
-        return false;
-      }
-    }
-    function setPeriod(period) {
-      window.__currentPeriod = period;
-      document.getElementById('btn-monthly').classList.toggle('active', period === 'monthly');
-      document.getElementById('btn-annual').classList.toggle('active', period === 'annual');
-      ['starter', 'pro', 'elite'].forEach(plan => {
-        const p = pricing[plan];
-        const priceEl = document.getElementById('price-' + plan);
-        const noteEl = document.getElementById('note-' + plan);
-        if (period === 'monthly') {
-          priceEl.textContent = '$' + p.monthly.toLocaleString();
-          noteEl.innerHTML = '';
-        } else {
-          var amount = '$' + (p.annual * 12).toLocaleString();
-          var billedTpl = (window.__t && window.__t('price.billed.yr')) || 'Billed {amount}/yr';
-          var saveTpl = (window.__t && window.__t('price.save.badge')) || 'Save {pct}%';
-          priceEl.textContent = '$' + p.annual.toLocaleString();
-          noteEl.innerHTML = billedTpl.replace('{amount}', amount) + ' &nbsp;<span class="save-badge">' + saveTpl.replace('{pct}', p.save) + '</span>';
-        }
-      });
-      document.querySelectorAll('[href*="payment.html"]').forEach(a => {
-        const url = new URL(a.href, window.location.href);
-        url.searchParams.set('billing', period);
-        a.href = url.pathname + url.search;
-      });
-    }
-  </script>
-
-  <!-- THREE.JS — 3D trading visualization -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-  <!-- CHART ANIMATIONS -->
-  <script>
-  (function() {
-    /* ── PRNG seeded per page load ── */
-    var _s = (Date.now() ^ (Math.random() * 0xFFFFFF | 0)) >>> 0;
-    function rand() {
-      _s = (_s ^ (_s << 13)) >>> 0;
-      _s = (_s ^ (_s >> 17)) >>> 0;
-      _s = (_s ^ (_s << 5))  >>> 0;
-      return _s / 0xFFFFFFFF;
-    }
-    function makeRng(seed) {
-      var s = seed >>> 0;
-      return function() {
-        s = (s ^ (s << 13)) >>> 0;
-        s = (s ^ (s >> 17)) >>> 0;
-        s = (s ^ (s << 5))  >>> 0;
-        return s / 0xFFFFFFFF;
-      };
-    }
-
-    function calcEMA(arr, period) {
-      var k = 2 / (period + 1), e = arr[0];
-      return arr.map(function(v) { e = v * k + e * (1 - k); return e; });
-    }
-
-    /* ────────────────────────────────────────────
-       HERO 3D — algorithmic trading visualization
-    ────────────────────────────────────────────*/
-    (function() {
-      var canvas = document.getElementById('ayilon-3d');
-      if (!canvas || typeof THREE === 'undefined') return;
-
-      var W = canvas.parentElement.offsetWidth || 480;
-      var H = 480;
-      canvas.style.height = H + 'px';
-
-      var scene = new THREE.Scene();
-      var camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
-      camera.position.set(1.2, 2.8, 6.8);
-      camera.lookAt(0, 0.3, 0);
-
-      var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-      renderer.setSize(W, H);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setClearColor(0x000000, 0);
-
-      var group = new THREE.Group();
-      scene.add(group);
-
-      /* ── Candle data: simulate a realistic price series ── */
-      var COLS = 7, ROWS = 5;
-      var priceH = [];
-      var isBull = [];
-      var p = 0.5;
-      for (var n = 0; n < COLS * ROWS; n++) {
-        var delta = (rand() - 0.47) * 0.14;
-        p = Math.max(0.12, Math.min(0.92, p + delta));
-        priceH.push(p);
-        isBull.push(delta >= 0);
-      }
-
-      var CW = 0.17, CZ = 0.13, CGAP = 0.13, RGAP = 0.22;
-      var floatData = [];
-
-      for (var i = 0; i < priceH.length; i++) {
-        var col = i % COLS, row = Math.floor(i / COLS);
-        var h = Math.max(0.08, priceH[i]);
-        var bull = isBull[i];
-        var xPos = (col - (COLS - 1) / 2) * (CW + CGAP);
-        var zPos = (row - (ROWS - 1) / 2) * (CZ + RGAP);
-        var yBase = h / 2;
-
-        /* body */
-        var bodyGeo = new THREE.BoxGeometry(CW, h, CZ);
-        var bodyMat = new THREE.MeshBasicMaterial({
-          color: bull ? 0x22c55e : 0xef4444,
-          transparent: true,
-          opacity: bull ? 0.72 : 0.55
-        });
-        var body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.set(xPos, yBase, zPos);
-        group.add(body);
-
-        /* wick */
-        var wkH = h + 0.06 + (i % 4) * 0.05;
-        var wkGeo = new THREE.BoxGeometry(0.016, wkH, 0.016);
-        var wkMat = new THREE.MeshBasicMaterial({
-          color: bull ? 0x22c55e : 0xef4444,
-          transparent: true, opacity: 0.16
-        });
-        var wick = new THREE.Mesh(wkGeo, wkMat);
-        wick.position.set(xPos, wkH / 2, zPos);
-        group.add(wick);
-
-        floatData.push({ mesh: body, baseY: yBase, phase: i * 0.48, speed: 0.28 + (i % 6) * 0.035 });
-      }
-
-      /* ── Horizontal S/R planes (3 levels) ── */
-      var srLevels = [
-        { y: 0.78, color: 0x22c55e,  lineOpacity: 0.30, planeOpacity: 0.04 },
-        { y: 0.50, color: 0xffffff,  lineOpacity: 0.10, planeOpacity: 0.02 },
-        { y: 0.22, color: 0xf97316,  lineOpacity: 0.28, planeOpacity: 0.04 }
-      ];
-      var PW = (COLS - 1) * (CW + CGAP) + CW + 0.6;
-      var PD = (ROWS - 1) * (CZ + RGAP) + CZ + 0.4;
-
-      srLevels.forEach(function(sr) {
-        /* plane fill */
-        var pGeo = new THREE.PlaneGeometry(PW, PD);
-        var pMat = new THREE.MeshBasicMaterial({
-          color: sr.color, transparent: true, opacity: sr.planeOpacity, side: THREE.DoubleSide
-        });
-        var plane = new THREE.Mesh(pGeo, pMat);
-        plane.rotation.x = -Math.PI / 2;
-        plane.position.y = sr.y;
-        group.add(plane);
-
-        /* edge rect */
-        var corners = [
-          new THREE.Vector3(-PW/2, sr.y, -PD/2),
-          new THREE.Vector3( PW/2, sr.y, -PD/2),
-          new THREE.Vector3( PW/2, sr.y,  PD/2),
-          new THREE.Vector3(-PW/2, sr.y,  PD/2),
-          new THREE.Vector3(-PW/2, sr.y, -PD/2)
-        ];
-        var lGeo = new THREE.BufferGeometry().setFromPoints(corners);
-        var lMat = new THREE.LineBasicMaterial({ color: sr.color, transparent: true, opacity: sr.lineOpacity });
-        group.add(new THREE.Line(lGeo, lMat));
-      });
-
-      /* ── Algorithm signal nodes at S/R touches ── */
-      var sigDefs = [
-        { col:1, row:0, srY:0.78, green:false },
-        { col:3, row:1, srY:0.22, green:true  },
-        { col:5, row:1, srY:0.78, green:false },
-        { col:0, row:2, srY:0.22, green:true  },
-        { col:4, row:2, srY:0.22, green:true  },
-        { col:2, row:3, srY:0.78, green:false },
-        { col:6, row:3, srY:0.22, green:true  },
-        { col:1, row:4, srY:0.22, green:true  }
-      ];
-
-      var sigMeshes = [];
-      sigDefs.forEach(function(s, si) {
-        var xPos = (s.col - (COLS-1)/2) * (CW + CGAP);
-        var zPos = (s.row - (ROWS-1)/2) * (CZ + RGAP);
-        var sGeo = new THREE.SphereGeometry(0.048, 14, 14);
-        var sMat = new THREE.MeshBasicMaterial({
-          color: s.green ? 0x22c55e : 0xf97316,
-          transparent: true, opacity: 0.85
-        });
-        var sphere = new THREE.Mesh(sGeo, sMat);
-        sphere.position.set(xPos, s.srY, zPos);
-        group.add(sphere);
-        sigMeshes.push({ mesh: sphere, phase: si * 1.3, green: s.green });
-      });
-
-      /* ── Algo connection lines between nodes ── */
-      var connPairs = [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]];
-      connPairs.forEach(function(cp) {
-        var a = sigMeshes[cp[0]], b = sigMeshes[cp[1]];
-        if (!a || !b) return;
-        var lMat = new THREE.LineBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.18 });
-        var lGeo = new THREE.BufferGeometry().setFromPoints([
-          a.mesh.position.clone(), b.mesh.position.clone()
-        ]);
-        group.add(new THREE.Line(lGeo, lMat));
-      });
-
-      /* ── Floor grid ── */
-      var gMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.025 });
-      for (var gx = -4; gx <= 4; gx++) {
-        var gPts = [new THREE.Vector3(gx * 0.4, 0, -2), new THREE.Vector3(gx * 0.4, 0, 2)];
-        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(gPts), gMat));
-      }
-      for (var gz = -4; gz <= 4; gz++) {
-        var gPts2 = [new THREE.Vector3(-2, 0, gz * 0.4), new THREE.Vector3(2, 0, gz * 0.4)];
-        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(gPts2), gMat));
-      }
-
-      /* ── Interaction (click-drag) ── */
-      var isDragging = false, autoRotY = 0, userRotY = 0, userRotX = 0, sx0 = 0, sy0 = 0;
-      canvas.style.cursor = 'grab';
-      canvas.addEventListener('mousedown', function(e) { isDragging = true; sx0 = e.clientX; sy0 = e.clientY; canvas.style.cursor = 'grabbing'; });
-      canvas.addEventListener('mousemove', function(e) {
-        if (!isDragging) return;
-        userRotY += (e.clientX - sx0) * 0.009; userRotX += (e.clientY - sy0) * 0.006;
-        userRotX = Math.max(-0.65, Math.min(0.65, userRotX)); sx0 = e.clientX; sy0 = e.clientY;
-      });
-      function endDrag() { isDragging = false; canvas.style.cursor = 'grab'; }
-      canvas.addEventListener('mouseup', endDrag);
-      canvas.addEventListener('mouseleave', endDrag);
-      canvas.addEventListener('touchstart', function(e) { isDragging = true; sx0 = e.touches[0].clientX; sy0 = e.touches[0].clientY; }, { passive: true });
-      canvas.addEventListener('touchmove', function(e) {
-        if (!isDragging) return; e.preventDefault();
-        userRotY += (e.touches[0].clientX - sx0) * 0.009; userRotX += (e.touches[0].clientY - sy0) * 0.006;
-        userRotX = Math.max(-0.65, Math.min(0.65, userRotX)); sx0 = e.touches[0].clientX; sy0 = e.touches[0].clientY;
-      }, { passive: false });
-      canvas.addEventListener('touchend', function() { isDragging = false; });
-
-      /* ── Animate ── */
-      var t0 = Date.now();
-      function animate() {
-        requestAnimationFrame(animate);
-        var t = (Date.now() - t0) / 1000;
-        if (!isDragging) autoRotY += 0.0035;
-        group.rotation.y = autoRotY + userRotY;
-        group.rotation.x = userRotX * 0.5;
-
-        floatData.forEach(function(fd) {
-          fd.mesh.position.y = fd.baseY + Math.sin(t * fd.speed + fd.phase) * 0.024;
-        });
-        sigMeshes.forEach(function(s) {
-          var pulse = 0.5 + 0.5 * Math.sin(t * 2.4 + s.phase);
-          s.mesh.material.opacity = 0.45 + 0.5 * pulse;
-          var sc = 0.82 + 0.24 * pulse;
-          s.mesh.scale.set(sc, sc, sc);
-        });
-        renderer.render(scene, camera);
-      }
-      animate();
-
-      window.addEventListener('resize', function() {
-        var W2 = canvas.parentElement.offsetWidth || 480;
-        camera.aspect = W2 / H;
-        camera.updateProjectionMatrix();
-        renderer.setSize(W2, H);
-      });
-    })();
-
-    /* ────────────────────────────────────────────
-       STRATEGY SIMULATION
-    ────────────────────────────────────────────*/
-    (function() {
-      var STRATS = [
-        {name:'S/R Bounce',       nameKo:'S/R 반등',          tier:'STARTER',  logic:'SR 레벨 반등 진입/청산',  logicEn:'S/R Level Bounce Entry/Exit',      mode:'sr'},
-        {name:'RSI DCA',          nameKo:'RSI DCA',            tier:'STARTER',  logic:'RSI 과매도 다단계 진입',  logicEn:'RSI Oversold Multi-Entry',          mode:'dca'},
-        {name:'MA Support',       nameKo:'MA 지지',            tier:'STARTER',  logic:'MA 지지 반등 매수',       logicEn:'MA Support Bounce Long',            mode:'masup'},
-        {name:'MA Crossover',     nameKo:'MA 골든/데드크로스', tier:'PRO',   logic:'단기/장기 MA 교차 신호',  logicEn:'Short/Long MA Crossover Signal',    mode:'macross'},
-        {name:'BB Reversion',     nameKo:'BB 반전',            tier:'PRO',   logic:'볼린저 밴드 이탈 반전',   logicEn:'Bollinger Band Breakout Reversion', mode:'bb'},
-        {name:'Breakout+Volume',  nameKo:'돌파+거래량',        tier:'PRO',   logic:'박스권 상단 돌파 진입',   logicEn:'Range Top Breakout Entry',          mode:'breakout'},
-        {name:'MA Ribbon',        nameKo:'MA 리본',            tier:'PRO',   logic:'다중 MA 정렬 추세 추종',  logicEn:'Multi-MA Alignment Trend Follow',   mode:'ribbon'},
-        {name:'MACD Divergence',  nameKo:'MACD 다이버전스',    tier:'ELITE', logic:'MACD 다이버전스 반전',    logicEn:'MACD Divergence Reversal',          mode:'macd'},
-        {name:'Funding Rate',     nameKo:'펀딩비 역추세',      tier:'ELITE', logic:'펀딩비 극단치 역추세',    logicEn:'Funding Rate Extreme Contrarian',   mode:'funding'},
-        {name:'ATR Trend',        nameKo:'ATR 추세 추종',      tier:'ELITE', logic:'ATR 기반 추세 추종',      logicEn:'ATR-Based Trend Following',         mode:'atr'}
-      ];
-
-      var canvas = document.getElementById('sim-chart');
-      var tabsEl = document.getElementById('sim-tabs');
-      var logicEl = document.getElementById('sim-logic-label');
-      if (!canvas || !tabsEl) return;
-
-      /* Build tabs */
-      function getSimLang() { return localStorage.getItem('ayilon_lang') || 'en'; }
-      function stratLabel(s) { return getSimLang() === 'ko' ? s.nameKo : s.name; }
-      function stratLogic(s) { return getSimLang() === 'ko' ? s.logic : s.logicEn; }
-
-      STRATS.forEach(function(s, i) {
-        var btn = document.createElement('button');
-        btn.className = 'sim-tab' + (i === 0 ? ' active' : '');
-        btn.setAttribute('data-sim-idx', i);
-        btn.innerHTML = stratLabel(s) + ' <span class="sim-tier sim-tier-' + s.tier.toLowerCase() + '">' + s.tier + '</span>';
-        btn.addEventListener('click', function() {
-          document.querySelectorAll('.sim-tab').forEach(function(b) { b.classList.remove('active'); });
-          btn.classList.add('active');
-          currentIdx = i;
-          if (logicEl) logicEl.textContent = stratLogic(s);
-          reset();
-        });
-        tabsEl.appendChild(btn);
-      });
-
-      /* Re-render tab labels on language change */
-      var _origSetLangSim = window.setLanguage;
-      window.setLanguage = function(lang) {
-        if (_origSetLangSim) _origSetLangSim(lang);
-        document.querySelectorAll('.sim-tab').forEach(function(btn) {
-          var idx = parseInt(btn.getAttribute('data-sim-idx'), 10);
-          if (isNaN(idx)) return;
-          var s = STRATS[idx];
-          var tierSpan = btn.querySelector('.sim-tier');
-          var tierHtml = tierSpan ? tierSpan.outerHTML : '';
-          btn.innerHTML = stratLabel(s) + ' ' + tierHtml;
-          if (btn.classList.contains('active') && logicEl) {
-            logicEl.textContent = stratLogic(s);
-          }
-        });
-      };
-
-      var dpr = window.devicePixelRatio || 1;
-      var ctx = canvas.getContext('2d');
-      var W = 0, H = 0;
-      var simSeed = 0, simData = null, simOffset = 0, currentIdx = 0;
-      var STEP = 11, SPEED = 0.45;
-
-      function resizeSim() {
-        W = canvas.parentElement.offsetWidth || 900;
-        H = canvas.parentElement.offsetHeight || 260;
-        canvas.width  = W * dpr; canvas.height = H * dpr;
-        canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-      resizeSim();
-      window.addEventListener('resize', function() { resizeSim(); });
-
-      /* ── Price generators ── */
-      function genSR(n, r) {
-        var base = 63000 + r() * 5000;
-        var lo = base - 2600, hi = base + 2600;
-        var prices = [base], signals = [], dir = 1, p = base;
-        for (var i = 1; i < n; i++) {
-          p += (dir > 0 ? hi - p : lo - p) * 0.1 + (r() - 0.5) * 280;
-          if (dir > 0 && p >= hi - 150) { dir = -1; signals.push({i:i, type:'short'}); }
-          if (dir < 0 && p <= lo + 150) { dir =  1; signals.push({i:i, type:'long'}); }
-          prices.push(p);
-        }
-        var isKo = (localStorage.getItem('ayilon_lang') === 'ko');
-        return {
-          prices: prices, signals: signals,
-          indicators: [
-            {type:'hline', y:hi, color:'rgba(249,115,22,0.55)', dash:[5,3], label: isKo ? '저항' : 'RESISTANCE'},
-            {type:'hline', y:lo, color:'rgba(34,197,94,0.55)',  dash:[5,3], label: isKo ? '지지' : 'SUPPORT'}
-          ]
-        };
-      }
-
-      function genDCA(n, r) {
-        var base = 62000 + r() * 6000;
-        var prices = [base], signals = [], p = base;
-        var trend = 25, dcaTriggered = false;
-        for (var i = 1; i < n; i++) {
-          var noise = (r() - 0.48) * 400;
-          if (r() < 0.04 && !dcaTriggered) { noise -= 1400; dcaTriggered = true; }
-          else if (dcaTriggered && r() < 0.15) { dcaTriggered = false; }
-          p += trend + noise;
-          prices.push(p);
-          if (dcaTriggered && i > 1 && prices[i] < prices[i-1] * 0.998) {
-            signals.push({i:i, type:'long'});
-          }
-        }
-        var ovMA = 60500 + r() * 2000;
-        var isKo2 = (localStorage.getItem('ayilon_lang') === 'ko');
-        return {
-          prices: prices, signals: signals,
-          indicators: [
-            {type:'hline', y:base - 1200, color:'rgba(34,197,94,0.4)', dash:[4,3], label: isKo2 ? '과매도 구간' : 'OVERSOLD ZONE'},
-            {type:'curve', values: calcEMA(prices, 20), color:'rgba(59,130,246,0.6)'}
-          ]
-        };
-      }
-
-      function genMASup(n, r) {
-        var base = 63000 + r() * 5000;
-        var prices = [base], signals = [], p = base;
-        for (var i = 1; i < n; i++) {
-          p += (r() - 0.47) * 500 + 18;
-          prices.push(p);
-        }
-        var ema20 = calcEMA(prices, 20);
-        for (var j = 3; j < n - 1; j++) {
-          if (prices[j] <= ema20[j] * 1.001 && prices[j+1] > ema20[j+1]) {
-            signals.push({i:j, type:'long'});
-          }
-          if (prices[j] >= ema20[j] * 0.999 && prices[j] > prices[j-3] * 1.015) {
-            signals.push({i:j, type:'short'});
-          }
-        }
-        return {
-          prices: prices, signals: signals,
-          indicators: [{type:'curve', values:ema20, color:'rgba(59,130,246,0.7)'}]
-        };
-      }
-
-      function genMACross(n, r) {
-        var base = 63000 + r() * 5000;
-        var prices = [base], signals = [], p = base;
-        for (var i = 1; i < n; i++) {
-          p += (r() - 0.47) * 500 + 15;
-          prices.push(p);
-        }
-        var fast = calcEMA(prices, 7), slow = calcEMA(prices, 21);
-        for (var j = 2; j < n; j++) {
-          if (fast[j-1] <= slow[j-1] && fast[j] > slow[j]) signals.push({i:j, type:'long'});
-          if (fast[j-1] >= slow[j-1] && fast[j] < slow[j]) signals.push({i:j, type:'short'});
-        }
-        return {
-          prices: prices, signals: signals,
-          indicators: [
-            {type:'curve', values:fast, color:'rgba(59,130,246,0.8)', label:'MA7'},
-            {type:'curve', values:slow, color:'rgba(249,115,22,0.8)', label:'MA21'}
-          ]
-        };
-      }
-
-      function genBB(n, r) {
-        var base = 63000 + r() * 5000;
-        var prices = [base], signals = [], p = base;
-        for (var i = 1; i < n; i++) {
-          p += (r() - 0.5) * 600;
-          prices.push(p);
-        }
-        var mid = calcEMA(prices, 20);
-        var stds = prices.map(function(_, idx) {
-          if (idx < 19) return 400;
-          var slice = prices.slice(idx - 19, idx + 1);
-          var mean = slice.reduce(function(a,b){return a+b;},0)/20;
-          var variance = slice.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/20;
-          return Math.sqrt(variance);
-        });
-        var upper = mid.map(function(m,i){ return m + stds[i] * 2; });
-        var lower = mid.map(function(m,i){ return m - stds[i] * 2; });
-        for (var j = 20; j < n; j++) {
-          if (prices[j] <= lower[j] * 1.001) signals.push({i:j, type:'long'});
-          if (prices[j] >= upper[j] * 0.999) signals.push({i:j, type:'short'});
-        }
-        return {
-          prices: prices, signals: signals,
-          indicators: [
-            {type:'curve', values:upper, color:'rgba(249,115,22,0.5)', dash:[3,3]},
-            {type:'curve', values:mid,   color:'rgba(255,255,255,0.25)'},
-            {type:'curve', values:lower, color:'rgba(34,197,94,0.5)',   dash:[3,3]}
-          ]
-        };
-      }
-
-      function genBreakout(n, r) {
-        var base = 63000 + r() * 4000;
-        var prices = [base], signals = [], p = base;
-        var rangeHi = base + 800, rangeLo = base - 800;
-        var consolidated = true, breakoutAt = Math.floor(n * 0.45 + r() * n * 0.2);
-        for (var i = 1; i < n; i++) {
-          if (i < breakoutAt) {
-            p = Math.max(rangeLo + 50, Math.min(rangeHi - 50, p + (r() - 0.5) * 300));
-          } else {
-            if (consolidated) { consolidated = false; signals.push({i:i, type:'long'}); }
-            p += 60 + (r() - 0.4) * 400;
-          }
-          prices.push(p);
-        }
-        var isKo3 = (localStorage.getItem('ayilon_lang') === 'ko');
-        return {
-          prices: prices, signals: signals,
-          indicators: [
-            {type:'hline', y:rangeHi, color:'rgba(249,115,22,0.5)', dash:[5,3], label: isKo3 ? '저항' : 'RESISTANCE'},
-            {type:'hline', y:rangeLo, color:'rgba(34,197,94,0.4)',  dash:[5,3], label: isKo3 ? '지지' : 'SUPPORT'}
-          ]
-        };
-      }
-
-      function genRibbon(n, r) {
-        var base = 63000 + r() * 5000;
-        var prices = [base], signals = [], p = base;
-        for (var i = 1; i < n; i++) {
-          p += (r() - 0.44) * 400 + 30;
-          prices.push(p);
-        }
-        var ma5  = calcEMA(prices, 5);
-        var ma10 = calcEMA(prices, 10);
-        var ma20 = calcEMA(prices, 20);
-        var ma50 = calcEMA(prices, 50);
-        for (var j = 55; j < n; j++) {
-          if (ma5[j] > ma10[j] && ma10[j] > ma20[j] && ma20[j] > ma50[j]) {
-            if (!(ma5[j-1] > ma10[j-1] && ma10[j-1] > ma20[j-1])) {
-              signals.push({i:j, type:'long'});
-            }
-          }
-        }
-        return {
-          prices: prices, signals: signals,
-          indicators: [
-            {type:'curve', values:ma50, color:'rgba(168,85,247,0.6)'},
-            {type:'curve', values:ma20, color:'rgba(249,115,22,0.6)'},
-            {type:'curve', values:ma10, color:'rgba(59,130,246,0.6)'},
-            {type:'curve', values:ma5,  color:'rgba(34,197,94,0.6)'}
-          ]
-        };
-      }
-
-      function genMACD(n, r) {
-        var base = 63000 + r() * 5000;
-        var prices = [base], signals = [], p = base;
-        for (var i = 1; i < n; i++) {
-          p += (r() - 0.47) * 500 + 12;
-          prices.push(p);
-        }
-        var fast12 = calcEMA(prices, 12), slow26 = calcEMA(prices, 26);
-        var macdLine = fast12.map(function(f,i){ return f - slow26[i]; });
-        var signal9  = calcEMA(macdLine, 9);
-        for (var j = 30; j < n; j++) {
-          if (macdLine[j-1] <= signal9[j-1] && macdLine[j] > signal9[j]) signals.push({i:j, type:'long'});
-          if (macdLine[j-1] >= signal9[j-1] && macdLine[j] < signal9[j]) signals.push({i:j, type:'short'});
-        }
-        return {
-          prices: prices, signals: signals,
-          indicators: [{type:'curve', values:calcEMA(prices,26), color:'rgba(168,85,247,0.6)'}]
-        };
-      }
-
-      function genFunding(n, r) {
-        var base = 63000 + r() * 5000;
-        var prices = [base], signals = [], p = base;
-        for (var i = 1; i < n; i++) {
-          p += (r() - 0.47) * 500 + 10;
-          prices.push(p);
-        }
-        /* Funding extremes every ~35 bars */
-        for (var j = 20; j < n; j += 30 + Math.floor(r() * 20)) {
-          var isHigh = r() > 0.5;
-          signals.push({i:j, type: isHigh ? 'short' : 'long'});
-        }
-        return {
-          prices: prices, signals: signals,
-          indicators: [{type:'curve', values:calcEMA(prices,20), color:'rgba(168,85,247,0.45)'}]
-        };
-      }
-
-      function genATR(n, r) {
-        var base = 63000 + r() * 5000;
-        var prices = [base], signals = [], p = base;
-        var trendDir = 1, stopLine = [];
-        var atrStop = base - 600;
-        for (var i = 1; i < n; i++) {
-          p += trendDir * (30 + r() * 20) + (r() - 0.5) * 300;
-          if (trendDir > 0) {
-            atrStop = Math.max(atrStop, p - 600);
-            if (p < atrStop) { trendDir = -1; atrStop = p + 600; signals.push({i:i, type:'short'}); }
-          } else {
-            atrStop = Math.min(atrStop, p + 600);
-            if (p > atrStop) { trendDir =  1; atrStop = p - 600; signals.push({i:i, type:'long'}); }
-          }
-          prices.push(p);
-          stopLine.push(atrStop);
-        }
-        stopLine.unshift(stopLine[0]);
-        return {
-          prices: prices, signals: signals,
-          indicators: [{type:'curve', values:stopLine, color:'rgba(249,115,22,0.6)', dash:[4,3]}]
-        };
-      }
-
-      function buildSim(mode, localRng) {
-        var N = 280;
-        switch (mode) {
-          case 'sr':       return genSR(N, localRng);
-          case 'dca':      return genDCA(N, localRng);
-          case 'masup':    return genMASup(N, localRng);
-          case 'macross':  return genMACross(N, localRng);
-          case 'bb':       return genBB(N, localRng);
-          case 'breakout': return genBreakout(N, localRng);
-          case 'ribbon':   return genRibbon(N, localRng);
-          case 'macd':     return genMACD(N, localRng);
-          case 'funding':  return genFunding(N, localRng);
-          case 'atr':      return genATR(N, localRng);
-          default:         return genSR(N, localRng);
-        }
-      }
-
-      function reset() {
-        simSeed = (rand() * 0xFFFFFF) | 0;
-        simData = buildSim(STRATS[currentIdx].mode, makeRng(simSeed));
-        simOffset = 0;
-      }
-      reset();
-
-      /* ── Drawing ── */
-      var CW_SIM = 5; /* candle body width */
-
-      function candleOHLC(prices, i) {
-        var close = prices[i];
-        var open  = i > 0 ? prices[i - 1] : close;
-        var range = Math.abs(close - open);
-        /* deterministic wick using index as seed */
-        var wm = 0.25 + ((i * 6971 + 13) % 100) / 250;
-        var high = Math.max(open, close) + range * wm + (range < 10 ? 40 : 0);
-        var low  = Math.min(open, close) - range * wm - (range < 10 ? 40 : 0);
-        return { open: open, close: close, high: high, low: low, bull: close >= open };
-      }
-
-      function drawFrame() {
-        if (!simData) return;
-        ctx.clearRect(0, 0, W, H);
-        ctx.fillStyle = '#080808';
-        ctx.fillRect(0, 0, W, H);
-
-        var prices = simData.prices;
-        var vs = Math.floor(simOffset / STEP);
-        var ve = Math.min(prices.length - 1, vs + Math.ceil(W / STEP) + 3);
-        if (ve - vs < 3) return;
-
-        /* price range from visible candle OHLC */
-        var pMin = Infinity, pMax = -Infinity;
-        for (var ri = vs; ri <= ve; ri++) {
-          var c = candleOHLC(prices, ri);
-          if (c.low  < pMin) pMin = c.low;
-          if (c.high > pMax) pMax = c.high;
-        }
-
-        /* expand for hline indicators */
-        simData.indicators.forEach(function(ind) {
-          if (ind.type === 'hline') { pMin = Math.min(pMin, ind.y); pMax = Math.max(pMax, ind.y); }
-        });
-
-        var rng = pMax - pMin;
-        if (rng < 400) { pMin -= 200; pMax += 200; }
-        var pad = rng * 0.16; pMin -= pad; pMax += pad;
-
-        function py(p) { return H - ((p - pMin) / (pMax - pMin)) * (H - 24) - 12; }
-        function xi(i) { return i * STEP - simOffset + STEP * 0.5; }
-
-        /* grid */
-        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([]);
-        for (var g = 0; g <= 4; g++) {
-          ctx.beginPath(); ctx.moveTo(0, H * g / 4); ctx.lineTo(W, H * g / 4); ctx.stroke();
-        }
-
-        /* indicators */
-        simData.indicators.forEach(function(ind) {
-          ctx.strokeStyle = ind.color || 'rgba(255,255,255,0.4)';
-          ctx.lineWidth = 1.2;
-          ctx.setLineDash(ind.dash || []);
-
-          if (ind.type === 'hline') {
-            var iy = py(ind.y);
-            ctx.beginPath(); ctx.moveTo(0, iy); ctx.lineTo(W, iy); ctx.stroke();
-            if (ind.label) {
-              ctx.setLineDash([]);
-              ctx.fillStyle = ind.color;
-              ctx.font = '500 11px Inter,sans-serif';
-              ctx.textAlign = 'left';
-              ctx.fillText(ind.label, 8, iy - 4);
-            }
-          } else if (ind.type === 'curve' && ind.values) {
-            ctx.beginPath();
-            var fp = true;
-            for (var ci = vs; ci <= ve; ci++) {
-              var v = ind.values[ci];
-              if (v == null) continue;
-              var cx = xi(ci), cy = py(v);
-              if (fp) { ctx.moveTo(cx, cy); fp = false; } else ctx.lineTo(cx, cy);
-            }
-            ctx.stroke();
-          }
-        });
-
-        ctx.setLineDash([]);
-
-        /* candlesticks */
-        for (var pi = vs; pi <= ve; pi++) {
-          var c = candleOHLC(prices, pi);
-          var cx2 = xi(pi);
-          if (cx2 < -CW_SIM - 2 || cx2 > W + CW_SIM + 2) continue;
-
-          var bullColor = 'rgba(34,197,94,0.85)';
-          var bearColor = 'rgba(239,68,68,0.80)';
-          var color = c.bull ? bullColor : bearColor;
-
-          /* wick */
-          ctx.strokeStyle = c.bull ? 'rgba(34,197,94,0.45)' : 'rgba(239,68,68,0.45)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(cx2, py(c.high));
-          ctx.lineTo(cx2, py(c.low));
-          ctx.stroke();
-
-          /* body */
-          var bTop = py(Math.max(c.open, c.close));
-          var bBot = py(Math.min(c.open, c.close));
-          ctx.fillStyle = color;
-          ctx.fillRect(cx2 - CW_SIM / 2, bTop, CW_SIM, Math.max(1, bBot - bTop));
-        }
-
-        /* signals — small triangle below (long) or above (short) the candle */
-        simData.signals.forEach(function(sig) {
-          var sx = xi(sig.i);
-          if (sx < -20 || sx > W + 20) return;
-          var c = candleOHLC(prices, sig.i);
-          if (sig.type === 'long') {
-            var ty = py(c.low) + 10;
-            ctx.beginPath();
-            ctx.moveTo(sx,     ty - 6);
-            ctx.lineTo(sx + 4, ty);
-            ctx.lineTo(sx - 4, ty);
-            ctx.closePath();
-            ctx.fillStyle = '#22c55e';
-            ctx.fill();
-          } else {
-            var ty2 = py(c.high) - 10;
-            ctx.beginPath();
-            ctx.moveTo(sx,     ty2 + 6);
-            ctx.lineTo(sx + 4, ty2);
-            ctx.lineTo(sx - 4, ty2);
-            ctx.closePath();
-            ctx.fillStyle = '#ef4444';
-            ctx.fill();
-          }
-        });
-      }
-
-      function extend() {
-        var last = simData.prices[simData.prices.length - 1];
-        var base = simData.prices.length;
-        var extra = buildSim(STRATS[currentIdx].mode + '_ext', makeRng((rand() * 0xFFFF) | 0));
-        /* re-use same generator but shift prices */
-        var freshMode = STRATS[currentIdx].mode;
-        var lr = makeRng((rand() * 0xFFFF) | 0);
-        var ext = buildSim(freshMode, lr);
-        /* offset prices to continue from last */
-        var firstP = ext.prices[0];
-        var delta = last - firstP;
-        ext.prices.forEach(function(p, i) { simData.prices.push(p + delta); });
-        ext.signals.forEach(function(s) { simData.signals.push({i: s.i + base, type: s.type}); });
-        /* re-compute curve indicators */
-        ext.indicators.forEach(function(srcInd, idx) {
-          if (srcInd.type === 'curve' && srcInd.values && simData.indicators[idx] && simData.indicators[idx].type === 'curve') {
-            srcInd.values.forEach(function(v) { simData.indicators[idx].values.push(v + delta); });
-          }
-        });
-      }
-
-      function tick() {
-        simOffset += SPEED;
-        if (simData && (simData.prices.length * STEP - simOffset) < W + STEP * 20) {
-          extend();
-        }
-        drawFrame();
-        requestAnimationFrame(tick);
-      }
-      tick();
-    })();
-  })();
-  </script>
-
+  }catch(e){ msg.className='msg err'; msg.textContent=LANG==='ko'?'네트워크 오류':'Network error'; }
+  btn.disabled=false; btn.textContent=I18N[LANG]['jm.submit'];
+};
+document.getElementById('jLeave').onclick=async(e)=>{
+  e.preventDefault();
+  if(!confirm(LANG==='ko'?'대회에서 나가고 연결을 해제할까요?':'Leave the arena and disconnect?'))return;
+  await fetch(`${API}/arena/leave`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:'{}'});
+  joinModal.classList.remove('open'); fetchLB(); loadMine();
+};
+
+/* ---------- my standing ---------- */
+async function loadMine(){
+  if(!authed()){ document.getElementById('mineBar').classList.remove('show'); return; }
+  try{
+    const r=await fetch(`${API}/arena/me`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:'{}'});
+    const j=await r.json();
+    const bar=document.getElementById('mineBar');
+    document.getElementById('jLeaveWrap').hidden = !(j.joined);
+    if(!j.ok||!j.joined){ bar.classList.remove('show'); return; }
+    bar.classList.add('show');
+    const wk=j.scores&&j.scores.weekly?j.scores.weekly:{returnPct:0,profit:0};
+    document.getElementById('mRet').textContent=fmtPct(wk.returnPct||0);
+    document.getElementById('mRet').style.color=(wk.returnPct||0)>=0?'var(--accent)':'var(--red)';
+    document.getElementById('mProfit').textContent=fmtUsd(wk.profit||0);
+    document.getElementById('mEq').textContent=fmtEq(j.equity||0);
+    // find my rank in current board
+    const myNick=(j.nickname||'').toLowerCase();
+    const idx=state.rows.findIndex(x=>x.nickname.toLowerCase()===myNick);
+    document.getElementById('mRank').textContent=idx>=0?('#'+state.rows[idx].rank):'—';
+  }catch(e){}
+}
+
+/* ---------- nav auth state ---------- */
+if(authed()){
+  const a=document.getElementById('navAuth'); a.textContent=I18N[LANG]['mine.manage']; a.href='#'; a.onclick=(e)=>{e.preventDefault();openJoin();};
+}
+
+applyLang();
+fetchLB().then(loadMine);
+setInterval(fetchLB, 60000);
+</script>
 </body>
 </html>

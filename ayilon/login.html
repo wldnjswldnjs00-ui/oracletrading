@@ -208,7 +208,7 @@
 
     // If already logged in (both flags present), go straight to dashboard (admin page on the admin domain)
     if (localStorage.getItem('ayilon_logged_in') === 'true' && localStorage.getItem('ayilon_session_token')) {
-      window.location.href = /(^|\.)ayiloncompany\.xyz$/.test(location.hostname) ? 'admin.html' : 'dashboard.html';
+      window.location.href = /(^|\.)ayiloncompany\.xyz$/.test(location.hostname) ? 'admin.html' : '/';
     }
 
     function togglePassword() {
@@ -373,7 +373,7 @@
     function finishLogin() {
       localStorage.setItem('ayilon_logged_in', 'true');
       // On the admin domain, land on the admin page after login
-      window.location.href = /(^|\.)ayiloncompany\.xyz$/.test(location.hostname) ? 'admin.html' : 'dashboard.html';
+      window.location.href = /(^|\.)ayiloncompany\.xyz$/.test(location.hostname) ? 'admin.html' : '/';
     }
 
     async function resendCode() {
