@@ -175,6 +175,7 @@
       <a href="#how" class="nav-lnk hide-m" data-i18n="nav.how">참가방법</a>
       <a href="#hof" class="nav-lnk hide-m" data-i18n="nav.hof">명예의전당</a>
       <span class="lang" id="langBtn">EN</span>
+      <a id="navLogout" class="nav-lnk" href="#" style="display:none" data-i18n="nav.logout">로그아웃</a>
       <a id="navAuth" class="btn btn-primary btn-sm" href="/login.html">로그인</a>
     </div>
   </div>
@@ -384,7 +385,7 @@ const authed = () => !!token();
 
 const I18N = {
   ko:{
-    'nav.board':'리더보드','nav.how':'참가방법','nav.hof':'명예의전당','nav.login':'로그인','nav.manage':'연결 관리',
+    'nav.board':'리더보드','nav.how':'참가방법','nav.hof':'명예의전당','nav.login':'로그인','nav.manage':'연결 관리','nav.logout':'로그아웃',
     'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다.','jm.nicksave':'저장',
     'jm.s3':'참가할 부문 선택','jm.s3d':'원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.',
     'jm.b.rw':'수익률 · 주간','jm.b.rm':'수익률 · 월간','jm.b.pm':'수익금 · 월간','jm.b.vm':'거래량 · 월간',
@@ -419,7 +420,7 @@ const I18N = {
     'am.title':'로그인이 필요합니다','am.lead':'대회 참가는 로그인 후 진행됩니다.','am.login':'로그인','am.signup':'회원가입'
   },
   en:{
-    'nav.board':'Leaderboard','nav.how':'How it works','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage',
+    'nav.board':'Leaderboard','nav.how':'How it works','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage','nav.logout':'Log out',
     'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame.','jm.nicksave':'Save',
     'jm.s3':'Choose your competitions','jm.s3d':'Enter only the boards you want. You appear only on the boards you select.',
     'jm.b.rw':'Return · Weekly','jm.b.rm':'Return · Monthly','jm.b.pm':'Profit · Monthly','jm.b.vm':'Volume · Monthly',
@@ -556,17 +557,25 @@ document.getElementById('jNickSave').onclick=async()=>{
 // Auth-aware UI: logged out → Login (no OKX). Logged in → Join/OKX connect.
 function setAuthUI(){
   const d=I18N[LANG];
-  const a=document.getElementById('navAuth'),hero=document.getElementById('heroJoin'),cta=document.getElementById('ctaJoin');
+  const a=document.getElementById('navAuth'),hero=document.getElementById('heroJoin'),cta=document.getElementById('ctaJoin'),lo=document.getElementById('navLogout');
   if(authed()){
     a.textContent=d['nav.manage'];a.removeAttribute('href');a.style.cursor='pointer';a.onclick=(e)=>{e.preventDefault();openJoin();};
+    lo.style.display='';
     hero.textContent=d['hero.cta1'];hero.onclick=openJoin;
     cta.textContent=d['cta.btn'];cta.onclick=openJoin;
   }else{
-    a.textContent=d['nav.login'];a.setAttribute('href','/login.html');a.onclick=null;
+    a.textContent=d['nav.login'];a.setAttribute('href','/login.html');a.onclick=null;a.style.cursor='';
+    lo.style.display='none';
     hero.textContent=d['hero.login'];hero.onclick=()=>{location.href='/login.html';};
     cta.textContent=d['hero.login'];cta.onclick=()=>{location.href='/login.html';};
   }
 }
+document.getElementById('navLogout').onclick=(e)=>{
+  e.preventDefault();
+  try{ fetch(`${API}/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token()})}); }catch(_){}
+  ['ayilon_session_token','ayilon_logged_in','ayilon_email','ayilon_username','ayilon_name'].forEach(k=>localStorage.removeItem(k));
+  location.href='/';
+};
 document.getElementById('closeJoin').onclick=()=>joinModal.classList.remove('open');
 document.getElementById('closeAuth').onclick=()=>authModal.classList.remove('open');
 document.getElementById('mineManage').onclick=openJoin;
