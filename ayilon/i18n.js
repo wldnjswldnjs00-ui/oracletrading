@@ -1,7 +1,7 @@
 /* AYILON — Internationalization (EN / KO) */
 (function () {
   var LANG_KEY = 'ayilon_lang';
-  var LANGS = ['en', 'ko'];
+  var LANGS = ['en', 'ko', 'zh', 'es', 'vi', 'ru'];
 
   /* ── Inject dropdown CSS ── */
   (function () {
@@ -1320,6 +1320,52 @@
       'db.term.interval':     '봉 단위',
     },
 
+    /* Auth-page strings (login / signup). Other keys fall back to English. */
+    zh: {
+      'login.title':'登录','login.noaccount':'还没有账户？','login.signup':'注册','login.error':'邮箱或密码错误。',
+      'login.email':'邮箱','login.password':'密码','login.password.ph':'输入密码','login.show':'显示','login.submit':'登录','login.forgot':'忘记密码？',
+      'login.2fa.title':'两步验证','login.2fa.sub':'选择你的验证方式。','login.otp.title':'输入验证码','login.otp.verify':'验证并登录','login.otp.resend':'没收到验证码？','login.otp.resendlink':'重新发送',
+      'login.forgot.title':'重置密码','login.forgot.sub':'输入你注册时使用的邮箱。','login.forgot.send':'发送验证码 →','login.forgot.notfound':'未找到该邮箱。',
+      'login.newpw.title':'新密码','login.newpw.sub':'在下方输入新密码。','login.newpw.new':'新密码','login.newpw.new.ph':'至少 8 位','login.newpw.confirm':'确认密码','login.newpw.confirm.ph':'再次输入新密码','login.newpw.submit':'重置密码',
+      'nav.nosignup':'还没有账户？注册 →','nav.haveaccount':'已有账户？登录 →',
+      'signup.title':'创建账户','signup.email':'邮箱（用作登录 ID）','signup.sendcode':'发送验证码','signup.verify':'验证','signup.codehint':'输入发送到你邮箱的 6 位验证码','signup.codeph':'输入 6 位验证码',
+      'signup.username':'用户名','signup.username.hint':'仅限字母、数字和下划线（2–20 个字符）','signup.name':'姓名','signup.pw':'密码','signup.pw.ph':'8 位以上，字母 + 数字 + 符号','signup.pw.hint':'使用字母、数字和特殊字符（8 位以上）','signup.pw2':'确认密码','signup.pw2.ph':'再次输入密码','signup.show':'显示',
+      'signup.terms.all':'全部同意','signup.terms.req':'（必需）','signup.terms.tos':'服务条款','signup.terms.priv':'隐私政策','signup.terms.mkt':'接收营销信息（可选）','signup.submit':'创建账户','signup.haveacct':'已有账户？','signup.loginlink':'登录'
+    },
+    es: {
+      'login.title':'Iniciar sesión','login.noaccount':'¿No tienes cuenta?','login.signup':'Regístrate','login.error':'Correo o contraseña incorrectos.',
+      'login.email':'Correo','login.password':'Contraseña','login.password.ph':'Introduce tu contraseña','login.show':'Mostrar','login.submit':'Iniciar sesión','login.forgot':'¿Olvidaste tu contraseña?',
+      'login.2fa.title':'Verificación en dos pasos','login.2fa.sub':'Elige tu método de verificación.','login.otp.title':'Introduce el código','login.otp.verify':'Verificar e iniciar sesión','login.otp.resend':'¿No recibiste el código?','login.otp.resendlink':'Reenviar',
+      'login.forgot.title':'Restablecer contraseña','login.forgot.sub':'Introduce tu correo registrado.','login.forgot.send':'Enviar verificación →','login.forgot.notfound':'Correo no encontrado.',
+      'login.newpw.title':'Nueva contraseña','login.newpw.sub':'Introduce tu nueva contraseña.','login.newpw.new':'Nueva contraseña','login.newpw.new.ph':'8+ caracteres','login.newpw.confirm':'Confirmar contraseña','login.newpw.confirm.ph':'Vuelve a introducir la contraseña','login.newpw.submit':'Restablecer contraseña',
+      'nav.nosignup':'¿No tienes cuenta? Regístrate →','nav.haveaccount':'¿Ya tienes cuenta? Inicia sesión →',
+      'signup.title':'Crea tu cuenta','signup.email':'Correo (se usa como ID)','signup.sendcode':'Enviar código','signup.verify':'Verificar','signup.codehint':'Introduce el código de 6 dígitos enviado a tu correo','signup.codeph':'Introduce el código de 6 dígitos',
+      'signup.username':'Nombre de usuario','signup.username.hint':'Solo letras, números y _ (2–20 caracteres)','signup.name':'Nombre completo','signup.pw':'Contraseña','signup.pw.ph':'8+ caracteres, letras + números + símbolos','signup.pw.hint':'Usa letras, números y caracteres especiales (8+)','signup.pw2':'Confirmar contraseña','signup.pw2.ph':'Vuelve a introducir tu contraseña','signup.show':'Mostrar',
+      'signup.terms.all':'Aceptar todo','signup.terms.req':'(obligatorio)','signup.terms.tos':'Términos del servicio','signup.terms.priv':'Política de privacidad','signup.terms.mkt':'Recibir comunicaciones de marketing (opcional)','signup.submit':'Crear cuenta','signup.haveacct':'¿Ya tienes cuenta?','signup.loginlink':'Inicia sesión'
+    },
+    vi: {
+      'login.title':'Đăng nhập','login.noaccount':'Chưa có tài khoản?','login.signup':'Đăng ký','login.error':'Email hoặc mật khẩu không đúng.',
+      'login.email':'Email','login.password':'Mật khẩu','login.password.ph':'Nhập mật khẩu','login.show':'Hiện','login.submit':'Đăng nhập','login.forgot':'Quên mật khẩu?',
+      'login.2fa.title':'Xác thực 2 bước','login.2fa.sub':'Chọn phương thức xác minh.','login.otp.title':'Nhập mã','login.otp.verify':'Xác minh & đăng nhập','login.otp.resend':'Chưa nhận được mã?','login.otp.resendlink':'Gửi lại',
+      'login.forgot.title':'Đặt lại mật khẩu','login.forgot.sub':'Nhập email đã đăng ký của bạn.','login.forgot.send':'Gửi mã xác minh →','login.forgot.notfound':'Không tìm thấy email.',
+      'login.newpw.title':'Mật khẩu mới','login.newpw.sub':'Nhập mật khẩu mới bên dưới.','login.newpw.new':'Mật khẩu mới','login.newpw.new.ph':'Từ 8 ký tự','login.newpw.confirm':'Xác nhận mật khẩu','login.newpw.confirm.ph':'Nhập lại mật khẩu mới','login.newpw.submit':'Đặt lại mật khẩu',
+      'nav.nosignup':'Chưa có tài khoản? Đăng ký →','nav.haveaccount':'Đã có tài khoản? Đăng nhập →',
+      'signup.title':'Tạo tài khoản','signup.email':'Email (dùng làm ID đăng nhập)','signup.sendcode':'Gửi mã','signup.verify':'Xác minh','signup.codehint':'Nhập mã 6 số đã gửi tới email của bạn','signup.codeph':'Nhập mã 6 số',
+      'signup.username':'Tên người dùng','signup.username.hint':'Chỉ chữ, số và _ (2–20 ký tự)','signup.name':'Họ và tên','signup.pw':'Mật khẩu','signup.pw.ph':'8+ ký tự, chữ + số + ký hiệu','signup.pw.hint':'Dùng chữ, số và ký tự đặc biệt (8+ ký tự)','signup.pw2':'Xác nhận mật khẩu','signup.pw2.ph':'Nhập lại mật khẩu','signup.show':'Hiện',
+      'signup.terms.all':'Đồng ý tất cả','signup.terms.req':'(bắt buộc)','signup.terms.tos':'Điều khoản dịch vụ','signup.terms.priv':'Chính sách bảo mật','signup.terms.mkt':'Nhận thông tin tiếp thị (tùy chọn)','signup.submit':'Tạo tài khoản','signup.haveacct':'Đã có tài khoản?','signup.loginlink':'Đăng nhập'
+    },
+    ru: {
+      'login.title':'Вход','login.noaccount':'Нет аккаунта?','login.signup':'Зарегистрироваться','login.error':'Неверная почта или пароль.',
+      'login.email':'Почта','login.password':'Пароль','login.password.ph':'Введите пароль','login.show':'Показать','login.submit':'Войти','login.forgot':'Забыли пароль?',
+      'login.2fa.title':'Двухфакторная аутентификация','login.2fa.sub':'Выберите способ подтверждения.','login.otp.title':'Введите код','login.otp.verify':'Подтвердить и войти','login.otp.resend':'Не получили код?','login.otp.resendlink':'Отправить снова',
+      'login.forgot.title':'Сброс пароля','login.forgot.sub':'Введите вашу зарегистрированную почту.','login.forgot.send':'Отправить код →','login.forgot.notfound':'Почта не найдена.',
+      'login.newpw.title':'Новый пароль','login.newpw.sub':'Введите новый пароль ниже.','login.newpw.new':'Новый пароль','login.newpw.new.ph':'От 8 символов','login.newpw.confirm':'Подтвердите пароль','login.newpw.confirm.ph':'Повторите новый пароль','login.newpw.submit':'Сбросить пароль',
+      'nav.nosignup':'Нет аккаунта? Зарегистрироваться →','nav.haveaccount':'Уже есть аккаунт? Войти →',
+      'signup.title':'Создайте аккаунт','signup.email':'Почта (используется как ID)','signup.sendcode':'Отправить код','signup.verify':'Подтвердить','signup.codehint':'Введите 6-значный код из письма','signup.codeph':'Введите 6-значный код',
+      'signup.username':'Имя пользователя','signup.username.hint':'Только буквы, цифры и _ (2–20 символов)','signup.name':'Полное имя','signup.pw':'Пароль','signup.pw.ph':'8+ символов, буквы + цифры + символы','signup.pw.hint':'Используйте буквы, цифры и спецсимволы (8+)','signup.pw2':'Подтвердите пароль','signup.pw2.ph':'Повторите пароль','signup.show':'Показать',
+      'signup.terms.all':'Принять всё','signup.terms.req':'(обязательно)','signup.terms.tos':'Условия использования','signup.terms.priv':'Политика конфиденциальности','signup.terms.mkt':'Получать маркетинговые сообщения (необязательно)','signup.submit':'Создать аккаунт','signup.haveacct':'Уже есть аккаунт?','signup.loginlink':'Войти'
+    },
+
     /* ════════════════════════════════════════
        JAPANESE (日本語)
     ════════════════════════════════════════ */
@@ -1375,22 +1421,22 @@
     lang = LANGS.indexOf(lang) >= 0 ? lang : 'en';
     var dict = T[lang] || T['en'];
 
-    /* text content */
+    /* text content (fall back to EN for any key missing in the chosen language) */
     document.querySelectorAll('[data-i18n]').forEach(function (el) {
-      var key = el.getAttribute('data-i18n');
-      if (dict[key] !== undefined) el.textContent = dict[key];
+      var key = el.getAttribute('data-i18n'); var v = dict[key] !== undefined ? dict[key] : T['en'][key];
+      if (v !== undefined) el.textContent = v;
     });
 
     /* innerHTML (for elements with nested tags) */
     document.querySelectorAll('[data-i18n-html]').forEach(function (el) {
-      var key = el.getAttribute('data-i18n-html');
-      if (dict[key] !== undefined) el.innerHTML = dict[key];
+      var key = el.getAttribute('data-i18n-html'); var v = dict[key] !== undefined ? dict[key] : T['en'][key];
+      if (v !== undefined) el.innerHTML = v;
     });
 
     /* placeholder attributes */
     document.querySelectorAll('[data-i18n-ph]').forEach(function (el) {
-      var key = el.getAttribute('data-i18n-ph');
-      if (dict[key] !== undefined) el.placeholder = dict[key];
+      var key = el.getAttribute('data-i18n-ph'); var v = dict[key] !== undefined ? dict[key] : T['en'][key];
+      if (v !== undefined) el.placeholder = v;
     });
 
     /* update dropdown: label + active item */

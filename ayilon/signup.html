@@ -19,7 +19,8 @@
     body { font-family: 'Inter', sans-serif; background: var(--black); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
 
     nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 60px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .nav-logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--white); text-decoration: none; }
+    .nav-logo { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 17px; font-weight: 700; letter-spacing: 0.16em; color: var(--white); text-decoration: none; }
+    .nav-logo i { font-style: normal; color: #34d39a; }
     .nav-login { font-size: 14px; color: var(--gray-400); text-decoration: none; transition: color 0.2s; }
     .nav-login:hover { color: var(--white); }
 
@@ -92,7 +93,7 @@
 </head>
 <body>
   <nav>
-    <a href="index.html" class="nav-logo">AYILON</a>
+    <a href="/" class="nav-logo">AY<i>I</i>LON</a>
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
       <button class="lang-btn" data-lang="ko" onclick="setLanguage('ko')">KO</button>
