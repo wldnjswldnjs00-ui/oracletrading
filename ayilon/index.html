@@ -130,7 +130,23 @@
   .ref-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:12px 14px;font-size:14px;font-weight:600}
   .ref-btn:hover{border-color:var(--accent)}
   .ref-btn .ar{color:var(--accent);font-size:13px}
+  .chk{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--txt);padding:8px 2px;cursor:pointer}
+  .chk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
   .hint{font-size:12px;color:var(--dim);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin:2px 0 14px;line-height:1.55}
+  /* hall of fame */
+  .hof{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .hof-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+  .hof-card .ht{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:12px}
+  .hof-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-size:14px;border-bottom:1px solid var(--line)}
+  .hof-row:last-child{border-bottom:none}
+  .hof-row .l{display:flex;align-items:center;gap:9px;min-width:0}
+  .hof-row .rk{font-weight:700;width:18px;font-variant-numeric:tabular-nums}
+  .hof-row .rk.r1{color:var(--gold)}.hof-row .rk.r2{color:var(--silver)}.hof-row .rk.r3{color:var(--bronze)}
+  .hof-row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hof-row .tt{font-size:10px;color:var(--gold);border:1px solid rgba(216,180,106,.35);border-radius:6px;padding:1px 6px;margin-left:2px}
+  .hof-row .v{color:var(--mut);font-variant-numeric:tabular-nums;font-weight:600}
+  .hof-empty{color:var(--mut);font-size:14px;text-align:center;padding:30px}
+  @media(max-width:760px){.hof{grid-template-columns:1fr}}
   .hint b{color:var(--accent)}
   .msg{font-size:13.5px;padding:11px 13px;border-radius:10px;margin-bottom:13px;display:none}
   .msg.err{display:block;background:rgba(236,106,114,.09);color:var(--red);border:1px solid rgba(236,106,114,.28)}
@@ -157,9 +173,9 @@
     <div class="nav-r">
       <a href="#leaderboard" class="nav-lnk hide-m" data-i18n="nav.board">리더보드</a>
       <a href="#how" class="nav-lnk hide-m" data-i18n="nav.how">참가방법</a>
+      <a href="#hof" class="nav-lnk hide-m" data-i18n="nav.hof">명예의전당</a>
       <span class="lang" id="langBtn">EN</span>
-      <a id="navAuth" class="nav-lnk" href="/login.html" data-i18n="nav.login">로그인</a>
-      <button class="btn btn-primary btn-sm" id="navJoin" data-i18n="nav.join">참가하기</button>
+      <a id="navAuth" class="btn btn-primary btn-sm" href="/login.html" data-i18n="nav.login">로그인</a>
     </div>
   </div>
 </nav>
@@ -278,7 +294,14 @@
   </div>
 </section>
 
-<section class="center" style="background:var(--panel2);border-top:1px solid var(--line)">
+<section id="hof" style="background:var(--panel2);border-top:1px solid var(--line)">
+  <div class="wrap">
+    <div class="sec-h"><h2 data-i18n="hof.title">명예의 전당</h2><p data-i18n="hof.sub">시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.</p></div>
+    <div class="hof" id="hofGrid"></div>
+  </div>
+</section>
+
+<section class="center" style="border-top:1px solid var(--line)">
   <div class="wrap">
     <div class="sec-h"><h2 data-i18n="cta.title">이번 시즌, 당신의 이름을 올리세요</h2><p data-i18n="cta.sub">매주 월요일 00:00 UTC에 새 시즌이 시작됩니다.</p></div>
     <button class="btn btn-primary" id="ctaJoin" data-i18n="cta.btn">대회 참가하기</button>
@@ -317,6 +340,15 @@
       <div class="hint" data-i18n="jm.hint">OKX → 프로필 → API → 키 생성 시 <b>읽기(Read) 권한만</b> 체크하세요. 거래·출금 권한은 절대 체크하지 마세요.</div>
     </div>
 
+    <div class="step">
+      <div class="st"><span class="b">3</span><span data-i18n="jm.s3">참가할 부문 선택</span></div>
+      <p class="sub" data-i18n="jm.s3d">원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.</p>
+      <label class="chk"><input type="checkbox" id="bRw" value="rw" checked><span data-i18n="jm.b.rw">수익률 · 주간</span></label>
+      <label class="chk"><input type="checkbox" id="bRm" value="rm" checked><span data-i18n="jm.b.rm">수익률 · 월간</span></label>
+      <label class="chk"><input type="checkbox" id="bPm" value="pm" checked><span data-i18n="jm.b.pm">수익금 · 월간</span></label>
+      <label class="chk"><input type="checkbox" id="bVm" value="vm" checked><span data-i18n="jm.b.vm">거래량 · 월간</span></label>
+    </div>
+
     <button class="btn btn-primary" id="jSubmit" style="width:100%" data-i18n="jm.submit">연결하고 참가</button>
     <p style="text-align:center;margin-top:14px;font-size:13px" id="jLeaveWrap" hidden>
       <a href="#" id="jLeave" style="color:var(--red)" data-i18n="jm.leave">대회에서 나가기</a>
@@ -342,7 +374,11 @@ const authed = () => !!token();
 
 const I18N = {
   ko:{
-    'nav.board':'리더보드','nav.how':'참가방법','nav.login':'로그인','nav.join':'참가하기',
+    'nav.board':'리더보드','nav.how':'참가방법','nav.hof':'명예의전당','nav.login':'로그인','nav.manage':'연결 관리',
+    'jm.s3':'참가할 부문 선택','jm.s3d':'원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.',
+    'jm.b.rw':'수익률 · 주간','jm.b.rm':'수익률 · 월간','jm.b.pm':'수익금 · 월간','jm.b.vm':'거래량 · 월간',
+    'hof.title':'명예의 전당','hof.sub':'시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.',
+    'hof.rw':'수익률 · 주간','hof.rm':'수익률 · 월간','hof.pm':'수익금 · 월간','hof.vm':'거래량 · 월간','hof.empty':'아직 우승자가 없습니다. 첫 시즌이 진행 중입니다.','hof.titles':'회 우승',
     'hero.kicker':'Global Trading League','hero.title':'실력을 <b>증명</b>하는<br>글로벌 트레이딩 리그',
     'hero.sub':'매주·매달, 실제 OKX 계좌의 성과로 전 세계 트레이더와 경쟁합니다. 참가비는 없습니다. 자금은 당신의 계좌에 그대로 있습니다.',
     'hero.cta1':'대회 참가하기','hero.cta2':'리더보드 보기',
@@ -372,7 +408,11 @@ const I18N = {
     'am.title':'로그인이 필요합니다','am.lead':'대회 참가는 로그인 후 진행됩니다.','am.login':'로그인','am.signup':'회원가입'
   },
   en:{
-    'nav.board':'Leaderboard','nav.how':'How it works','nav.login':'Log in','nav.join':'Join',
+    'nav.board':'Leaderboard','nav.how':'How it works','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage',
+    'jm.s3':'Choose your competitions','jm.s3d':'Enter only the boards you want. You appear only on the boards you select.',
+    'jm.b.rw':'Return · Weekly','jm.b.rm':'Return · Monthly','jm.b.pm':'Profit · Monthly','jm.b.vm':'Volume · Monthly',
+    'hof.title':'Hall of Fame','hof.sub':'Past champions, frozen automatically as each season ends.',
+    'hof.rw':'Return · Weekly','hof.rm':'Return · Monthly','hof.pm':'Profit · Monthly','hof.vm':'Volume · Monthly','hof.empty':'No champions yet — the first season is underway.','hof.titles':'× champion',
     'hero.kicker':'Global Trading League','hero.title':'Prove your edge in the<br><b>global</b> trading league',
     'hero.sub':'Compete with traders worldwide on your real OKX account, every week and month. No entry fee. Your funds stay in your account.',
     'hero.cta1':'Join the league','hero.cta2':'View leaderboard',
@@ -410,7 +450,7 @@ function applyLang(){
   document.getElementById('langBtn').textContent=LANG==='ko'?'EN':'한국어';
   syncMetricHeader();
 }
-document.getElementById('langBtn').onclick=()=>{LANG=LANG==='ko'?'en':'ko';localStorage.setItem('ayilon_lang',LANG);applyLang();renderLB();renderPrize();};
+document.getElementById('langBtn').onclick=()=>{LANG=LANG==='ko'?'en':'ko';localStorage.setItem('ayilon_lang',LANG);applyLang();renderLB();renderPrize();if(window.fetchHOF)fetchHOF();};
 
 /* ---------- leaderboard ---------- */
 let state={period:'weekly',metric:'return',q:'',rows:[],total:0,seasonId:''};
@@ -490,7 +530,7 @@ setInterval(tickCountdown,1000);
 /* ---------- join ---------- */
 const joinModal=document.getElementById('joinModal'),authModal=document.getElementById('authModal');
 function openJoin(){ if(!authed()){authModal.classList.add('open');return;} joinModal.classList.add('open'); loadMine(); }
-['navJoin','heroJoin','ctaJoin'].forEach(id=>document.getElementById(id).onclick=openJoin);
+['heroJoin','ctaJoin'].forEach(id=>document.getElementById(id).onclick=openJoin);
 document.getElementById('closeJoin').onclick=()=>joinModal.classList.remove('open');
 document.getElementById('closeAuth').onclick=()=>authModal.classList.remove('open');
 document.getElementById('mineManage').onclick=openJoin;
@@ -500,9 +540,11 @@ document.getElementById('jSubmit').onclick=async()=>{
   const msg=document.getElementById('jmMsg');msg.className='msg';msg.textContent='';
   const apiKey=document.getElementById('jKey').value.trim(),apiSecret=document.getElementById('jSecret').value.trim(),apiPassphrase=document.getElementById('jPass').value.trim();
   if(!apiKey||!apiSecret||!apiPassphrase){msg.className='msg err';msg.textContent=LANG==='ko'?'API 키를 모두 입력하세요.':'Enter all key fields.';return;}
+  const boards=['bRw','bRm','bPm','bVm'].filter(id=>document.getElementById(id).checked).map(id=>document.getElementById(id).value);
+  if(!boards.length){msg.className='msg err';msg.textContent=LANG==='ko'?'참가할 부문을 하나 이상 선택하세요.':'Select at least one competition.';return;}
   const btn=document.getElementById('jSubmit');btn.disabled=true;btn.textContent='…';
   try{
-    const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({apiKey,apiSecret,apiPassphrase,demoMode:false})});
+    const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({apiKey,apiSecret,apiPassphrase,demoMode:false,boards})});
     const j=await r.json();
     if(j.ok){
       msg.className='msg ok';
@@ -544,9 +586,36 @@ async function loadMine(){
 
 if(authed()){const a=document.getElementById('navAuth');a.textContent=I18N[LANG]['mine.manage'];a.href='#';a.onclick=(e)=>{e.preventDefault();openJoin();};}
 
+/* ---------- hall of fame ---------- */
+const HOF_GROUPS=[['rw','weekly','return'],['rm','monthly','return'],['pm','monthly','profit'],['vm','monthly','volume']];
+const hofVal=(metric,v)=>metric==='volume'?fmtVol(v):metric==='profit'?fmtUsd(v):fmtPct(v);
+async function fetchHOF(){
+  let data={winners:[],champions:{}};
+  try{ data=await (await fetch(`${API}/arena/winners`)).json(); }catch(e){}
+  const d=I18N[LANG];const grid=document.getElementById('hofGrid');
+  const champs=data.champions||{};
+  const cards=HOF_GROUPS.map(([code,board,metric])=>{
+    // latest declared season for this group
+    const all=(data.winners||[]).filter(w=>w.board===board&&w.metric===metric);
+    let inner;
+    if(!all.length){ inner=`<div class="hof-empty" style="padding:18px">${d['hof.empty']}</div>`; }
+    else{
+      const latest=all[0].season_id;
+      const rows=all.filter(w=>w.season_id===latest).sort((a,b)=>a.rank-b.rank);
+      inner=rows.map(w=>{
+        const tt=(champs[w.nickname]&&w.rank===1&&champs[w.nickname]>1)?`<span class="tt">${champs[w.nickname]}${d['hof.titles']}</span>`:'';
+        return `<div class="hof-row"><div class="l"><span class="rk r${w.rank}">${w.rank}</span><span class="nm">${esc(w.nickname)}</span>${tt}</div><span class="v">${hofVal(metric,w.value)}</span></div>`;
+      }).join('')+`<div style="font-size:11px;color:var(--dim);margin-top:8px">${latest}</div>`;
+    }
+    return `<div class="hof-card"><div class="ht">${d['hof.'+code]}</div>${inner}</div>`;
+  }).join('');
+  grid.innerHTML=cards;
+}
+
 applyLang();
 updateMetricTabs();
 fetchSeason();
+fetchHOF();
 fetchLB().then(loadMine);
 setInterval(()=>{fetchLB();fetchSeason();},60000);
 </script>

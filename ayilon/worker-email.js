@@ -56,6 +56,7 @@ export default {
       if (path === '/arena/me')          return handleArenaMe(request, env);
       if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
       if (path === '/arena/season')      return handleArenaSeason(request, env);
+      if (path === '/arena/winners')     return handleArenaWinners(request, env);
       if (path === '/admin/arena-config') return handleAdminArenaConfig(request, env);
     }
 
@@ -63,6 +64,7 @@ export default {
       if (path === '/bot-status') return handleBotStatus(request, env);
       if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
       if (path === '/arena/season')      return handleArenaSeason(request, env);
+      if (path === '/arena/winners')     return handleArenaWinners(request, env);
     }
 
     return corsResponse(JSON.stringify({ error: 'Not found' }), 404);
@@ -1040,11 +1042,73 @@ async function arenaFetchVolumeDelta(env, p) {
   } catch (_) { return 0; }
 }
 
+// Generates a unique default nickname like "AYILON User 39500".
+async function genUniqueNickname(env) {
+  for (let i = 0; i < 25; i++) {
+    const n = 10000 + Math.floor(Math.random() * 989999);
+    const nick = 'AYILON User ' + n;
+    if (!(await env.USERS_KV.get('username:' + nick.toLowerCase()))) return nick;
+  }
+  return 'AYILON User ' + Date.now();
+}
+
+// At each season boundary, freeze the ending season's standings into the Hall of
+// Fame — automatically, once. Runs at the very start of the cron BEFORE any
+// per-participant re-baseline, so arena_score still holds the final values.
+const ARENA_WIN_JOBS = [
+  { key: 'return_weekly',  board: 'weekly',  metric: 'return', sort: 'return_pct', topN: 3, opt: 'rw' },
+  { key: 'return_monthly', board: 'monthly', metric: 'return', sort: 'return_pct', topN: 5, opt: 'rm' },
+  { key: 'profit_monthly', board: 'monthly', metric: 'profit', sort: 'profit',     topN: 5, opt: 'pm' },
+  { key: 'volume_monthly', board: 'monthly', metric: 'volume', sort: 'volume',     topN: 5, opt: 'vm' }
+];
+async function arenaDeclareWinners(env, now) {
+  const curW = arenaWeekId(now), curM = arenaMonthId(now);
+  const declared = (await env.USERS_KV.get('arena:declared', { type: 'json' })) || {};
+  let parts = [];
+  try { parts = (await env.BOT_DB.prepare('SELECT email,nickname,boards,referral_verified FROM arena_participants').all()).results || []; } catch (_) {}
+  const pmap = {};
+  for (const p of parts) { let b = []; try { b = JSON.parse(p.boards || '[]'); } catch (_) {} pmap[p.email] = { nickname: p.nickname, boards: b, ref: p.referral_verified === 1 }; }
+  let changed = false;
+  for (const j of ARENA_WIN_JOBS) {
+    const cur = j.board === 'monthly' ? curM : curW;
+    const prev = declared[j.key];
+    if (!prev) { declared[j.key] = cur; changed = true; continue; }   // first run, nothing ended yet
+    if (prev === cur) continue;                                        // season still active
+    // Guard against double-declaration if a previous tick already wrote them.
+    let already = 0;
+    try { already = (await env.BOT_DB.prepare('SELECT COUNT(*) c FROM arena_winners WHERE season_id=? AND metric=? AND board=?').bind(prev, j.metric, j.board).first())?.c || 0; } catch (_) {}
+    if (!already) {
+      let rows = [];
+      try { rows = (await env.BOT_DB.prepare('SELECT email,return_pct,profit,volume FROM arena_score WHERE board=? AND season_id=?').bind(j.board, prev).all()).results || []; } catch (_) {}
+      rows = rows.filter(r => pmap[r.email] && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0);
+      rows.sort((a, b) => (b[j.sort] || 0) - (a[j.sort] || 0));
+      for (let i = 0; i < Math.min(j.topN, rows.length); i++) {
+        const r = rows[i];
+        try { await env.BOT_DB.prepare('INSERT INTO arena_winners(season_id,board,metric,rank,email,nickname,value,declared_at) VALUES(?,?,?,?,?,?,?,?)')
+          .bind(prev, j.board, j.metric, i + 1, r.email, pmap[r.email].nickname, r[j.sort] || 0, Date.now()).run(); } catch (_) {}
+      }
+    }
+    declared[j.key] = cur; changed = true;
+  }
+  if (changed) await env.USERS_KV.put('arena:declared', JSON.stringify(declared));
+}
+
+// Public: Hall of Fame (recent frozen winners) + champion (rank-1) counts.
+async function handleArenaWinners(request, env) {
+  await initDB(env);
+  let rows = [];
+  try { rows = (await env.BOT_DB.prepare('SELECT season_id,board,metric,rank,nickname,value,declared_at FROM arena_winners ORDER BY declared_at DESC, rank ASC LIMIT 80').all()).results || []; } catch (_) {}
+  const champions = {};
+  for (const w of rows) if (w.rank === 1) champions[w.nickname] = (champions[w.nickname] || 0) + 1;
+  return json({ ok: true, winners: rows, champions });
+}
+
 // Cron: snapshot every connected account, accumulate metrics per board.
 async function arenaScore(env) {
   if (!env.BOT_DB) return;
   await initDB(env);
   const now = new Date();
+  try { await arenaDeclareWinners(env, now); } catch (_) {}
   const boards = [['weekly', arenaWeekId(now)], ['monthly', arenaMonthId(now)]];
   let parts = [];
   try { parts = (await env.BOT_DB.prepare('SELECT * FROM arena_participants').all()).results || []; } catch (_) { return; }
@@ -1127,19 +1191,30 @@ async function handleArenaJoin(request, env) {
   const user = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || {};
   // Mirror UID onto the user record + try affiliate auto-verify (reuses existing engine).
   try { await captureUidAndVerifyReferral(env, session.email, { apiKey, apiSecret, apiPassphrase: apiPass, demoMode: demo }); } catch (_) {}
-  const freshUser = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || user;
+  let freshUser = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || user;
   const refVerified = !!(freshUser.referral && freshUser.referral.verified) || session.email.toLowerCase() === ADMIN_EMAIL_CONST ? 1 : 0;
-  const nickname = freshUser.username || session.email.split('@')[0];
+  // Default nickname = unique "AYILON User #####" if the user never set one.
+  let nickname = freshUser.username;
+  if (!nickname) {
+    nickname = await genUniqueNickname(env);
+    freshUser.username = nickname;
+    await env.USERS_KV.put('user:' + session.email, JSON.stringify(freshUser));
+    await env.USERS_KV.put('username:' + nickname.toLowerCase(), session.email.toLowerCase());
+  }
+  // Opt-in boards: rw=return weekly, rm=return monthly, pm=profit monthly, vm=volume monthly.
+  const VALID_BOARDS = ['rw', 'rm', 'pm', 'vm'];
+  let boards = Array.isArray(body.boards) ? body.boards.filter(b => VALID_BOARDS.includes(b)) : null;
+  if (!boards || boards.length === 0) boards = [...VALID_BOARDS];
 
   await env.BOT_DB.prepare(
-    `INSERT INTO arena_participants(email,nickname,country,okx_uid,api_key,api_secret,api_pass,demo,referral_verified,joined_at,last_flow_ts)
-     VALUES(?,?,?,?,?,?,?,?,?,?,0)
+    `INSERT INTO arena_participants(email,nickname,country,okx_uid,api_key,api_secret,api_pass,demo,referral_verified,boards,joined_at,last_flow_ts)
+     VALUES(?,?,?,?,?,?,?,?,?,?,?,0)
      ON CONFLICT(email) DO UPDATE SET nickname=excluded.nickname,country=excluded.country,okx_uid=excluded.okx_uid,
        api_key=excluded.api_key,api_secret=excluded.api_secret,api_pass=excluded.api_pass,demo=excluded.demo,
-       referral_verified=excluded.referral_verified`
-  ).bind(session.email, nickname, freshUser.country || '', String(uid), apiKey, apiSecret, apiPass, demo ? 1 : 0, refVerified, Date.now()).run();
+       referral_verified=excluded.referral_verified,boards=excluded.boards`
+  ).bind(session.email, nickname, freshUser.country || '', String(uid), apiKey, apiSecret, apiPass, demo ? 1 : 0, refVerified, JSON.stringify(boards), Date.now()).run();
 
-  return json({ ok: true, uid: String(uid), equity: eq, referralVerified: refVerified === 1, demo });
+  return json({ ok: true, uid: String(uid), equity: eq, referralVerified: refVerified === 1, boards, nickname });
 }
 
 // Disconnect / leave the arena.
@@ -1164,15 +1239,20 @@ async function handleArenaLeaderboard(request, env) {
   const now = new Date();
   const sid = period === 'monthly' ? arenaMonthId(now) : arenaWeekId(now);
 
+  // Only show participants who opted into THIS board (period+metric).
+  const optCode = period === 'monthly'
+    ? (metric === 'volume' ? 'vm' : metric === 'profit' ? 'pm' : 'rm')
+    : 'rw';
   let rows = [];
   try {
     rows = (await env.BOT_DB.prepare(
       `SELECT s.email,s.return_pct,s.profit,s.volume,s.last_equity,s.start_equity,s.last_update,
-              p.nickname,p.country,p.referral_verified
+              p.nickname,p.country,p.referral_verified,p.boards
        FROM arena_score s JOIN arena_participants p ON p.email=s.email
        WHERE s.board=? AND s.season_id=?`
     ).bind(period, sid).all()).results || [];
   } catch (_) {}
+  rows = rows.filter(r => { let b = []; try { b = JSON.parse(r.boards || '[]'); } catch (_) {} return b.includes(optCode); });
 
   const sortKey = metric === 'volume' ? 'volume' : metric === 'profit' ? 'profit' : 'return_pct';
   rows.sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
@@ -1638,12 +1718,26 @@ async function initDB(env) {
       api_key TEXT, api_secret TEXT, api_pass TEXT,
       demo INTEGER DEFAULT 0,
       referral_verified INTEGER DEFAULT 0,
+      boards TEXT DEFAULT '["rw","rm","pm","vm"]',
       joined_at INTEGER DEFAULT 0,
       last_equity REAL DEFAULT 0,
       last_flow_ts INTEGER DEFAULT 0,
       last_vol_cum REAL DEFAULT 0,
       last_update INTEGER DEFAULT 0,
       err TEXT DEFAULT NULL
+    )`).run();
+    await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN boards TEXT DEFAULT '["rw","rm","pm","vm"]'`).run().catch(() => {});
+    // Hall of Fame — winners frozen at each season's end.
+    await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_winners (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      season_id TEXT NOT NULL,
+      board TEXT NOT NULL,
+      metric TEXT NOT NULL,
+      rank INTEGER NOT NULL,
+      email TEXT NOT NULL,
+      nickname TEXT DEFAULT '',
+      value REAL DEFAULT 0,
+      declared_at INTEGER DEFAULT 0
     )`).run();
     // Per-board (weekly/monthly) running season metrics.
     await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_score (
