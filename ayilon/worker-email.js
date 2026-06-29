@@ -272,7 +272,7 @@ async function activateSubscription(env, uniqueAmount, txHash) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'AYILON <onboarding@resend.dev>',
+        from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'),
         to: [pending.email],
         subject: `Your AYILON ${pending.plan} plan is now active`,
         html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:40px;max-width:480px;margin:0 auto;border-radius:12px;"><h1 style="font-size:24px;margin-bottom:8px;">AYILON</h1><p style="color:#a3a3a3;margin-bottom:32px;">Payment Confirmed</p><p style="color:#22c55e;font-size:15px;font-weight:600;margin-bottom:16px;">✓ Your ${pending.plan} plan is now active.</p><p style="color:#525252;font-size:12px;">TxHash: ${txHash}</p><a href="https://oracletrading-01o.pages.dev/dashboard.html" style="display:inline-block;background:#fff;color:#000;padding:12px 28px;border-radius:8px;font-weight:600;text-decoration:none;font-size:14px;margin-top:20px;">Go to Dashboard →</a></div>`
@@ -316,7 +316,7 @@ async function handleVerification(request, env) {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: 'AYILON <onboarding@resend.dev>',
+      from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'),
       to: [email],
       subject: 'Your AYILON verification code',
       html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:40px;max-width:480px;margin:0 auto;border-radius:12px;"><h1 style="font-size:24px;margin-bottom:8px;">AYILON</h1><p style="color:#a3a3a3;margin-bottom:32px;">Email Verification</p><p style="color:#a3a3a3;margin-bottom:16px;">Your verification code is:</p><div style="background:#111;border:1px solid #333;border-radius:10px;padding:24px;text-align:center;font-size:42px;font-weight:700;letter-spacing:12px;margin-bottom:24px;">${code}</div><p style="color:#525252;font-size:13px;">This code expires in 5 minutes. Do not share it with anyone.</p></div>`
@@ -343,7 +343,7 @@ async function handleConfirmation(request, env) {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: 'AYILON <onboarding@resend.dev>',
+      from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'),
       to: [email],
       subject: `Your AYILON ${plan} plan is now active`,
       html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:40px;max-width:480px;margin:0 auto;border-radius:12px;"><h1 style="font-size:24px;margin-bottom:8px;">AYILON</h1><p style="color:#a3a3a3;margin-bottom:32px;">Payment Confirmed</p><div style="background:#111;border:1px solid #333;border-radius:10px;padding:24px;margin-bottom:24px;"><p style="color:#a3a3a3;font-size:13px;margin-bottom:16px;">ORDER SUMMARY</p><table style="width:100%;font-size:14px;"><tr><td style="color:#a3a3a3;padding:6px 0;">Plan</td><td style="text-align:right;font-weight:600;">${plan}</td></tr><tr><td style="color:#a3a3a3;padding:6px 0;">Billing</td><td style="text-align:right;">${billingLabel}</td></tr><tr><td style="color:#a3a3a3;padding:6px 0;border-top:1px solid #333;">Amount paid</td><td style="text-align:right;font-weight:700;border-top:1px solid #333;">$${amount}</td></tr></table></div><p style="color:#22c55e;font-size:15px;font-weight:600;margin-bottom:16px;">✓ Your bots are ready to trade on OKX.</p><a href="https://oracletrading-01o.pages.dev/dashboard.html" style="display:inline-block;background:#fff;color:#000;padding:12px 28px;border-radius:8px;font-weight:600;text-decoration:none;font-size:14px;">Go to Dashboard →</a></div>`
@@ -521,7 +521,7 @@ async function handleLogin(request, env) {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              from: 'AYILON <onboarding@resend.dev>', to: [user.email],
+              from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'), to: [user.email],
               subject: 'AYILON Login Verification Code',
               html: `<div style="font-family:sans-serif;padding:24px;"><h2>Login Code</h2><p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#111;">${emailCode}</p><p style="color:#666;">This code expires in 10 minutes.</p></div>`
             })
@@ -625,7 +625,7 @@ async function handleResend2FACode(request, env) {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'AYILON <onboarding@resend.dev>', to: [user.email],
+          from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'), to: [user.email],
           subject: 'AYILON Login Verification Code',
           html: `<div style="font-family:sans-serif;padding:24px;"><h2>Login Code</h2><p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#111;">${code}</p><p style="color:#666;">This code expires in 10 minutes.</p></div>`
         })
@@ -656,7 +656,7 @@ async function handleInitiate2FA(request, env) {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'AYILON <onboarding@resend.dev>', to: [session.email],
+          from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'), to: [session.email],
           subject: 'AYILON 2FA Verification Code',
           html: `<div style="font-family:sans-serif;padding:24px;"><h2>${action === 'enable' ? 'Enable' : 'Disable'} Email 2FA</h2><p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#111;">${code}</p><p style="color:#666;">This code expires in 10 minutes.</p></div>`
         })
@@ -2455,7 +2455,7 @@ async function handleSendEmailVerify(request, env) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'AYILON <onboarding@resend.dev>',
+        from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'),
         to: [newEmail],
         subject: 'AYILON — 이메일 변경 인증 코드',
         html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:12px;">
@@ -2690,7 +2690,7 @@ async function botNotify(env, cfg, msg) {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'AYILON <onboarding@resend.dev>',
+          from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'),
           to: [cfg.userEmail],
           subject: 'AYILON Bot Alert',
           html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:40px;max-width:480px;border-radius:12px;"><h2 style="margin-bottom:8px;">AYILON Bot</h2><p style="color:#a3a3a3;margin-bottom:24px;">${escapeHtml(msg)}</p><a href="https://oracletrading-01o.pages.dev/dashboard.html" style="display:inline-block;background:#fff;color:#000;padding:12px 24px;border-radius:8px;font-weight:600;text-decoration:none;">Dashboard →</a></div>`
