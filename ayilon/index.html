@@ -922,7 +922,7 @@ updateMetricTabs();
 fetchSeason();
 fetchHOF();
 fetchLB().then(loadMine);
-setInterval(()=>{fetchLB();fetchSeason();},60000);
+setInterval(()=>{fetchLB();fetchSeason();if(authed())loadMine();},60000);
 </script>
 </body>
 </html>

@@ -1452,7 +1452,7 @@ const ARENA_DEFAULT_CONFIG = {
   poolPct: 40,              // % of season referral commission that funds the pool
   autoAffiliate: false,     // when true + affiliate creds → pool auto-computed
   manualPool: { weekly: 0, monthly: 0 },      // admin-entered pool ($) until affiliate auto
-  cap:   { weekly: [1000, 500, 100], monthly: [1000, 500, 100, 0, 0] }, // max $ per rank
+  cap:   { weekly: [1000, 500, 100], monthly: [1000, 500, 100, 50, 10] }, // max $ per rank
   split: { weekly: [50, 30, 20], monthly: [40, 25, 15, 12, 8] },        // % of pool per rank
   // weekly runs the return board only; monthly runs all three.
   boards: { weekly: ['return'], monthly: ['return', 'profit', 'volume'] },
@@ -1464,8 +1464,9 @@ async function getArenaConfig(env) {
     const c = await env.USERS_KV.get('arena:config', { type: 'json' });
     if (c) return { ...ARENA_DEFAULT_CONFIG, ...c,
       manualPool: { ...ARENA_DEFAULT_CONFIG.manualPool, ...(c.manualPool || {}) },
-      cap: { ...ARENA_DEFAULT_CONFIG.cap, ...(c.cap || {}) },
-      split: { ...ARENA_DEFAULT_CONFIG.split, ...(c.split || {}) } };
+      // Prize caps/splits are always code-controlled (ignore any stale saved values).
+      cap: ARENA_DEFAULT_CONFIG.cap,
+      split: ARENA_DEFAULT_CONFIG.split };
   } catch (_) {}
   return ARENA_DEFAULT_CONFIG;
 }
