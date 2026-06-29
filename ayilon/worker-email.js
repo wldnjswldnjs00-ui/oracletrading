@@ -1065,6 +1065,8 @@ const ARENA_WIN_JOBS = [
 ];
 async function arenaDeclareWinners(env, now) {
   const curW = arenaWeekId(now), curM = arenaMonthId(now);
+  const cfg = await getArenaConfig(env);
+  const minBal = parseFloat(cfg.minBalance || 0);
   const declared = (await env.USERS_KV.get('arena:declared', { type: 'json' })) || {};
   let parts = [];
   try { parts = (await env.BOT_DB.prepare('SELECT email,nickname,boards,referral_verified FROM arena_participants').all()).results || []; } catch (_) {}
@@ -1081,8 +1083,9 @@ async function arenaDeclareWinners(env, now) {
     try { already = (await env.BOT_DB.prepare('SELECT COUNT(*) c FROM arena_winners WHERE season_id=? AND metric=? AND board=?').bind(prev, j.metric, j.board).first())?.c || 0; } catch (_) {}
     if (!already) {
       let rows = [];
-      try { rows = (await env.BOT_DB.prepare('SELECT email,return_pct,profit,volume FROM arena_score WHERE board=? AND season_id=?').bind(j.board, prev).all()).results || []; } catch (_) {}
-      rows = rows.filter(r => pmap[r.email] && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0);
+      try { rows = (await env.BOT_DB.prepare('SELECT email,return_pct,profit,volume,start_equity FROM arena_score WHERE board=? AND season_id=?').bind(j.board, prev).all()).results || []; } catch (_) {}
+      // Prize-eligible only: opted-in + AYILON-referred + started the season with ≥ min balance.
+      rows = rows.filter(r => pmap[r.email] && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0 && (r.start_equity || 0) >= minBal);
       rows.sort((a, b) => (b[j.sort] || 0) - (a[j.sort] || 0));
       for (let i = 0; i < Math.min(j.topN, rows.length); i++) {
         const r = rows[i];
@@ -1223,6 +1226,13 @@ async function handleArenaJoin(request, env) {
     eq = parseFloat(bal?.data?.[0]?.totalEq || '0');
   } catch (_) {}
 
+  // Hard entry gate: must have at least the minimum balance to join the competition.
+  const joinCfg = await getArenaConfig(env);
+  const minBal = parseFloat(joinCfg.minBalance || 0);
+  if (minBal > 0 && eq < minBal) {
+    return json({ ok: false, error: 'min_balance', minBalance: minBal, equity: +eq.toFixed(2), short: +(minBal - eq).toFixed(2) });
+  }
+
   const user = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || {};
   // Mirror UID onto the user record + try affiliate auto-verify (reuses existing engine).
   try { await captureUidAndVerifyReferral(env, session.email, { apiKey, apiSecret, apiPassphrase: apiPass, demoMode: demo }); } catch (_) {}
@@ -1320,6 +1330,8 @@ async function handleArenaLeaderboard(request, env) {
   } catch (_) {}
   rows = rows.filter(r => { let b = []; try { b = JSON.parse(r.boards || '[]'); } catch (_) {} return b.includes(optCode); });
 
+  const cfg = await getArenaConfig(env);
+  const minBal = parseFloat(cfg.minBalance || 0);
   const sortKey = metric === 'volume' ? 'volume' : metric === 'profit' ? 'profit' : 'return_pct';
   rows.sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
   const ranked = rows.map((r, i) => ({
@@ -1327,6 +1339,8 @@ async function handleArenaLeaderboard(request, env) {
     nickname: r.nickname || (r.email || '').split('@')[0],
     country: r.country || '',
     verified: r.referral_verified === 1,
+    // Prize-eligible = AYILON-referred AND started the season with ≥ min balance.
+    eligible: r.referral_verified === 1 && (r.start_equity || 0) >= minBal,
     returnPct: r.return_pct || 0,
     profit: r.profit || 0,
     volume: r.volume || 0,
