@@ -175,7 +175,7 @@
       <a href="#how" class="nav-lnk hide-m" data-i18n="nav.how">참가방법</a>
       <a href="#hof" class="nav-lnk hide-m" data-i18n="nav.hof">명예의전당</a>
       <span class="lang" id="langBtn">EN</span>
-      <a id="navAuth" class="btn btn-primary btn-sm" href="/login.html" data-i18n="nav.login">로그인</a>
+      <a id="navAuth" class="btn btn-primary btn-sm" href="/login.html">로그인</a>
     </div>
   </div>
 </nav>
@@ -381,7 +381,7 @@ const I18N = {
     'hof.rw':'수익률 · 주간','hof.rm':'수익률 · 월간','hof.pm':'수익금 · 월간','hof.vm':'거래량 · 월간','hof.empty':'아직 우승자가 없습니다. 첫 시즌이 진행 중입니다.','hof.titles':'회 우승',
     'hero.kicker':'Global Trading League','hero.title':'실력을 <b>증명</b>하는<br>글로벌 트레이딩 리그',
     'hero.sub':'매주·매달, 실제 OKX 계좌의 성과로 전 세계 트레이더와 경쟁합니다. 참가비는 없습니다. 자금은 당신의 계좌에 그대로 있습니다.',
-    'hero.cta1':'대회 참가하기','hero.cta2':'리더보드 보기',
+    'hero.cta1':'대회 참가하기','hero.cta2':'리더보드 보기','hero.login':'로그인하고 시작하기',
     'hero.m1':'참가비 무료','hero.m2':'읽기전용 연결 · 자금 안전','hero.m3':'매일 자동 집계',
     'lb.title':'라이브 리더보드','lb.sub':'전체 참가자 실시간 순위. 닉네임으로 본인을 검색하세요.',
     'lb.weekly':'주간','lb.monthly':'월간','lb.m.return':'수익률','lb.m.profit':'수익금','lb.m.volume':'거래량',
@@ -415,7 +415,7 @@ const I18N = {
     'hof.rw':'Return · Weekly','hof.rm':'Return · Monthly','hof.pm':'Profit · Monthly','hof.vm':'Volume · Monthly','hof.empty':'No champions yet — the first season is underway.','hof.titles':'× champion',
     'hero.kicker':'Global Trading League','hero.title':'Prove your edge in the<br><b>global</b> trading league',
     'hero.sub':'Compete with traders worldwide on your real OKX account, every week and month. No entry fee. Your funds stay in your account.',
-    'hero.cta1':'Join the league','hero.cta2':'View leaderboard',
+    'hero.cta1':'Join the league','hero.cta2':'View leaderboard','hero.login':'Log in to start',
     'hero.m1':'Free entry','hero.m2':'Read-only · funds stay yours','hero.m3':'Auto-scored daily',
     'lb.title':'Live Leaderboard','lb.sub':'All participants, ranked live. Search your nickname.',
     'lb.weekly':'Weekly','lb.monthly':'Monthly','lb.m.return':'Return','lb.m.profit':'Profit','lb.m.volume':'Volume',
@@ -450,7 +450,7 @@ function applyLang(){
   document.getElementById('langBtn').textContent=LANG==='ko'?'EN':'한국어';
   syncMetricHeader();
 }
-document.getElementById('langBtn').onclick=()=>{LANG=LANG==='ko'?'en':'ko';localStorage.setItem('ayilon_lang',LANG);applyLang();renderLB();renderPrize();if(window.fetchHOF)fetchHOF();};
+document.getElementById('langBtn').onclick=()=>{LANG=LANG==='ko'?'en':'ko';localStorage.setItem('ayilon_lang',LANG);applyLang();setAuthUI();renderLB();renderPrize();if(window.fetchHOF)fetchHOF();};
 
 /* ---------- leaderboard ---------- */
 let state={period:'weekly',metric:'return',q:'',rows:[],total:0,seasonId:''};
@@ -530,7 +530,20 @@ setInterval(tickCountdown,1000);
 /* ---------- join ---------- */
 const joinModal=document.getElementById('joinModal'),authModal=document.getElementById('authModal');
 function openJoin(){ if(!authed()){authModal.classList.add('open');return;} joinModal.classList.add('open'); loadMine(); }
-['heroJoin','ctaJoin'].forEach(id=>document.getElementById(id).onclick=openJoin);
+// Auth-aware UI: logged out → Login (no OKX). Logged in → Join/OKX connect.
+function setAuthUI(){
+  const d=I18N[LANG];
+  const a=document.getElementById('navAuth'),hero=document.getElementById('heroJoin'),cta=document.getElementById('ctaJoin');
+  if(authed()){
+    a.textContent=d['nav.manage'];a.removeAttribute('href');a.style.cursor='pointer';a.onclick=(e)=>{e.preventDefault();openJoin();};
+    hero.textContent=d['hero.cta1'];hero.onclick=openJoin;
+    cta.textContent=d['cta.btn'];cta.onclick=openJoin;
+  }else{
+    a.textContent=d['nav.login'];a.setAttribute('href','/login.html');a.onclick=null;
+    hero.textContent=d['hero.login'];hero.onclick=()=>{location.href='/login.html';};
+    cta.textContent=d['hero.login'];cta.onclick=()=>{location.href='/login.html';};
+  }
+}
 document.getElementById('closeJoin').onclick=()=>joinModal.classList.remove('open');
 document.getElementById('closeAuth').onclick=()=>authModal.classList.remove('open');
 document.getElementById('mineManage').onclick=openJoin;
@@ -584,8 +597,6 @@ async function loadMine(){
   }catch(e){}
 }
 
-if(authed()){const a=document.getElementById('navAuth');a.textContent=I18N[LANG]['mine.manage'];a.href='#';a.onclick=(e)=>{e.preventDefault();openJoin();};}
-
 /* ---------- hall of fame ---------- */
 const HOF_GROUPS=[['rw','weekly','return'],['rm','monthly','return'],['pm','monthly','profit'],['vm','monthly','volume']];
 const hofVal=(metric,v)=>metric==='volume'?fmtVol(v):metric==='profit'?fmtUsd(v):fmtPct(v);
@@ -613,6 +624,7 @@ async function fetchHOF(){
 }
 
 applyLang();
+setAuthUI();
 updateMetricTabs();
 fetchSeason();
 fetchHOF();
