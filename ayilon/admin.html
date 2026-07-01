@@ -123,7 +123,7 @@
     </div>
     <div class="grid2" style="margin-top:12px">
       <div><label>상금 자격 최소 잔고 ($)</label><input id="cfgMinBal" type="number" min="0" placeholder="100"></div>
-      <div></div>
+      <div><label>상금 자격 최소 거래일 수 (0 = 없음) — 단발성 헤지 방지</label><input id="cfgMinDays" type="number" min="0" placeholder="0"></div>
     </div>
     <div class="poolview">
       <div style="font-size:12px;color:var(--mut);margin-bottom:4px">현재 상금 풀 (실시간 계산)</div>
@@ -207,6 +207,7 @@ async function loadConfig(){
   document.getElementById('cfgWeekly').value=(cfg.manualPool&&cfg.manualPool.weekly)||0;
   document.getElementById('cfgMonthly').value=(cfg.manualPool&&cfg.manualPool.monthly)||0;
   document.getElementById('cfgMinBal').value=cfg.minBalance!=null?cfg.minBalance:100;
+  document.getElementById('cfgMinDays').value=cfg.minTradeDays!=null?cfg.minTradeDays:0;
   const auto=document.getElementById('cfgAutoAff'); auto.checked=!!cfg.autoAffiliate;
   renderAffStatus();
   document.getElementById('cfgCommTotal').readOnly=(affReady&&cfg.autoAffiliate);
@@ -260,7 +261,7 @@ function computePool(){
 }
 async function saveConfig(){
   const m=document.getElementById('cfgMsg');m.style.color='var(--mut)';m.textContent='저장 중…';
-  const body={poolMode:cfg.poolMode||'commission',minBalance:parseFloat(document.getElementById('cfgMinBal').value)||0,autoAffiliate:document.getElementById('cfgAutoAff').checked};
+  const body={poolMode:cfg.poolMode||'commission',minBalance:parseFloat(document.getElementById('cfgMinBal').value)||0,minTradeDays:parseInt(document.getElementById('cfgMinDays').value)||0,autoAffiliate:document.getElementById('cfgAutoAff').checked};
   if(body.poolMode==='commission'){ body.commissionPct=parseFloat(document.getElementById('cfgCommPct').value)||0; if(!(affReady&&body.autoAffiliate)) body.commissionTotal=parseFloat(document.getElementById('cfgCommTotal').value)||0; }
   else { body.manualPool={weekly:parseFloat(document.getElementById('cfgWeekly').value)||0,monthly:parseFloat(document.getElementById('cfgMonthly').value)||0}; }
   const r=await post('/admin/arena-config',body);
@@ -278,17 +279,21 @@ async function loadList(){
   const tb=document.querySelector('#pTable tbody');
   document.getElementById('stParts').textContent=r.total!=null?r.total:parts.length;
   const fw=document.getElementById('flagWarn');
-  if(fw) fw.style.display=(r.flagged>0)?'block':'none', fw.textContent='⚠ 부정행위 의심 '+r.flagged+'건 — 같은 IP 다중 계정 또는 롱/숏 반대 헤지 패턴. 확인 후 정지하세요.';
+  if(fw) fw.style.display=(r.flagged>0)?'block':'none', fw.textContent='⚠ 부정행위 의심 '+r.flagged+'건 — 같은 IP·기기·입금출처 다중 계정 또는 롱/숏 반대 헤지 패턴. 확인 후 정지하세요.';
   if(!parts.length){ tb.innerHTML='<tr><td class="empty">참가자 없음</td></tr>'; return; }
   tb.parentElement.innerHTML='<thead><tr><th>닉네임</th><th>OKX UID</th><th class="hide-m">이메일</th><th>추천</th><th>평가금</th><th class="hide-m">주간 수익률</th><th>관리</th></tr></thead><tbody>'+
     parts.map(p=>{
       const ref=p.referralVerified?'<span class="tag ok">인증</span>':'<span class="tag no">미인증</span>';
       const uid=p.uid?('<span class="uid">'+esc(p.uid)+'</span>'):'<span style="color:var(--dim)">—</span>';
       const e=esc(p.email).replace(/'/g,"\\'");
+      const peerTip=esc((p.peers||[]).join(', '));
       let flags='';
-      if(p.ipShared>0) flags+=' <span class="tag warn" title="공유 IP: '+esc((p.ipPeers||[]).join(', '))+'">⚠ 공유IP '+p.ipShared+'</span>';
-      if(p.suspHedge) flags+=' <span class="tag bad">헤지 의심</span>';
-      return '<tr'+((p.ipShared>0||p.suspHedge)?' class="susp"':'')+'><td><b>'+esc(p.nickname)+'</b>'+(p.demo?' <span class="tag no">데모</span>':'')+flags+'</td>'+
+      if(p.ipShared>0)  flags+=' <span class="tag warn" title="같은 IP: '+peerTip+'">⚠ 공유IP '+p.ipShared+'</span>';
+      if(p.fpShared>0)  flags+=' <span class="tag warn" title="같은 기기: '+peerTip+'">⚠ 같은기기 '+p.fpShared+'</span>';
+      if(p.depShared>0) flags+=' <span class="tag warn" title="같은 입금출처: '+peerTip+'">⚠ 같은입금 '+p.depShared+'</span>';
+      if(p.suspHedge)   flags+=' <span class="tag bad">헤지 의심</span>';
+      const susp=p.ipShared>0||p.fpShared>0||p.depShared>0||p.suspHedge;
+      return '<tr'+(susp?' class="susp"':'')+'><td><b>'+esc(p.nickname)+'</b>'+(p.demo?' <span class="tag no">데모</span>':'')+flags+'</td>'+
         '<td>'+uid+'</td><td class="hide-m" style="color:var(--mut)">'+esc(p.email)+'</td>'+
         '<td>'+ref+'</td><td style="font-variant-numeric:tabular-nums">'+usd(p.equity)+'</td>'+
         '<td class="hide-m" style="font-variant-numeric:tabular-nums;color:'+((p.weeklyReturn||0)>=0?'var(--accent)':'var(--red)')+'">'+pct(p.weeklyReturn)+'</td>'+

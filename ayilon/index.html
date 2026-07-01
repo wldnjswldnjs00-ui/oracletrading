@@ -963,6 +963,22 @@ document.getElementById('closeAuth').onclick=()=>authModal.classList.remove('ope
 document.getElementById('mineManage').onclick=openJoin;
 [joinModal,authModal].forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
 
+// Lightweight device fingerprint (canvas + UA/screen/timezone hash) — a stable
+// per-browser signal used server-side to flag multi-account rings across IPs.
+async function deviceFp(){
+  try{
+    const parts=[navigator.userAgent,navigator.language,(navigator.languages||[]).join(','),
+      screen.width+'x'+screen.height+'x'+(screen.colorDepth||''),
+      (Intl.DateTimeFormat().resolvedOptions().timeZone||''),
+      new Date().getTimezoneOffset(),navigator.hardwareConcurrency||'',navigator.deviceMemory||'',navigator.platform||''];
+    try{ const c=document.createElement('canvas');c.width=200;c.height=40;const g=c.getContext('2d');
+      g.textBaseline='top';g.font="14px 'Arial'";g.fillStyle='#f60';g.fillRect(0,0,200,40);
+      g.fillStyle='#069';g.fillText('AYILON·fp·9Qx',2,2);g.fillStyle='rgba(102,204,0,.7)';g.fillText('AYILON·fp·9Qx',4,4);
+      parts.push(c.toDataURL());}catch(_){}
+    const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(parts.join('|')));
+    return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+  }catch(_){ return ''; }
+}
 document.getElementById('jSubmit').onclick=async()=>{
   const msg=document.getElementById('jmMsg');msg.className='msg';msg.textContent='';
   const apiKey=document.getElementById('jKey').value.trim(),apiSecret=document.getElementById('jSecret').value.trim(),apiPassphrase=document.getElementById('jPass').value.trim();
@@ -971,7 +987,8 @@ document.getElementById('jSubmit').onclick=async()=>{
   if(!boards.length){msg.className='msg err';msg.textContent=t('jm.pickone');return;}
   const btn=document.getElementById('jSubmit');btn.disabled=true;btn.textContent='…';
   try{
-    const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({apiKey,apiSecret,apiPassphrase,demoMode:false,boards})});
+    const fp=await deviceFp();
+    const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({apiKey,apiSecret,apiPassphrase,demoMode:false,boards,fp})});
     const j=await r.json();
     if(j.ok){
       msg.className='msg ok';

@@ -1015,17 +1015,23 @@ function arenaMonthId(d) {
 // Latest deposit/withdrawal timestamp on the account. We compare this against the
 // last value we saw to detect a NEW cash flow (robust — no accumulation that can
 // double-count and inflate returns).
-async function arenaLatestFlowTs(p, demo) {
-  let maxTs = 0;
+async function arenaAccountFlows(p, demo) {
+  let maxTs = 0; const froms = new Set();
   try {
     const dep = await okxGet(p.api_key, p.api_secret, p.api_pass, '/api/v5/asset/deposit-history', demo);
-    for (const r of (dep?.data || [])) { if (String(r.state) === '2') maxTs = Math.max(maxTs, parseInt(r.ts) || 0); }
+    for (const r of (dep?.data || [])) {
+      if (String(r.state) === '2') maxTs = Math.max(maxTs, parseInt(r.ts) || 0);
+      // Sending address funds this account — two players sharing a source is a
+      // collusion signal (flagged for review, since exchange hot wallets are shared).
+      const f = String(r.from || '').trim().toLowerCase();
+      if (f) froms.add(f.slice(0, 120));
+    }
   } catch (_) {}
   try {
     const wd = await okxGet(p.api_key, p.api_secret, p.api_pass, '/api/v5/asset/withdrawal-history', demo);
     for (const r of (wd?.data || [])) { maxTs = Math.max(maxTs, parseInt(r.ts) || 0); }
   } catch (_) {}
-  return maxTs;
+  return { ts: maxTs, froms: [...froms] };
 }
 
 // Cumulative referred-account volume from the OKX affiliate API (authoritative).
@@ -1084,9 +1090,11 @@ async function arenaDeclareWinners(env, now) {
     try { already = (await env.BOT_DB.prepare('SELECT COUNT(*) c FROM arena_winners WHERE season_id=? AND metric=? AND board=?').bind(prev, j.metric, j.board).first())?.c || 0; } catch (_) {}
     if (!already) {
       let rows = [];
-      try { rows = (await env.BOT_DB.prepare('SELECT email,return_pct,profit,volume,start_equity FROM arena_score WHERE board=? AND season_id=?').bind(j.board, prev).all()).results || []; } catch (_) {}
-      // Prize-eligible only: opted-in + AYILON-referred + started the season with ≥ min balance.
-      rows = rows.filter(r => pmap[r.email] && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0 && (r.start_equity || 0) >= minBal);
+      try { rows = (await env.BOT_DB.prepare('SELECT email,return_pct,profit,volume,start_equity,trade_days FROM arena_score WHERE board=? AND season_id=?').bind(j.board, prev).all()).results || []; } catch (_) {}
+      // Prize-eligible only: opted-in + AYILON-referred + started the season with ≥ min
+      // balance + traded on at least the required number of distinct days (anti-hedge).
+      const minDays = parseInt(cfg.minTradeDays || 0);
+      rows = rows.filter(r => pmap[r.email] && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0 && (r.start_equity || 0) >= minBal && (r.trade_days || 0) >= minDays);
       rows.sort((a, b) => (b[j.sort] || 0) - (a[j.sort] || 0));
       for (let i = 0; i < Math.min(j.topN, rows.length); i++) {
         const r = rows[i];
@@ -1171,7 +1179,8 @@ async function arenaScore(env) {
       // Detect a NEW deposit/withdrawal by comparing the latest flow timestamp
       // to the one we last saw. A new flow re-baselines the season so moving cash
       // never looks like profit, and nothing accumulates to double-count.
-      const latestFlow = await arenaLatestFlowTs(p, demo);
+      const flows = await arenaAccountFlows(p, demo);
+      const latestFlow = flows.ts;
       const prevFlow = parseInt(p.last_flow_ts || 0);
       const flowDetected = prevFlow > 0 && latestFlow > prevFlow;
       const newFlowTs = Math.max(prevFlow, latestFlow);
@@ -1179,22 +1188,32 @@ async function arenaScore(env) {
       const volDelta = volRes && volRes.delta ? volRes.delta : 0;
       const volCum   = volRes && volRes.cum   ? volRes.cum   : parseFloat(p.last_vol_cum || 0);
       if (affiliateOn && volRes && volRes.commission) commissionSum += volRes.commission;
+      // Distinct-trading-day tracking: a day counts as active if volume grew or
+      // equity moved > 0.3% since the last tick (blocks single-shot hedge entries).
+      const today = new Date(nowTs).toISOString().slice(0, 10);
+      const prevEq = parseFloat(p.last_equity || 0);
+      const activeToday = volDelta > 0 || (prevEq > 1 && Math.abs(eq - prevEq) / prevEq > 0.003);
 
       for (const [board, sid] of boards) {
         const row = await env.BOT_DB.prepare('SELECT * FROM arena_score WHERE email=? AND board=?').bind(p.email, board).first();
+        // Bump the distinct-day counter at most once per calendar day of activity.
+        const bump = row && activeToday && (row.last_trade_date || '') !== today;
+        const nTd = bump ? (row.trade_days || 0) + 1 : (row ? row.trade_days || 0 : 0);
+        const nLtd = bump ? today : (row ? row.last_trade_date || '' : '');
         if (!row || row.season_id !== sid) {
           // New season → full reset, baseline at current equity.
           await env.BOT_DB.prepare(
-            `INSERT INTO arena_score(email,board,season_id,start_equity,deposits,withdrawals,last_equity,volume,return_pct,profit,last_update)
-             VALUES(?,?,?,?,0,0,?,0,0,0,?)
+            `INSERT INTO arena_score(email,board,season_id,start_equity,deposits,withdrawals,last_equity,volume,return_pct,profit,last_update,trade_days,last_trade_date)
+             VALUES(?,?,?,?,0,0,?,0,0,0,?,?,?)
              ON CONFLICT(email,board) DO UPDATE SET season_id=excluded.season_id,start_equity=excluded.start_equity,
-               deposits=0,withdrawals=0,last_equity=excluded.last_equity,volume=0,return_pct=0,profit=0,last_update=excluded.last_update`
-          ).bind(p.email, board, sid, eq, eq, nowTs).run();
+               deposits=0,withdrawals=0,last_equity=excluded.last_equity,volume=0,return_pct=0,profit=0,last_update=excluded.last_update,
+               trade_days=excluded.trade_days,last_trade_date=excluded.last_trade_date`
+          ).bind(p.email, board, sid, eq, eq, nowTs, activeToday ? 1 : 0, activeToday ? today : '').run();
         } else if (flowDetected) {
           // Cash moved in/out → re-baseline equity; performance resets, not inflated. Volume is kept.
           await env.BOT_DB.prepare(
-            'UPDATE arena_score SET start_equity=?,last_equity=?,return_pct=0,profit=0,volume=?,last_update=? WHERE email=? AND board=?'
-          ).bind(eq, eq, (row.volume || 0) + volDelta, nowTs, p.email, board).run();
+            'UPDATE arena_score SET start_equity=?,last_equity=?,return_pct=0,profit=0,volume=?,last_update=?,trade_days=?,last_trade_date=? WHERE email=? AND board=?'
+          ).bind(eq, eq, (row.volume || 0) + volDelta, nowTs, nTd, nLtd, p.email, board).run();
         } else {
           const start = row.start_equity || 0;
           // Empty/dust accounts (under $1) always score 0 — no meaningful % to report.
@@ -1202,12 +1221,13 @@ async function arenaScore(env) {
           const profit = meaningful ? eq - start : 0;
           const ret = meaningful ? profit / start : 0;
           await env.BOT_DB.prepare(
-            'UPDATE arena_score SET last_equity=?,volume=?,return_pct=?,profit=?,last_update=? WHERE email=? AND board=?'
-          ).bind(eq, (row.volume || 0) + volDelta, ret, profit, nowTs, p.email, board).run();
+            'UPDATE arena_score SET last_equity=?,volume=?,return_pct=?,profit=?,last_update=?,trade_days=?,last_trade_date=? WHERE email=? AND board=?'
+          ).bind(eq, (row.volume || 0) + volDelta, ret, profit, nowTs, nTd, nLtd, p.email, board).run();
         }
       }
-      await env.BOT_DB.prepare('UPDATE arena_participants SET last_equity=?, last_flow_ts=?, last_vol_cum=?, last_update=?, err=NULL WHERE email=?')
-        .bind(eq, newFlowTs, volCum, nowTs, p.email).run();
+      const depSrcs = JSON.stringify(flows.froms || []);
+      await env.BOT_DB.prepare('UPDATE arena_participants SET last_equity=?, last_flow_ts=?, last_vol_cum=?, last_update=?, dep_srcs=?, err=NULL WHERE email=?')
+        .bind(eq, newFlowTs, volCum, nowTs, depSrcs, p.email).run();
     } catch (e) {
       try { await env.BOT_DB.prepare('UPDATE arena_participants SET err=? WHERE email=?').bind(String(e.message).slice(0, 120), p.email).run(); } catch (_) {}
     }
@@ -1282,13 +1302,14 @@ async function handleArenaJoin(request, env) {
   if (!boards || boards.length === 0) boards = [...VALID_BOARDS];
 
   const joinIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const fp = String(body.fp || '').trim().slice(0, 64) || null;
   await env.BOT_DB.prepare(
-    `INSERT INTO arena_participants(email,nickname,country,okx_uid,api_key,api_secret,api_pass,demo,referral_verified,boards,joined_at,last_flow_ts,ip)
-     VALUES(?,?,?,?,?,?,?,?,?,?,?,0,?)
+    `INSERT INTO arena_participants(email,nickname,country,okx_uid,api_key,api_secret,api_pass,demo,referral_verified,boards,joined_at,last_flow_ts,ip,fp)
+     VALUES(?,?,?,?,?,?,?,?,?,?,?,0,?,?)
      ON CONFLICT(email) DO UPDATE SET nickname=excluded.nickname,country=excluded.country,okx_uid=excluded.okx_uid,
        api_key=excluded.api_key,api_secret=excluded.api_secret,api_pass=excluded.api_pass,demo=excluded.demo,
-       referral_verified=excluded.referral_verified,boards=excluded.boards,ip=excluded.ip`
-  ).bind(session.email, nickname, freshUser.country || '', String(uid), apiKey, apiSecret, apiPass, demo ? 1 : 0, refVerified, JSON.stringify(boards), Date.now(), joinIp).run();
+       referral_verified=excluded.referral_verified,boards=excluded.boards,ip=excluded.ip,fp=excluded.fp`
+  ).bind(session.email, nickname, freshUser.country || '', String(uid), apiKey, apiSecret, apiPass, demo ? 1 : 0, refVerified, JSON.stringify(boards), Date.now(), joinIp, fp).run();
 
   return json({ ok: true, uid: String(uid), equity: eq, referralVerified: refVerified === 1, boards, nickname });
 }
@@ -1489,7 +1510,8 @@ const ARENA_DEFAULT_CONFIG = {
   // weekly runs the return board only; monthly runs all three.
   boards: { weekly: ['return'], monthly: ['return', 'profit', 'volume'] },
   minBalance: 100,          // $ floor to be prize-eligible
-  minTrades: 3
+  minTrades: 3,
+  minTradeDays: 0           // distinct active trading days required for prizes (0 = off)
 };
 async function getArenaConfig(env) {
   try {
@@ -1568,6 +1590,7 @@ async function handleAdminArenaConfig(request, env) {
   if (body.autoAffiliate != null) next.autoAffiliate = !!body.autoAffiliate;
   if (body.minBalance != null)    next.minBalance = parseFloat(body.minBalance);
   if (body.minTrades != null)     next.minTrades = parseInt(body.minTrades);
+  if (body.minTradeDays != null)  next.minTradeDays = Math.max(0, parseInt(body.minTradeDays) || 0);
   await env.USERS_KV.put('arena:config', JSON.stringify(next));
   return json({ ok: true, config: next });
 }
@@ -1587,19 +1610,25 @@ async function handleAdminArenaList(request, env) {
   const now = new Date();
   const wId = arenaWeekId(now), mId = arenaMonthId(now);
 
+  const minDays = parseInt(cfg.minTradeDays || 0);
   // Pull this-season returns for EVERY participant (not just the filtered ones) so
-  // collusion flags stay accurate even while searching, then cluster by IP.
-  const info = {}; const ipGroups = {};
+  // collusion flags stay accurate even while searching, then cluster by IP, device
+  // fingerprint, and deposit-source address.
+  const info = {}, ipGroups = {}, fpGroups = {}, depGroups = {};
   for (const p of rows) {
     let wk = null, mo = null;
-    try { wk = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'weekly', wId).first(); } catch (_) {}
-    try { mo = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'monthly', mId).first(); } catch (_) {}
+    try { wk = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity,trade_days FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'weekly', wId).first(); } catch (_) {}
+    try { mo = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity,trade_days FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'monthly', mId).first(); } catch (_) {}
     info[p.email] = { row: p, wk, mo };
     const ip = String(p.ip || '').trim();
     if (ip && ip !== 'unknown') (ipGroups[ip] = ipGroups[ip] || []).push(p.email);
+    const fp = String(p.fp || '').trim();
+    if (fp) (fpGroups[fp] = fpGroups[fp] || []).push(p.email);
+    let srcs = []; try { srcs = JSON.parse(p.dep_srcs || '[]'); } catch (_) {}
+    for (const s of srcs) { if (s) (depGroups[s] = depGroups[s] || new Set()).add(p.email); }
   }
-  // Two accounts on the same IP running opposite-sign returns is the classic
-  // long/short hedge ring — flag it (magnitude ≥ 5% each side to avoid noise).
+  // Two linked accounts (same IP / device / funding source) running opposite-sign
+  // returns is the classic long/short hedge ring — flag it (≥ 5% each side).
   const HEDGE_MIN = 0.05;
   const isHedge = (a, b) => {
     const pairs = [[a.wk ? a.wk.return_pct : 0, b.wk ? b.wk.return_pct : 0], [a.mo ? a.mo.return_pct : 0, b.mo ? b.mo.return_pct : 0]];
@@ -1611,21 +1640,29 @@ async function handleAdminArenaList(request, env) {
     if (q && !(String(p.okx_uid || '').includes(q) || String(p.nickname || '').toLowerCase().includes(q) || String(p.email || '').toLowerCase().includes(q))) continue;
     let boards = []; try { boards = JSON.parse(p.boards || '[]'); } catch (_) {}
     const me = info[p.email], wk = me.wk, mo = me.mo;
-    const ip = String(p.ip || '').trim();
-    const peers = (ip && ip !== 'unknown' ? ipGroups[ip] || [] : []).filter(e => e !== p.email);
-    const suspHedge = peers.some(e => isHedge(me, info[e]));
+    const ip = String(p.ip || '').trim(), fp = String(p.fp || '').trim();
+    const ipPeers = (ip && ip !== 'unknown' ? ipGroups[ip] || [] : []).filter(e => e !== p.email);
+    const fpPeers = (fp ? fpGroups[fp] || [] : []).filter(e => e !== p.email);
+    let srcs = []; try { srcs = JSON.parse(p.dep_srcs || '[]'); } catch (_) {}
+    const depSet = new Set();
+    for (const s of srcs) { const g = depGroups[s]; if (g) for (const e of g) if (e !== p.email) depSet.add(e); }
+    const depPeers = [...depSet];
+    const allPeers = [...new Set([...ipPeers, ...fpPeers, ...depPeers])];
+    const suspHedge = allPeers.some(e => isHedge(me, info[e]));
+    const tradeDays = (mo ? mo.trade_days : 0) || 0;
     out.push({
       email: p.email, nickname: p.nickname, country: p.country || '', uid: p.okx_uid || '',
       referralVerified: p.referral_verified === 1, equity: p.last_equity || 0, demo: p.demo === 1,
-      eligible: p.referral_verified === 1 && (p.last_equity || 0) >= minBal, boards,
+      eligible: p.referral_verified === 1 && (p.last_equity || 0) >= minBal && tradeDays >= minDays, boards,
       joinedAt: p.joined_at || 0, err: p.err || null,
       weeklyReturn: wk ? wk.return_pct : null, monthlyReturn: mo ? mo.return_pct : null,
       monthlyProfit: mo ? mo.profit : null, monthlyVolume: mo ? mo.volume : null,
-      ip: ip || null, ipShared: peers.length, ipPeers: peers.map(e => info[e].row.nickname || e), suspHedge
+      ip: ip || null, ipShared: ipPeers.length, fpShared: fpPeers.length, depShared: depPeers.length,
+      peers: allPeers.map(e => info[e].row.nickname || e), suspHedge, tradeDays
     });
   }
-  const flagged = out.filter(p => p.ipShared > 0 || p.suspHedge).length;
-  return json({ ok: true, total: out.length, flagged, participants: out });
+  const flagged = out.filter(p => p.ipShared > 0 || p.fpShared > 0 || p.depShared > 0 || p.suspHedge).length;
+  return json({ ok: true, total: out.length, flagged, minTradeDays: minDays, participants: out });
 }
 
 // Admin: permanently ban / unban an account. Banning removes it from the arena
@@ -2028,6 +2065,8 @@ async function initDB(env) {
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN avatar TEXT DEFAULT NULL`).run().catch(() => {});
     // Anti-collusion: last IP seen at join, used to flag multi-account / hedge rings.
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN ip TEXT DEFAULT NULL`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN fp TEXT DEFAULT NULL`).run().catch(() => {});          // device fingerprint
+    await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN dep_srcs TEXT DEFAULT NULL`).run().catch(() => {});    // deposit source addresses (JSON)
     // Hall of Fame — winners frozen at each season's end.
     await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_winners (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2057,6 +2096,9 @@ async function initDB(env) {
       last_update INTEGER DEFAULT 0,
       PRIMARY KEY (email, board)
     )`).run();
+    // Distinct active-trading-day tracking (anti single-shot hedge).
+    await env.BOT_DB.prepare(`ALTER TABLE arena_score ADD COLUMN trade_days INTEGER DEFAULT 0`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE arena_score ADD COLUMN last_trade_date TEXT DEFAULT ''`).run().catch(() => {});
 
     _dbReady = true;
   } catch(e) {}
