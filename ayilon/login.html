@@ -318,6 +318,8 @@
         if (!data.ok) {
           if (data.error === 'too_many_attempts') {
             errEl.textContent = 'Too many attempts. Please try again in 15 minutes.';
+          } else if (data.error === 'email_send_failed') {
+            errEl.textContent = 'Could not send the verification code. Please try again in a moment.';
           } else if (data.error === 'server_error' || data.error === 'service_unavailable') {
             errEl.textContent = 'Server error. Please try again.';
           } else {

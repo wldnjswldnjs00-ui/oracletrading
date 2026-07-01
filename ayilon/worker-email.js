@@ -535,8 +535,11 @@ async function handleLogin(request, env) {
       await ensureDB(env);
       const challengeToken = crypto.randomUUID();
       const emailCode = String(Math.floor(100000 + Math.random() * 900000));
+      // The login code is mandatory, so a failed send must NOT look like success —
+      // otherwise the user is stuck on the OTP screen with no code. Surface it.
+      let emailSent = false;
       try {
-        await fetch('https://api.resend.com/emails', {
+        const r = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -545,7 +548,9 @@ async function handleLogin(request, env) {
             html: `<div style="font-family:sans-serif;padding:24px;"><h2>Login Code</h2><p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#111;">${emailCode}</p><p style="color:#666;">This code expires in 10 minutes.</p></div>`
           })
         });
+        emailSent = r.ok;
       } catch (e) {}
+      if (!emailSent) return json({ ok: false, error: 'email_send_failed' }, 502);
       await env.BOT_DB.prepare('INSERT OR REPLACE INTO challenges VALUES (?,?,?,?,?)').bind(
         challengeToken, user.email.toLowerCase(), 'login', emailCode, Date.now() + 600000
       ).run();
