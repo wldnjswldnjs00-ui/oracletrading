@@ -1302,7 +1302,7 @@ async function handleArenaJoin(request, env) {
   // Hard entry gate: must have at least the minimum balance to join the competition.
   const joinCfg = await getArenaConfig(env);
   const minBal = parseFloat(joinCfg.minBalance || 0);
-  if (minBal > 0 && !demo && eq < minBal) {   // demo (test) accounts skip the balance gate
+  if (minBal > 0 && eq < minBal) {
     return json({ ok: false, error: 'min_balance', minBalance: minBal, equity: +eq.toFixed(2), short: +(minBal - eq).toFixed(2) });
   }
 
