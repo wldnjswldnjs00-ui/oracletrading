@@ -1081,6 +1081,13 @@ async function arenaDeclareWinners(env, now) {
   const curW = arenaWeekId(now), curM = arenaMonthId(now);
   const cfg = await getArenaConfig(env);
   const minBal = parseFloat(cfg.minBalance || 0);
+  // Prize $ is locked in at declaration = the real pool-share for that rank/board
+  // (same math the site advertises), so the admin knows exactly what to pay.
+  const commissionPool = parseFloat(cfg.commissionTotal || 0) * parseFloat(cfg.commissionPct || 0) / 100;
+  const csplit = cfg.commissionSplit || { weekly: 25, monthly: 75 };
+  const boardPoolOf = board => cfg.poolMode === 'manual'
+    ? parseFloat((cfg.manualPool || {})[board] || 0)
+    : commissionPool * (parseFloat(csplit[board] || 0) / 100);
   const declared = (await env.USERS_KV.get('arena:declared', { type: 'json' })) || {};
   let parts = [];
   try { parts = (await env.BOT_DB.prepare('SELECT email,nickname,boards,referral_verified FROM arena_participants').all()).results || []; } catch (_) {}
@@ -1103,10 +1110,13 @@ async function arenaDeclareWinners(env, now) {
       const minDays = parseInt(cfg.minTradeDays || 0);
       rows = rows.filter(r => pmap[r.email] && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0 && (r.start_equity || 0) >= minBal && (r.trade_days || 0) >= minDays);
       rows.sort((a, b) => (b[j.sort] || 0) - (a[j.sort] || 0));
+      const catPool = boardPoolOf(j.board) / ((cfg.boards[j.board] || ['return']).length || 1);
+      const rankSplit = cfg.split[j.board] || [];
       for (let i = 0; i < Math.min(j.topN, rows.length); i++) {
         const r = rows[i];
-        try { await env.BOT_DB.prepare('INSERT INTO arena_winners(season_id,board,metric,rank,email,nickname,value,declared_at) VALUES(?,?,?,?,?,?,?,?)')
-          .bind(prev, j.board, j.metric, i + 1, r.email, pmap[r.email].nickname, r[j.sort] || 0, Date.now()).run(); } catch (_) {}
+        const prize = Math.round(catPool * (rankSplit[i] || 0) / 100 * 100) / 100;
+        try { await env.BOT_DB.prepare('INSERT INTO arena_winners(season_id,board,metric,rank,email,nickname,value,prize,declared_at) VALUES(?,?,?,?,?,?,?,?,?)')
+          .bind(prev, j.board, j.metric, i + 1, r.email, pmap[r.email].nickname, r[j.sort] || 0, prize, Date.now()).run(); } catch (_) {}
       }
     }
     declared[j.key] = cur; changed = true;
@@ -1723,7 +1733,7 @@ async function handleAdminArenaWinners(request, env) {
     return json({ ok: true });
   }
   let rows = [];
-  try { rows = (await env.BOT_DB.prepare('SELECT id,season_id,board,metric,rank,email,nickname,value,paid,declared_at FROM arena_winners ORDER BY declared_at DESC, rank ASC LIMIT 120').all()).results || []; } catch (_) {}
+  try { rows = (await env.BOT_DB.prepare('SELECT id,season_id,board,metric,rank,email,nickname,value,prize,paid,declared_at FROM arena_winners ORDER BY declared_at DESC, rank ASC LIMIT 120').all()).results || []; } catch (_) {}
   return json({ ok: true, winners: rows });
 }
 
@@ -2103,6 +2113,7 @@ async function initDB(env) {
       paid INTEGER DEFAULT 0
     )`).run();
     await env.BOT_DB.prepare(`ALTER TABLE arena_winners ADD COLUMN paid INTEGER DEFAULT 0`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE arena_winners ADD COLUMN prize REAL DEFAULT 0`).run().catch(() => {});
     // Per-board (weekly/monthly) running season metrics.
     await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_score (
       email TEXT NOT NULL,

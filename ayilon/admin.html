@@ -319,12 +319,13 @@ async function loadWinners(){
   const tb=document.querySelector('#wTable tbody');
   if(!ws.length){ tb.innerHTML='<tr><td class="empty">아직 확정된 우승자가 없습니다 (시즌 종료 시 자동 확정)</td></tr>'; return; }
   const label={return:'수익률',profit:'수익금',volume:'거래량'};
-  tb.parentElement.innerHTML='<thead><tr><th>시즌</th><th>부문</th><th>순위</th><th>닉네임</th><th>기록</th><th>지급</th></tr></thead><tbody>'+
+  tb.parentElement.innerHTML='<thead><tr><th>시즌</th><th>부문</th><th>순위</th><th>닉네임</th><th>기록</th><th>지급액</th><th>지급</th></tr></thead><tbody>'+
     ws.map(w=>{
-      const val=w.metric==='return'?pct(w.value):w.metric==='volume'?usd(w.value):usd(w.value);
+      const val=w.metric==='return'?pct(w.value):usd(w.value);
+      const prize='<b style="color:var(--gold)">'+usd(w.prize)+'</b>';
       const paid=w.paid?'<span class="tag ok">지급 완료</span>':'<button class="btn btn-g btn-sm" onclick="markPaid('+w.id+')">지급 완료 표시</button>';
       return '<tr><td style="color:var(--mut)">'+esc(w.season_id)+'</td><td>'+(w.board==='weekly'?'주간':'월간')+' '+(label[w.metric]||w.metric)+'</td>'+
-        '<td><b>'+w.rank+'등</b></td><td>'+esc(w.nickname)+'</td><td style="font-variant-numeric:tabular-nums">'+val+'</td><td>'+paid+'</td></tr>';
+        '<td><b>'+w.rank+'등</b></td><td>'+esc(w.nickname)+'</td><td style="font-variant-numeric:tabular-nums">'+val+'</td><td style="font-variant-numeric:tabular-nums">'+prize+'</td><td>'+paid+'</td></tr>';
     }).join('')+'</tbody>';
 }
 async function markPaid(id){ const r=await post('/admin/arena-winners',{markPaid:true,id}); if(r.ok)loadWinners(); }
