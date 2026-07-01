@@ -1327,13 +1327,15 @@ async function handleArenaJoin(request, env) {
 
   const joinIp = request.headers.get('CF-Connecting-IP') || 'unknown';
   const fp = String(body.fp || '').trim().slice(0, 64) || null;
+  // Store the equity we just read so it shows immediately, instead of $0 until
+  // the next cron tick.
   await env.BOT_DB.prepare(
-    `INSERT INTO arena_participants(email,nickname,country,okx_uid,api_key,api_secret,api_pass,demo,referral_verified,boards,joined_at,last_flow_ts,ip,fp)
-     VALUES(?,?,?,?,?,?,?,?,?,?,?,0,?,?)
+    `INSERT INTO arena_participants(email,nickname,country,okx_uid,api_key,api_secret,api_pass,demo,referral_verified,boards,joined_at,last_flow_ts,ip,fp,last_equity)
+     VALUES(?,?,?,?,?,?,?,?,?,?,?,0,?,?,?)
      ON CONFLICT(email) DO UPDATE SET nickname=excluded.nickname,country=excluded.country,okx_uid=excluded.okx_uid,
        api_key=excluded.api_key,api_secret=excluded.api_secret,api_pass=excluded.api_pass,demo=excluded.demo,
-       referral_verified=excluded.referral_verified,boards=excluded.boards,ip=excluded.ip,fp=excluded.fp`
-  ).bind(session.email, nickname, freshUser.country || '', String(uid), apiKey, apiSecret, apiPass, demo ? 1 : 0, refVerified, JSON.stringify(boards), Date.now(), joinIp, fp).run();
+       referral_verified=excluded.referral_verified,boards=excluded.boards,ip=excluded.ip,fp=excluded.fp,last_equity=excluded.last_equity`
+  ).bind(session.email, nickname, freshUser.country || '', String(uid), apiKey, apiSecret, apiPass, demo ? 1 : 0, refVerified, JSON.stringify(boards), Date.now(), joinIp, fp, eq).run();
 
   return json({ ok: true, uid: String(uid), equity: eq, referralVerified: refVerified === 1, boards, nickname });
 }
