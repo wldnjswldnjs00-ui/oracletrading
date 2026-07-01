@@ -1095,9 +1095,9 @@ async function arenaDeclareWinners(env, now) {
     : commissionPool * (parseFloat(csplit[board] || 0) / 100);
   const declared = (await env.USERS_KV.get('arena:declared', { type: 'json' })) || {};
   let parts = [];
-  try { parts = (await env.BOT_DB.prepare('SELECT email,nickname,boards,referral_verified FROM arena_participants').all()).results || []; } catch (_) {}
+  try { parts = (await env.BOT_DB.prepare('SELECT email,nickname,boards,referral_verified,demo FROM arena_participants').all()).results || []; } catch (_) {}
   const pmap = {};
-  for (const p of parts) { let b = []; try { b = JSON.parse(p.boards || '[]'); } catch (_) {} pmap[p.email] = { nickname: p.nickname, boards: b, ref: p.referral_verified === 1 }; }
+  for (const p of parts) { let b = []; try { b = JSON.parse(p.boards || '[]'); } catch (_) {} pmap[p.email] = { nickname: p.nickname, boards: b, ref: p.referral_verified === 1, demo: p.demo === 1 }; }
   let changed = false;
   for (const j of ARENA_WIN_JOBS) {
     const cur = j.board === 'monthly' ? curM : curW;
@@ -1113,7 +1113,7 @@ async function arenaDeclareWinners(env, now) {
       // Prize-eligible only: opted-in + AYILON-referred + started the season with ≥ min
       // balance + traded on at least the required number of distinct days (anti-hedge).
       const minDays = parseInt(cfg.minTradeDays || 0);
-      rows = rows.filter(r => pmap[r.email] && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0 && (r.start_equity || 0) >= minBal && (r.trade_days || 0) >= minDays);
+      rows = rows.filter(r => pmap[r.email] && !pmap[r.email].demo && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0 && (r.start_equity || 0) >= minBal && (r.trade_days || 0) >= minDays);
       rows.sort((a, b) => (b[j.sort] || 0) - (a[j.sort] || 0));
       const catPool = boardPoolOf(j.board) / ((cfg.boards[j.board] || ['return']).length || 1);
       const rankSplit = cfg.split[j.board] || [];
@@ -1302,7 +1302,7 @@ async function handleArenaJoin(request, env) {
   // Hard entry gate: must have at least the minimum balance to join the competition.
   const joinCfg = await getArenaConfig(env);
   const minBal = parseFloat(joinCfg.minBalance || 0);
-  if (minBal > 0 && eq < minBal) {
+  if (minBal > 0 && !demo && eq < minBal) {   // demo (test) accounts skip the balance gate
     return json({ ok: false, error: 'min_balance', minBalance: minBal, equity: +eq.toFixed(2), short: +(minBal - eq).toFixed(2) });
   }
 
@@ -1478,7 +1478,7 @@ async function handleArenaLeaderboard(request, env) {
       `SELECT s.email,s.return_pct,s.profit,s.volume,s.last_equity,s.start_equity,s.last_update,s.trade_days,
               p.nickname,p.country,p.referral_verified,p.boards,(p.avatar IS NOT NULL) AS has_avatar
        FROM arena_score s JOIN arena_participants p ON p.email=s.email
-       WHERE s.board=? AND s.season_id=?`
+       WHERE s.board=? AND s.season_id=? AND p.demo=0`
     ).bind(period, sid).all()).results || [];
   } catch (_) {}
   rows = rows.filter(r => { let b = []; try { b = JSON.parse(r.boards || '[]'); } catch (_) {} return b.includes(optCode); });

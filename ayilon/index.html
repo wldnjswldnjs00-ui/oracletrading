@@ -470,6 +470,7 @@
       <label class="chk"><input type="checkbox" id="bRet" data-boards="rw,rm" checked><span data-i18n="jm.b.return">수익률 (주간·월간)</span></label>
       <label class="chk"><input type="checkbox" id="bPro" data-boards="pw,pm" checked><span data-i18n="jm.b.profit">수익금 (주간·월간)</span></label>
       <label class="chk"><input type="checkbox" id="bVol" data-boards="vw,vm" checked><span data-i18n="jm.b.volume">거래량 (주간·월간)</span></label>
+      <label class="chk" style="margin-top:10px;opacity:.85"><input type="checkbox" id="jDemo"><span data-i18n="jm.demo">OKX 데모(모의)로 테스트 — 실제 리더보드·상금에서 제외</span></label>
     </div>
 
     <button class="btn btn-primary" id="jSubmit" style="width:100%" data-i18n="jm.submit">연결하고 참가</button>
@@ -500,7 +501,7 @@ const I18N = {
     'nav.board':'리더보드','nav.how':'참가방법','nav.hof':'명예의전당','nav.login':'로그인','nav.manage':'연결 관리','nav.logout':'로그아웃',
     'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다.','jm.nicksave':'저장','jm.avatar':'이미지 변경','jm.avatarrm':'제거','av.large':'이미지가 너무 큽니다.',
     'jm.s3':'참가할 부문 선택','jm.s3d':'원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.',
-    'jm.b.return':'수익률 (주간·월간)','jm.b.profit':'수익금 (주간·월간)','jm.b.volume':'거래량 (주간·월간)',
+    'jm.b.return':'수익률 (주간·월간)','jm.b.profit':'수익금 (주간·월간)','jm.b.volume':'거래량 (주간·월간)','jm.demo':'OKX 데모(모의)로 테스트 — 실제 리더보드·상금에서 제외',
     'hof.title':'명예의 전당','hof.sub':'시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.',
     'hof.rw':'수익률 · 주간','hof.rm':'수익률 · 월간','hof.pm':'수익금 · 월간','hof.vm':'거래량 · 월간','hof.empty':'아직 우승자가 없습니다. 첫 시즌이 진행 중입니다.','hof.titles':'회 우승','hof.card':'우승자 카드 만들기',
     'hero.kicker':'Global Trading League','hero.title':'실력을 <b>증명</b>하는<br>글로벌 트레이딩 리그',
@@ -542,7 +543,7 @@ const I18N = {
     'nav.board':'Leaderboard','nav.how':'How it works','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage','nav.logout':'Log out',
     'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame.','jm.nicksave':'Save','jm.avatar':'Change image','jm.avatarrm':'Remove','av.large':'Image too large.',
     'jm.s3':'Choose your competitions','jm.s3d':'Enter only the boards you want. You appear only on the boards you select.',
-    'jm.b.return':'Return (Weekly · Monthly)','jm.b.profit':'Profit (Weekly · Monthly)','jm.b.volume':'Volume (Weekly · Monthly)',
+    'jm.b.return':'Return (Weekly · Monthly)','jm.b.profit':'Profit (Weekly · Monthly)','jm.b.volume':'Volume (Weekly · Monthly)','jm.demo':'Test with an OKX demo (paper) account — excluded from the real board & prizes',
     'hof.title':'Hall of Fame','hof.sub':'Past champions, frozen automatically as each season ends.',
     'hof.rw':'Return · Weekly','hof.rm':'Return · Monthly','hof.pm':'Profit · Monthly','hof.vm':'Volume · Monthly','hof.empty':'No champions yet — the first season is underway.','hof.titles':'× champion','hof.card':'Make a winner card',
     'hero.kicker':'Global Trading League','hero.title':'Prove your edge in the<br><b>global</b> trading league',
@@ -584,7 +585,7 @@ const I18N = {
     'nav.board':'排行榜','nav.how':'参与方式','nav.hof':'名人堂','nav.login':'登录','nav.manage':'管理','nav.logout':'退出',
     'jm.nick':'昵称','jm.nickd':'显示在排行榜和名人堂上的名称。','jm.nicksave':'保存','jm.avatar':'更换头像','jm.avatarrm':'移除','av.large':'图片太大。',
     'jm.s3':'选择参赛项目','jm.s3d':'仅参加你选择的项目，只会出现在所选榜单中。',
-    'jm.b.return':'收益率（周赛·月赛）','jm.b.profit':'盈利额（周赛·月赛）','jm.b.volume':'交易量（周赛·月赛）',
+    'jm.b.return':'收益率（周赛·月赛）','jm.b.profit':'盈利额（周赛·月赛）','jm.b.volume':'交易量（周赛·月赛）','jm.demo':'用 OKX 模拟账户测试 —— 不计入真实榜单和奖金',
     'hof.title':'名人堂','hof.sub':'每个赛季结束时自动定格的历届冠军。',
     'hof.rw':'收益率 · 周赛','hof.rm':'收益率 · 月赛','hof.pm':'盈利额 · 月赛','hof.vm':'交易量 · 月赛','hof.empty':'暂无冠军——首个赛季正在进行中。','hof.titles':'次冠军','hof.card':'制作冠军卡',
     'hero.kicker':'Global Trading League','hero.title':'证明实力的<br><b>全球</b>交易联赛',
@@ -626,7 +627,7 @@ const I18N = {
     'nav.board':'Clasificación','nav.how':'Cómo funciona','nav.hof':'Salón de la Fama','nav.login':'Entrar','nav.manage':'Gestionar','nav.logout':'Salir',
     'jm.nick':'Apodo','jm.nickd':'El nombre que se muestra en la clasificación y el Salón de la Fama.','jm.nicksave':'Guardar','jm.avatar':'Cambiar imagen','jm.avatarrm':'Quitar','av.large':'Imagen demasiado grande.',
     'jm.s3':'Elige tus competiciones','jm.s3d':'Participa solo en las que elijas. Apareces solo en esos rankings.',
-    'jm.b.return':'Rentabilidad (Semanal · Mensual)','jm.b.profit':'Beneficio (Semanal · Mensual)','jm.b.volume':'Volumen (Semanal · Mensual)',
+    'jm.b.return':'Rentabilidad (Semanal · Mensual)','jm.b.profit':'Beneficio (Semanal · Mensual)','jm.b.volume':'Volumen (Semanal · Mensual)','jm.demo':'Prueba con una cuenta demo de OKX — excluida del ranking y premios reales',
     'hof.title':'Salón de la Fama','hof.sub':'Campeones pasados, fijados automáticamente al terminar cada temporada.',
     'hof.rw':'Rentabilidad · Semanal','hof.rm':'Rentabilidad · Mensual','hof.pm':'Beneficio · Mensual','hof.vm':'Volumen · Mensual','hof.empty':'Aún no hay campeones: la primera temporada está en curso.','hof.titles':'× campeón','hof.card':'Crear tarjeta de campeón',
     'hero.kicker':'Global Trading League','hero.title':'Demuestra tu nivel en la<br>liga <b>global</b> de trading',
@@ -668,7 +669,7 @@ const I18N = {
     'nav.board':'Bảng xếp hạng','nav.how':'Cách tham gia','nav.hof':'Đại sảnh Danh vọng','nav.login':'Đăng nhập','nav.manage':'Quản lý','nav.logout':'Đăng xuất',
     'jm.nick':'Biệt danh','jm.nickd':'Tên hiển thị trên bảng xếp hạng và Đại sảnh Danh vọng.','jm.nicksave':'Lưu','jm.avatar':'Đổi ảnh','jm.avatarrm':'Xóa','av.large':'Ảnh quá lớn.',
     'jm.s3':'Chọn hạng mục tham gia','jm.s3d':'Chỉ tham gia hạng mục bạn chọn. Bạn chỉ xuất hiện ở các bảng đã chọn.',
-    'jm.b.return':'Lợi nhuận (Tuần · Tháng)','jm.b.profit':'Tiền lãi (Tuần · Tháng)','jm.b.volume':'Khối lượng (Tuần · Tháng)',
+    'jm.b.return':'Lợi nhuận (Tuần · Tháng)','jm.b.profit':'Tiền lãi (Tuần · Tháng)','jm.b.volume':'Khối lượng (Tuần · Tháng)','jm.demo':'Thử bằng tài khoản demo OKX — không tính vào bảng và giải thật',
     'hof.title':'Đại sảnh Danh vọng','hof.sub':'Các nhà vô địch trước đây, được lưu tự động khi mỗi mùa giải kết thúc.',
     'hof.rw':'Lợi nhuận % · Tuần','hof.rm':'Lợi nhuận % · Tháng','hof.pm':'Tiền lãi · Tháng','hof.vm':'Khối lượng · Tháng','hof.empty':'Chưa có nhà vô địch — mùa giải đầu tiên đang diễn ra.','hof.titles':'× vô địch','hof.card':'Tạo thẻ nhà vô địch',
     'hero.kicker':'Global Trading League','hero.title':'Chứng minh đẳng cấp ở<br>giải đấu <b>toàn cầu</b>',
@@ -710,7 +711,7 @@ const I18N = {
     'nav.board':'Рейтинг','nav.how':'Как участвовать','nav.hof':'Зал славы','nav.login':'Войти','nav.manage':'Управление','nav.logout':'Выйти',
     'jm.nick':'Никнейм','jm.nickd':'Имя, отображаемое в рейтинге и Зале славы.','jm.nicksave':'Сохранить','jm.avatar':'Сменить фото','jm.avatarrm':'Удалить','av.large':'Изображение слишком большое.',
     'jm.s3':'Выберите номинации','jm.s3d':'Участвуете только в выбранных. Появляетесь только в выбранных таблицах.',
-    'jm.b.return':'Доходность (Неделя · Месяц)','jm.b.profit':'Прибыль (Неделя · Месяц)','jm.b.volume':'Объём (Неделя · Месяц)',
+    'jm.b.return':'Доходность (Неделя · Месяц)','jm.b.profit':'Прибыль (Неделя · Месяц)','jm.b.volume':'Объём (Неделя · Месяц)','jm.demo':'Тест на демо-счёте OKX — не учитывается в реальной таблице и призах',
     'hof.title':'Зал славы','hof.sub':'Прошлые чемпионы, фиксируются автоматически в конце каждого сезона.',
     'hof.rw':'Доходность · Неделя','hof.rm':'Доходность · Месяц','hof.pm':'Прибыль · Месяц','hof.vm':'Объём · Месяц','hof.empty':'Чемпионов пока нет — идёт первый сезон.','hof.titles':'× чемпион','hof.card':'Создать карточку чемпиона',
     'hero.kicker':'Global Trading League','hero.title':'Докажи мастерство в<br><b>глобальной</b> лиге трейдинга',
@@ -995,7 +996,8 @@ document.getElementById('jSubmit').onclick=async()=>{
   const btn=document.getElementById('jSubmit');btn.disabled=true;btn.textContent='…';
   try{
     const fp=await deviceFp();
-    const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({apiKey,apiSecret,apiPassphrase,demoMode:false,boards,fp})});
+    const demoMode=!!(document.getElementById('jDemo')&&document.getElementById('jDemo').checked);
+    const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({apiKey,apiSecret,apiPassphrase,demoMode,boards,fp})});
     const j=await r.json();
     if(j.ok){
       msg.className='msg ok';
