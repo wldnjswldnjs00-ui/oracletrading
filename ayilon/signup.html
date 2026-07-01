@@ -475,22 +475,15 @@
           btn.textContent = 'Create Account'; btn.disabled = false;
           return;
         }
-      } catch { /* KV not set up — allow signup */ }
-
-      // Auto-login to get session token — never store password client-side
-      try {
-        const loginRes  = await fetch(WORKER_URL + '/login', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const loginData = await loginRes.json();
-        if (loginData.ok && loginData.sessionToken) {
-          localStorage.setItem('ayilon_session_token', loginData.sessionToken);
-          localStorage.setItem('ayilon_email',    loginData.email    || email);
-          localStorage.setItem('ayilon_username', loginData.username || nickname);
-          localStorage.setItem('ayilon_name',     loginData.name     || name);
+        // Registration issues a session directly (email already verified above) —
+        // log in immediately, no redundant email-code step.
+        if (data.ok && data.sessionToken) {
+          localStorage.setItem('ayilon_session_token', data.sessionToken);
+          localStorage.setItem('ayilon_email',    data.email    || email);
+          localStorage.setItem('ayilon_username', data.username || nickname);
+          localStorage.setItem('ayilon_name',     data.name     || name);
         } else {
-          // KV not ready yet — store basic info, session will be issued on next login
+          // Fallback: session will be issued on next login
           localStorage.setItem('ayilon_email',    email);
           localStorage.setItem('ayilon_username', nickname);
           localStorage.setItem('ayilon_name',     name);

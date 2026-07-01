@@ -131,6 +131,11 @@ async function handleRegisterUser(request, env) {
       createdAt: Date.now()
     }));
     await env.USERS_KV.put(usernameKey, email.toLowerCase());
+    // Email ownership was just proven via the signup code → issue a session now so
+    // the user is logged in immediately (no redundant email re-verification at login).
+    const sessionToken = crypto.randomUUID();
+    await env.USERS_KV.put('session:' + sessionToken, JSON.stringify({ email: email.toLowerCase(), username, name: name || '' }), { expirationTtl: 604800 });
+    return json({ ok: true, success: true, sessionToken, email: email.toLowerCase(), username, name: name || '' });
   }
   return json({ ok: true, success: true });
 }
