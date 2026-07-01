@@ -252,12 +252,14 @@ function computePool(){
     monthly=parseFloat(document.getElementById('cfgMonthly').value)||0; total=weekly+monthly;
   }
   document.getElementById('poolBig').textContent=usd(total);
-  const cap={weekly:[1000,500,100],monthly:[1000,500,100,50,10]};
+  // Each period's pool is split across its 3 categories; prizes are a pure % share
+  // of the per-category pool (matches the public site — no caps, never over the %).
   const split={weekly:[50,30,20],monthly:[40,25,15,12,8]};
-  function br(pool,b){return split[b].map((s,i)=>{const raw=pool*s/100;const c=cap[b][i];const amt=c>0?Math.min(raw,c):raw;return (i+1)+'등 <b>'+usd(amt)+'</b>';});}
+  const NCAT=3;
+  function br(boardPool,b){const cat=boardPool/NCAT;return split[b].map((s,i)=>(i+1)+'등 <b>'+usd(cat*s/100)+'</b>');}
   document.getElementById('poolRows').innerHTML=
-    '<span class="pchip">주간 · '+br(weekly,'weekly').join(' / ')+'</span>'+
-    '<span class="pchip">월간 · '+br(monthly,'monthly').join(' / ')+'</span>';
+    '<span class="pchip">주간 부문별(×3) · '+br(weekly,'weekly').join(' / ')+'</span>'+
+    '<span class="pchip">월간 부문별(×3) · '+br(monthly,'monthly').join(' / ')+'</span>';
 }
 async function saveConfig(){
   const m=document.getElementById('cfgMsg');m.style.color='var(--mut)';m.textContent='저장 중…';
