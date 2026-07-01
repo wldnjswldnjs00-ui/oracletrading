@@ -1066,6 +1066,8 @@ async function genUniqueNickname(env) {
 // per-participant re-baseline, so arena_score still holds the final values.
 const ARENA_WIN_JOBS = [
   { key: 'return_weekly',  board: 'weekly',  metric: 'return', sort: 'return_pct', topN: 3, opt: 'rw' },
+  { key: 'profit_weekly',  board: 'weekly',  metric: 'profit', sort: 'profit',     topN: 3, opt: 'pw' },
+  { key: 'volume_weekly',  board: 'weekly',  metric: 'volume', sort: 'volume',     topN: 3, opt: 'vw' },
   { key: 'return_monthly', board: 'monthly', metric: 'return', sort: 'return_pct', topN: 5, opt: 'rm' },
   { key: 'profit_monthly', board: 'monthly', metric: 'profit', sort: 'profit',     topN: 5, opt: 'pm' },
   { key: 'volume_monthly', board: 'monthly', metric: 'volume', sort: 'volume',     topN: 5, opt: 'vm' }
@@ -1298,8 +1300,8 @@ async function handleArenaJoin(request, env) {
     await env.USERS_KV.put('user:' + session.email, JSON.stringify(freshUser));
     await env.USERS_KV.put('username:' + nickname.toLowerCase(), session.email.toLowerCase());
   }
-  // Opt-in boards: rw=return weekly, rm=return monthly, pm=profit monthly, vm=volume monthly.
-  const VALID_BOARDS = ['rw', 'rm', 'pm', 'vm'];
+  // Opt-in boards: {r,p,v} × {w,m} = return/profit/volume × weekly/monthly.
+  const VALID_BOARDS = ['rw', 'rm', 'pm', 'vm', 'pw', 'vw'];
   let boards = Array.isArray(body.boards) ? body.boards.filter(b => VALID_BOARDS.includes(b)) : null;
   if (!boards || boards.length === 0) boards = [...VALID_BOARDS];
 
@@ -1447,7 +1449,7 @@ async function handleArenaLeaderboard(request, env) {
   // Only show participants who opted into THIS board (period+metric).
   const optCode = period === 'monthly'
     ? (metric === 'volume' ? 'vm' : metric === 'profit' ? 'pm' : 'rm')
-    : 'rw';
+    : (metric === 'volume' ? 'vw' : metric === 'profit' ? 'pw' : 'rw');
   let rows = [];
   try {
     rows = (await env.BOT_DB.prepare(
@@ -1509,10 +1511,10 @@ const ARENA_DEFAULT_CONFIG = {
   commissionSplit: { weekly: 25, monthly: 75 }, // how the commission pool is allocated per period
   autoAffiliate: false,     // when true + affiliate creds → commissionTotal auto-computed
   manualPool: { weekly: 0, monthly: 0 },      // used only when poolMode==='manual'
-  cap:   { weekly: [1000, 500, 100], monthly: [1000, 500, 100, 50, 10] }, // max $ per rank
+  cap:   { weekly: [250, 125, 25], monthly: [1000, 500, 100, 50, 10] }, // max $ per rank (weekly ≈ 1/4 of monthly)
   split: { weekly: [50, 30, 20], monthly: [40, 25, 15, 12, 8] },        // % of pool per rank
-  // weekly runs the return board only; monthly runs all three.
-  boards: { weekly: ['return'], monthly: ['return', 'profit', 'volume'] },
+  // Both weekly and monthly run all three categories; weekly prizes are ~1/4 of monthly.
+  boards: { weekly: ['return', 'profit', 'volume'], monthly: ['return', 'profit', 'volume'] },
   minBalance: 100,          // $ floor to be prize-eligible
   minTrades: 3,
   minTradeDays: 0           // distinct active trading days required for prizes (0 = off)
@@ -1522,9 +1524,10 @@ async function getArenaConfig(env) {
     const c = await env.USERS_KV.get('arena:config', { type: 'json' });
     if (c) return { ...ARENA_DEFAULT_CONFIG, ...c,
       manualPool: { ...ARENA_DEFAULT_CONFIG.manualPool, ...(c.manualPool || {}) },
-      // Prize caps/splits are always code-controlled (ignore any stale saved values).
+      // Prize caps/splits/boards are always code-controlled (ignore any stale saved values).
       cap: ARENA_DEFAULT_CONFIG.cap,
-      split: ARENA_DEFAULT_CONFIG.split };
+      split: ARENA_DEFAULT_CONFIG.split,
+      boards: ARENA_DEFAULT_CONFIG.boards };
   } catch (_) {}
   return ARENA_DEFAULT_CONFIG;
 }
@@ -2056,7 +2059,7 @@ async function initDB(env) {
       api_key TEXT, api_secret TEXT, api_pass TEXT,
       demo INTEGER DEFAULT 0,
       referral_verified INTEGER DEFAULT 0,
-      boards TEXT DEFAULT '["rw","rm","pm","vm"]',
+      boards TEXT DEFAULT '["rw","rm","pm","vm","pw","vw"]',
       joined_at INTEGER DEFAULT 0,
       last_equity REAL DEFAULT 0,
       last_flow_ts INTEGER DEFAULT 0,
@@ -2064,7 +2067,7 @@ async function initDB(env) {
       last_update INTEGER DEFAULT 0,
       err TEXT DEFAULT NULL
     )`).run();
-    await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN boards TEXT DEFAULT '["rw","rm","pm","vm"]'`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN boards TEXT DEFAULT '["rw","rm","pm","vm","pw","vw"]'`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN avatar TEXT DEFAULT NULL`).run().catch(() => {});
     // Anti-collusion: last IP seen at join, used to flag multi-account / hedge rings.
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN ip TEXT DEFAULT NULL`).run().catch(() => {});

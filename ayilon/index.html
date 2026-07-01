@@ -465,10 +465,9 @@
     <div class="step">
       <div class="st"><span class="b">3</span><span data-i18n="jm.s3">참가할 부문 선택</span></div>
       <p class="sub" data-i18n="jm.s3d">원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.</p>
-      <label class="chk"><input type="checkbox" id="bRw" value="rw" checked><span data-i18n="jm.b.rw">수익률 · 주간</span></label>
-      <label class="chk"><input type="checkbox" id="bRm" value="rm" checked><span data-i18n="jm.b.rm">수익률 · 월간</span></label>
-      <label class="chk"><input type="checkbox" id="bPm" value="pm" checked><span data-i18n="jm.b.pm">수익금 · 월간</span></label>
-      <label class="chk"><input type="checkbox" id="bVm" value="vm" checked><span data-i18n="jm.b.vm">거래량 · 월간</span></label>
+      <label class="chk"><input type="checkbox" id="bRet" data-boards="rw,rm" checked><span data-i18n="jm.b.return">수익률 (주간·월간)</span></label>
+      <label class="chk"><input type="checkbox" id="bPro" data-boards="pw,pm" checked><span data-i18n="jm.b.profit">수익금 (주간·월간)</span></label>
+      <label class="chk"><input type="checkbox" id="bVol" data-boards="vw,vm" checked><span data-i18n="jm.b.volume">거래량 (주간·월간)</span></label>
     </div>
 
     <button class="btn btn-primary" id="jSubmit" style="width:100%" data-i18n="jm.submit">연결하고 참가</button>
@@ -499,7 +498,7 @@ const I18N = {
     'nav.board':'리더보드','nav.how':'참가방법','nav.hof':'명예의전당','nav.login':'로그인','nav.manage':'연결 관리','nav.logout':'로그아웃',
     'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다.','jm.nicksave':'저장','jm.avatar':'이미지 변경','jm.avatarrm':'제거','av.large':'이미지가 너무 큽니다.',
     'jm.s3':'참가할 부문 선택','jm.s3d':'원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.',
-    'jm.b.rw':'수익률 · 주간','jm.b.rm':'수익률 · 월간','jm.b.pm':'수익금 · 월간','jm.b.vm':'거래량 · 월간',
+    'jm.b.return':'수익률 (주간·월간)','jm.b.profit':'수익금 (주간·월간)','jm.b.volume':'거래량 (주간·월간)',
     'hof.title':'명예의 전당','hof.sub':'시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.',
     'hof.rw':'수익률 · 주간','hof.rm':'수익률 · 월간','hof.pm':'수익금 · 월간','hof.vm':'거래량 · 월간','hof.empty':'아직 우승자가 없습니다. 첫 시즌이 진행 중입니다.','hof.titles':'회 우승','hof.card':'우승자 카드 만들기',
     'hero.kicker':'Global Trading League','hero.title':'실력을 <b>증명</b>하는<br>글로벌 트레이딩 리그',
@@ -518,8 +517,8 @@ const I18N = {
     'how.3.t':'거래하고 순위에 오르기','how.3.d':'평소처럼 거래하면 매일 자동 집계되어 리더보드에 반영됩니다.',
     'cat.title':'부문','cat.sub':'수익률은 주간·월간, 수익금과 거래량은 월간으로 진행됩니다.',
     'cat.1.t':'수익률','cat.1.d':'기간 내 수익률. 주간과 월간 두 가지로 열립니다.',
-    'cat.2.t':'수익금','cat.2.d':'절대 수익 금액. 월간으로만 진행됩니다.',
-    'cat.3.t':'거래량','cat.3.d':'기간 내 누적 거래량. 월간으로만 진행됩니다.',
+    'cat.2.t':'수익금','cat.2.d':'절대 수익 금액. 주간·월간 모두 열립니다.',
+    'cat.3.t':'거래량','cat.3.d':'기간 내 누적 거래량. 주간·월간 모두 열립니다.',
     'cta.title':'이번 시즌, 당신의 이름을 올리세요','cta.sub':'매주 월요일 00:00 UTC에 새 시즌이 시작됩니다.','cta.btn':'대회 참가하기',
     'ft.about':'소개','ft.terms':'약관','ft.privacy':'개인정보',
     'ft.disc':'투자에는 원금 손실 위험이 따릅니다. AYILON 아레나는 트레이딩 대회 플랫폼이며 투자 자문이나 수익을 보장하지 않습니다. 모든 거래 결정과 결과는 전적으로 참가자 본인의 책임입니다. 리더보드는 참가자 본인의 실거래 성과이며 특정 매매 방식을 권유하지 않습니다.',
@@ -541,7 +540,7 @@ const I18N = {
     'nav.board':'Leaderboard','nav.how':'How it works','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage','nav.logout':'Log out',
     'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame.','jm.nicksave':'Save','jm.avatar':'Change image','jm.avatarrm':'Remove','av.large':'Image too large.',
     'jm.s3':'Choose your competitions','jm.s3d':'Enter only the boards you want. You appear only on the boards you select.',
-    'jm.b.rw':'Return · Weekly','jm.b.rm':'Return · Monthly','jm.b.pm':'Profit · Monthly','jm.b.vm':'Volume · Monthly',
+    'jm.b.return':'Return (Weekly · Monthly)','jm.b.profit':'Profit (Weekly · Monthly)','jm.b.volume':'Volume (Weekly · Monthly)',
     'hof.title':'Hall of Fame','hof.sub':'Past champions, frozen automatically as each season ends.',
     'hof.rw':'Return · Weekly','hof.rm':'Return · Monthly','hof.pm':'Profit · Monthly','hof.vm':'Volume · Monthly','hof.empty':'No champions yet — the first season is underway.','hof.titles':'× champion','hof.card':'Make a winner card',
     'hero.kicker':'Global Trading League','hero.title':'Prove your edge in the<br><b>global</b> trading league',
@@ -560,8 +559,8 @@ const I18N = {
     'how.3.t':'Trade and climb','how.3.d':'Trade as usual — your stats are auto-scored daily onto the board.',
     'cat.title':'Categories','cat.sub':'Return runs weekly and monthly; profit and volume run monthly.',
     'cat.1.t':'Return','cat.1.d':'Return over the period. Runs both weekly and monthly.',
-    'cat.2.t':'Profit','cat.2.d':'Absolute profit. Runs monthly only.',
-    'cat.3.t':'Volume','cat.3.d':'Cumulative volume over the period. Runs monthly only.',
+    'cat.2.t':'Profit','cat.2.d':'Absolute profit. Runs both weekly and monthly.',
+    'cat.3.t':'Volume','cat.3.d':'Cumulative volume over the period. Runs both weekly and monthly.',
     'cta.title':'Put your name on the board this season','cta.sub':'A new season starts every Monday at 00:00 UTC.','cta.btn':'Join the league',
     'ft.about':'About','ft.terms':'Terms','ft.privacy':'Privacy',
     'ft.disc':'Trading involves risk of loss of principal. AYILON Arena is a trading-competition platform and does not provide investment advice or guarantee profit. All trading decisions and outcomes are solely the participant\'s responsibility. Leaderboards reflect participants\' own real trading and do not endorse any strategy.',
@@ -583,7 +582,7 @@ const I18N = {
     'nav.board':'排行榜','nav.how':'参与方式','nav.hof':'名人堂','nav.login':'登录','nav.manage':'管理','nav.logout':'退出',
     'jm.nick':'昵称','jm.nickd':'显示在排行榜和名人堂上的名称。','jm.nicksave':'保存','jm.avatar':'更换头像','jm.avatarrm':'移除','av.large':'图片太大。',
     'jm.s3':'选择参赛项目','jm.s3d':'仅参加你选择的项目，只会出现在所选榜单中。',
-    'jm.b.rw':'收益率 · 周赛','jm.b.rm':'收益率 · 月赛','jm.b.pm':'盈利额 · 月赛','jm.b.vm':'交易量 · 月赛',
+    'jm.b.return':'收益率（周赛·月赛）','jm.b.profit':'盈利额（周赛·月赛）','jm.b.volume':'交易量（周赛·月赛）',
     'hof.title':'名人堂','hof.sub':'每个赛季结束时自动定格的历届冠军。',
     'hof.rw':'收益率 · 周赛','hof.rm':'收益率 · 月赛','hof.pm':'盈利额 · 月赛','hof.vm':'交易量 · 月赛','hof.empty':'暂无冠军——首个赛季正在进行中。','hof.titles':'次冠军','hof.card':'制作冠军卡',
     'hero.kicker':'Global Trading League','hero.title':'证明实力的<br><b>全球</b>交易联赛',
@@ -602,8 +601,8 @@ const I18N = {
     'how.3.t':'交易并冲榜','how.3.d':'像平常一样交易——你的数据每天自动统计上榜。',
     'cat.title':'比赛项目','cat.sub':'收益率有周赛和月赛；盈利额和交易量仅月赛。',
     'cat.1.t':'收益率','cat.1.d':'赛期内的收益率。周赛和月赛都有。',
-    'cat.2.t':'盈利额','cat.2.d':'绝对盈利金额。仅月赛。',
-    'cat.3.t':'交易量','cat.3.d':'赛期内累计交易量。仅月赛。',
+    'cat.2.t':'盈利额','cat.2.d':'绝对盈利金额。周赛和月赛都有。',
+    'cat.3.t':'交易量','cat.3.d':'赛期内累计交易量。周赛和月赛都有。',
     'cta.title':'本赛季，把你的名字留在榜上','cta.sub':'每周一 00:00 UTC 开启新赛季。','cta.btn':'参加联赛',
     'ft.about':'关于','ft.terms':'条款','ft.privacy':'隐私',
     'ft.disc':'交易存在本金损失风险。AYILON Arena 是交易竞赛平台，不提供投资建议，也不保证盈利。所有交易决策及结果完全由参赛者本人负责。排行榜反映参赛者自身的真实交易，不推荐任何交易策略。',
@@ -625,7 +624,7 @@ const I18N = {
     'nav.board':'Clasificación','nav.how':'Cómo funciona','nav.hof':'Salón de la Fama','nav.login':'Entrar','nav.manage':'Gestionar','nav.logout':'Salir',
     'jm.nick':'Apodo','jm.nickd':'El nombre que se muestra en la clasificación y el Salón de la Fama.','jm.nicksave':'Guardar','jm.avatar':'Cambiar imagen','jm.avatarrm':'Quitar','av.large':'Imagen demasiado grande.',
     'jm.s3':'Elige tus competiciones','jm.s3d':'Participa solo en las que elijas. Apareces solo en esos rankings.',
-    'jm.b.rw':'Rentabilidad · Semanal','jm.b.rm':'Rentabilidad · Mensual','jm.b.pm':'Beneficio · Mensual','jm.b.vm':'Volumen · Mensual',
+    'jm.b.return':'Rentabilidad (Semanal · Mensual)','jm.b.profit':'Beneficio (Semanal · Mensual)','jm.b.volume':'Volumen (Semanal · Mensual)',
     'hof.title':'Salón de la Fama','hof.sub':'Campeones pasados, fijados automáticamente al terminar cada temporada.',
     'hof.rw':'Rentabilidad · Semanal','hof.rm':'Rentabilidad · Mensual','hof.pm':'Beneficio · Mensual','hof.vm':'Volumen · Mensual','hof.empty':'Aún no hay campeones: la primera temporada está en curso.','hof.titles':'× campeón','hof.card':'Crear tarjeta de campeón',
     'hero.kicker':'Global Trading League','hero.title':'Demuestra tu nivel en la<br>liga <b>global</b> de trading',
@@ -644,8 +643,8 @@ const I18N = {
     'how.3.t':'Opera y sube','how.3.d':'Opera como siempre: tus datos se puntúan a diario en la tabla.',
     'cat.title':'Categorías','cat.sub':'Rentabilidad es semanal y mensual; beneficio y volumen son mensuales.',
     'cat.1.t':'Rentabilidad','cat.1.d':'Rentabilidad del periodo. Semanal y mensual.',
-    'cat.2.t':'Beneficio','cat.2.d':'Beneficio absoluto. Solo mensual.',
-    'cat.3.t':'Volumen','cat.3.d':'Volumen acumulado del periodo. Solo mensual.',
+    'cat.2.t':'Beneficio','cat.2.d':'Beneficio absoluto. Semanal y mensual.',
+    'cat.3.t':'Volumen','cat.3.d':'Volumen acumulado del periodo. Semanal y mensual.',
     'cta.title':'Esta temporada, pon tu nombre en la tabla','cta.sub':'Una nueva temporada empieza cada lunes a las 00:00 UTC.','cta.btn':'Unirse a la liga',
     'ft.about':'Acerca de','ft.terms':'Términos','ft.privacy':'Privacidad',
     'ft.disc':'Operar conlleva riesgo de pérdida del capital. AYILON Arena es una plataforma de competición de trading y no ofrece asesoramiento de inversión ni garantiza beneficios. Todas las decisiones y resultados son responsabilidad exclusiva del participante. La clasificación refleja el trading real de los participantes y no respalda ninguna estrategia.',
@@ -667,7 +666,7 @@ const I18N = {
     'nav.board':'Bảng xếp hạng','nav.how':'Cách tham gia','nav.hof':'Đại sảnh Danh vọng','nav.login':'Đăng nhập','nav.manage':'Quản lý','nav.logout':'Đăng xuất',
     'jm.nick':'Biệt danh','jm.nickd':'Tên hiển thị trên bảng xếp hạng và Đại sảnh Danh vọng.','jm.nicksave':'Lưu','jm.avatar':'Đổi ảnh','jm.avatarrm':'Xóa','av.large':'Ảnh quá lớn.',
     'jm.s3':'Chọn hạng mục tham gia','jm.s3d':'Chỉ tham gia hạng mục bạn chọn. Bạn chỉ xuất hiện ở các bảng đã chọn.',
-    'jm.b.rw':'Lợi nhuận % · Tuần','jm.b.rm':'Lợi nhuận % · Tháng','jm.b.pm':'Tiền lãi · Tháng','jm.b.vm':'Khối lượng · Tháng',
+    'jm.b.return':'Lợi nhuận (Tuần · Tháng)','jm.b.profit':'Tiền lãi (Tuần · Tháng)','jm.b.volume':'Khối lượng (Tuần · Tháng)',
     'hof.title':'Đại sảnh Danh vọng','hof.sub':'Các nhà vô địch trước đây, được lưu tự động khi mỗi mùa giải kết thúc.',
     'hof.rw':'Lợi nhuận % · Tuần','hof.rm':'Lợi nhuận % · Tháng','hof.pm':'Tiền lãi · Tháng','hof.vm':'Khối lượng · Tháng','hof.empty':'Chưa có nhà vô địch — mùa giải đầu tiên đang diễn ra.','hof.titles':'× vô địch','hof.card':'Tạo thẻ nhà vô địch',
     'hero.kicker':'Global Trading League','hero.title':'Chứng minh đẳng cấp ở<br>giải đấu <b>toàn cầu</b>',
@@ -686,8 +685,8 @@ const I18N = {
     'how.3.t':'Giao dịch và leo hạng','how.3.d':'Giao dịch như bình thường — số liệu tự động lên bảng mỗi ngày.',
     'cat.title':'Hạng mục','cat.sub':'Lợi nhuận có tuần và tháng; tiền lãi và khối lượng chỉ theo tháng.',
     'cat.1.t':'Lợi nhuận %','cat.1.d':'Lợi nhuận trong kỳ. Có cả tuần và tháng.',
-    'cat.2.t':'Tiền lãi','cat.2.d':'Lợi nhuận tuyệt đối. Chỉ theo tháng.',
-    'cat.3.t':'Khối lượng','cat.3.d':'Khối lượng tích lũy trong kỳ. Chỉ theo tháng.',
+    'cat.2.t':'Tiền lãi','cat.2.d':'Lợi nhuận tuyệt đối. Có cả tuần và tháng.',
+    'cat.3.t':'Khối lượng','cat.3.d':'Khối lượng tích lũy trong kỳ. Có cả tuần và tháng.',
     'cta.title':'Mùa này, ghi tên bạn lên bảng','cta.sub':'Mùa giải mới bắt đầu mỗi thứ Hai lúc 00:00 UTC.','cta.btn':'Tham gia giải',
     'ft.about':'Giới thiệu','ft.terms':'Điều khoản','ft.privacy':'Bảo mật',
     'ft.disc':'Giao dịch có rủi ro mất vốn. AYILON Arena là nền tảng thi đấu giao dịch, không tư vấn đầu tư và không bảo đảm lợi nhuận. Mọi quyết định và kết quả hoàn toàn do người tham gia chịu trách nhiệm. Bảng xếp hạng phản ánh giao dịch thật của người chơi và không khuyến nghị bất kỳ chiến lược nào.',
@@ -709,7 +708,7 @@ const I18N = {
     'nav.board':'Рейтинг','nav.how':'Как участвовать','nav.hof':'Зал славы','nav.login':'Войти','nav.manage':'Управление','nav.logout':'Выйти',
     'jm.nick':'Никнейм','jm.nickd':'Имя, отображаемое в рейтинге и Зале славы.','jm.nicksave':'Сохранить','jm.avatar':'Сменить фото','jm.avatarrm':'Удалить','av.large':'Изображение слишком большое.',
     'jm.s3':'Выберите номинации','jm.s3d':'Участвуете только в выбранных. Появляетесь только в выбранных таблицах.',
-    'jm.b.rw':'Доходность · Неделя','jm.b.rm':'Доходность · Месяц','jm.b.pm':'Прибыль · Месяц','jm.b.vm':'Объём · Месяц',
+    'jm.b.return':'Доходность (Неделя · Месяц)','jm.b.profit':'Прибыль (Неделя · Месяц)','jm.b.volume':'Объём (Неделя · Месяц)',
     'hof.title':'Зал славы','hof.sub':'Прошлые чемпионы, фиксируются автоматически в конце каждого сезона.',
     'hof.rw':'Доходность · Неделя','hof.rm':'Доходность · Месяц','hof.pm':'Прибыль · Месяц','hof.vm':'Объём · Месяц','hof.empty':'Чемпионов пока нет — идёт первый сезон.','hof.titles':'× чемпион','hof.card':'Создать карточку чемпиона',
     'hero.kicker':'Global Trading League','hero.title':'Докажи мастерство в<br><b>глобальной</b> лиге трейдинга',
@@ -728,8 +727,8 @@ const I18N = {
     'how.3.t':'Торгуйте и поднимайтесь','how.3.d':'Торгуйте как обычно — данные автоматически попадают в таблицу каждый день.',
     'cat.title':'Номинации','cat.sub':'Доходность — неделя и месяц; прибыль и объём — только месяц.',
     'cat.1.t':'Доходность','cat.1.d':'Доходность за период. И неделя, и месяц.',
-    'cat.2.t':'Прибыль','cat.2.d':'Абсолютная прибыль. Только месяц.',
-    'cat.3.t':'Объём','cat.3.d':'Накопленный объём за период. Только месяц.',
+    'cat.2.t':'Прибыль','cat.2.d':'Абсолютная прибыль. И неделя, и месяц.',
+    'cat.3.t':'Объём','cat.3.d':'Накопленный объём за период. И неделя, и месяц.',
     'cta.title':'В этом сезоне впишите своё имя в таблицу','cta.sub':'Новый сезон стартует каждый понедельник в 00:00 UTC.','cta.btn':'Вступить в лигу',
     'ft.about':'О нас','ft.terms':'Условия','ft.privacy':'Конфиденциальность',
     'ft.disc':'Торговля сопряжена с риском потери капитала. AYILON Arena — платформа торговых соревнований, не предоставляет инвестиционных советов и не гарантирует прибыль. Все решения и результаты — исключительно ответственность участника. Рейтинг отражает реальную торговлю участников и не рекомендует никакую стратегию.',
@@ -781,13 +780,8 @@ function renderCatHero(){
 }
 // Weekly = return only; monthly = all three.
 function updateMetricTabs(){
-  const monthly=state.period==='monthly';
-  document.querySelectorAll('#metricSeg .m-only').forEach(b=>b.style.display=monthly?'':'none');
-  if(!monthly && state.metric!=='return'){
-    state.metric='return';
-    document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x.dataset.metric==='return'));
-    syncMetricHeader();
-  }
+  // Both weekly and monthly now run all three categories — always show every tab.
+  document.querySelectorAll('#metricSeg .m-only').forEach(b=>b.style.display='');
 }
 async function fetchLB(){
   try{
@@ -982,7 +976,7 @@ document.getElementById('jSubmit').onclick=async()=>{
   const msg=document.getElementById('jmMsg');msg.className='msg';msg.textContent='';
   const apiKey=document.getElementById('jKey').value.trim(),apiSecret=document.getElementById('jSecret').value.trim(),apiPassphrase=document.getElementById('jPass').value.trim();
   if(!apiKey||!apiSecret||!apiPassphrase){msg.className='msg err';msg.textContent=t('jm.allfields');return;}
-  const boards=['bRw','bRm','bPm','bVm'].filter(id=>document.getElementById(id).checked).map(id=>document.getElementById(id).value);
+  let boards=[]; ['bRet','bPro','bVol'].forEach(id=>{const el=document.getElementById(id);if(el&&el.checked)boards.push(...el.dataset.boards.split(','));});
   if(!boards.length){msg.className='msg err';msg.textContent=t('jm.pickone');return;}
   const btn=document.getElementById('jSubmit');btn.disabled=true;btn.textContent='…';
   try{
@@ -1056,7 +1050,7 @@ async function loadMine(){
     if(!j.ok||!j.joined){bar.classList.remove('show');return;}
     bar.classList.add('show');
     // Reflect saved selections so re-opening shows what you actually chose.
-    if(Array.isArray(j.boards)&&j.boards.length){const idmap={rw:'bRw',rm:'bRm',pm:'bPm',vm:'bVm'};Object.entries(idmap).forEach(([v,id])=>{const el=document.getElementById(id);if(el)el.checked=j.boards.includes(v);});}
+    if(Array.isArray(j.boards)&&j.boards.length){const catmap={bRet:['rw','rm'],bPro:['pw','pm'],bVol:['vw','vm']};Object.entries(catmap).forEach(([id,codes])=>{const el=document.getElementById(id);if(el)el.checked=codes.some(c=>j.boards.includes(c));});}
     if(j.nickname)document.getElementById('jNick').value=j.nickname;
     const sh=document.getElementById('mineShare');sh.href='/card.html?type=rank&period=weekly&nick='+encodeURIComponent(j.nickname||localStorage.getItem('ayilon_username')||'');sh.target='_blank';
     setAvatarPreview(j.hasAvatar,j.nickname);
