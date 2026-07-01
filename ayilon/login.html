@@ -123,16 +123,6 @@
             </div>
             <div class="forgot"><a href="#" onclick="startForgot(); return false;" data-i18n="login.forgot">Forgot your password?</a></div>
           </div>
-          <div class="cap" id="cap">
-            <div class="cap-stage">
-              <div class="cap-slot" id="capSlot"></div>
-              <div class="cap-piece" id="capPiece"></div>
-            </div>
-            <div class="cap-track" id="capTrack">
-              <span class="cap-label" id="capLabel">Slide to complete the puzzle</span>
-              <div class="cap-handle" id="capHandle">›</div>
-            </div>
-          </div>
           <button type="submit" class="btn-submit" data-i18n="login.submit">Log In</button>
         </form>
         <div id="googleWrap" style="display:none;margin-top:20px">
@@ -169,6 +159,24 @@
         <p style="text-align:center; margin-top:16px; font-size:13px; color:var(--gray-600)">
           <span data-i18n="login.otp.resend">Didn't receive a code?</span> <a href="#" style="color:var(--white)" onclick="resendCode()" data-i18n="login.otp.resendlink">Resend</a>
         </p>
+      </div>
+
+      <!-- Step 7 - Slide puzzle (shown AFTER email verification) -->
+      <div class="step" id="step7">
+        <div class="login-header">
+          <h1 data-i18n="login.cap.title">One last step</h1>
+          <p data-i18n="login.cap.sub">Slide the piece to confirm you're human.</p>
+        </div>
+        <div class="cap" id="cap">
+          <div class="cap-stage">
+            <div class="cap-slot" id="capSlot"></div>
+            <div class="cap-piece" id="capPiece"></div>
+          </div>
+          <div class="cap-track" id="capTrack">
+            <span class="cap-label" id="capLabel">Slide to complete the puzzle</span>
+            <div class="cap-handle" id="capHandle">›</div>
+          </div>
+        </div>
       </div>
 
       <!-- FORGOT: Step 4 - Enter email -->
@@ -298,11 +306,6 @@
       var errEl = document.getElementById('errorMsg');
       errEl.classList.remove('show');
 
-      if (!window.__capSolved) {
-        errEl.textContent = capText('fail'); errEl.classList.add('show');
-        return;
-      }
-
       var btn = document.getElementById('loginBtn');
       if (btn) { btn.textContent = 'Signing in...'; btn.disabled = true; }
 
@@ -354,7 +357,7 @@
         localStorage.setItem('ayilon_name',     data.name     || '');
         localStorage.removeItem('ayilon_password'); // remove any old plaintext password
         if (btn) { btn.textContent = _t('login.submit'); btn.disabled = false; }
-        finishLogin();
+        showCaptchaGate();
       } catch(e) {
         errEl.textContent = 'Login failed. Please check your connection.';
         errEl.classList.add('show');
@@ -434,10 +437,16 @@
         localStorage.setItem('ayilon_username', data.username || '');
         localStorage.setItem('ayilon_name',     data.name     || '');
         localStorage.removeItem('ayilon_password');
-        finishLogin();
+        showCaptchaGate();
       } catch(e) {
         if (btn) { btn.textContent = _t('login.otp.verify') || 'Verify & Sign In'; btn.disabled = false; }
       }
+    }
+
+    // After email verification passes, present the slide puzzle as the final gate.
+    function showCaptchaGate() {
+      showStep(7);
+      initCaptchaGate();
     }
 
     function finishLogin() {
@@ -594,38 +603,44 @@
     };
     function capLang(){ var l=(localStorage.getItem('ayilon_lang')||'en'); return CAP_T.label[l]?l:'en'; }
     function capText(k){ return CAP_T[k][capLang()]; }
-    (function initCaptcha(){
-      var cap=document.getElementById('cap'), stage=document.querySelector('.cap-stage'),
-          slot=document.getElementById('capSlot'), piece=document.getElementById('capPiece'),
-          handle=document.getElementById('capHandle'), track=document.getElementById('capTrack'),
-          label=document.getElementById('capLabel');
+    var __capBound=false, _cTargetX=0, _cMaxX=0, _cDragging=false, _cStartX=0, _cCurX=0, _cEls=null;
+    function _capLayout(){
+      var e=_cEls; var sw=e.stage.clientWidth, tw=e.track.clientWidth, hw=e.handle.offsetWidth, pw=e.piece.offsetWidth;
+      _cMaxX=tw-hw;
+      _cTargetX=Math.round((0.45+Math.random()*0.42)*(sw-pw));   // random slot position
+      e.slot.style.left=_cTargetX+'px';
+      e.label.textContent=capText('label');
+    }
+    function _capSetX(x){ var e=_cEls; x=Math.max(0,Math.min(_cMaxX,x)); _cCurX=x; e.handle.style.left=x+'px';
+      var sw=e.stage.clientWidth, pw=e.piece.offsetWidth; e.piece.style.left=Math.round(x/_cMaxX*(sw-pw))+'px'; }
+    function _capDown(ev){ if(window.__capSolved||!_cEls) return; _cDragging=true; _cEls.handle.style.cursor='grabbing';
+      _cStartX=(ev.touches?ev.touches[0].clientX:ev.clientX)-_cCurX; ev.preventDefault(); }
+    function _capMove(ev){ if(!_cDragging) return; var cx=(ev.touches?ev.touches[0].clientX:ev.clientX); _capSetX(cx-_cStartX); }
+    function _capUp(){ if(!_cDragging||!_cEls) return; _cDragging=false; var e=_cEls; e.handle.style.cursor='grab';
+      var sw=e.stage.clientWidth, pw=e.piece.offsetWidth, px=_cCurX/_cMaxX*(sw-pw);
+      if(Math.abs(px-_cTargetX)<10){ window.__capSolved=true; e.cap.classList.add('ok'); e.label.textContent=capText('ok'); e.handle.textContent='✓';
+        setTimeout(finishLogin, 480); }   // puzzle solved → complete sign-in
+      else { _capSetX(0); e.label.textContent=capText('label'); }
+    }
+    function initCaptchaGate(){
+      var cap=document.getElementById('cap');
       if(!cap) return;
-      window.__capSolved=false;
-      var targetX=0, maxX=0, dragging=false, startX=0, curX=0;
-      function layout(){
-        var sw=stage.clientWidth, tw=track.clientWidth, hw=handle.offsetWidth, pw=piece.offsetWidth;
-        maxX=tw-hw;
-        targetX=Math.round((0.45+Math.random()*0.42)*(sw-pw));   // random slot position
-        slot.style.left=targetX+'px';
-        label.textContent=capText('label');
+      _cEls={ cap:cap, stage:document.querySelector('.cap-stage'), slot:document.getElementById('capSlot'),
+        piece:document.getElementById('capPiece'), handle:document.getElementById('capHandle'),
+        track:document.getElementById('capTrack'), label:document.getElementById('capLabel') };
+      window.__capSolved=false; _cDragging=false;
+      cap.classList.remove('ok'); _cEls.handle.textContent='›';
+      // Bind drag listeners once; layout re-runs each time the gate is shown.
+      if(!__capBound){
+        _cEls.handle.addEventListener('mousedown',_capDown); document.addEventListener('mousemove',_capMove); document.addEventListener('mouseup',_capUp);
+        _cEls.handle.addEventListener('touchstart',_capDown,{passive:false}); document.addEventListener('touchmove',_capMove,{passive:false}); document.addEventListener('touchend',_capUp);
+        window.addEventListener('resize',function(){ if(!window.__capSolved&&_cEls){ _capLayout(); _capSetX(0); } });
+        var prevOLC=window.__onLangChange;
+        window.__onLangChange=function(l){ if(typeof prevOLC==='function') prevOLC(l); if(_cEls){ _cEls.label.textContent=window.__capSolved?capText('ok'):capText('label'); } };
+        __capBound=true;
       }
-      function setX(x){ x=Math.max(0,Math.min(maxX,x)); curX=x; handle.style.left=x+'px';
-        var sw=stage.clientWidth, pw=piece.offsetWidth; piece.style.left=Math.round(x/maxX*(sw-pw))+'px'; }
-      function down(e){ if(window.__capSolved) return; dragging=true; handle.style.cursor='grabbing';
-        startX=(e.touches?e.touches[0].clientX:e.clientX)-curX; e.preventDefault(); }
-      function move(e){ if(!dragging) return; var cx=(e.touches?e.touches[0].clientX:e.clientX); setX(cx-startX); }
-      function up(){ if(!dragging) return; dragging=false; handle.style.cursor='grab';
-        var sw=stage.clientWidth, pw=piece.offsetWidth, px=curX/maxX*(sw-pw);
-        if(Math.abs(px-targetX)<10){ window.__capSolved=true; cap.classList.add('ok'); label.textContent=capText('ok'); handle.textContent='✓'; }
-        else { setX(0); label.textContent=capText('label'); }
-      }
-      handle.addEventListener('mousedown',down); document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
-      handle.addEventListener('touchstart',down,{passive:false}); document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('touchend',up);
-      window.addEventListener('resize',function(){ if(!window.__capSolved){ layout(); setX(0); } });
-      var prevOLC=window.__onLangChange;
-      window.__onLangChange=function(l){ if(typeof prevOLC==='function') prevOLC(l); if(!window.__capSolved) label.textContent=capText('label'); else label.textContent=capText('ok'); };
-      setTimeout(function(){ layout(); setX(0); }, 60);
-    })();
+      setTimeout(function(){ _capLayout(); _capSetX(0); }, 60);
+    }
   </script>
 </body>
 </html>

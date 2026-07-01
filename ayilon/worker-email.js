@@ -1281,13 +1281,14 @@ async function handleArenaJoin(request, env) {
   let boards = Array.isArray(body.boards) ? body.boards.filter(b => VALID_BOARDS.includes(b)) : null;
   if (!boards || boards.length === 0) boards = [...VALID_BOARDS];
 
+  const joinIp = request.headers.get('CF-Connecting-IP') || 'unknown';
   await env.BOT_DB.prepare(
-    `INSERT INTO arena_participants(email,nickname,country,okx_uid,api_key,api_secret,api_pass,demo,referral_verified,boards,joined_at,last_flow_ts)
-     VALUES(?,?,?,?,?,?,?,?,?,?,?,0)
+    `INSERT INTO arena_participants(email,nickname,country,okx_uid,api_key,api_secret,api_pass,demo,referral_verified,boards,joined_at,last_flow_ts,ip)
+     VALUES(?,?,?,?,?,?,?,?,?,?,?,0,?)
      ON CONFLICT(email) DO UPDATE SET nickname=excluded.nickname,country=excluded.country,okx_uid=excluded.okx_uid,
        api_key=excluded.api_key,api_secret=excluded.api_secret,api_pass=excluded.api_pass,demo=excluded.demo,
-       referral_verified=excluded.referral_verified,boards=excluded.boards`
-  ).bind(session.email, nickname, freshUser.country || '', String(uid), apiKey, apiSecret, apiPass, demo ? 1 : 0, refVerified, JSON.stringify(boards), Date.now()).run();
+       referral_verified=excluded.referral_verified,boards=excluded.boards,ip=excluded.ip`
+  ).bind(session.email, nickname, freshUser.country || '', String(uid), apiKey, apiSecret, apiPass, demo ? 1 : 0, refVerified, JSON.stringify(boards), Date.now(), joinIp).run();
 
   return json({ ok: true, uid: String(uid), equity: eq, referralVerified: refVerified === 1, boards, nickname });
 }
@@ -1585,23 +1586,46 @@ async function handleAdminArenaList(request, env) {
   try { rows = (await env.BOT_DB.prepare('SELECT * FROM arena_participants ORDER BY joined_at DESC').all()).results || []; } catch (_) {}
   const now = new Date();
   const wId = arenaWeekId(now), mId = arenaMonthId(now);
+
+  // Pull this-season returns for EVERY participant (not just the filtered ones) so
+  // collusion flags stay accurate even while searching, then cluster by IP.
+  const info = {}; const ipGroups = {};
+  for (const p of rows) {
+    let wk = null, mo = null;
+    try { wk = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'weekly', wId).first(); } catch (_) {}
+    try { mo = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'monthly', mId).first(); } catch (_) {}
+    info[p.email] = { row: p, wk, mo };
+    const ip = String(p.ip || '').trim();
+    if (ip && ip !== 'unknown') (ipGroups[ip] = ipGroups[ip] || []).push(p.email);
+  }
+  // Two accounts on the same IP running opposite-sign returns is the classic
+  // long/short hedge ring — flag it (magnitude ≥ 5% each side to avoid noise).
+  const HEDGE_MIN = 0.05;
+  const isHedge = (a, b) => {
+    const pairs = [[a.wk ? a.wk.return_pct : 0, b.wk ? b.wk.return_pct : 0], [a.mo ? a.mo.return_pct : 0, b.mo ? b.mo.return_pct : 0]];
+    return pairs.some(([x, y]) => x !== 0 && y !== 0 && Math.sign(x) !== Math.sign(y) && Math.abs(x) >= HEDGE_MIN && Math.abs(y) >= HEDGE_MIN);
+  };
+
   const out = [];
   for (const p of rows) {
     if (q && !(String(p.okx_uid || '').includes(q) || String(p.nickname || '').toLowerCase().includes(q) || String(p.email || '').toLowerCase().includes(q))) continue;
     let boards = []; try { boards = JSON.parse(p.boards || '[]'); } catch (_) {}
-    let wk = null, mo = null;
-    try { wk = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'weekly', wId).first(); } catch (_) {}
-    try { mo = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'monthly', mId).first(); } catch (_) {}
+    const me = info[p.email], wk = me.wk, mo = me.mo;
+    const ip = String(p.ip || '').trim();
+    const peers = (ip && ip !== 'unknown' ? ipGroups[ip] || [] : []).filter(e => e !== p.email);
+    const suspHedge = peers.some(e => isHedge(me, info[e]));
     out.push({
       email: p.email, nickname: p.nickname, country: p.country || '', uid: p.okx_uid || '',
       referralVerified: p.referral_verified === 1, equity: p.last_equity || 0, demo: p.demo === 1,
       eligible: p.referral_verified === 1 && (p.last_equity || 0) >= minBal, boards,
       joinedAt: p.joined_at || 0, err: p.err || null,
       weeklyReturn: wk ? wk.return_pct : null, monthlyReturn: mo ? mo.return_pct : null,
-      monthlyProfit: mo ? mo.profit : null, monthlyVolume: mo ? mo.volume : null
+      monthlyProfit: mo ? mo.profit : null, monthlyVolume: mo ? mo.volume : null,
+      ip: ip || null, ipShared: peers.length, ipPeers: peers.map(e => info[e].row.nickname || e), suspHedge
     });
   }
-  return json({ ok: true, total: out.length, participants: out });
+  const flagged = out.filter(p => p.ipShared > 0 || p.suspHedge).length;
+  return json({ ok: true, total: out.length, flagged, participants: out });
 }
 
 // Admin: permanently ban / unban an account. Banning removes it from the arena
@@ -2002,6 +2026,8 @@ async function initDB(env) {
     )`).run();
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN boards TEXT DEFAULT '["rw","rm","pm","vm"]'`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN avatar TEXT DEFAULT NULL`).run().catch(() => {});
+    // Anti-collusion: last IP seen at join, used to flag multi-account / hedge rings.
+    await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN ip TEXT DEFAULT NULL`).run().catch(() => {});
     // Hall of Fame — winners frozen at each season's end.
     await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_winners (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

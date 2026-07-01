@@ -289,6 +289,8 @@
       'login.otp.verify':      'Verify & Sign In',
       'login.otp.resend':      "Didn't receive a code?",
       'login.otp.resendlink':  'Resend',
+      'login.cap.title':       'One last step',
+      'login.cap.sub':         "Slide the piece to confirm you're human.",
       'login.forgot.title':    'Reset Password',
       'login.forgot.sub':      'Enter your registered email address.',
       'login.forgot.send':     'Send Verification →',
@@ -932,6 +934,8 @@
       'login.otp.verify':      '확인 및 로그인',
       'login.otp.resend':      '코드를 받지 못하셨나요?',
       'login.otp.resendlink':  '재전송',
+      'login.cap.title':       '마지막 단계',
+      'login.cap.sub':         '조각을 밀어 사람인지 확인해주세요.',
       'login.forgot.title':    '비밀번호 재설정',
       'login.forgot.sub':      '등록된 이메일 주소를 입력하세요.',
       'login.forgot.send':     '인증 코드 전송 →',
@@ -1324,7 +1328,7 @@
     zh: {
       'login.title':'登录','login.noaccount':'还没有账户？','login.signup':'注册','login.error':'邮箱或密码错误。',
       'login.email':'邮箱','login.password':'密码','login.password.ph':'输入密码','login.show':'显示','login.submit':'登录','login.forgot':'忘记密码？',
-      'login.2fa.title':'两步验证','login.2fa.sub':'选择你的验证方式。','login.otp.title':'输入验证码','login.otp.verify':'验证并登录','login.otp.resend':'没收到验证码？','login.otp.resendlink':'重新发送',
+      'login.2fa.title':'两步验证','login.2fa.sub':'选择你的验证方式。','login.otp.title':'输入验证码','login.otp.verify':'验证并登录','login.otp.resend':'没收到验证码？','login.otp.resendlink':'重新发送','login.cap.title':'最后一步','login.cap.sub':'滑动拼块以确认你是真人。',
       'login.forgot.title':'重置密码','login.forgot.sub':'输入你注册时使用的邮箱。','login.forgot.send':'发送验证码 →','login.forgot.notfound':'未找到该邮箱。',
       'login.newpw.title':'新密码','login.newpw.sub':'在下方输入新密码。','login.newpw.new':'新密码','login.newpw.new.ph':'至少 8 位','login.newpw.confirm':'确认密码','login.newpw.confirm.ph':'再次输入新密码','login.newpw.submit':'重置密码',
       'nav.nosignup':'还没有账户？注册 →','nav.haveaccount':'已有账户？登录 →',
@@ -1335,7 +1339,7 @@
     es: {
       'login.title':'Iniciar sesión','login.noaccount':'¿No tienes cuenta?','login.signup':'Regístrate','login.error':'Correo o contraseña incorrectos.',
       'login.email':'Correo','login.password':'Contraseña','login.password.ph':'Introduce tu contraseña','login.show':'Mostrar','login.submit':'Iniciar sesión','login.forgot':'¿Olvidaste tu contraseña?',
-      'login.2fa.title':'Verificación en dos pasos','login.2fa.sub':'Elige tu método de verificación.','login.otp.title':'Introduce el código','login.otp.verify':'Verificar e iniciar sesión','login.otp.resend':'¿No recibiste el código?','login.otp.resendlink':'Reenviar',
+      'login.2fa.title':'Verificación en dos pasos','login.2fa.sub':'Elige tu método de verificación.','login.otp.title':'Introduce el código','login.otp.verify':'Verificar e iniciar sesión','login.otp.resend':'¿No recibiste el código?','login.otp.resendlink':'Reenviar','login.cap.title':'Último paso','login.cap.sub':'Desliza la pieza para confirmar que eres humano.',
       'login.forgot.title':'Restablecer contraseña','login.forgot.sub':'Introduce tu correo registrado.','login.forgot.send':'Enviar verificación →','login.forgot.notfound':'Correo no encontrado.',
       'login.newpw.title':'Nueva contraseña','login.newpw.sub':'Introduce tu nueva contraseña.','login.newpw.new':'Nueva contraseña','login.newpw.new.ph':'8+ caracteres','login.newpw.confirm':'Confirmar contraseña','login.newpw.confirm.ph':'Vuelve a introducir la contraseña','login.newpw.submit':'Restablecer contraseña',
       'nav.nosignup':'¿No tienes cuenta? Regístrate →','nav.haveaccount':'¿Ya tienes cuenta? Inicia sesión →',
@@ -1346,7 +1350,7 @@
     vi: {
       'login.title':'Đăng nhập','login.noaccount':'Chưa có tài khoản?','login.signup':'Đăng ký','login.error':'Email hoặc mật khẩu không đúng.',
       'login.email':'Email','login.password':'Mật khẩu','login.password.ph':'Nhập mật khẩu','login.show':'Hiện','login.submit':'Đăng nhập','login.forgot':'Quên mật khẩu?',
-      'login.2fa.title':'Xác thực 2 bước','login.2fa.sub':'Chọn phương thức xác minh.','login.otp.title':'Nhập mã','login.otp.verify':'Xác minh & đăng nhập','login.otp.resend':'Chưa nhận được mã?','login.otp.resendlink':'Gửi lại',
+      'login.2fa.title':'Xác thực 2 bước','login.2fa.sub':'Chọn phương thức xác minh.','login.otp.title':'Nhập mã','login.otp.verify':'Xác minh & đăng nhập','login.otp.resend':'Chưa nhận được mã?','login.otp.resendlink':'Gửi lại','login.cap.title':'Bước cuối cùng','login.cap.sub':'Trượt mảnh ghép để xác nhận bạn là người thật.',
       'login.forgot.title':'Đặt lại mật khẩu','login.forgot.sub':'Nhập email đã đăng ký của bạn.','login.forgot.send':'Gửi mã xác minh →','login.forgot.notfound':'Không tìm thấy email.',
       'login.newpw.title':'Mật khẩu mới','login.newpw.sub':'Nhập mật khẩu mới bên dưới.','login.newpw.new':'Mật khẩu mới','login.newpw.new.ph':'Từ 8 ký tự','login.newpw.confirm':'Xác nhận mật khẩu','login.newpw.confirm.ph':'Nhập lại mật khẩu mới','login.newpw.submit':'Đặt lại mật khẩu',
       'nav.nosignup':'Chưa có tài khoản? Đăng ký →','nav.haveaccount':'Đã có tài khoản? Đăng nhập →',
@@ -1357,7 +1361,7 @@
     ru: {
       'login.title':'Вход','login.noaccount':'Нет аккаунта?','login.signup':'Зарегистрироваться','login.error':'Неверная почта или пароль.',
       'login.email':'Почта','login.password':'Пароль','login.password.ph':'Введите пароль','login.show':'Показать','login.submit':'Войти','login.forgot':'Забыли пароль?',
-      'login.2fa.title':'Двухфакторная аутентификация','login.2fa.sub':'Выберите способ подтверждения.','login.otp.title':'Введите код','login.otp.verify':'Подтвердить и войти','login.otp.resend':'Не получили код?','login.otp.resendlink':'Отправить снова',
+      'login.2fa.title':'Двухфакторная аутентификация','login.2fa.sub':'Выберите способ подтверждения.','login.otp.title':'Введите код','login.otp.verify':'Подтвердить и войти','login.otp.resend':'Не получили код?','login.otp.resendlink':'Отправить снова','login.cap.title':'Последний шаг','login.cap.sub':'Сдвиньте фрагмент, чтобы подтвердить, что вы человек.',
       'login.forgot.title':'Сброс пароля','login.forgot.sub':'Введите вашу зарегистрированную почту.','login.forgot.send':'Отправить код →','login.forgot.notfound':'Почта не найдена.',
       'login.newpw.title':'Новый пароль','login.newpw.sub':'Введите новый пароль ниже.','login.newpw.new':'Новый пароль','login.newpw.new.ph':'От 8 символов','login.newpw.confirm':'Подтвердите пароль','login.newpw.confirm.ph':'Повторите новый пароль','login.newpw.submit':'Сбросить пароль',
       'nav.nosignup':'Нет аккаунта? Зарегистрироваться →','nav.haveaccount':'Уже есть аккаунт? Войти →',

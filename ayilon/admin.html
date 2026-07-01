@@ -44,6 +44,9 @@
   .tag{font-size:11px;border-radius:6px;padding:2px 7px;white-space:nowrap}
   .tag.ok{color:var(--accent);border:1px solid rgba(52,211,154,.4)}
   .tag.no{color:var(--dim);border:1px solid var(--line2)}
+  .tag.warn{color:var(--gold);border:1px solid rgba(216,180,106,.45);cursor:help}
+  .tag.bad{color:var(--red);border:1px solid rgba(236,106,114,.5)}
+  tr.susp td{background:rgba(236,106,114,.05)}
   .msg{font-size:12.5px;margin-top:10px;min-height:16px}
   .search-in{position:relative;margin-bottom:14px}
   .search-in input{padding-left:36px}
@@ -137,6 +140,7 @@
   <div class="card">
     <h2>참가자 · 연결 관리</h2>
     <div class="sub">OKX UID / 닉네임 / 이메일로 검색. 부정행위자는 영구 정지할 수 있습니다.</div>
+    <div id="flagWarn" style="display:none;background:rgba(236,106,114,.1);border:1px solid rgba(236,106,114,.4);color:var(--red);border-radius:10px;padding:10px 14px;font-size:12.5px;margin-bottom:12px"></div>
     <div class="search-in">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       <input id="pSearch" placeholder="OKX UID / 닉네임 / 이메일 검색" oninput="debouncedList()">
@@ -273,13 +277,18 @@ async function loadList(){
   const parts=r.participants||[];
   const tb=document.querySelector('#pTable tbody');
   document.getElementById('stParts').textContent=r.total!=null?r.total:parts.length;
+  const fw=document.getElementById('flagWarn');
+  if(fw) fw.style.display=(r.flagged>0)?'block':'none', fw.textContent='⚠ 부정행위 의심 '+r.flagged+'건 — 같은 IP 다중 계정 또는 롱/숏 반대 헤지 패턴. 확인 후 정지하세요.';
   if(!parts.length){ tb.innerHTML='<tr><td class="empty">참가자 없음</td></tr>'; return; }
   tb.parentElement.innerHTML='<thead><tr><th>닉네임</th><th>OKX UID</th><th class="hide-m">이메일</th><th>추천</th><th>평가금</th><th class="hide-m">주간 수익률</th><th>관리</th></tr></thead><tbody>'+
     parts.map(p=>{
       const ref=p.referralVerified?'<span class="tag ok">인증</span>':'<span class="tag no">미인증</span>';
       const uid=p.uid?('<span class="uid">'+esc(p.uid)+'</span>'):'<span style="color:var(--dim)">—</span>';
       const e=esc(p.email).replace(/'/g,"\\'");
-      return '<tr><td><b>'+esc(p.nickname)+'</b>'+(p.demo?' <span class="tag no">데모</span>':'')+'</td>'+
+      let flags='';
+      if(p.ipShared>0) flags+=' <span class="tag warn" title="공유 IP: '+esc((p.ipPeers||[]).join(', '))+'">⚠ 공유IP '+p.ipShared+'</span>';
+      if(p.suspHedge) flags+=' <span class="tag bad">헤지 의심</span>';
+      return '<tr'+((p.ipShared>0||p.suspHedge)?' class="susp"':'')+'><td><b>'+esc(p.nickname)+'</b>'+(p.demo?' <span class="tag no">데모</span>':'')+flags+'</td>'+
         '<td>'+uid+'</td><td class="hide-m" style="color:var(--mut)">'+esc(p.email)+'</td>'+
         '<td>'+ref+'</td><td style="font-variant-numeric:tabular-nums">'+usd(p.equity)+'</td>'+
         '<td class="hide-m" style="font-variant-numeric:tabular-nums;color:'+((p.weeklyReturn||0)>=0?'var(--accent)':'var(--red)')+'">'+pct(p.weeklyReturn)+'</td>'+
