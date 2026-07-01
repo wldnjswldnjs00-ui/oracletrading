@@ -1,351 +1,274 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin — AYILON</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #0a0a0a;
-      --surface: #111111;
-      --surface2: #1a1a1a;
-      --border: rgba(255,255,255,0.06);
-      --text: #f0f0f0;
-      --gray-400: #9ca3af;
-      --gray-600: #4b5563;
-      --green: #22c55e;
-      --red: #ef4444;
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AYILON Arena — Admin</title>
+<style>
+  :root{--bg:#0a0a0c;--panel:#121216;--panel2:#0e0e12;--line:#22232b;--line2:#2c2d37;--txt:#f1f2f4;--mut:#8a8b95;--dim:#5d5e69;--accent:#34d39a;--gold:#d8b46a;--red:#ec6a72;--blue:#37b6ff}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+  a{color:inherit;text-decoration:none}
+  nav{border-bottom:1px solid var(--line);background:rgba(10,10,12,.8);backdrop-filter:blur(14px);position:sticky;top:0;z-index:20}
+  nav .w{max-width:1120px;margin:0 auto;padding:15px 24px;display:flex;justify-content:space-between;align-items:center}
+  .logo{font-weight:700;letter-spacing:.15em;font-size:16px}.logo i{font-style:normal;color:var(--accent)}
+  .adm{font-size:12px;color:var(--gold);border:1px solid rgba(216,180,106,.35);border-radius:20px;padding:3px 10px;margin-left:10px}
+  .w{max-width:1120px;margin:0 auto;padding:0 24px}
+  main{padding:26px 0 80px}
+  .btn{border:none;cursor:pointer;font-family:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;transition:.15s}
+  .btn-p{background:var(--accent);color:#06140e}.btn-p:hover{filter:brightness(1.07)}
+  .btn-g{background:transparent;color:var(--txt);border:1px solid var(--line2)}.btn-g:hover{border-color:var(--mut)}
+  .btn-r{background:transparent;color:var(--red);border:1px solid rgba(236,106,114,.4)}.btn-r:hover{background:rgba(236,106,114,.1)}
+  .btn-sm{padding:5px 11px;font-size:12px;border-radius:7px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px}
+  .card h2{font-size:16px;font-weight:700;margin-bottom:4px}
+  .card .sub{font-size:12.5px;color:var(--mut);margin-bottom:18px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .stat .l{font-size:12px;color:var(--mut);margin-bottom:8px}
+  .stat .v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  label{display:block;font-size:12px;color:var(--mut);margin-bottom:6px}
+  input,select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none}
+  input:focus,select:focus{border-color:var(--line2)}
+  .poolview{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px}
+  .poolview .big{font-size:26px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+  .poolrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .pchip{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px}
+  .pchip b{color:var(--gold)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;color:var(--dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:10px 10px;border-bottom:1px solid var(--line)}
+  td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  .uid{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--blue)}
+  .tag{font-size:11px;border-radius:6px;padding:2px 7px;white-space:nowrap}
+  .tag.ok{color:var(--accent);border:1px solid rgba(52,211,154,.4)}
+  .tag.no{color:var(--dim);border:1px solid var(--line2)}
+  .msg{font-size:12.5px;margin-top:10px;min-height:16px}
+  .search-in{position:relative;margin-bottom:14px}
+  .search-in input{padding-left:36px}
+  .search-in svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.5}
+  .toggle{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px}
+  .toggle button{background:transparent;border:none;color:var(--mut);font-weight:600;font-size:13px;padding:8px 15px;border-radius:7px;cursor:pointer;font-family:inherit}
+  .toggle button.on{background:var(--accent);color:#06140e}
+  .empty{text-align:center;color:var(--mut);padding:26px}
+  @media(max-width:820px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.hide-m{display:none}}
+</style>
 </head>
 <body>
+<nav><div class="w">
+  <div><span class="logo">AY<i>I</i>LON</span><span class="adm">ADMIN</span></div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <a href="/" style="color:var(--mut);font-size:13px">← Arena</a>
+    <span id="admEmail" style="font-size:12px;color:var(--dim)"></span>
+    <button class="btn btn-g btn-sm" onclick="doLogout()">로그아웃</button>
+  </div>
+</div></nav>
 
-<!-- HEADER -->
-<div style="background:var(--surface);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;justify-content:space-between;align-items:center;">
-  <div style="display:flex;align-items:center;gap:16px;">
-    <a href="/" style="color:var(--gray-400);font-size:13px;text-decoration:none;">&#8592; 아레나</a>
-    <span style="color:var(--border);">|</span>
-    <span style="font-size:16px;font-weight:700;">AYILON 관리자</span>
+<main><div class="w" id="app" style="display:none">
+
+  <div class="stats">
+    <div class="stat"><div class="l">참가자</div><div class="v" id="stParts">—</div></div>
+    <div class="stat"><div class="l">추천 인증 (상금대상)</div><div class="v" style="color:var(--accent)" id="stElig">—</div></div>
+    <div class="stat"><div class="l">이번 주 상금 풀</div><div class="v" style="color:var(--gold)" id="stWeekly">—</div></div>
+    <div class="stat"><div class="l">이번 달 상금 풀</div><div class="v" style="color:var(--gold)" id="stMonthly">—</div></div>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span id="adminEmailDisplay" style="font-size:12px;color:var(--gray-400);"></span>
-    <button onclick="doLogout()" style="padding:6px 14px;background:none;border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#ef4444;font-size:12px;cursor:pointer;">로그아웃</button>
+
+  <!-- PRIZE / COMMISSION -->
+  <div class="card">
+    <h2>상금 풀 (내 커미션 연동)</h2>
+    <div class="sub">내 OKX 커미션의 일정 %가 상금으로 쌓입니다. 여기 값이 홈 화면에 실시간으로 올라갑니다.</div>
+    <div class="toggle" id="modeToggle" style="margin-bottom:16px">
+      <button data-mode="commission" class="on">커미션 % 자동</button>
+      <button data-mode="manual">고정 금액</button>
+    </div>
+    <div id="commissionFields">
+      <div class="grid2">
+        <div><label>누적 커미션 ($) — 어필리에이트 대시보드 수치</label><input id="cfgCommTotal" type="number" min="0" step="0.01" placeholder="0"></div>
+        <div><label>상금 비율 (%) — 커미션 중 상금에 쓸 비율</label><input id="cfgCommPct" type="number" min="0" max="100" placeholder="10"></div>
+      </div>
+    </div>
+    <div id="manualFields" style="display:none">
+      <div class="grid2">
+        <div><label>주간 상금 풀 ($)</label><input id="cfgWeekly" type="number" min="0" placeholder="0"></div>
+        <div><label>월간 상금 풀 ($)</label><input id="cfgMonthly" type="number" min="0" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div><label>상금 자격 최소 잔고 ($)</label><input id="cfgMinBal" type="number" min="0" placeholder="100"></div>
+      <div></div>
+    </div>
+    <div class="poolview">
+      <div style="font-size:12px;color:var(--mut);margin-bottom:4px">현재 상금 풀 (실시간 계산)</div>
+      <div class="big" id="poolBig">$0</div>
+      <div class="poolrow" id="poolRows"></div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
+      <button class="btn btn-p" onclick="saveConfig()">저장</button>
+      <span class="msg" id="cfgMsg"></span>
+    </div>
   </div>
+
+  <!-- PARTICIPANTS -->
+  <div class="card">
+    <h2>참가자 · 연결 관리</h2>
+    <div class="sub">OKX UID / 닉네임 / 이메일로 검색. 부정행위자는 영구 정지할 수 있습니다.</div>
+    <div class="search-in">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="pSearch" placeholder="OKX UID / 닉네임 / 이메일 검색" oninput="debouncedList()">
+    </div>
+    <div style="overflow-x:auto"><table id="pTable"><tbody><tr><td class="empty">로딩 중…</td></tr></tbody></table></div>
+  </div>
+
+  <!-- WINNERS / PAYOUTS -->
+  <div class="card">
+    <h2>우승자 · 상금 지급</h2>
+    <div class="sub">시즌 종료 시 자동 확정됩니다. 지급 완료하면 "지급 완료"를 눌러 표시하세요.</div>
+    <div style="overflow-x:auto"><table id="wTable"><tbody><tr><td class="empty">로딩 중…</td></tr></tbody></table></div>
+  </div>
+
 </div>
 
-<!-- MAIN CONTENT -->
-<div style="padding:32px;">
-
-  <!-- Stats Row -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 24px;">
-      <div style="font-size:12px;color:var(--gray-400);font-weight:500;margin-bottom:10px;">총 회원</div>
-      <div id="adminTotalUsers" style="font-size:24px;font-weight:700;">—</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 24px;">
-      <div style="font-size:12px;color:var(--gray-400);font-weight:500;margin-bottom:10px;">유료 구독</div>
-      <div id="adminPaidUsers" style="font-size:24px;font-weight:700;color:var(--green);">—</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 24px;">
-      <div style="font-size:12px;color:var(--gray-400);font-weight:500;margin-bottom:10px;">봇 실행 중</div>
-      <div id="adminActiveBots" style="font-size:24px;font-weight:700;color:#3b82f6;">—</div>
-    </div>
-  </div>
-
-  <!-- User Table Card -->
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-      <div style="font-size:16px;font-weight:600;">회원 목록</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <input id="searchInput" type="text" placeholder="이메일 검색..."
-          style="padding:8px 12px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:13px;width:220px;outline:none;font-family:'Inter',sans-serif;"
-          oninput="filterUsers()" />
-        <button onclick="loadUsers()"
-          style="padding:6px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text);font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
-          &#8635; 새로고침
-        </button>
-      </div>
-    </div>
-    <div id="adminUserTable" style="overflow-x:auto;">
-      <div style="padding:32px;text-align:center;color:var(--gray-400);">로딩 중...</div>
-    </div>
-  </div>
-
-  <!-- Set Plan Panel -->
-  <div id="setPlanPanel" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;">
-    <div style="font-size:15px;font-weight:600;margin-bottom:16px;">플랜 설정</div>
-    <div id="setPlanTarget" style="font-size:13px;color:var(--gray-400);margin-bottom:16px;"></div>
-    <div style="font-size:11px;color:var(--gray-400);margin-bottom:8px;">구독 플랜 (30일)</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-      <button onclick="doSetPlan('starter')"
-        style="padding:8px 18px;background:none;border:1px solid rgba(34,197,94,0.3);border-radius:6px;color:#22c55e;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
-        Starter $39 (30일)
-      </button>
-      <button onclick="doSetPlan('elite')"
-        style="padding:8px 18px;background:none;border:1px solid rgba(168,85,247,0.3);border-radius:6px;color:#a855f7;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
-        Elite $99 (30일)
-      </button>
-      <button onclick="doSetPlan('free')"
-        style="padding:8px 18px;background:none;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--gray-400);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
-        Free (구독 해제)
-      </button>
-    </div>
-    <div style="font-size:11px;color:var(--gray-400);margin-bottom:8px;">리퍼럴 인증 — 인증 시 Elite(전 종목) 영구 무료</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button onclick="doSetReferral(true)"
-        style="padding:8px 18px;background:none;border:1px solid rgba(245,158,11,0.4);border-radius:6px;color:#fbbf24;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">
-        ★ 리퍼럴 인증 (무료 Elite)
-      </button>
-      <button onclick="doSetReferral(false)"
-        style="padding:8px 18px;background:none;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--gray-400);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
-        리퍼럴 해제
-      </button>
-      <button onclick="document.getElementById('setPlanPanel').style.display='none'; _planTarget=null;"
-        style="padding:8px 18px;background:none;border:1px solid rgba(239,68,68,0.2);border-radius:6px;color:var(--red);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;">
-        닫기
-      </button>
-    </div>
-  </div>
-
-  <!-- Arena Prize Pool Panel -->
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-top:20px;">
-    <div style="font-size:16px;font-weight:600;margin-bottom:4px;">아레나 상금 풀</div>
-    <div style="font-size:12px;color:var(--gray-400);margin-bottom:18px;">홈페이지에 실시간으로 표시되는 상금 금액입니다. 여기에 입력한 값이 즉시 반영됩니다. (어필리에이트 API 연동 전까지 수동 입력)</div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:520px;margin-bottom:14px;">
-      <div>
-        <div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">주간 상금 풀 ($) — 수익률 부문 Top3</div>
-        <input id="poolWeekly" type="number" min="0" placeholder="0"
-          style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:14px;outline:none;font-family:'Inter',sans-serif;" />
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">월간 상금 풀 ($) — 각 부문 Top5</div>
-        <input id="poolMonthly" type="number" min="0" placeholder="0"
-          style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:14px;outline:none;font-family:'Inter',sans-serif;" />
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:520px;margin-bottom:16px;">
-      <div>
-        <div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">상금 자격 최소 잔고 ($)</div>
-        <input id="poolMinBal" type="number" min="0" placeholder="100"
-          style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:14px;outline:none;font-family:'Inter',sans-serif;" />
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">풀 비율 (수수료의 %) — 참고용</div>
-        <input id="poolPct" type="number" min="0" max="100" placeholder="40"
-          style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:14px;outline:none;font-family:'Inter',sans-serif;" />
-      </div>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;">
-      <button onclick="saveArenaConfig()"
-        style="padding:9px 20px;background:#22c55e;border:none;border-radius:7px;color:#04140e;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">저장</button>
-      <span id="arenaSaveMsg" style="font-size:12px;color:var(--gray-400);"></span>
-    </div>
-  </div>
-
-</div><!-- end main content -->
+<div class="w" id="denied" style="display:none;padding:60px 24px;text-align:center">
+  <div style="font-size:18px;font-weight:700;margin-bottom:8px">관리자 전용 페이지</div>
+  <div style="color:var(--mut);font-size:13px;margin-bottom:16px">관리자 계정으로 로그인해야 합니다.</div>
+  <a href="/login.html" style="color:var(--accent);font-size:13px">다른 계정으로 로그인 →</a>
+</div>
+</main>
 
 <script>
-  var WORKER_URL = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
-  var ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
+const API='https://ayilon-email.wldnjswldnjs00.workers.dev';
+const ADMIN='wldnjswldnjs00@gmail.com';
+const token=()=>localStorage.getItem('ayilon_session_token')||'';
+const email=()=>localStorage.getItem('ayilon_email')||'';
+const usd=v=>'$'+Number(v||0).toLocaleString(undefined,{maximumFractionDigits:2});
+const pct=v=>v==null?'—':((v>=0?'+':'')+(v*100).toFixed(1)+'%');
+function post(path,body){return fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token(),...body})}).then(r=>r.json());}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-  function getToken() { return localStorage.getItem('ayilon_session_token') || ''; }
-  function getEmail() {
-    // login stores email under 'ayilon_email'; 'ayilon_user' may not exist on a fresh domain
-    try { var u = JSON.parse(localStorage.getItem('ayilon_user') || '{}'); if (u && u.email) return u.email; } catch(e) {}
-    return localStorage.getItem('ayilon_email') || '';
+(async function init(){
+  if(!token()){ location.href='/login.html'; return; }
+  if(email().toLowerCase()!==ADMIN){ document.getElementById('denied').style.display='block'; return; }
+  document.getElementById('app').style.display='block';
+  document.getElementById('admEmail').textContent=email();
+  await loadConfig(); await loadList(); await loadWinners();
+})();
+
+function doLogout(){
+  try{ post('/logout',{}); }catch(e){}
+  ['ayilon_session_token','ayilon_email','ayilon_username','ayilon_name','ayilon_logged_in'].forEach(k=>localStorage.removeItem(k));
+  location.href='/';
+}
+
+/* ---- prize config ---- */
+let cfg={};
+document.getElementById('modeToggle').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;setMode(b.dataset.mode);computePool();});
+function setMode(m){
+  document.querySelectorAll('#modeToggle button').forEach(x=>x.classList.toggle('on',x.dataset.mode===m));
+  document.getElementById('commissionFields').style.display=m==='commission'?'':'none';
+  document.getElementById('manualFields').style.display=m==='manual'?'':'none';
+  cfg.poolMode=m;
+}
+['cfgCommTotal','cfgCommPct','cfgWeekly','cfgMonthly'].forEach(id=>document.getElementById(id).addEventListener('input',computePool));
+async function loadConfig(){
+  const r=await post('/admin/arena-config',{read:true}); cfg=r.config||{};
+  setMode(cfg.poolMode||'commission');
+  document.getElementById('cfgCommTotal').value=cfg.commissionTotal||0;
+  document.getElementById('cfgCommPct').value=cfg.commissionPct!=null?cfg.commissionPct:10;
+  document.getElementById('cfgWeekly').value=(cfg.manualPool&&cfg.manualPool.weekly)||0;
+  document.getElementById('cfgMonthly').value=(cfg.manualPool&&cfg.manualPool.monthly)||0;
+  document.getElementById('cfgMinBal').value=cfg.minBalance!=null?cfg.minBalance:100;
+  computePool();
+}
+function computePool(){
+  const mode=cfg.poolMode||'commission';
+  let weekly,monthly,total;
+  if(mode==='commission'){
+    const ct=parseFloat(document.getElementById('cfgCommTotal').value)||0;
+    const cp=parseFloat(document.getElementById('cfgCommPct').value)||0;
+    const pool=ct*cp/100; const sp=cfg.commissionSplit||{weekly:25,monthly:75};
+    weekly=pool*(sp.weekly||25)/100; monthly=pool*(sp.monthly||75)/100; total=pool;
+  }else{
+    weekly=parseFloat(document.getElementById('cfgWeekly').value)||0;
+    monthly=parseFloat(document.getElementById('cfgMonthly').value)||0; total=weekly+monthly;
   }
+  document.getElementById('poolBig').textContent=usd(total);
+  const cap={weekly:[1000,500,100],monthly:[1000,500,100,50,10]};
+  const split={weekly:[50,30,20],monthly:[40,25,15,12,8]};
+  function br(pool,b){return split[b].map((s,i)=>{const raw=pool*s/100;const c=cap[b][i];const amt=c>0?Math.min(raw,c):raw;return (i+1)+'등 <b>'+usd(amt)+'</b>';});}
+  document.getElementById('poolRows').innerHTML=
+    '<span class="pchip">주간 · '+br(weekly,'weekly').join(' / ')+'</span>'+
+    '<span class="pchip">월간 · '+br(monthly,'monthly').join(' / ')+'</span>';
+}
+async function saveConfig(){
+  const m=document.getElementById('cfgMsg');m.style.color='var(--mut)';m.textContent='저장 중…';
+  const body={poolMode:cfg.poolMode||'commission',minBalance:parseFloat(document.getElementById('cfgMinBal').value)||0};
+  if(body.poolMode==='commission'){ body.commissionTotal=parseFloat(document.getElementById('cfgCommTotal').value)||0; body.commissionPct=parseFloat(document.getElementById('cfgCommPct').value)||0; }
+  else { body.manualPool={weekly:parseFloat(document.getElementById('cfgWeekly').value)||0,monthly:parseFloat(document.getElementById('cfgMonthly').value)||0}; }
+  const r=await post('/admin/arena-config',body);
+  if(r.ok){m.style.color='var(--accent)';m.textContent='저장 완료 — 홈에 반영됩니다.'; refreshStats();}
+  else{m.style.color='var(--red)';m.textContent='실패: '+(r.error||'');}
+}
 
-  // Auth check on load — no redirect loops: no session → login; logged-in non-admin → message
-  (async function init() {
-    var token = getToken();
-    var email = getEmail();
-    if (!token) { window.location.href = 'login.html'; return; }
-    if (String(email).toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-      document.body.innerHTML = '<div style="padding:48px 24px;text-align:center;color:#fff;font-family:Inter,sans-serif;">'
-        + '<div style="font-size:18px;font-weight:700;margin-bottom:10px;">관리자 전용 페이지</div>'
-        + '<div style="color:#9ca3af;font-size:13px;margin-bottom:18px;">관리자 계정으로 로그인해야 합니다.</div>'
-        + '<a href="login.html" style="color:#60a5fa;text-decoration:underline;font-size:13px;">다른 계정으로 로그인 →</a></div>';
-      return;
-    }
-    document.getElementById('adminEmailDisplay').textContent = email;
-    await loadUsers();
-    await loadArenaConfig();
-  })();
+/* ---- participants ---- */
+let _t;
+function debouncedList(){clearTimeout(_t);_t=setTimeout(loadList,250);}
+async function loadList(){
+  const q=document.getElementById('pSearch').value.trim();
+  const r=await post('/admin/arena-list',{q});
+  const parts=r.participants||[];
+  const tb=document.querySelector('#pTable tbody');
+  document.getElementById('stParts').textContent=r.total!=null?r.total:parts.length;
+  if(!parts.length){ tb.innerHTML='<tr><td class="empty">참가자 없음</td></tr>'; return; }
+  tb.parentElement.innerHTML='<thead><tr><th>닉네임</th><th>OKX UID</th><th class="hide-m">이메일</th><th>추천</th><th>평가금</th><th class="hide-m">주간 수익률</th><th>관리</th></tr></thead><tbody>'+
+    parts.map(p=>{
+      const ref=p.referralVerified?'<span class="tag ok">인증</span>':'<span class="tag no">미인증</span>';
+      const uid=p.uid?('<span class="uid">'+esc(p.uid)+'</span>'):'<span style="color:var(--dim)">—</span>';
+      const e=esc(p.email).replace(/'/g,"\\'");
+      return '<tr><td><b>'+esc(p.nickname)+'</b>'+(p.demo?' <span class="tag no">데모</span>':'')+'</td>'+
+        '<td>'+uid+'</td><td class="hide-m" style="color:var(--mut)">'+esc(p.email)+'</td>'+
+        '<td>'+ref+'</td><td style="font-variant-numeric:tabular-nums">'+usd(p.equity)+'</td>'+
+        '<td class="hide-m" style="font-variant-numeric:tabular-nums;color:'+((p.weeklyReturn||0)>=0?'var(--accent)':'var(--red)')+'">'+pct(p.weeklyReturn)+'</td>'+
+        '<td style="white-space:nowrap">'+
+          '<button class="btn btn-g btn-sm" onclick="verify(\''+e+'\','+(!p.referralVerified)+')">'+(p.referralVerified?'인증해제':'추천인증')+'</button> '+
+          '<button class="btn btn-r btn-sm" onclick="ban(\''+e+'\')">정지</button>'+
+        '</td></tr>';
+    }).join('')+'</tbody>';
+}
+async function verify(email,v){ const r=await post('/admin/set-referral',{email,verified:v}); if(r.ok){loadList();refreshStats();} else alert('실패: '+(r.error||'')); }
+async function ban(email){
+  if(!confirm(email+' 계정을 영구 정지할까요?\\n로그인·참가·리더보드에서 즉시 제거됩니다.'))return;
+  const r=await post('/admin/ban',{email,banned:true});
+  if(r.ok){alert('정지 완료');loadList();refreshStats();} else alert('실패: '+(r.error||''));
+}
 
-  async function loadArenaConfig() {
-    try {
-      var res = await fetch(WORKER_URL + '/admin/arena-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken: getToken(), read: true })
-      });
-      var data = await res.json();
-      if (!data.ok || !data.config) return;
-      var c = data.config;
-      document.getElementById('poolWeekly').value  = (c.manualPool && c.manualPool.weekly)  || 0;
-      document.getElementById('poolMonthly').value = (c.manualPool && c.manualPool.monthly) || 0;
-      document.getElementById('poolMinBal').value  = c.minBalance != null ? c.minBalance : 100;
-      document.getElementById('poolPct').value     = c.poolPct != null ? c.poolPct : 40;
-    } catch(e) {}
-  }
+/* ---- winners / payouts ---- */
+async function loadWinners(){
+  const r=await post('/admin/arena-winners',{});
+  const ws=r.winners||[];
+  const tb=document.querySelector('#wTable tbody');
+  if(!ws.length){ tb.innerHTML='<tr><td class="empty">아직 확정된 우승자가 없습니다 (시즌 종료 시 자동 확정)</td></tr>'; return; }
+  const label={return:'수익률',profit:'수익금',volume:'거래량'};
+  tb.parentElement.innerHTML='<thead><tr><th>시즌</th><th>부문</th><th>순위</th><th>닉네임</th><th>기록</th><th>지급</th></tr></thead><tbody>'+
+    ws.map(w=>{
+      const val=w.metric==='return'?pct(w.value):w.metric==='volume'?usd(w.value):usd(w.value);
+      const paid=w.paid?'<span class="tag ok">지급 완료</span>':'<button class="btn btn-g btn-sm" onclick="markPaid('+w.id+')">지급 완료 표시</button>';
+      return '<tr><td style="color:var(--mut)">'+esc(w.season_id)+'</td><td>'+(w.board==='weekly'?'주간':'월간')+' '+(label[w.metric]||w.metric)+'</td>'+
+        '<td><b>'+w.rank+'등</b></td><td>'+esc(w.nickname)+'</td><td style="font-variant-numeric:tabular-nums">'+val+'</td><td>'+paid+'</td></tr>';
+    }).join('')+'</tbody>';
+}
+async function markPaid(id){ const r=await post('/admin/arena-winners',{markPaid:true,id}); if(r.ok)loadWinners(); }
 
-  async function saveArenaConfig() {
-    var msg = document.getElementById('arenaSaveMsg');
-    msg.style.color = 'var(--gray-400)'; msg.textContent = '저장 중...';
-    var payload = {
-      sessionToken: getToken(),
-      manualPool: {
-        weekly:  parseFloat(document.getElementById('poolWeekly').value)  || 0,
-        monthly: parseFloat(document.getElementById('poolMonthly').value) || 0
-      },
-      minBalance: parseFloat(document.getElementById('poolMinBal').value) || 0,
-      poolPct:    parseFloat(document.getElementById('poolPct').value)    || 0
-    };
-    try {
-      var res = await fetch(WORKER_URL + '/admin/arena-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      var data = await res.json();
-      if (data.ok) { msg.style.color = '#22c55e'; msg.textContent = '저장 완료 — 홈페이지에 반영됩니다.'; }
-      else { msg.style.color = '#ef4444'; msg.textContent = '실패: ' + (data.error || '오류'); }
-    } catch(e) { msg.style.color = '#ef4444'; msg.textContent = '실패: ' + e.message; }
-  }
-
-  function doLogout() {
-    fetch(WORKER_URL + '/logout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionToken: getToken() })
-    }).catch(function(){});
-    localStorage.removeItem('ayilon_session_token');
-    localStorage.removeItem('ayilon_user');
-    localStorage.removeItem('ayilon_subscription');
-    window.location.href = 'index.html';
-  }
-
-  var _allUsers = [];
-  var _planTarget = null;
-
-  async function loadUsers() {
-    var tableEl = document.getElementById('adminUserTable');
-    if (tableEl) tableEl.innerHTML = '<div style="padding:32px;text-align:center;color:var(--gray-400);">로딩 중...</div>';
-    try {
-      var res = await fetch(WORKER_URL + '/admin/list-users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken: getToken() })
-      });
-      var data = await res.json();
-      if (!data.ok) { window.location.href = 'login.html'; return; }
-      _allUsers = data.users || [];
-      var paid = _allUsers.filter(function(u) { return u.plan && u.plan !== 'free' && u.plan !== ''; }).length;
-      var bots = _allUsers.filter(function(u) { return u.botRunning; }).length;
-      document.getElementById('adminTotalUsers').textContent = _allUsers.length;
-      document.getElementById('adminPaidUsers').textContent = paid;
-      document.getElementById('adminActiveBots').textContent = bots;
-      filterUsers();
-    } catch(e) {
-      if (tableEl) tableEl.innerHTML = '<div style="padding:32px;text-align:center;color:#ef4444;">불러오기 실패: ' + e.message + '</div>';
-    }
-  }
-
-  function filterUsers() {
-    var q = (document.getElementById('searchInput').value || '').toLowerCase();
-    var filtered = q ? _allUsers.filter(function(u) { return u.email.toLowerCase().indexOf(q) !== -1; }) : _allUsers;
-    renderTable(filtered);
-  }
-
-  function renderTable(users) {
-    var el = document.getElementById('adminUserTable');
-    if (!el) return;
-    if (!users.length) { el.innerHTML = '<div style="padding:32px;text-align:center;color:var(--gray-400);">회원 없음</div>'; return; }
-    var planColor = { starter: '#22c55e', pro: '#3b82f6', elite: '#a855f7' };
-    el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
-      '<thead><tr style="border-bottom:1px solid var(--border);color:var(--gray-400);">' +
-      '<th style="padding:10px 12px;text-align:left;font-weight:500;">이메일</th>' +
-      '<th style="padding:10px 12px;text-align:left;font-weight:500;">플랜</th>' +
-      '<th style="padding:10px 12px;text-align:left;font-weight:500;">리퍼럴</th>' +
-      '<th style="padding:10px 12px;text-align:left;font-weight:500;">라이브</th>' +
-      '<th style="padding:10px 12px;text-align:left;font-weight:500;">봇</th>' +
-      '<th style="padding:10px 12px;text-align:left;font-weight:500;">가입일</th>' +
-      '<th style="padding:10px 12px;text-align:left;font-weight:500;">관리</th>' +
-      '</tr></thead><tbody>' +
-      users.map(function(u) {
-        var plan = u.plan || '';
-        var planLabel = plan && plan !== 'free' ? plan.toUpperCase() : '미구독';
-        var planStyle = planColor[plan] ? 'color:' + planColor[plan] + ';font-weight:600;' : 'color:var(--gray-400);';
-        var refBadge = u.referralVerified ? '<span style="color:#fbbf24;font-weight:600;">★ 인증</span>' : '<span style="color:var(--gray-400);">—</span>';
-        var liveBadge = u.canLive ? '<span style="color:#22c55e;">가능</span>' : '<span style="color:var(--gray-400);">데모</span>';
-        var botBadge = u.botRunning ? '<span style="color:#22c55e;">실행 중</span>' : '<span style="color:var(--gray-400);">—</span>';
-        var joined = u.createdAt ? new Date(u.createdAt).toLocaleDateString('ko-KR') : '—';
-        return '<tr style="border-bottom:1px solid var(--border);">' +
-          '<td style="padding:12px;">' + u.email + '</td>' +
-          '<td style="padding:12px;"><span style="' + planStyle + '">' + planLabel + '</span></td>' +
-          '<td style="padding:12px;">' + refBadge + '</td>' +
-          '<td style="padding:12px;">' + liveBadge + '</td>' +
-          '<td style="padding:12px;">' + botBadge + '</td>' +
-          '<td style="padding:12px;color:var(--gray-400);">' + joined + '</td>' +
-          '<td style="padding:12px;"><button onclick="showSetPlan(\'' + u.email.replace(/'/g, "\\'") + '\')" style="padding:4px 10px;background:none;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--text);font-size:11px;cursor:pointer;">관리</button></td>' +
-          '</tr>';
-      }).join('') + '</tbody></table>';
-  }
-
-  function showSetPlan(email) {
-    _planTarget = email;
-    document.getElementById('setPlanTarget').textContent = '대상: ' + email;
-    document.getElementById('setPlanPanel').style.display = '';
-    document.getElementById('setPlanPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-
-  async function doSetPlan(plan) {
-    if (!_planTarget) return;
-    try {
-      var res = await fetch(WORKER_URL + '/admin/set-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken: getToken(), email: _planTarget, plan: plan })
-      });
-      var data = await res.json();
-      if (data.ok) {
-        document.getElementById('setPlanPanel').style.display = 'none';
-        _planTarget = null;
-        alert('플랜 설정 완료: ' + plan.toUpperCase() + (plan === 'free' ? '' : ' (30일)'));
-        await loadUsers();
-      } else {
-        alert('실패: ' + (data.error || '알 수 없는 오류'));
-      }
-    } catch(e) {
-      alert('실패: ' + e.message);
-    }
-  }
-
-  async function doSetReferral(verified) {
-    if (!_planTarget) return;
-    try {
-      var res = await fetch(WORKER_URL + '/admin/set-referral', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionToken: getToken(), email: _planTarget, verified: verified })
-      });
-      var data = await res.json();
-      if (data.ok) {
-        document.getElementById('setPlanPanel').style.display = 'none';
-        _planTarget = null;
-        alert(verified ? '리퍼럴 인증 완료 — Elite(전 종목) 영구 무료' : '리퍼럴 해제 완료');
-        await loadUsers();
-      } else {
-        alert('실패: ' + (data.error || '알 수 없는 오류'));
-      }
-    } catch(e) {
-      alert('실패: ' + e.message);
-    }
-  }
+async function refreshStats(){
+  try{
+    const s=await (await fetch(API+'/arena/season')).json();
+    if(s.season){ document.getElementById('stWeekly').textContent=usd(s.season.weekly.pool); document.getElementById('stMonthly').textContent=usd(s.season.monthly.pool); }
+    const r=await post('/admin/arena-list',{});
+    document.getElementById('stParts').textContent=r.total||0;
+    document.getElementById('stElig').textContent=(r.participants||[]).filter(p=>p.eligible).length;
+  }catch(e){}
+}
+setTimeout(refreshStats,400);
 </script>
 </body>
 </html>

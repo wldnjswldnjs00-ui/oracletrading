@@ -61,6 +61,9 @@ export default {
       if (path === '/arena/season')      return handleArenaSeason(request, env);
       if (path === '/arena/winners')     return handleArenaWinners(request, env);
       if (path === '/admin/arena-config') return handleAdminArenaConfig(request, env);
+      if (path === '/admin/arena-list')   return handleAdminArenaList(request, env);
+      if (path === '/admin/ban')          return handleAdminBan(request, env);
+      if (path === '/admin/arena-winners') return handleAdminArenaWinners(request, env);
       if (path === '/admin/affiliate-test') return handleAdminAffiliateTest(request, env);
     }
 
@@ -518,6 +521,8 @@ async function handleLogin(request, env) {
       return json({ ok: false, error: 'invalid_credentials' }, 401);
     }
     try { await env.USERS_KV.delete(loginRateKey); } catch(e) {}
+
+    if (user.banned) return json({ ok: false, error: 'banned' }, 403);
 
     // Mandatory email verification on every login (TOTP/authenticator 2FA was
     // removed; this email code is required for all users).
@@ -1239,6 +1244,7 @@ async function handleArenaJoin(request, env) {
   }
 
   const user = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || {};
+  if (user.banned) return json({ ok: false, error: 'banned' }, 403);
   // Mirror UID onto the user record + try affiliate auto-verify (reuses existing engine).
   try { await captureUidAndVerifyReferral(env, session.email, { apiKey, apiSecret, apiPassphrase: apiPass, demoMode: demo }); } catch (_) {}
   let freshUser = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || user;
@@ -1352,6 +1358,7 @@ async function handleGoogleAuth(request, env) {
 
   const email = String(p.email).toLowerCase();
   let user = await env.USERS_KV.get('user:' + email, { type: 'json' });
+  if (user && user.banned) return json({ ok: false, error: 'banned' }, 403);
   if (!user) {
     const nick = await genUniqueNickname(env);
     user = { email, username: nick, name: p.name || '', country: '', password: null, passwordSalt: null, createdAt: Date.now(), googleId: p.sub };
@@ -1451,9 +1458,12 @@ async function handleArenaMe(request, env) {
 
 // ── Prize pool config (admin-settable; affiliate-auto when creds present) ──
 const ARENA_DEFAULT_CONFIG = {
-  poolPct: 40,              // % of season referral commission that funds the pool
-  autoAffiliate: false,     // when true + affiliate creds → pool auto-computed
-  manualPool: { weekly: 0, monthly: 0 },      // admin-entered pool ($) until affiliate auto
+  poolMode: 'commission',   // 'commission' = pool is a % of my OKX commission; 'manual' = fixed amount
+  commissionPct: 10,        // % of my referral commission that funds prizes
+  commissionTotal: 0,       // accumulated commission ($) — affiliate-auto (if creds) or admin-entered
+  commissionSplit: { weekly: 25, monthly: 75 }, // how the commission pool is allocated per period
+  autoAffiliate: false,     // when true + affiliate creds → commissionTotal auto-computed
+  manualPool: { weekly: 0, monthly: 0 },      // used only when poolMode==='manual'
   cap:   { weekly: [1000, 500, 100], monthly: [1000, 500, 100, 50, 10] }, // max $ per rank
   split: { weekly: [50, 30, 20], monthly: [40, 25, 15, 12, 8] },        // % of pool per rank
   // weekly runs the return board only; monthly runs all three.
@@ -1496,21 +1506,27 @@ async function handleArenaSeason(request, env) {
   const cfg = await getArenaConfig(env);
   const now = new Date();
   const ends = arenaSeasonEnds(now);
-  // Pool source: affiliate-auto (best effort) else admin manual.
+  // Prize pool = a fixed % of my accumulated OKX commission, allocated per period.
+  const commissionTotal = parseFloat(cfg.commissionTotal || 0);
+  const commissionPct = parseFloat(cfg.commissionPct || 0);
+  const commissionPool = commissionTotal * commissionPct / 100;
+  const csplit = cfg.commissionSplit || { weekly: 25, monthly: 75 };
   const out = {};
   for (const board of ['weekly', 'monthly']) {
-    let pool = parseFloat(cfg.manualPool[board] || 0);
-    // (affiliate-auto hook would overwrite `pool` here when creds + autoAffiliate)
+    const pool = cfg.poolMode === 'manual'
+      ? parseFloat(cfg.manualPool[board] || 0)
+      : commissionPool * (parseFloat(csplit[board] || 0) / 100);
     out[board] = {
       seasonId: board === 'monthly' ? arenaMonthId(now) : arenaWeekId(now),
       endsAt: ends[board],
-      pool: Math.round(pool),
+      pool: Math.round(pool * 100) / 100,
       capTotal: (cfg.cap[board] || []).reduce((s, v) => s + (v || 0), 0),
       prizes: arenaPrizeBreakdown(pool, board, cfg),
       boards: cfg.boards[board] || []
     };
   }
-  return json({ ok: true, poolPct: cfg.poolPct, minBalance: cfg.minBalance, minTrades: cfg.minTrades, season: out });
+  return json({ ok: true, poolMode: cfg.poolMode, commissionPct, commissionTotal: Math.round(commissionTotal * 100) / 100,
+    minBalance: cfg.minBalance, minTrades: cfg.minTrades, season: out });
 }
 
 // Admin: set manual pool / caps / splits.
@@ -1524,7 +1540,10 @@ async function handleAdminArenaConfig(request, env) {
   if (body.manualPool) next.manualPool = { ...cur.manualPool, ...body.manualPool };
   if (body.cap)        next.cap        = { ...cur.cap, ...body.cap };
   if (body.split)      next.split      = { ...cur.split, ...body.split };
-  if (body.poolPct != null)       next.poolPct = parseFloat(body.poolPct);
+  if (body.poolMode === 'manual' || body.poolMode === 'commission') next.poolMode = body.poolMode;
+  if (body.commissionPct   != null) next.commissionPct   = Math.max(0, Math.min(100, parseFloat(body.commissionPct) || 0));
+  if (body.commissionTotal != null) next.commissionTotal = Math.max(0, parseFloat(body.commissionTotal) || 0);
+  if (body.commissionSplit) next.commissionSplit = { ...cur.commissionSplit, ...body.commissionSplit };
   if (body.autoAffiliate != null) next.autoAffiliate = !!body.autoAffiliate;
   if (body.minBalance != null)    next.minBalance = parseFloat(body.minBalance);
   if (body.minTrades != null)     next.minTrades = parseInt(body.minTrades);
@@ -1532,7 +1551,80 @@ async function handleAdminArenaConfig(request, env) {
   return json({ ok: true, config: next });
 }
 
+// Admin: full arena roster with OKX UID, scores, referral + prize eligibility.
+// Supports search by UID / nickname / email (q).
+async function handleAdminArenaList(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
+  await initDB(env);
+  const cfg = await getArenaConfig(env);
+  const minBal = parseFloat(cfg.minBalance || 0);
+  const q = String(body.q || '').trim().toLowerCase();
+  let rows = [];
+  try { rows = (await env.BOT_DB.prepare('SELECT * FROM arena_participants ORDER BY joined_at DESC').all()).results || []; } catch (_) {}
+  const now = new Date();
+  const wId = arenaWeekId(now), mId = arenaMonthId(now);
+  const out = [];
+  for (const p of rows) {
+    if (q && !(String(p.okx_uid || '').includes(q) || String(p.nickname || '').toLowerCase().includes(q) || String(p.email || '').toLowerCase().includes(q))) continue;
+    let boards = []; try { boards = JSON.parse(p.boards || '[]'); } catch (_) {}
+    let wk = null, mo = null;
+    try { wk = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'weekly', wId).first(); } catch (_) {}
+    try { mo = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'monthly', mId).first(); } catch (_) {}
+    out.push({
+      email: p.email, nickname: p.nickname, country: p.country || '', uid: p.okx_uid || '',
+      referralVerified: p.referral_verified === 1, equity: p.last_equity || 0, demo: p.demo === 1,
+      eligible: p.referral_verified === 1 && (p.last_equity || 0) >= minBal, boards,
+      joinedAt: p.joined_at || 0, err: p.err || null,
+      weeklyReturn: wk ? wk.return_pct : null, monthlyReturn: mo ? mo.return_pct : null,
+      monthlyProfit: mo ? mo.profit : null, monthlyVolume: mo ? mo.volume : null
+    });
+  }
+  return json({ ok: true, total: out.length, participants: out });
+}
+
+// Admin: permanently ban / unban an account. Banning removes it from the arena
+// and invalidates its sessions immediately.
+async function handleAdminBan(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
+  const email = String(body.email || '').toLowerCase();
+  const banned = !!body.banned;
+  if (!email) return json({ ok: false, error: 'email required' }, 400);
+  if (email === ADMIN_EMAIL_CONST) return json({ ok: false, error: 'cannot_ban_admin' }, 400);
+  const u = await env.USERS_KV.get('user:' + email, { type: 'json' });
+  if (!u) return json({ ok: false, error: 'user_not_found' }, 404);
+  u.banned = banned;
+  if (banned) { u.bannedAt = Date.now(); } else { delete u.bannedAt; }
+  await env.USERS_KV.put('user:' + email, JSON.stringify(u));
+  if (banned) {
+    await initDB(env);
+    try { await env.BOT_DB.prepare('DELETE FROM sessions WHERE email=?').bind(email).run(); } catch (_) {}
+    try { await env.BOT_DB.prepare('DELETE FROM arena_participants WHERE email=?').bind(email).run(); } catch (_) {}
+    try { await env.BOT_DB.prepare('DELETE FROM arena_score WHERE email=?').bind(email).run(); } catch (_) {}
+  }
+  return json({ ok: true, banned });
+}
+
+// Admin: recent Hall-of-Fame winners with payout status. Mark a winner paid.
+async function handleAdminArenaWinners(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
+  await initDB(env);
+  if (body.markPaid && body.id != null) {
+    await env.BOT_DB.prepare('UPDATE arena_winners SET paid=1 WHERE id=?').bind(parseInt(body.id)).run().catch(() => {});
+    return json({ ok: true });
+  }
+  let rows = [];
+  try { rows = (await env.BOT_DB.prepare('SELECT id,season_id,board,metric,rank,email,nickname,value,paid,declared_at FROM arena_winners ORDER BY declared_at DESC, rank ASC LIMIT 120').all()).results || []; } catch (_) {}
+  return json({ ok: true, winners: rows });
+}
+
 async function handleBotStatus(request, env) {
+  if (!env.USERS_KV) return json({ running: false, logs: [] });
   if (!env.USERS_KV) return json({ running: false, logs: [] });
   const body = request.method === 'GET' ? {} : await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
@@ -1900,8 +1992,10 @@ async function initDB(env) {
       email TEXT NOT NULL,
       nickname TEXT DEFAULT '',
       value REAL DEFAULT 0,
-      declared_at INTEGER DEFAULT 0
+      declared_at INTEGER DEFAULT 0,
+      paid INTEGER DEFAULT 0
     )`).run();
+    await env.BOT_DB.prepare(`ALTER TABLE arena_winners ADD COLUMN paid INTEGER DEFAULT 0`).run().catch(() => {});
     // Per-board (weekly/monthly) running season metrics.
     await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_score (
       email TEXT NOT NULL,

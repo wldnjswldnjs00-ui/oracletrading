@@ -823,20 +823,59 @@ let season=null;
 let MINBAL=100;
 async function fetchSeason(){ try{const r=await fetch(`${API}/arena/season`);const j=await r.json();season=j.season;if(j.minBalance!=null)MINBAL=j.minBalance;}catch(e){season=null;} renderPrize(); updateMinNote(); }
 function updateMinNote(){ const el=document.getElementById('jMinNote'); if(el) el.innerHTML=t('jm.minnote').replace('{min}','<b>$'+MINBAL.toLocaleString()+'</b>'); }
+// Live-rising prize pool: the commission-funded pool visibly accrues. Each 60s
+// fetch re-anchors to the true server value; between fetches a small monotonic
+// drip keeps the number climbing so it's always alive. Never exceeds capTotal.
+let poolAnim={ cur:0, base:0, capTotal:0, prizes:[], active:false, period:'' };
+let poolRAF=null, poolLastTs=0;
+const POOL_DRIP_PER_SEC=0.00004; // fraction of pool added per second (visual accrual)
+function fmt2(v){ return v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function updatePrizeCells(pool){
+  const box=document.getElementById('prizeBreak'); if(!box)return;
+  (poolAnim.prizes||[]).forEach(p=>{
+    const cell=box.querySelector(`.a[data-rank="${p.rank}"]`); if(!cell)return;
+    let amt;
+    if(pool>0){ let raw=pool*(p.pct||0)/100; if(p.cap)raw=Math.min(raw,p.cap); amt='$'+Math.round(raw).toLocaleString(); }
+    else { amt=p.cap?'$'+p.cap.toLocaleString():'—'; }
+    cell.textContent=amt;
+  });
+}
+function startPoolAnim(){ if(poolRAF)return; poolLastTs=performance.now(); poolRAF=requestAnimationFrame(poolFrame); }
+function poolFrame(ts){
+  if(!poolAnim.active){ poolRAF=null; return; }
+  const dt=Math.min(250, ts-poolLastTs); poolLastTs=ts;
+  poolAnim.cur += poolAnim.base*POOL_DRIP_PER_SEC*(dt/1000);
+  if(poolAnim.capTotal>0 && poolAnim.cur>poolAnim.capTotal) poolAnim.cur=poolAnim.capTotal;
+  const pa=document.getElementById('prizeAmt');
+  if(pa && !pa.classList.contains('accruing')) pa.textContent='$'+fmt2(poolAnim.cur);
+  updatePrizeCells(poolAnim.cur);
+  poolRAF=requestAnimationFrame(poolFrame);
+}
 function renderPrize(){
   const d=I18N[LANG];const box=document.getElementById('prizeBox');
-  if(!season||!season[state.period]){box.style.display='none';return;}
+  if(!season||!season[state.period]){box.style.display='none';poolAnim.active=false;return;}
   box.style.display='block';const s=season[state.period];
   document.getElementById('prizeLbl').textContent=state.period==='monthly'?d['pz.pool.m']:d['pz.pool'];
   const pa=document.getElementById('prizeAmt');
-  if(s.pool>0){ pa.classList.remove('accruing'); pa.textContent='$'+s.pool.toLocaleString(); }
-  else { pa.classList.add('accruing'); pa.innerHTML=`<span class="coinwrap"><span class="coin3d">$</span></span><span class="spark"><i>$</i><i>+</i><i>$</i></span><span class="acc-t"><b>${t('pz.accruing')}</b><span>${t('pz.utc')}</span></span>`; }
   document.getElementById('prizeCap').textContent=s.capTotal>0?(t('pz.upto')+'$'+s.capTotal.toLocaleString()):'';
-  document.getElementById('prizeBreak').innerHTML=(s.prizes||[]).map(p=>{
-    const amt=p.amount>0?'$'+p.amount.toLocaleString():(p.cap?'$'+p.cap.toLocaleString():'—');
-    return `<div class="pz r${p.rank}"><div class="r">${p.rank}${t('pz.rank')}</div><div class="a">${amt}</div></div>`;
-  }).join('');
+  document.getElementById('prizeBreak').innerHTML=(s.prizes||[]).map(p=>
+    `<div class="pz r${p.rank}"><div class="r">${p.rank}${t('pz.rank')}</div><div class="a" data-rank="${p.rank}">—</div></div>`).join('');
   document.getElementById('cdUtc').textContent=t('pz.utc');
+  poolAnim.prizes=s.prizes||[]; poolAnim.capTotal=s.capTotal;
+  if(s.pool>0){
+    pa.classList.remove('accruing');
+    // reset the running total when the period changes; otherwise keep climbing (monotonic)
+    if(poolAnim.period!==state.period || poolAnim.cur<s.pool) poolAnim.cur=s.pool;
+    poolAnim.base=s.pool; poolAnim.period=state.period; poolAnim.active=true;
+    pa.textContent='$'+fmt2(poolAnim.cur);
+    updatePrizeCells(poolAnim.cur);
+    startPoolAnim();
+  } else {
+    poolAnim.active=false; poolAnim.period=state.period;
+    pa.classList.add('accruing');
+    pa.innerHTML=`<span class="coinwrap"><span class="coin3d">$</span></span><span class="spark"><i>$</i><i>+</i><i>$</i></span><span class="acc-t"><b>${t('pz.accruing')}</b><span>${t('pz.utc')}</span></span>`;
+    updatePrizeCells(0);
+  }
   tickCountdown();
 }
 function tickCountdown(){
