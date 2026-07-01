@@ -162,6 +162,7 @@
   .lb-empty{padding:56px 22px;text-align:center;color:var(--mut)}
   .lb-empty b{color:var(--txt);display:block;margin-bottom:6px;font-size:16px;font-weight:600}
   .lb-meta{text-align:center;color:var(--dim);font-size:12.5px;margin-top:14px}
+  .lb-pin{text-align:center;color:var(--dim);font-size:16px;letter-spacing:.2em;padding:6px 0}
   /* my bar */
   .mine{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:17px 22px;margin-bottom:16px;display:none;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
   .mine.show{display:flex}
@@ -354,6 +355,7 @@
       </div>
       <div id="lbBody"></div>
     </div>
+    <div id="lbMore" style="display:none;text-align:center;margin-top:16px"><button class="btn btn-ghost" id="lbMoreBtn"></button></div>
     <p class="lb-meta" id="lbMeta"></p>
   </div>
 </section>
@@ -528,7 +530,7 @@ const I18N = {
     'jm.hint':'OKX → 프로필 → API → 읽기(Read) 권한만 체크. 거래·출금은 절대 체크 금지. <b>IP 제한은 비워두세요</b>(우리 서버 IP가 고정이 아니라 IP를 묶으면 연결이 거부됩니다). Passphrase는 키 만들 때 직접 정한 문구입니다.',
     'jm.submit':'연결하고 참가','jm.leave':'대회에서 나가기',
     'am.title':'로그인이 필요합니다','am.lead':'대회 참가는 로그인 후 진행됩니다.','am.login':'로그인','am.signup':'회원가입',
-    'lb.noresults':'검색 결과 없음','lb.empty':'아직 참가자가 없습니다','lb.befirst':'첫 번째 도전자가 되어보세요.','lb.meta':'시즌 {s} · 총 {n}명 참가',
+    'lb.noresults':'검색 결과 없음','lb.empty':'아직 참가자가 없습니다','lb.befirst':'첫 번째 도전자가 되어보세요.','lb.meta':'시즌 {s} · 총 {n}명 참가','lb.more':'더 보기 (+{n})',
     'pz.accruing':'적립 중','pz.upto':'최대 ','pz.share':'실시간 상금 풀을 순위별 %로 분배','pz.utc':'월요일 00:00 UTC 기준','pz.rank':'등','pz.dunit':'일',
     'nick.min':'2자 이상 입력하세요.','nick.saved':'닉네임 저장됨','nick.taken':'이미 사용 중인 닉네임입니다.','nick.len':'2~24자로 입력하세요.','nick.chars':'사용할 수 없는 문자가 있습니다.','nick.fail':'저장 실패',
     'err.net':'네트워크 오류',
@@ -570,7 +572,7 @@ const I18N = {
     'jm.hint':'OKX → profile → API → check Read permission only. Never check trade/withdraw. <b>Leave the IP whitelist empty</b> (our server IP is not fixed, so binding an IP blocks the connection). The Passphrase is the phrase you set when creating the key.',
     'jm.submit':'Connect & join','jm.leave':'Leave the arena',
     'am.title':'Login required','am.lead':'Joining requires login.','am.login':'Log in','am.signup':'Sign up',
-    'lb.noresults':'No results','lb.empty':'No participants yet','lb.befirst':'Be the first challenger.','lb.meta':'Season {s} · {n} participants',
+    'lb.noresults':'No results','lb.empty':'No participants yet','lb.befirst':'Be the first challenger.','lb.meta':'Season {s} · {n} participants','lb.more':'Show more (+{n})',
     'pz.accruing':'Accruing','pz.upto':'up to ','pz.share':'a live % share of the real prize pool','pz.utc':'resets Mon 00:00 UTC','pz.rank':'','pz.dunit':'d',
     'nick.min':'At least 2 characters.','nick.saved':'Nickname saved','nick.taken':'That nickname is taken.','nick.len':'Use 2-24 characters.','nick.chars':'Contains invalid characters.','nick.fail':'Failed',
     'err.net':'Network error',
@@ -612,7 +614,7 @@ const I18N = {
     'jm.hint':'OKX → 个人资料 → API → 仅勾选“读取(Read)”权限。切勿勾选交易/提现。<b>请留空 IP 白名单</b>（我们的服务器 IP 不固定，绑定 IP 会导致连接被拒）。Passphrase 是你创建密钥时自设的口令。',
     'jm.submit':'连接并参加','jm.leave':'退出联赛',
     'am.title':'需要登录','am.lead':'参加联赛需先登录。','am.login':'登录','am.signup':'注册',
-    'lb.noresults':'无搜索结果','lb.empty':'暂无参赛者','lb.befirst':'成为第一个挑战者。','lb.meta':'赛季 {s} · 共 {n} 人参加',
+    'lb.noresults':'无搜索结果','lb.empty':'暂无参赛者','lb.befirst':'成为第一个挑战者。','lb.meta':'赛季 {s} · 共 {n} 人参加','lb.more':'查看更多 (+{n})',
     'pz.accruing':'累积中','pz.upto':'最高 ','pz.share':'按名次比例分配实时奖池','pz.utc':'每周一 00:00 UTC 重置','pz.rank':'名','pz.dunit':'天',
     'nick.min':'请至少输入 2 个字符。','nick.saved':'昵称已保存','nick.taken':'该昵称已被占用。','nick.len':'请使用 2-24 个字符。','nick.chars':'包含无效字符。','nick.fail':'保存失败',
     'err.net':'网络错误',
@@ -654,7 +656,7 @@ const I18N = {
     'jm.hint':'OKX → perfil → API → marca solo el permiso de Lectura (Read). Nunca marques trading/retiro. <b>Deja vacía la lista de IP</b> (la IP de nuestro servidor no es fija; vincular una IP bloquea la conexión). La Passphrase es la frase que tú definiste al crear la clave.',
     'jm.submit':'Conectar y unirse','jm.leave':'Salir de la arena',
     'am.title':'Inicia sesión','am.lead':'Para unirte debes iniciar sesión.','am.login':'Entrar','am.signup':'Registrarse',
-    'lb.noresults':'Sin resultados','lb.empty':'Aún no hay participantes','lb.befirst':'Sé el primer retador.','lb.meta':'Temporada {s} · {n} participantes',
+    'lb.noresults':'Sin resultados','lb.empty':'Aún no hay participantes','lb.befirst':'Sé el primer retador.','lb.meta':'Temporada {s} · {n} participantes','lb.more':'Ver más (+{n})',
     'pz.accruing':'Acumulando','pz.upto':'hasta ','pz.share':'reparto en % del bote real en vivo','pz.utc':'se reinicia lun 00:00 UTC','pz.rank':'º','pz.dunit':'d',
     'nick.min':'Al menos 2 caracteres.','nick.saved':'Apodo guardado','nick.taken':'Ese apodo ya está en uso.','nick.len':'Usa 2-24 caracteres.','nick.chars':'Contiene caracteres no válidos.','nick.fail':'Error',
     'err.net':'Error de red',
@@ -696,7 +698,7 @@ const I18N = {
     'jm.hint':'OKX → hồ sơ → API → chỉ tích quyền Đọc (Read). Tuyệt đối không tích giao dịch/rút tiền. <b>Để trống danh sách IP</b> (IP máy chủ của chúng tôi không cố định; ràng buộc IP sẽ chặn kết nối). Passphrase là cụm từ bạn tự đặt khi tạo khóa.',
     'jm.submit':'Kết nối và tham gia','jm.leave':'Rời giải',
     'am.title':'Cần đăng nhập','am.lead':'Tham gia giải cần đăng nhập trước.','am.login':'Đăng nhập','am.signup':'Đăng ký',
-    'lb.noresults':'Không có kết quả','lb.empty':'Chưa có người tham gia','lb.befirst':'Hãy là người thách đấu đầu tiên.','lb.meta':'Mùa {s} · {n} người tham gia',
+    'lb.noresults':'Không có kết quả','lb.empty':'Chưa có người tham gia','lb.befirst':'Hãy là người thách đấu đầu tiên.','lb.meta':'Mùa {s} · {n} người tham gia','lb.more':'Xem thêm (+{n})',
     'pz.accruing':'Đang tích lũy','pz.upto':'tối đa ','pz.share':'chia theo % của quỹ thưởng thực tế','pz.utc':'đặt lại Thứ Hai 00:00 UTC','pz.rank':'','pz.dunit':'ngày',
     'nick.min':'Nhập ít nhất 2 ký tự.','nick.saved':'Đã lưu biệt danh','nick.taken':'Biệt danh đã có người dùng.','nick.len':'Dùng 2-24 ký tự.','nick.chars':'Có ký tự không hợp lệ.','nick.fail':'Lưu thất bại',
     'err.net':'Lỗi mạng',
@@ -738,7 +740,7 @@ const I18N = {
     'jm.hint':'OKX → профиль → API → отметьте только право Чтение (Read). Никогда не отмечайте торговлю/вывод. <b>Оставьте список IP пустым</b> (IP нашего сервера не фиксирован, привязка IP блокирует подключение). Passphrase — это фраза, которую вы задали при создании ключа.',
     'jm.submit':'Подключить и вступить','jm.leave':'Покинуть арену',
     'am.title':'Нужен вход','am.lead':'Для участия необходимо войти.','am.login':'Войти','am.signup':'Регистрация',
-    'lb.noresults':'Ничего не найдено','lb.empty':'Пока нет участников','lb.befirst':'Станьте первым претендентом.','lb.meta':'Сезон {s} · участников: {n}',
+    'lb.noresults':'Ничего не найдено','lb.empty':'Пока нет участников','lb.befirst':'Станьте первым претендентом.','lb.meta':'Сезон {s} · участников: {n}','lb.more':'Показать ещё (+{n})',
     'pz.accruing':'Накапливается','pz.upto':'до ','pz.share':'доля в % от реального призового фонда','pz.utc':'сброс в пн 00:00 UTC','pz.rank':'место','pz.dunit':'д',
     'nick.min':'Минимум 2 символа.','nick.saved':'Никнейм сохранён','nick.taken':'Этот никнейм занят.','nick.len':'Используйте 2-24 символа.','nick.chars':'Содержит недопустимые символы.','nick.fail':'Ошибка',
     'err.net':'Ошибка сети',
@@ -788,32 +790,43 @@ async function fetchLB(){
     const r=await fetch(`${API}/arena/leaderboard?period=${state.period}&metric=${state.metric}`);
     const j=await r.json(); state.rows=j.leaderboard||[]; state.total=j.total||0; state.seasonId=j.seasonId||'';
   }catch(e){ state.rows=[]; state.total=0; }
-  renderLB();
+  lbLimit=LB_PAGE; renderLB();
+}
+const LB_PAGE=50; let lbLimit=LB_PAGE;
+function lbRowHtml(r,myNick){
+  const mv=state.metric==='volume'?fmtVol(r.volume):state.metric==='profit'?fmtUsd(r.profit):fmtPct(r.returnPct);
+  const cls=state.metric==='volume'?'':((state.metric==='profit'?r.profit:r.returnPct)>=0?'pos':'neg');
+  const rk=r.rank<=3?`rk r${r.rank}`:'rk';
+  const me=r.nickname.toLowerCase()===myNick?'me':'';
+  const vb=r.eligible?`<span class="vb" title="${t('lb.prize')}">AYILON</span>`:(r.verified?`<span class="vb" style="color:var(--mut);border-color:var(--line2)" title="${t('lb.minbal')}">$100+</span>`:'');
+  const av=r.avatar?`<img class="lbav" src="${API}/arena/avatar?n=${encodeURIComponent(r.nickname)}" alt="" onerror="this.style.display='none'">`:`<span class="lbav ini">${esc((r.nickname[0]||'?').toUpperCase())}</span>`;
+  return `<div class="lb-r ${me}"><div class="${rk}">${r.rank}</div><div class="who">${av}<span class="nm">${esc(r.nickname)}</span>${vb}</div><div class="val ${cls}">${mv}</div><div class="val sub c-eq h-eq">${fmtEq(r.equity)}</div></div>`;
 }
 function renderLB(){
   const myNick=(localStorage.getItem('ayilon_username')||'').toLowerCase();
   let rows=state.rows; if(state.q) rows=rows.filter(r=>r.nickname.toLowerCase().includes(state.q));
   const body=document.getElementById('lbBody');
+  const more=document.getElementById('lbMore');
   if(!rows.length){
     body.innerHTML=`<div class="lb-empty"><b>${state.q?t('lb.noresults'):t('lb.empty')}</b>${state.q?'':t('lb.befirst')}</div>`;
+    more.style.display='none';
   }else{
-    body.innerHTML=rows.map(r=>{
-      const mv=state.metric==='volume'?fmtVol(r.volume):state.metric==='profit'?fmtUsd(r.profit):fmtPct(r.returnPct);
-      const cls=state.metric==='volume'?'':((state.metric==='profit'?r.profit:r.returnPct)>=0?'pos':'neg');
-      const rk=r.rank<=3?`rk r${r.rank}`:'rk';
-      const me=r.nickname.toLowerCase()===myNick?'me':'';
-      const vb=r.eligible?`<span class="vb" title="${t('lb.prize')}">AYILON</span>`:(r.verified?`<span class="vb" style="color:var(--mut);border-color:var(--line2)" title="${t('lb.minbal')}">$100+</span>`:'');
-      const av=r.avatar?`<img class="lbav" src="${API}/arena/avatar?n=${encodeURIComponent(r.nickname)}" alt="" onerror="this.style.display='none'">`:`<span class="lbav ini">${esc((r.nickname[0]||'?').toUpperCase())}</span>`;
-      return `<div class="lb-r ${me}"><div class="${rk}">${r.rank}</div><div class="who">${av}<span class="nm">${esc(r.nickname)}</span>${vb}</div><div class="val ${cls}">${mv}</div><div class="val sub c-eq h-eq">${fmtEq(r.equity)}</div></div>`;
-    }).join('');
+    const shown=rows.slice(0,lbLimit);
+    let html=shown.map(r=>lbRowHtml(r,myNick)).join('');
+    // Pin the viewer's own row if it falls beyond the visible page.
+    if(myNick){ const mi=rows.findIndex(r=>r.nickname.toLowerCase()===myNick); if(mi>=lbLimit) html+=`<div class="lb-pin">···</div>`+lbRowHtml(rows[mi],myNick); }
+    body.innerHTML=html;
+    if(rows.length>lbLimit){ more.style.display='block'; document.getElementById('lbMoreBtn').textContent=t('lb.more').replace('{n}',Math.min(LB_PAGE,rows.length-lbLimit)); }
+    else more.style.display='none';
   }
   document.getElementById('lbMeta').textContent=t('lb.meta').replace('{s}',state.seasonId).replace('{n}',state.total);
 }
+document.getElementById('lbMoreBtn').addEventListener('click',()=>{lbLimit+=LB_PAGE;renderLB();});
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 document.getElementById('periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;document.querySelectorAll('#periodSeg button').forEach(x=>x.classList.toggle('on',x===b));updateMetricTabs();renderPrize();fetchLB();});
 document.getElementById('metricSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.style.display==='none')return;state.metric=b.dataset.metric;document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x===b));syncMetricHeader();fetchLB();});
-let qT;document.getElementById('lbSearch').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{state.q=e.target.value.trim();renderLB();},150);});
+let qT;document.getElementById('lbSearch').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{state.q=e.target.value.trim();lbLimit=LB_PAGE;renderLB();},150);});
 
 /* ---------- prize + countdown ---------- */
 let season=null;

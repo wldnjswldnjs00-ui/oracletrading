@@ -26,53 +26,11 @@
 </style>
 </head>
 <body>
-<nav><div class="w"><a href="/" class="logo">AY<i>I</i>LON</a><a href="/" style="color:var(--mut);font-size:14px">← Arena</a></div></nav>
-<main><div class="w">
-  <h1>Terms of Service & Competition Rules</h1>
-  <div class="upd">Last updated: 29 June 2026</div>
-
-  <p>AYILON Arena ("AYILON", "we", "us") operates a global trading competition where participants compete using their own real exchange accounts. By creating an account or joining a competition you agree to these Terms.</p>
-
-  <h2>1. Eligibility</h2>
-  <ul>
-    <li>You must be at least 18 years old and legally permitted to trade cryptocurrency derivatives in your jurisdiction.</li>
-    <li>Participation requires a verified email and a connected, read-only exchange API key.</li>
-    <li>To be eligible for <b>prizes</b>, your exchange account must (a) have been registered through AYILON's referral link, and (b) hold at least the published minimum balance at the start of the season.</li>
-  </ul>
-
-  <h2>2. The competition</h2>
-  <ul>
-    <li>Entry is <b>free</b>. There is no entry fee and no purchase is required.</li>
-    <li>Participants connect a <b>read-only</b> API key. AYILON reads account equity, profit and trading volume only — we cannot place trades, transfer, or withdraw.</li>
-    <li>Rankings are computed automatically from this data across categories (return %, profit, volume) over weekly and monthly seasons. Seasons begin every Monday at 00:00 UTC and on the 1st of each month.</li>
-    <li>Deposits and withdrawals during a season are excluded from performance to keep rankings fair.</li>
-  </ul>
-
-  <h2>3. Prizes</h2>
-  <ul>
-    <li>Prize pools are funded from the trading rewards the league generates and may grow over time. Each rank's prize is capped at a published maximum.</li>
-    <li>Prizes are awarded to the top eligible participants in each category at the end of a season.</li>
-    <li>We may adjust pool sizes, caps, categories and schedules, and may withhold prizes where abuse is suspected.</li>
-  </ul>
-
-  <h2>4. Fair play</h2>
-  <p>The following are prohibited and may result in disqualification and removal: operating multiple accounts to gain an advantage, wash trading or self-dealing to inflate volume, market manipulation, exploiting bugs, or any attempt to misrepresent results. AYILON's determinations on eligibility and fair play are final.</p>
-
-  <h2>5. Risk &amp; no advice</h2>
-  <div class="note">Trading cryptocurrency derivatives carries a high risk of loss, including the loss of your entire principal. AYILON is a competition and analytics platform only. We do <b>not</b> provide investment advice, manage funds, or guarantee any profit. Every trade you make, and every result, is your own decision and your own responsibility. Leaderboards show participants' own real trading and are not a recommendation of any strategy.</div>
-
-  <h2>6. Your exchange account &amp; keys</h2>
-  <p>You are responsible for creating keys with read-only permission and no IP restriction so the service can read your stats. You may disconnect at any time, which stops all data access and removes you from active leaderboards.</p>
-
-  <h2>7. Limitation of liability</h2>
-  <p>The service is provided "as is". To the maximum extent permitted by law, AYILON is not liable for trading losses, exchange outages, data inaccuracies, or any indirect or consequential damages arising from use of the platform.</p>
-
-  <h2>8. Changes &amp; termination</h2>
-  <p>We may update these Terms or modify, suspend, or discontinue any part of the service at any time. Continued use after changes constitutes acceptance. We may suspend accounts that violate these Terms.</p>
-
-  <h2>9. Contact</h2>
-  <p>Questions about these Terms: <a href="mailto:support@ayilon.com">support@ayilon.com</a></p>
-</div></main>
+<nav><div class="w"><a href="/" class="logo">AY<i>I</i>LON</a><span style="display:inline-flex;align-items:center;gap:12px"><select id="legalLang" style="background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:6px 9px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"></select><a href="/" style="color:var(--mut);font-size:14px">← Arena</a></span></div></nav>
+<main><div class="w" id="legal"></div></main>
 <footer><div class="w"><a href="/about.html">About</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><div style="margin-top:10px">© 2026 AYILON</div></div></footer>
+<script>window.LEGAL_PAGE='terms';</script>
+<script src="legal.js"></script>
+<script>buildLegalLangSel();renderLegal();</script>
 </body>
 </html>

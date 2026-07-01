@@ -35,28 +35,11 @@
 </style>
 </head>
 <body>
-<nav><div class="w"><a href="/" class="logo">AY<i>I</i>LON</a><a href="/" style="color:var(--mut);font-size:14px">← Arena</a></div></nav>
-<main><div class="w">
-  <h1>Prove your edge.<br><b>Compete</b> for the prize.</h1>
-  <p class="lead">AYILON Arena is a global real-money trading league. Traders worldwide compete on their own exchange accounts — and the best rise to the top of the board.</p>
-
-  <h2>How it works</h2>
-  <div class="grid">
-    <div class="card"><div class="n">STEP 01</div><h3>Sign up via AYILON</h3><p>Create an OKX account through the AYILON referral link.</p></div>
-    <div class="card"><div class="n">STEP 02</div><h3>Connect read-only</h3><p>Link a read-only API key. We can never touch your funds.</p></div>
-    <div class="card"><div class="n">STEP 03</div><h3>Trade &amp; climb</h3><p>Your stats are scored automatically onto the leaderboard.</p></div>
-  </div>
-
-  <h2>Three categories</h2>
-  <p>Compete on <b>return %</b> (weekly &amp; monthly), <b>profit</b> (monthly), and <b>volume</b> (monthly). Miss one board, still win another. New weekly seasons start every Monday at 00:00 UTC.</p>
-
-  <h2>Why it's safe</h2>
-  <p>Entry is free, and you connect a <b>read-only</b> key — AYILON only reads your stats and can never trade, transfer, or withdraw. Your money stays in your own exchange account the entire time.</p>
-
-  <a class="btn" href="/">Enter the Arena →</a>
-
-  <div class="note">Trading involves risk of loss of principal. AYILON Arena is a competition platform and does not provide investment advice or guarantee profit. All trading decisions and outcomes are solely the participant's responsibility.</div>
-</div></main>
+<nav><div class="w"><a href="/" class="logo">AY<i>I</i>LON</a><span style="display:inline-flex;align-items:center;gap:12px"><select id="legalLang" style="background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:6px 9px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"></select><a href="/" style="color:var(--mut);font-size:14px">← Arena</a></span></div></nav>
+<main><div class="w" id="legal"></div></main>
 <footer><div class="w"><a href="/about.html">About</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><div style="margin-top:10px">© 2026 AYILON</div></div></footer>
+<script>window.LEGAL_PAGE='about';</script>
+<script src="legal.js"></script>
+<script>buildLegalLangSel();renderLegal();</script>
 </body>
 </html>
