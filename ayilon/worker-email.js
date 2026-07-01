@@ -1234,10 +1234,12 @@ async function arenaScore(env) {
   }
 
   // Persist the auto-computed commission total so the prize pool tracks it live.
+  // Commission is lifetime-cumulative, so never let a transient partial sync (a
+  // participant whose OKX call failed this tick contributes 0) shrink the pool.
   if (affiliateOn) {
     try {
       const latest = await getArenaConfig(env);
-      latest.commissionTotal = Math.round(commissionSum * 100) / 100;
+      latest.commissionTotal = Math.max(parseFloat(latest.commissionTotal || 0), Math.round(commissionSum * 100) / 100);
       latest.commissionSyncedAt = Date.now();
       await env.USERS_KV.put('arena:config', JSON.stringify(latest));
     } catch (_) {}
@@ -1449,7 +1451,7 @@ async function handleArenaLeaderboard(request, env) {
   let rows = [];
   try {
     rows = (await env.BOT_DB.prepare(
-      `SELECT s.email,s.return_pct,s.profit,s.volume,s.last_equity,s.start_equity,s.last_update,
+      `SELECT s.email,s.return_pct,s.profit,s.volume,s.last_equity,s.start_equity,s.last_update,s.trade_days,
               p.nickname,p.country,p.referral_verified,p.boards,(p.avatar IS NOT NULL) AS has_avatar
        FROM arena_score s JOIN arena_participants p ON p.email=s.email
        WHERE s.board=? AND s.season_id=?`
@@ -1459,6 +1461,7 @@ async function handleArenaLeaderboard(request, env) {
 
   const cfg = await getArenaConfig(env);
   const minBal = parseFloat(cfg.minBalance || 0);
+  const minDays = parseInt(cfg.minTradeDays || 0);
   const sortKey = metric === 'volume' ? 'volume' : metric === 'profit' ? 'profit' : 'return_pct';
   rows.sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
   const ranked = rows.map((r, i) => ({
@@ -1467,8 +1470,9 @@ async function handleArenaLeaderboard(request, env) {
     country: r.country || '',
     verified: r.referral_verified === 1,
     avatar: r.has_avatar ? 1 : 0,
-    // Prize-eligible = AYILON-referred AND started the season with ≥ min balance.
-    eligible: r.referral_verified === 1 && (r.start_equity || 0) >= minBal,
+    // Prize-eligible = AYILON-referred, started the season with ≥ min balance, and
+    // met the distinct-trading-day requirement (same rule the payout uses).
+    eligible: r.referral_verified === 1 && (r.start_equity || 0) >= minBal && (r.trade_days || 0) >= minDays,
     returnPct: r.return_pct || 0,
     profit: r.profit || 0,
     volume: r.volume || 0,
@@ -1705,7 +1709,6 @@ async function handleAdminArenaWinners(request, env) {
 }
 
 async function handleBotStatus(request, env) {
-  if (!env.USERS_KV) return json({ running: false, logs: [] });
   if (!env.USERS_KV) return json({ running: false, logs: [] });
   const body = request.method === 'GET' ? {} : await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
