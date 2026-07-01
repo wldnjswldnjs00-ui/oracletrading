@@ -1039,7 +1039,9 @@ async function arenaFetchVolumeDelta(env, p) {
     const cum = parseFloat(d.totalTradingVolume || d.volAmt || d.accVolume || '0');
     const prev = parseFloat(p.last_vol_cum || 0);
     const delta = cum > prev ? cum - prev : 0;
-    return { delta, cum };
+    // Accumulated commission I've earned from this invitee (authoritative, cumulative).
+    const commission = parseFloat(d.totalCommission || d.accCommission || d.commission || '0') || 0;
+    return { delta, cum, commission };
   } catch (_) { return 0; }
 }
 
@@ -1134,6 +1136,12 @@ async function arenaScore(env) {
   let parts = [];
   try { parts = (await env.BOT_DB.prepare('SELECT * FROM arena_participants').all()).results || []; } catch (_) { return; }
 
+  // Auto-affiliate: sum the cumulative commission earned across all referred
+  // participants → this becomes the prize-pool source when autoAffiliate is on.
+  const scfg = await getArenaConfig(env);
+  const affiliateOn = !!(scfg.autoAffiliate && env.OKX_AFFILIATE_KEY && env.OKX_AFFILIATE_SECRET && env.OKX_AFFILIATE_PASS);
+  let commissionSum = 0;
+
   for (const p of parts) {
     try {
       if (!p.api_key || !p.api_secret || !p.api_pass) continue;
@@ -1170,6 +1178,7 @@ async function arenaScore(env) {
       const volRes = await arenaFetchVolumeDelta(env, p);
       const volDelta = volRes && volRes.delta ? volRes.delta : 0;
       const volCum   = volRes && volRes.cum   ? volRes.cum   : parseFloat(p.last_vol_cum || 0);
+      if (affiliateOn && volRes && volRes.commission) commissionSum += volRes.commission;
 
       for (const [board, sid] of boards) {
         const row = await env.BOT_DB.prepare('SELECT * FROM arena_score WHERE email=? AND board=?').bind(p.email, board).first();
@@ -1202,6 +1211,16 @@ async function arenaScore(env) {
     } catch (e) {
       try { await env.BOT_DB.prepare('UPDATE arena_participants SET err=? WHERE email=?').bind(String(e.message).slice(0, 120), p.email).run(); } catch (_) {}
     }
+  }
+
+  // Persist the auto-computed commission total so the prize pool tracks it live.
+  if (affiliateOn) {
+    try {
+      const latest = await getArenaConfig(env);
+      latest.commissionTotal = Math.round(commissionSum * 100) / 100;
+      latest.commissionSyncedAt = Date.now();
+      await env.USERS_KV.put('arena:config', JSON.stringify(latest));
+    } catch (_) {}
   }
 }
 
@@ -1534,7 +1553,8 @@ async function handleAdminArenaConfig(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
   if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
-  if (body.read) return json({ ok: true, config: await getArenaConfig(env) });
+  if (body.read) return json({ ok: true, config: await getArenaConfig(env),
+    affiliateReady: !!(env.OKX_AFFILIATE_KEY && env.OKX_AFFILIATE_SECRET && env.OKX_AFFILIATE_PASS) });
   const cur = await getArenaConfig(env);
   const next = { ...cur };
   if (body.manualPool) next.manualPool = { ...cur.manualPool, ...body.manualPool };

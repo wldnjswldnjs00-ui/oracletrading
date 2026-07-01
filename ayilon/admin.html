@@ -83,8 +83,32 @@
       <button data-mode="manual">고정 금액</button>
     </div>
     <div id="commissionFields">
+      <div id="affBox" style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:13px;font-weight:700" id="affTitle">OKX 어필리에이트 자동 연동</div>
+            <div style="font-size:12px;color:var(--mut);margin-top:3px" id="affStatus">확인 중…</div>
+          </div>
+          <label class="sw" style="margin:0;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--txt)">
+            <input type="checkbox" id="cfgAutoAff" style="width:auto"> 자동 집계 사용
+          </label>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn btn-g btn-sm" type="button" onclick="testAffiliate()">연결 테스트</button>
+          <span class="msg" id="affMsg" style="margin-top:6px"></span>
+        </div>
+        <details id="affGuide" style="margin-top:10px">
+          <summary style="font-size:12px;color:var(--blue);cursor:pointer">키 설정 방법 (1회만)</summary>
+          <ol style="font-size:12px;color:var(--mut);margin:8px 0 0 16px;line-height:1.7">
+            <li>OKX &gt; 어필리에이트 &gt; API 에서 <b>읽기 전용</b> 키 생성 (Key / Secret / Passphrase)</li>
+            <li>Cloudflare 대시보드 &gt; Workers &amp; Pages &gt; <b>ayilon-email</b> &gt; Settings &gt; Variables and Secrets</li>
+            <li>Secret 3개 추가: <code>OKX_AFFILIATE_KEY</code>, <code>OKX_AFFILIATE_SECRET</code>, <code>OKX_AFFILIATE_PASS</code></li>
+            <li>저장 후 이 페이지 새로고침 → 위 스위치가 활성화됩니다.</li>
+          </ol>
+        </details>
+      </div>
       <div class="grid2">
-        <div><label>누적 커미션 ($) — 어필리에이트 대시보드 수치</label><input id="cfgCommTotal" type="number" min="0" step="0.01" placeholder="0"></div>
+        <div><label>누적 커미션 ($) — 자동 연동 시 자동 채워짐</label><input id="cfgCommTotal" type="number" min="0" step="0.01" placeholder="0"></div>
         <div><label>상금 비율 (%) — 커미션 중 상금에 쓸 비율</label><input id="cfgCommPct" type="number" min="0" max="100" placeholder="10"></div>
       </div>
     </div>
@@ -170,15 +194,45 @@ function setMode(m){
   cfg.poolMode=m;
 }
 ['cfgCommTotal','cfgCommPct','cfgWeekly','cfgMonthly'].forEach(id=>document.getElementById(id).addEventListener('input',computePool));
+let affReady=false;
 async function loadConfig(){
-  const r=await post('/admin/arena-config',{read:true}); cfg=r.config||{};
+  const r=await post('/admin/arena-config',{read:true}); cfg=r.config||{}; affReady=!!r.affiliateReady;
   setMode(cfg.poolMode||'commission');
   document.getElementById('cfgCommTotal').value=cfg.commissionTotal||0;
   document.getElementById('cfgCommPct').value=cfg.commissionPct!=null?cfg.commissionPct:10;
   document.getElementById('cfgWeekly').value=(cfg.manualPool&&cfg.manualPool.weekly)||0;
   document.getElementById('cfgMonthly').value=(cfg.manualPool&&cfg.manualPool.monthly)||0;
   document.getElementById('cfgMinBal').value=cfg.minBalance!=null?cfg.minBalance:100;
+  const auto=document.getElementById('cfgAutoAff'); auto.checked=!!cfg.autoAffiliate;
+  renderAffStatus();
+  document.getElementById('cfgCommTotal').readOnly=(affReady&&cfg.autoAffiliate);
   computePool();
+}
+function renderAffStatus(){
+  const st=document.getElementById('affStatus'),auto=document.getElementById('cfgAutoAff');
+  if(!affReady){
+    st.innerHTML='⚠️ 어필리에이트 API 키 미설정 — 아래 안내대로 Cloudflare에 키 3개를 넣으면 자동 집계가 켜집니다. 지금은 커미션을 직접 입력하세요.';
+    auto.disabled=true;
+  }else{
+    const when=cfg.commissionSyncedAt?new Date(cfg.commissionSyncedAt).toLocaleString():'—';
+    st.innerHTML=cfg.autoAffiliate
+      ? '🟢 자동 집계 ON — 참가자 커미션 합계가 1분마다 반영됩니다. 최근 동기화: '+when
+      : '🟡 키 설정됨 · 자동 집계 OFF — 스위치를 켜면 커미션이 자동으로 채워집니다.';
+    auto.disabled=false;
+  }
+}
+document.getElementById('cfgAutoAff').addEventListener('change',()=>{
+  cfg.autoAffiliate=document.getElementById('cfgAutoAff').checked;
+  document.getElementById('cfgCommTotal').readOnly=(affReady&&cfg.autoAffiliate);
+  renderAffStatus();
+});
+async function testAffiliate(){
+  const m=document.getElementById('affMsg');m.style.color='var(--mut)';m.textContent='테스트 중…';
+  try{
+    const r=await post('/admin/affiliate-test',{});
+    if(r.ok){m.style.color='var(--accent)';m.textContent='연결 성공 — 초대자 데이터 수신됨 ('+((r.data&&r.data.length)||0)+'건).';}
+    else{m.style.color='var(--red)';m.textContent='실패: '+(r.error||r.hint||'');}
+  }catch(e){m.style.color='var(--red)';m.textContent='요청 오류';}
 }
 function computePool(){
   const mode=cfg.poolMode||'commission';
@@ -202,8 +256,8 @@ function computePool(){
 }
 async function saveConfig(){
   const m=document.getElementById('cfgMsg');m.style.color='var(--mut)';m.textContent='저장 중…';
-  const body={poolMode:cfg.poolMode||'commission',minBalance:parseFloat(document.getElementById('cfgMinBal').value)||0};
-  if(body.poolMode==='commission'){ body.commissionTotal=parseFloat(document.getElementById('cfgCommTotal').value)||0; body.commissionPct=parseFloat(document.getElementById('cfgCommPct').value)||0; }
+  const body={poolMode:cfg.poolMode||'commission',minBalance:parseFloat(document.getElementById('cfgMinBal').value)||0,autoAffiliate:document.getElementById('cfgAutoAff').checked};
+  if(body.poolMode==='commission'){ body.commissionPct=parseFloat(document.getElementById('cfgCommPct').value)||0; if(!(affReady&&body.autoAffiliate)) body.commissionTotal=parseFloat(document.getElementById('cfgCommTotal').value)||0; }
   else { body.manualPool={weekly:parseFloat(document.getElementById('cfgWeekly').value)||0,monthly:parseFloat(document.getElementById('cfgMonthly').value)||0}; }
   const r=await post('/admin/arena-config',body);
   if(r.ok){m.style.color='var(--accent)';m.textContent='저장 완료 — 홈에 반영됩니다.'; refreshStats();}
