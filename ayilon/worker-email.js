@@ -1562,16 +1562,27 @@ async function handleArenaSeason(request, env) {
   const csplit = cfg.commissionSplit || { weekly: 25, monthly: 75 };
   const out = {};
   for (const board of ['weekly', 'monthly']) {
-    const pool = cfg.poolMode === 'manual'
+    // Total budget for this period, then split evenly across its categories so the
+    // grand total across every board/category/rank equals the funded pool exactly
+    // (never more than the configured % of commission — no over-promising).
+    const boardPool = cfg.poolMode === 'manual'
       ? parseFloat(cfg.manualPool[board] || 0)
       : commissionPool * (parseFloat(csplit[board] || 0) / 100);
+    const cats = cfg.boards[board] || ['return'];
+    const numCat = cats.length || 1;
+    const catPool = boardPool / numCat;
+    const split = cfg.split[board] || [];
+    // Each prize is a real % share of the (real) category pool — always payable.
+    const prizes = split.map((pct, i) => ({ rank: i + 1, pct, amount: Math.round(catPool * pct / 100 * 100) / 100 }));
+    const r2 = v => Math.round(v * 100) / 100;
     out[board] = {
       seasonId: board === 'monthly' ? arenaMonthId(now) : arenaWeekId(now),
       endsAt: ends[board],
-      pool: Math.round(pool * 100) / 100,
-      capTotal: (cfg.cap[board] || []).reduce((s, v) => s + (v || 0), 0),
-      prizes: arenaPrizeBreakdown(pool, board, cfg),
-      boards: cfg.boards[board] || []
+      pool: r2(catPool),            // funds the prizes shown for one category
+      boardPool: r2(boardPool),     // total across all categories this period
+      numCategories: numCat,
+      prizes,
+      boards: cats
     };
   }
   return json({ ok: true, poolMode: cfg.poolMode, commissionPct, commissionTotal: Math.round(commissionTotal * 100) / 100,
