@@ -147,12 +147,12 @@
           <p id="otpDesc"></p>
         </div>
         <div class="otp-inputs">
-          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 0)" />
-          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 1)" />
-          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 2)" />
-          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 3)" />
-          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 4)" />
-          <input type="text" class="otp-digit" maxlength="1" oninput="moveNext(this, 5)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit" maxlength="1" oninput="moveNext(this, 0)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit" maxlength="1" oninput="moveNext(this, 1)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit" maxlength="1" oninput="moveNext(this, 2)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit" maxlength="1" oninput="moveNext(this, 3)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit" maxlength="1" oninput="moveNext(this, 4)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit" maxlength="1" oninput="moveNext(this, 5)" />
         </div>
         <button class="btn-submit" onclick="verifyOTP()" data-i18n="login.otp.verify">Verify &amp; Sign In</button>
         <p id="otpError" style="text-align:center;margin-top:12px;font-size:13px;color:#ef4444;display:none;"></p>
@@ -202,12 +202,12 @@
           <p id="forgotVerifyDesc"></p>
         </div>
         <div class="otp-inputs">
-          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 0)" />
-          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 1)" />
-          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 2)" />
-          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 3)" />
-          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 4)" />
-          <input type="text" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 5)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 0)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 1)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 2)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 3)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 4)" />
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-digit otp-forgot" maxlength="1" oninput="moveForgotNext(this, 5)" />
         </div>
         <button class="btn-submit" onclick="verifyForgotOTP()">Verify →</button>
       </div>

@@ -129,7 +129,7 @@
           </div>
           <div class="verify-code-wrap" id="codeWrap">
             <div class="verify-row">
-              <input type="text" class="form-input" id="verifyCode" data-i18n-ph="signup.codeph" placeholder="Enter 6-digit code" maxlength="6" />
+              <input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" class="form-input" id="verifyCode" data-i18n-ph="signup.codeph" placeholder="Enter 6-digit code" maxlength="6" />
               <span class="verify-timer" id="timer">05:00</span>
               <button type="button" class="btn-verify" onclick="confirmCode()" data-i18n="signup.verify">Verify</button>
             </div>
