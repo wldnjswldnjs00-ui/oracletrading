@@ -8,13 +8,15 @@
   :root{--bg:#0a0a0c;--card:#101015;--line:#23232b;--txt:#f1f2f4;--mut:#8a8b95;--dim:#5d5e69;--accent:#34d39a;--gold:#d8b46a;--silver:#c4c9d2;--bronze:#c2895a;--red:#ec6a72}
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:#060608;color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px;gap:18px}
-  .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center}
+  .tlabel{color:var(--dim);font-size:12px;letter-spacing:.04em;margin-right:2px}
   .btn{border:none;cursor:pointer;font-family:inherit;font-weight:600;font-size:14px;padding:11px 20px;border-radius:11px;transition:.15s}
   .btn-p{background:var(--accent);color:#06140e}.btn-p:hover{filter:brightness(1.08)}
   .btn-g{background:transparent;color:var(--txt);border:1px solid var(--line)}.btn-g:hover{border-color:var(--mut)}
   .seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:3px}
   .seg button{background:transparent;border:none;color:var(--mut);font-weight:600;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit}
   .seg button.on{background:var(--accent);color:#06140e}
+  .lang{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:8px 12px;font-size:13px;font-family:inherit;cursor:pointer}
   /* the card */
   #card{width:540px;max-width:96vw;aspect-ratio:1/1;background:
       radial-gradient(620px 360px at 50% -12%,rgba(52,211,154,.16),transparent 70%),var(--card);
@@ -29,8 +31,14 @@
   .c-val{font-size:64px;font-weight:840;letter-spacing:-.03em;margin-top:14px;font-variant-numeric:tabular-nums}
   .c-val.pos{color:var(--accent)}.c-val.neg{color:var(--red)}.c-val.neutral{color:var(--txt)}
   .c-metric{font-size:16px;color:var(--mut);margin-top:2px}
-  .c-foot{margin-top:26px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:18px}
+  .c-foot{margin-top:26px;display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid var(--line);padding-top:18px;gap:16px}
   .c-foot .u{color:var(--dim);font-size:15px}.c-foot .s{color:var(--mut);font-size:14px}
+  /* QR */
+  .qrbox{display:flex;flex-direction:column;align-items:center;gap:5px;flex:none}
+  .qrbox .qr{width:74px;height:74px;background:#fff;border-radius:8px;padding:5px;display:flex;align-items:center;justify-content:center}
+  .qrbox .qr canvas{display:none}
+  .qrbox .qr img{width:100%;height:100%;display:block;image-rendering:pixelated}
+  .qrbox .qrlab{color:var(--dim);font-size:10.5px;letter-spacing:.04em;white-space:nowrap}
   /* top list */
   .c-list{margin-top:20px;display:flex;flex-direction:column;gap:0}
   .c-li{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:19px}
@@ -46,65 +54,134 @@
 </head>
 <body>
 <div class="toolbar">
+  <span class="tlabel" id="tlType"></span>
   <div class="seg" id="typeSeg">
-    <button data-type="rank" class="on">My rank</button>
-    <button data-type="winner">Winner</button>
-    <button data-type="top">Top 5</button>
+    <button data-type="rank" class="on" id="btRank"></button>
+    <button data-type="winner" id="btWinner"></button>
+    <button data-type="top" id="btTop"></button>
   </div>
   <div class="seg" id="perSeg">
-    <button data-period="weekly" class="on">Weekly</button>
-    <button data-period="monthly">Monthly</button>
+    <button data-period="weekly" class="on" id="btWeekly"></button>
+    <button data-period="monthly" id="btMonthly"></button>
   </div>
+  <select class="lang" id="langSel">
+    <option value="en">English</option><option value="ko">한국어</option><option value="zh">中文</option>
+    <option value="es">Español</option><option value="vi">Tiếng Việt</option><option value="ru">Русский</option>
+  </select>
 </div>
 
-<div id="card"><div class="c-logo">AY<i>I</i>LON</div><div style="margin:auto;color:var(--mut)">Loading…</div></div>
+<div id="card"><div class="c-logo">AY<i>I</i>LON</div><div style="margin:auto;color:var(--mut)">…</div></div>
 
 <div class="toolbar">
-  <button class="btn btn-p" id="dl">Download PNG</button>
-  <button class="btn btn-g" id="copy">Copy link</button>
-  <a class="btn btn-g" href="/">← Arena</a>
+  <button class="btn btn-p" id="dl"></button>
+  <button class="btn btn-g" id="copy"></button>
+  <a class="btn btn-g" href="/" id="back"></a>
 </div>
-<div class="hint">Download the card and post it to TikTok, X, or your community. <span id="copied"></span></div>
+<div class="hint"><span id="hintTxt"></span> <span id="copied"></span></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="qrcode.min.js"></script>
 <script>
 const API='https://ayilon-email.wldnjswldnjs00.workers.dev';
+const SIGNUP_URL='https://ayilon.com/signup.html';   // QR target — direct sign-up
 const qs=new URLSearchParams(location.hash.slice(1)||location.search);
+
+// ── i18n: the card is rendered in the creator's language so it travels well ──
+const T={
+  en:{tType:'Card',rank:'My rank',winner:'Winner',top:'Top 5',weekly:'Weekly',monthly:'Monthly',dl:'Download PNG',copy:'Copy link',back:'← Arena',
+      hint:'Download the card and post it to TikTok, X, or your community.',copied:'Link copied.',scan:'Scan to join',ret:'Return',
+      champ:'{p} Champion · Return',toptitle:'Top traders this {u}',week:'week',month:'month',rankof:'Rank #{r} of {n}',season:'Season {s}',
+      league:'Global Trading League',beat:'Think you can beat me?',noparts:'No participants yet — be the first.',
+      nochamp:'No champion crowned yet.<br>The first season is live.',joinkick:'Join the league',jointitle:'Prove your edge.<br>Compete for the prize.',fail:'Could not load.'},
+  ko:{tType:'카드',rank:'내 순위',winner:'우승자',top:'TOP 5',weekly:'주간',monthly:'월간',dl:'PNG 저장',copy:'링크 복사',back:'← 아레나',
+      hint:'카드를 저장해 틱톡·X·커뮤니티에 올려보세요.',copied:'링크 복사됨.',scan:'스캔해서 참가',ret:'수익률',
+      champ:'{p} 우승 · 수익률',toptitle:'이번 {u} 상위 트레이더',week:'주',month:'달',rankof:'{n}명 중 {r}위',season:'시즌 {s}',
+      league:'글로벌 트레이딩 리그',beat:'날 이길 수 있어?',noparts:'아직 참가자가 없어요 — 첫 주자가 되세요.',
+      nochamp:'아직 우승자가 없습니다.<br>첫 시즌 진행 중입니다.',joinkick:'리그에 참가하세요',jointitle:'당신의 실력을 증명하세요.<br>상금에 도전하세요.',fail:'불러오지 못했습니다.'},
+  zh:{tType:'卡片',rank:'我的排名',winner:'冠军',top:'前 5 名',weekly:'周赛',monthly:'月赛',dl:'下载 PNG',copy:'复制链接',back:'← 竞技场',
+      hint:'下载卡片并发布到 TikTok、X 或你的社群。',copied:'链接已复制。',scan:'扫码参加',ret:'收益率',
+      champ:'{p}冠军 · 收益率',toptitle:'本{u}顶尖交易者',week:'周',month:'月',rankof:'{n} 人中第 {r} 名',season:'赛季 {s}',
+      league:'全球交易联赛',beat:'你能赢我吗？',noparts:'暂无参赛者——成为第一人。',
+      nochamp:'尚未产生冠军。<br>首个赛季进行中。',joinkick:'加入联赛',jointitle:'证明你的实力。<br>争夺奖金。',fail:'加载失败。'},
+  es:{tType:'Tarjeta',rank:'Mi posición',winner:'Campeón',top:'Top 5',weekly:'Semanal',monthly:'Mensual',dl:'Descargar PNG',copy:'Copiar enlace',back:'← Arena',
+      hint:'Descarga la tarjeta y publícala en TikTok, X o tu comunidad.',copied:'Enlace copiado.',scan:'Escanea para unirte',ret:'Rentabilidad',
+      champ:'Campeón {p} · Rentab.',toptitle:'Mejores traders de {u}',week:'la semana',month:'el mes',rankof:'Puesto #{r} de {n}',season:'Temporada {s}',
+      league:'Liga Global de Trading',beat:'¿Crees que puedes ganarme?',noparts:'Aún no hay participantes: sé el primero.',
+      nochamp:'Aún no hay campeón.<br>La primera temporada está en curso.',joinkick:'Únete a la liga',jointitle:'Demuestra tu ventaja.<br>Compite por el premio.',fail:'No se pudo cargar.'},
+  vi:{tType:'Thẻ',rank:'Hạng của tôi',winner:'Nhà vô địch',top:'Top 5',weekly:'Tuần',monthly:'Tháng',dl:'Tải PNG',copy:'Sao chép liên kết',back:'← Đấu trường',
+      hint:'Tải thẻ và đăng lên TikTok, X hoặc cộng đồng của bạn.',copied:'Đã sao chép liên kết.',scan:'Quét để tham gia',ret:'Lợi nhuận',
+      champ:'Nhà vô địch {p} · Lợi nhuận',toptitle:'Trader hàng đầu {u} này',week:'tuần',month:'tháng',rankof:'Hạng #{r}/{n}',season:'Mùa {s}',
+      league:'Giải Giao Dịch Toàn Cầu',beat:'Bạn nghĩ mình thắng được tôi?',noparts:'Chưa có người tham gia — hãy là người đầu tiên.',
+      nochamp:'Chưa có nhà vô địch.<br>Mùa giải đầu tiên đang diễn ra.',joinkick:'Tham gia giải',jointitle:'Chứng minh bản lĩnh.<br>Tranh giải thưởng.',fail:'Không tải được.'},
+  ru:{tType:'Карточка',rank:'Моё место',winner:'Чемпион',top:'Топ-5',weekly:'Неделя',monthly:'Месяц',dl:'Скачать PNG',copy:'Скопировать ссылку',back:'← Арена',
+      hint:'Скачайте карточку и опубликуйте в TikTok, X или своём сообществе.',copied:'Ссылка скопирована.',scan:'Сканируй, чтобы участвовать',ret:'Доходность',
+      champ:'Чемпион {p} · Доходность',toptitle:'Лучшие трейдеры за {u}',week:'неделю',month:'месяц',rankof:'Место #{r} из {n}',season:'Сезон {s}',
+      league:'Глобальная торговая лига',beat:'Думаешь, обыграешь меня?',noparts:'Пока нет участников — станьте первым.',
+      nochamp:'Чемпион ещё не определён.<br>Идёт первый сезон.',joinkick:'Вступай в лигу',jointitle:'Докажи своё превосходство.<br>Борись за приз.',fail:'Не удалось загрузить.'}
+};
+let LANG=(qs.get('lang')||localStorage.getItem('ayilon_lang')||'en'); if(!T[LANG])LANG='en';
+const t=(k,v)=>{let s=(T[LANG]&&T[LANG][k])||T.en[k]||k; if(v)for(const p in v)s=s.replace('{'+p+'}',v[p]); return s;};
+
 let state={type:qs.get('type')||'rank',period:qs.get('period')||'weekly',metric:'return',nick:qs.get('nick')||localStorage.getItem('ayilon_username')||''};
 const medal=r=>r===1?'🥇':r===2?'🥈':r===3?'🥉':'';
 const fmtPct=v=>(v>=0?'+':'')+(v*100).toFixed(1)+'%';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function applyChrome(){
+  document.documentElement.lang=LANG;
+  document.getElementById('langSel').value=LANG;
+  document.getElementById('tlType').textContent=t('tType');
+  document.getElementById('btRank').textContent=t('rank');
+  document.getElementById('btWinner').textContent=t('winner');
+  document.getElementById('btTop').textContent=t('top');
+  document.getElementById('btWeekly').textContent=t('weekly');
+  document.getElementById('btMonthly').textContent=t('monthly');
+  document.getElementById('dl').textContent=t('dl');
+  document.getElementById('copy').textContent=t('copy');
+  document.getElementById('back').textContent=t('back');
+  document.getElementById('hintTxt').textContent=t('hint');
+}
 function syncSeg(){document.querySelectorAll('#typeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.type===state.type));document.querySelectorAll('#perSeg button').forEach(b=>b.classList.toggle('on',b.dataset.period===state.period));}
 
+// Every card carries a QR to the sign-up page — the growth loop.
+function qrFoot(rightAlt){
+  return `<div><div class="u">ayilon.com</div><div class="s">${rightAlt||t('league')}</div></div>
+    <div class="qrbox"><div class="qr" id="qr"></div><div class="qrlab">${t('scan')}</div></div>`;
+}
+function drawQR(){
+  const el=document.getElementById('qr'); if(!el||typeof qrcode==='undefined')return;
+  try{ const qr=qrcode(0,'M'); qr.addData(SIGNUP_URL); qr.make(); el.innerHTML=qr.createImgTag(4,0); }catch(e){}
+}
+
 async function render(){
-  syncSeg();
+  applyChrome(); syncSeg();
   const card=document.getElementById('card');
-  const periodLabel=state.period==='monthly'?'Monthly':'Weekly';
+  const periodLabel=state.period==='monthly'?t('monthly'):t('weekly');
+  const unit=state.period==='monthly'?t('month'):t('week');
   try{
     if(state.type==='top'){
       const r=await fetch(`${API}/arena/leaderboard?period=${state.period}&metric=return`);
       const rows=(await r.json()).leaderboard||[];
       const top=rows.slice(0,5);
       card.innerHTML=`<div class="c-logo">AY<i>I</i>LON</div>
-        <div class="c-kick" style="margin-top:24px">${periodLabel} · Return</div>
-        <div class="c-title">Top traders this ${state.period==='monthly'?'month':'week'}</div>
-        <div class="c-list">${top.length?top.map(x=>`<div class="c-li"><div class="l"><span class="rk r${x.rank}">${x.rank}</span><span class="nm">${esc(x.nickname)}</span></div><span class="v ${x.returnPct>=0?'pos':'neg'}">${fmtPct(x.returnPct)}</span></div>`).join(''):'<div style="color:var(--mut);padding:24px 0">No participants yet — be the first.</div>'}</div>
-        <div class="c-foot" style="margin-top:auto"><span class="u">ayilon.com</span><span class="s">Global Trading League</span></div>`;
+        <div class="c-kick" style="margin-top:24px">${periodLabel} · ${t('ret')}</div>
+        <div class="c-title">${t('toptitle',{u:unit})}</div>
+        <div class="c-list">${top.length?top.map(x=>`<div class="c-li"><div class="l"><span class="rk r${x.rank}">${x.rank}</span><span class="nm">${esc(x.nickname)}</span></div><span class="v ${x.returnPct>=0?'pos':'neg'}">${fmtPct(x.returnPct)}</span></div>`).join(''):`<div style="color:var(--mut);padding:24px 0">${t('noparts')}</div>`}</div>
+        <div class="c-foot" style="margin-top:auto">${qrFoot()}</div>`;
     } else if(state.type==='winner'){
       const r=await fetch(`${API}/arena/winners`); const w=(await r.json()).winners||[];
-      const board=state.period;
-      const champ=w.find(x=>x.board===board&&x.metric==='return'&&x.rank===1);
+      const champ=w.find(x=>x.board===state.period&&x.metric==='return'&&x.rank===1);
       if(champ){
         card.innerHTML=`<div class="c-logo">AY<i>I</i>LON</div>
           <div class="c-hero" style="margin-top:auto">
-            <div class="c-kick">${periodLabel} Champion · Return</div>
+            <div class="c-kick">${t('champ',{p:periodLabel})}</div>
             <div class="c-nick"><span class="medal">🥇</span>${esc(champ.nickname)}</div>
             <div class="c-val pos">${fmtPct(champ.value)}</div>
-            <div class="c-metric">Season ${esc(champ.season_id)}</div>
+            <div class="c-metric">${t('season',{s:esc(champ.season_id)})}</div>
           </div>
-          <div class="c-foot"><span class="u">ayilon.com</span><span class="s">Global Trading League</span></div>`;
+          <div class="c-foot">${qrFoot()}</div>`;
       } else {
-        card.innerHTML=`<div class="c-logo">AY<i>I</i>LON</div><div class="c-hero" style="margin:auto 0"><div class="c-kick">${periodLabel} Champion</div><div class="c-title" style="margin-top:10px">No champion crowned yet.<br>The first season is live.</div></div><div class="c-foot"><span class="u">ayilon.com</span><span class="s">Global Trading League</span></div>`;
+        card.innerHTML=`<div class="c-logo">AY<i>I</i>LON</div><div class="c-hero" style="margin:auto 0"><div class="c-kick">${periodLabel}</div><div class="c-title" style="margin-top:10px">${t('nochamp')}</div></div><div class="c-foot">${qrFoot()}</div>`;
       }
     } else { // rank
       const r=await fetch(`${API}/arena/leaderboard?period=${state.period}&metric=return`);
@@ -114,28 +191,30 @@ async function render(){
         const cls=me.returnPct>=0?'pos':'neg';
         card.innerHTML=`<div class="c-logo">AY<i>I</i>LON</div>
           <div class="c-hero" style="margin-top:auto">
-            <div class="c-kick">${periodLabel} · Return</div>
+            <div class="c-kick">${periodLabel} · ${t('ret')}</div>
             <div class="c-nick">${medal(me.rank)?`<span class="medal">${medal(me.rank)}</span>`:''}${esc(me.nickname)}</div>
-            <div class="c-rank" style="margin-top:8px">Rank #${me.rank} of ${rows.length}</div>
+            <div class="c-rank" style="margin-top:8px">${t('rankof',{r:me.rank,n:rows.length})}</div>
             <div class="c-val ${cls}">${fmtPct(me.returnPct)}</div>
           </div>
-          <div class="c-foot"><span class="u">ayilon.com</span><span class="s">Think you can beat me?</span></div>`;
+          <div class="c-foot">${qrFoot(t('beat'))}</div>`;
       } else {
-        card.innerHTML=`<div class="c-logo">AY<i>I</i>LON</div><div class="c-hero" style="margin:auto 0"><div class="c-kick">Join the league</div><div class="c-title" style="margin-top:10px">Prove your edge.<br>Compete for the prize.</div></div><div class="c-foot"><span class="u">ayilon.com</span><span class="s">Global Trading League</span></div>`;
+        card.innerHTML=`<div class="c-logo">AY<i>I</i>LON</div><div class="c-hero" style="margin:auto 0"><div class="c-kick">${t('joinkick')}</div><div class="c-title" style="margin-top:10px">${t('jointitle')}</div></div><div class="c-foot">${qrFoot()}</div>`;
       }
     }
-  }catch(e){ card.innerHTML='<div class="c-logo">AY<i>I</i>LON</div><div style="margin:auto;color:var(--mut)">Could not load.</div>'; }
+    drawQR();
+  }catch(e){ card.innerHTML=`<div class="c-logo">AY<i>I</i>LON</div><div style="margin:auto;color:var(--mut)">${t('fail')}</div>`; }
 }
 document.getElementById('typeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.type=b.dataset.type;render();});
 document.getElementById('perSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;render();});
+document.getElementById('langSel').addEventListener('change',e=>{LANG=e.target.value;localStorage.setItem('ayilon_lang',LANG);render();});
 document.getElementById('dl').onclick=async()=>{
   const card=document.getElementById('card');
   const canvas=await html2canvas(card,{backgroundColor:'#060608',scale:2,useCORS:true});
   const a=document.createElement('a');a.download=`ayilon-${state.type}-${state.period}.png`;a.href=canvas.toDataURL('image/png');a.click();
 };
 document.getElementById('copy').onclick=()=>{
-  const url=location.origin+'/card.html?type='+state.type+'&period='+state.period+(state.nick?'&nick='+encodeURIComponent(state.nick):'');
-  navigator.clipboard.writeText(url).then(()=>{document.getElementById('copied').textContent='Link copied.';setTimeout(()=>document.getElementById('copied').textContent='',2000);});
+  const url=location.origin+'/card.html?type='+state.type+'&period='+state.period+'&lang='+LANG+(state.nick?'&nick='+encodeURIComponent(state.nick):'');
+  navigator.clipboard.writeText(url).then(()=>{document.getElementById('copied').textContent=t('copied');setTimeout(()=>document.getElementById('copied').textContent='',2000);});
 };
 render();
 </script>
