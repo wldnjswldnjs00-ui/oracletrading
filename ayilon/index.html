@@ -98,10 +98,41 @@
   .prize-note{font-size:12px;color:var(--dim);margin-top:15px;line-height:1.6}
   /* leaderboard controls */
   .lb-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
-  .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:3px}
-  .seg button{background:transparent;border:none;color:var(--mut);font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;transition:.15s}
-  .seg button.on{background:var(--line2);color:var(--txt)}
-  .seg.metric button.on{background:var(--accent);color:#06140e}
+  .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .seg button{background:transparent;border:none;color:var(--mut);font-weight:600;font-size:13px;padding:9px 17px;border-radius:9px;cursor:pointer;font-family:inherit;transition:.18s cubic-bezier(.4,0,.2,1)}
+  .seg button.on{background:var(--line2);color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .seg.metric button.on{background:linear-gradient(180deg,#3ee0a4,#2bb384);color:#06140e;box-shadow:0 2px 8px rgba(52,211,154,.3)}
+  /* category hero + per-metric 3D visual */
+  .cat-hero{display:flex;align-items:center;gap:22px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px 26px;margin-bottom:16px;position:relative;overflow:hidden;transition:.3s}
+  .cat-hero::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.7;transition:.3s;
+    background:radial-gradient(420px 160px at 12% 30%, var(--glow,rgba(52,211,154,.10)), transparent 70%)}
+  .cat-viz{width:92px;height:74px;flex:none;display:flex;align-items:center;justify-content:center;perspective:360px;position:relative;z-index:1}
+  .cat-info{position:relative;z-index:1}
+  .cat-info h3{font-size:19px;font-weight:740;letter-spacing:-.02em}
+  .cat-info p{color:var(--mut);font-size:13.5px;margin-top:4px;max-width:520px;line-height:1.5}
+  /* Return — isometric rising bars */
+  .v-ret{display:flex;align-items:flex-end;gap:8px;height:60px;transform:rotateX(20deg) rotateY(-16deg);transform-style:preserve-3d}
+  .v-ret i{width:14px;border-radius:3px 3px 2px 2px;background:linear-gradient(180deg,#5cf0bf,#1f9e74);box-shadow:0 7px 14px rgba(31,158,116,.4)}
+  .v-ret i:nth-child(1){height:22px;animation:vbar 1.8s ease-in-out 0s infinite}
+  .v-ret i:nth-child(2){height:38px;animation:vbar 1.8s ease-in-out .2s infinite}
+  .v-ret i:nth-child(3){height:56px;animation:vbar 1.8s ease-in-out .4s infinite}
+  @keyframes vbar{0%,100%{transform:scaleY(.8)}50%{transform:scaleY(1.06)}}
+  /* Profit — stacked 3D gold coins */
+  .v-pro{position:relative;width:56px;height:66px;transform:rotateX(14deg)}
+  .v-pro .c{position:absolute;left:6px;width:44px;height:15px;border-radius:50%;background:linear-gradient(180deg,#f7e3a6,#d8b46a 60%,#b0883a);box-shadow:0 3px 0 #8f6f2c,0 5px 12px rgba(0,0,0,.35)}
+  .v-pro .c1{bottom:2px}.v-pro .c2{bottom:14px}.v-pro .c3{bottom:26px}
+  .v-pro .cd{position:absolute;left:6px;width:44px;height:15px;border-radius:50%;background:linear-gradient(180deg,#fff0c4,#e6c877 60%,#c69f4a);box-shadow:0 3px 0 #8f6f2c;animation:coindrop 2.2s ease-in infinite}
+  @keyframes coindrop{0%{bottom:62px;opacity:0}25%{opacity:1}60%{bottom:38px;opacity:1}70%{bottom:38px;opacity:1}100%{bottom:38px;opacity:0}}
+  /* Volume — pulsing 3D equalizer */
+  .v-vol{display:flex;align-items:flex-end;gap:6px;height:60px;transform:rotateX(18deg) rotateY(14deg);transform-style:preserve-3d}
+  .v-vol i{width:11px;border-radius:2px;background:linear-gradient(180deg,#7cd0ff,#1c84c4);box-shadow:0 7px 12px rgba(28,132,196,.35)}
+  .v-vol i:nth-child(1){animation:eq 1.05s ease-in-out 0s infinite}
+  .v-vol i:nth-child(2){animation:eq 1.05s ease-in-out .18s infinite}
+  .v-vol i:nth-child(3){animation:eq 1.05s ease-in-out .36s infinite}
+  .v-vol i:nth-child(4){animation:eq 1.05s ease-in-out .54s infinite}
+  .v-vol i:nth-child(5){animation:eq 1.05s ease-in-out .72s infinite}
+  @keyframes eq{0%,100%{height:16px}50%{height:54px}}
+  @media(max-width:560px){.cat-hero{gap:16px;padding:16px 18px}.cat-viz{width:72px}}
   .search{flex:1;min-width:170px;max-width:260px;position:relative}
   .search input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:11px;padding:10px 14px 10px 36px;font-size:14px;font-family:inherit;outline:none;transition:.15s}
   .search input:focus{border-color:var(--line2)}
@@ -303,6 +334,11 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="lbSearch" type="text" data-i18n-ph="lb.search" placeholder="닉네임 검색">
       </div>
+    </div>
+
+    <div class="cat-hero" id="catHero">
+      <div class="cat-viz" id="catViz"></div>
+      <div class="cat-info"><h3 id="catTitle">—</h3><p id="catDesc">—</p></div>
     </div>
 
     <div class="lb">
@@ -727,7 +763,19 @@ const fmtUsd=v=>(v>=0?'+':'-')+'$'+Math.abs(v).toLocaleString(undefined,{maximum
 const fmtVol=v=>'$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
 const fmtEq=v=>'$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
 
-function syncMetricHeader(){const d=I18N[LANG];const m=state.metric;document.getElementById('hMetric').textContent=m==='volume'?d['lb.m.volume']:m==='profit'?d['lb.m.profit']:d['lb.m.return'];}
+function syncMetricHeader(){const d=I18N[LANG];const m=state.metric;document.getElementById('hMetric').textContent=m==='volume'?d['lb.m.volume']:m==='profit'?d['lb.m.profit']:d['lb.m.return'];renderCatHero();}
+const CAT_VIZ={
+  return:{viz:'<div class="v-ret"><i></i><i></i><i></i></div>',glow:'rgba(52,211,154,.12)',t:'cat.1.t',d:'cat.1.d'},
+  profit:{viz:'<div class="v-pro"><span class="c c1"></span><span class="c c2"></span><span class="c c3"></span><span class="cd"></span></div>',glow:'rgba(216,180,106,.14)',t:'cat.2.t',d:'cat.2.d'},
+  volume:{viz:'<div class="v-vol"><i></i><i></i><i></i><i></i><i></i></div>',glow:'rgba(55,182,255,.13)',t:'cat.3.t',d:'cat.3.d'}
+};
+function renderCatHero(){
+  const c=CAT_VIZ[state.metric]||CAT_VIZ.return;
+  document.getElementById('catViz').innerHTML=c.viz;
+  document.getElementById('catTitle').textContent=t(c.t);
+  document.getElementById('catDesc').textContent=t(c.d);
+  document.getElementById('catHero').style.setProperty('--glow',c.glow);
+}
 // Weekly = return only; monthly = all three.
 function updateMetricTabs(){
   const monthly=state.period==='monthly';
