@@ -181,7 +181,8 @@ const token=()=>localStorage.getItem('ayilon_session_token')||'';
 const email=()=>localStorage.getItem('ayilon_email')||'';
 const usd=v=>'$'+Number(v||0).toLocaleString(undefined,{maximumFractionDigits:2});
 const pct=v=>v==null?'—':((v>=0?'+':'')+(v*100).toFixed(1)+'%');
-function post(path,body){return fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token(),...body})}).then(r=>r.json());}
+function post(path,body){return fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token(),...body})}).then(async r=>{try{const j=await r.json();if(j&&j.ok==null)j.ok=r.ok;return j;}catch(e){return{ok:false,error:'bad_response',httpStatus:r.status};}}).catch(e=>({ok:false,error:'network'}));}
+function loadErr(r){return '연결 실패 — 자동으로 다시 시도합니다'+(r&&r.httpStatus?(' (HTTP '+r.httpStatus+')'):(r&&r.error?(' ('+r.error+')'):''));}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 (async function init(){
@@ -196,8 +197,8 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;',
 function fmtDate(ts){ if(!ts)return''; const d=new Date(Number(ts)); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 async function loadContact(){
   const box=document.getElementById('cList');
-  let r; try{ r=await post('/admin/contact-list',{}); }catch(e){ box.innerHTML='<div class="empty" style="color:var(--red);font-size:13px">불러오기 실패</div>'; return; }
-  if(!r||!r.ok){ box.innerHTML='<div class="empty" style="color:var(--red);font-size:13px">권한 없음</div>'; return; }
+  const r=await post('/admin/contact-list',{});
+  if(!r||!r.ok){ box.innerHTML='<div class="empty" style="color:var(--red);font-size:13px">'+loadErr(r)+'</div>'; return; }
   const msgs=r.messages||[];
   document.getElementById('cUnread').textContent=r.unread?('· 새 문의 '+r.unread+'건'):'';
   if(!msgs.length){ box.innerHTML='<div class="empty" style="padding:14px 0;color:var(--mut);font-size:13px">아직 문의가 없습니다.</div>'; return; }
@@ -326,8 +327,9 @@ function debouncedList(){clearTimeout(_t);_t=setTimeout(loadList,250);}
 async function loadList(){
   const q=document.getElementById('pSearch').value.trim();
   const r=await post('/admin/arena-list',{q});
-  const parts=r.participants||[];
   const tb=document.querySelector('#pTable tbody');
+  if(!r||!r.ok){ if(tb) tb.innerHTML='<tr><td class="empty" style="color:var(--red)">'+loadErr(r)+'</td></tr>'; return; }
+  const parts=r.participants||[];
   document.getElementById('stParts').textContent=r.total!=null?r.total:parts.length;
   const fw=document.getElementById('flagWarn');
   if(fw) fw.style.display=(r.flagged>0)?'block':'none', fw.textContent='⚠ 부정행위 의심 '+r.flagged+'건 — 같은 IP·기기·입금출처 다중 계정 또는 롱/숏 반대 헤지 패턴. 확인 후 정지하세요.';
@@ -364,8 +366,9 @@ async function ban(email){
 /* ---- winners / payouts ---- */
 async function loadWinners(){
   const r=await post('/admin/arena-winners',{});
-  const ws=r.winners||[];
   const tb=document.querySelector('#wTable tbody');
+  if(!r||!r.ok){ if(tb) tb.innerHTML='<tr><td class="empty" style="color:var(--red)">'+loadErr(r)+'</td></tr>'; return; }
+  const ws=r.winners||[];
   if(!ws.length){ tb.innerHTML='<tr><td class="empty">아직 확정된 우승자가 없습니다 (시즌 종료 시 자동 확정)</td></tr>'; return; }
   const label={return:'수익률',profit:'수익금',volume:'거래량'};
   tb.parentElement.innerHTML='<thead><tr><th>시즌</th><th>부문</th><th>순위</th><th>닉네임</th><th>기록</th><th>지급액</th><th>지급</th></tr></thead><tbody>'+
