@@ -114,13 +114,14 @@
   .cat-info{position:relative;z-index:1}
   .cat-info h3{font-size:19px;font-weight:740;letter-spacing:-.02em}
   .cat-info p{color:var(--mut);font-size:13.5px;margin-top:4px;max-width:520px;line-height:1.5}
-  /* Return — isometric rising bars */
-  .v-ret{display:flex;align-items:flex-end;gap:8px;height:60px;transform:rotateX(20deg) rotateY(-16deg);transform-style:preserve-3d}
-  .v-ret i{width:14px;border-radius:3px 3px 2px 2px;background:linear-gradient(180deg,#5cf0bf,#1f9e74);box-shadow:0 7px 14px rgba(31,158,116,.4)}
-  .v-ret i:nth-child(1){height:22px;animation:vbar 1.8s ease-in-out 0s infinite}
-  .v-ret i:nth-child(2){height:38px;animation:vbar 1.8s ease-in-out .2s infinite}
-  .v-ret i:nth-child(3){height:56px;animation:vbar 1.8s ease-in-out .4s infinite}
-  @keyframes vbar{0%,100%{transform:scaleY(.8)}50%{transform:scaleY(1.06)}}
+  /* Return — rising line chart */
+  .v-line{width:92px;height:62px;overflow:visible}
+  .v-line .ar{fill:url(#lgRet);opacity:0;animation:lnfill 2.8s ease-in-out infinite}
+  .v-line .ln{fill:none;stroke:#34d39a;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 6px rgba(52,211,154,.5));stroke-dasharray:150;stroke-dashoffset:150;animation:lndraw 2.8s ease-in-out infinite}
+  .v-line .dot{fill:#7ffccd;filter:drop-shadow(0 0 5px #34d39a);transform-box:fill-box;transform-origin:center;opacity:0;animation:lndot 2.8s ease-in-out infinite}
+  @keyframes lndraw{0%{stroke-dashoffset:150}50%{stroke-dashoffset:0}88%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
+  @keyframes lnfill{0%,32%{opacity:0}58%{opacity:.9}92%{opacity:.9}100%{opacity:0}}
+  @keyframes lndot{0%,46%{opacity:0;transform:scale(0)}54%{opacity:1;transform:scale(1)}86%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.6)}}
   /* Profit — stacked 3D gold coins */
   .v-pro{position:relative;width:56px;height:66px;transform:rotateX(14deg)}
   .v-pro .c{position:absolute;left:6px;width:44px;height:15px;border-radius:50%;background:linear-gradient(180deg,#f7e3a6,#d8b46a 60%,#b0883a);box-shadow:0 3px 0 #8f6f2c,0 5px 12px rgba(0,0,0,.35)}
@@ -268,9 +269,38 @@
     .hero{padding:66px 0 44px}
     .nav-lnk.hide-m{display:none}
   }
+  /* first-load splash — animated profit line */
+  #splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;transition:opacity .5s ease}
+  #splash.hide{opacity:0;pointer-events:none}
+  #splash .slogo{font-weight:700;letter-spacing:.28em;font-size:22px;color:var(--txt)}
+  #splash .slogo i{font-style:normal;color:var(--accent)}
+  #splash .schart{width:min(340px,74vw);height:130px;overflow:visible}
+  #splash .sar{fill:url(#lgSplash);opacity:0;animation:sfill 2s ease-out .35s forwards}
+  #splash .sln{fill:none;stroke:#34d39a;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 4px 12px rgba(52,211,154,.55));stroke-dasharray:340;stroke-dashoffset:340;animation:sdraw 1.5s cubic-bezier(.4,0,.2,1) .15s forwards}
+  #splash .sdot{fill:#7ffccd;filter:drop-shadow(0 0 8px #34d39a);opacity:0;animation:sdot .5s ease .95s forwards,spulse 1.1s ease 1.45s infinite}
+  #splash .spct{font-variant-numeric:tabular-nums;font-weight:750;font-size:15px;fill:#34d39a;opacity:0;animation:sfade .4s ease 1s forwards}
+  @keyframes sdraw{to{stroke-dashoffset:0}}
+  @keyframes sfill{to{opacity:.85}}
+  @keyframes sdot{to{opacity:1}}
+  @keyframes sfade{to{opacity:1}}
+  @keyframes spulse{0%,100%{r:4.5}50%{r:6.5}}
+  #splash .sbar{width:min(300px,64vw);height:3px;border-radius:3px;background:var(--line);overflow:hidden;position:relative}
+  #splash .sbar::after{content:'';position:absolute;left:-40%;top:0;height:100%;width:40%;border-radius:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:sslide 1.1s ease-in-out infinite}
+  @keyframes sslide{to{left:100%}}
 </style>
 </head>
 <body>
+<div id="splash">
+  <div class="slogo">AY<i>I</i>LON</div>
+  <svg class="schart" viewBox="0 0 340 130">
+    <defs><linearGradient id="lgSplash" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34d39a" stop-opacity=".38"/><stop offset="1" stop-color="#34d39a" stop-opacity="0"/></linearGradient></defs>
+    <path class="sar" d="M6,104 L46,96 L86,101 L126,80 L166,88 L206,58 L246,66 L286,34 L326,12 L326,128 L6,128 Z"/>
+    <polyline class="sln" points="6,104 46,96 86,101 126,80 166,88 206,58 246,66 286,34 326,12"/>
+    <circle class="sdot" cx="326" cy="12" r="4.5"/>
+    <text class="spct" x="300" y="8">+</text>
+  </svg>
+  <div class="sbar"></div>
+</div>
 <nav>
   <div class="wrap">
     <a href="/" class="logo">AY<i>I</i>LON</a>
@@ -801,7 +831,7 @@ const fmtEq=v=>'$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0})
 
 function syncMetricHeader(){const d=I18N[LANG];const m=state.metric;document.getElementById('hMetric').textContent=m==='volume'?d['lb.m.volume']:m==='profit'?d['lb.m.profit']:d['lb.m.return'];renderCatHero();}
 const CAT_VIZ={
-  return:{viz:'<div class="v-ret"><i></i><i></i><i></i></div>',glow:'rgba(52,211,154,.12)',t:'cat.1.t',d:'cat.1.d'},
+  return:{viz:'<svg class="v-line" viewBox="0 0 96 62"><defs><linearGradient id="lgRet" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34d39a" stop-opacity=".4"/><stop offset="1" stop-color="#34d39a" stop-opacity="0"/></linearGradient></defs><path class="ar" d="M3,50 L16,45 L29,48 L42,35 L55,39 L68,24 L81,28 L93,9 L93,60 L3,60 Z"/><polyline class="ln" points="3,50 16,45 29,48 42,35 55,39 68,24 81,28 93,9"/><circle class="dot" cx="93" cy="9" r="3.4"/></svg>',glow:'rgba(52,211,154,.12)',t:'cat.1.t',d:'cat.1.d'},
   profit:{viz:'<div class="v-pro"><span class="c c1"></span><span class="c c2"></span><span class="c c3"></span><span class="cd"></span></div>',glow:'rgba(216,180,106,.14)',t:'cat.2.t',d:'cat.2.d'},
   volume:{viz:'<div class="v-vol"><i></i><i></i><i></i><i></i><i></i></div>',glow:'rgba(55,182,255,.13)',t:'cat.3.t',d:'cat.3.d'}
 };
@@ -1190,7 +1220,14 @@ setAuthUI();
 updateMetricTabs();
 fetchSeason();
 fetchHOF();
-fetchLB().then(loadMine);
+// Hide the splash once the leaderboard is in (min visible time so it doesn't
+// flash; hard fallback so a slow/failed fetch never traps the user behind it).
+const _splashStart=Date.now();
+function hideSplash(){ const el=document.getElementById('splash'); if(!el||el.classList.contains('hide'))return;
+  const wait=Math.max(0,650-(Date.now()-_splashStart));
+  setTimeout(()=>{ el.classList.add('hide'); setTimeout(()=>el.remove(),600); },wait); }
+fetchLB().then(loadMine).finally(hideSplash);
+setTimeout(hideSplash,4000);
 // Live auto-refresh: pull fresh scores every 20s without an F5, but keep the
 // viewer's place (pagination/search preserved). Pauses while the tab is hidden
 // and refreshes immediately when they come back.
