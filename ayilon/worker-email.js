@@ -1354,17 +1354,61 @@ async function handleArenaClaimPrize(request, env) {
   return json({ ok: true });
 }
 
+// Map the country picked at signup → the winner-email language (falls back to
+// English for any country we don't have a localized template for).
+function langFromCountry(c) {
+  c = String(c || '').toUpperCase();
+  if (c === 'KR') return 'ko';
+  if (['CN', 'HK', 'TW'].includes(c)) return 'zh';
+  if (['ES', 'MX', 'AR'].includes(c)) return 'es';
+  if (c === 'VN') return 'vi';
+  if (c === 'RU') return 'ru';
+  return 'en';
+}
+// Winner-email copy in each supported language. board/metric are lookup tables;
+// placed()/subj() interpolate rank, category and prize.
+const WIN_EMAIL_I18N = {
+  en: { congrats: 'Congratulations!', prizeLabel: 'YOUR PRIZE', instr: 'Log in and submit your USDT wallet address to receive your prize.', btn: 'Claim prize →', foot: 'Contact', sentTo: 'This email was sent to an AYILON Arena winner.',
+        board: { weekly: 'Weekly', monthly: 'Monthly' }, metric: { return: 'Return', profit: 'Profit', volume: 'Volume' },
+        placed: (r, b, m, s) => `You placed <b style="color:#fff;">#${r}</b> in <b style="color:#fff;">${b} ${m}</b> for season <b style="color:#fff;">${s}</b>.`,
+        subj: (b, m, r, p) => `🏆 You won — ${b} ${m} #${r} · ${p} | AYILON` },
+  ko: { congrats: '축하합니다!', prizeLabel: '상금', instr: '로그인 후 상금을 받을 USDT 지갑 주소를 입력하세요.', btn: '상금 수령하기 →', foot: '문의', sentTo: '본 메일은 AYILON Arena 우승자에게 발송됩니다.',
+        board: { weekly: '주간', monthly: '월간' }, metric: { return: '수익률', profit: '수익금', volume: '거래량' },
+        placed: (r, b, m, s) => `<b style="color:#fff;">${s}</b> 시즌 <b style="color:#fff;">${b} ${m}</b> 부문에서 <b style="color:#fff;">${r}위</b>에 올랐습니다.`,
+        subj: (b, m, r, p) => `🏆 우승! ${b} ${m} ${r}위 · ${p} | AYILON` },
+  zh: { congrats: '恭喜！', prizeLabel: '奖金', instr: '登录后填写接收奖金的 USDT 钱包地址。', btn: '领取奖金 →', foot: '联系', sentTo: '本邮件发送给 AYILON Arena 获奖者。',
+        board: { weekly: '周赛', monthly: '月赛' }, metric: { return: '收益率', profit: '盈利额', volume: '交易量' },
+        placed: (r, b, m, s) => `您在 <b style="color:#fff;">${s}</b> 赛季 <b style="color:#fff;">${b} ${m}</b> 中获得第 <b style="color:#fff;">${r}</b> 名。`,
+        subj: (b, m, r, p) => `🏆 恭喜获奖 — ${b} ${m} 第${r}名 · ${p} | AYILON` },
+  es: { congrats: '¡Enhorabuena!', prizeLabel: 'TU PREMIO', instr: 'Inicia sesión y envía tu dirección de wallet USDT para recibir el premio.', btn: 'Reclamar premio →', foot: 'Contacto', sentTo: 'Este correo se envió a un ganador de AYILON Arena.',
+        board: { weekly: 'Semanal', monthly: 'Mensual' }, metric: { return: 'Rentabilidad', profit: 'Beneficio', volume: 'Volumen' },
+        placed: (r, b, m, s) => `Quedaste <b style="color:#fff;">#${r}</b> en <b style="color:#fff;">${b} ${m}</b> en la temporada <b style="color:#fff;">${s}</b>.`,
+        subj: (b, m, r, p) => `🏆 Ganaste — ${b} ${m} #${r} · ${p} | AYILON` },
+  vi: { congrats: 'Xin chúc mừng!', prizeLabel: 'GIẢI THƯỞNG', instr: 'Đăng nhập và gửi địa chỉ ví USDT để nhận thưởng.', btn: 'Nhận thưởng →', foot: 'Liên hệ', sentTo: 'Email này được gửi cho người thắng AYILON Arena.',
+        board: { weekly: 'Tuần', monthly: 'Tháng' }, metric: { return: 'Lợi nhuận', profit: 'Tiền lãi', volume: 'Khối lượng' },
+        placed: (r, b, m, s) => `Bạn đạt hạng <b style="color:#fff;">#${r}</b> ở <b style="color:#fff;">${b} ${m}</b> mùa <b style="color:#fff;">${s}</b>.`,
+        subj: (b, m, r, p) => `🏆 Bạn đã thắng — ${b} ${m} #${r} · ${p} | AYILON` },
+  ru: { congrats: 'Поздравляем!', prizeLabel: 'ВАШ ПРИЗ', instr: 'Войдите и укажите адрес USDT-кошелька для получения приза.', btn: 'Получить приз →', foot: 'Контакт', sentTo: 'Это письмо отправлено победителю AYILON Arena.',
+        board: { weekly: 'Неделя', monthly: 'Месяц' }, metric: { return: 'Доходность', profit: 'Прибыль', volume: 'Объём' },
+        placed: (r, b, m, s) => `Вы заняли <b style="color:#fff;">#${r}</b> в <b style="color:#fff;">${b} ${m}</b> в сезоне <b style="color:#fff;">${s}</b>.`,
+        subj: (b, m, r, p) => `🏆 Вы выиграли — ${b} ${m} #${r} · ${p} | AYILON` }
+};
+
 // Cron: email newly-declared winners (batched to stay under subrequest limits).
-// Each unnotified winner gets a bilingual congrats + link to claim their prize.
+// Each winner is emailed in the language of the country they picked at signup.
 async function arenaNotifyWinners(env) {
   if (!env.BOT_DB || !env.RESEND_API_KEY) return;
   let rows = [];
   try { rows = (await env.BOT_DB.prepare('SELECT id,email,nickname,board,metric,rank,prize,season_id FROM arena_winners WHERE notified=0 AND prize>0 ORDER BY declared_at ASC LIMIT 3').all()).results || []; } catch (_) { return; }
-  const label = { return: 'Return / 수익률', profit: 'Profit / 수익금', volume: 'Volume / 거래량' };
   for (const w of rows) {
-    const boardKo = w.board === 'weekly' ? '주간' : '월간';
-    const boardEn = w.board === 'weekly' ? 'Weekly' : 'Monthly';
+    // Country → language, from the winner's stored user record.
+    const u = (await env.USERS_KV.get('user:' + w.email, { type: 'json' })) || {};
+    const T = WIN_EMAIL_I18N[langFromCountry(u.country)] || WIN_EMAIL_I18N.en;
+    const boardName = T.board[w.board] || w.board;
+    const metricName = T.metric[w.metric] || w.metric;
+    const season = escapeHtml(w.season_id);
     const prize = '$' + Number(w.prize || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const mail = '<a href="https://ayilon.com/contact.html" style="color:#60a5fa;">support@ayilon.com</a>';
     try {
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -1372,9 +1416,9 @@ async function arenaNotifyWinners(env) {
         body: JSON.stringify({
           from: 'AYILON Arena <support@ayilon.com>',
           to: [w.email],
-          subject: `🏆 You won — ${boardEn} ${w.metric} #${w.rank} · ${prize} | AYILON`,
-          html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:36px;max-width:520px;margin:0 auto;border-radius:12px;"><h1 style="font-size:22px;letter-spacing:.14em;margin:0 0 20px;">AY<span style="color:#34d39a;">I</span>LON</h1><div style="font-size:30px;font-weight:780;margin-bottom:8px;">🏆 축하합니다!</div><p style="color:#a3a3a3;margin:0 0 22px;font-size:15px;">You placed <b style="color:#fff;">#${w.rank}</b> in <b style="color:#fff;">${boardEn} ${label[w.metric] || w.metric}</b> for season <b style="color:#fff;">${escapeHtml(w.season_id)}</b>.</p><div style="background:#111;border:1px solid #333;border-radius:12px;padding:22px;text-align:center;margin-bottom:22px;"><div style="color:#a3a3a3;font-size:12px;letter-spacing:.1em;margin-bottom:6px;">YOUR PRIZE / 상금</div><div style="font-size:40px;font-weight:780;color:#d8b46a;">${prize}</div></div><p style="color:#e5e5e5;font-size:14px;line-height:1.7;margin:0 0 22px;">상금을 받으려면 아래 버튼을 눌러 로그인한 뒤, 받을 지갑 주소(USDT)를 입력하세요.<br><span style="color:#a3a3a3;">Log in and submit your USDT wallet address to receive your prize.</span></p><a href="https://ayilon.com/?claim=1" style="display:inline-block;background:#34d39a;color:#06140e;padding:13px 28px;border-radius:10px;font-weight:700;text-decoration:none;font-size:15px;">상금 수령하기 · Claim prize →</a><hr style="border:none;border-top:1px solid #222;margin:26px 0 14px;"><p style="color:#525252;font-size:12px;margin:0;">문의: <a href="https://ayilon.com/contact.html" style="color:#60a5fa;">support@ayilon.com</a> · 본 메일은 AYILON Arena 우승자에게 발송됩니다.</p></div>`,
-          text: `축하합니다! / Congratulations!\n\n${boardEn} ${w.metric} #${w.rank} — season ${w.season_id}\nPrize / 상금: ${prize}\n\n상금 수령: https://ayilon.com/?claim=1 에서 로그인 후 지갑 주소를 입력하세요.\nClaim your prize at https://ayilon.com/?claim=1\n\nsupport@ayilon.com`
+          subject: T.subj(boardName, metricName, w.rank, prize),
+          html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:36px;max-width:520px;margin:0 auto;border-radius:12px;"><h1 style="font-size:22px;letter-spacing:.14em;margin:0 0 20px;">AY<span style="color:#34d39a;">I</span>LON</h1><div style="font-size:30px;font-weight:780;margin-bottom:8px;">🏆 ${T.congrats}</div><p style="color:#a3a3a3;margin:0 0 22px;font-size:15px;">${T.placed(w.rank, boardName, metricName, season)}</p><div style="background:#111;border:1px solid #333;border-radius:12px;padding:22px;text-align:center;margin-bottom:22px;"><div style="color:#a3a3a3;font-size:12px;letter-spacing:.1em;margin-bottom:6px;">${T.prizeLabel}</div><div style="font-size:40px;font-weight:780;color:#d8b46a;">${prize}</div></div><p style="color:#e5e5e5;font-size:14px;line-height:1.7;margin:0 0 22px;">${T.instr}</p><a href="https://ayilon.com/?claim=1" style="display:inline-block;background:#34d39a;color:#06140e;padding:13px 28px;border-radius:10px;font-weight:700;text-decoration:none;font-size:15px;">${T.btn}</a><hr style="border:none;border-top:1px solid #222;margin:26px 0 14px;"><p style="color:#525252;font-size:12px;margin:0;">${T.foot}: ${mail} · ${T.sentTo}</p></div>`,
+          text: `${T.congrats}\n\n${boardName} ${metricName} #${w.rank} — ${w.season_id}\n${T.prizeLabel}: ${prize}\n\nhttps://ayilon.com/?claim=1\n\nsupport@ayilon.com`
         })
       });
       // Mark done on success OR a permanent (4xx) failure like a bad address, so
