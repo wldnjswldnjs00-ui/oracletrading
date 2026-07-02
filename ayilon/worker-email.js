@@ -66,6 +66,8 @@ export default {
       if (path === '/admin/ban')          return handleAdminBan(request, env);
       if (path === '/admin/arena-winners') return handleAdminArenaWinners(request, env);
       if (path === '/admin/affiliate-test') return handleAdminAffiliateTest(request, env);
+      if (path === '/admin/contact-list')  return handleAdminContactList(request, env);
+      if (path === '/admin/contact-reply') return handleAdminContactReply(request, env);
     }
 
     if (request.method === 'GET') {
@@ -406,6 +408,15 @@ async function handleContact(request, env) {
 
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
   const ua = request.headers.get('User-Agent') || '';
+
+  // Store in the admin inbox (primary channel — readable without Gmail).
+  try {
+    await initDB(env);
+    await env.BOT_DB.prepare(
+      'INSERT INTO contact_msgs (name,email,subject,message,lang,ip,created_at,status) VALUES (?,?,?,?,?,?,?,?)'
+    ).bind(name, email.toLowerCase(), subject, message, lang, ip, Date.now(), 'new').run();
+  } catch (_) {}
+
   const safeName = escapeHtml(name || '(no name)');
   const safeEmail = escapeHtml(email);
   const safeSubject = escapeHtml(subject || '(no subject)');
@@ -427,6 +438,58 @@ async function handleContact(request, env) {
     let detail = '';
     try { detail = JSON.stringify(await res.json()); } catch {}
     return json({ ok: false, error: 'send_failed', status: res.status, detail }, 502);
+  }
+  return json({ ok: true, success: true });
+}
+
+// ── ADMIN: contact inbox ─────────────────────────────────────
+async function handleAdminContactList(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
+  await initDB(env);
+  let rows = [];
+  try { rows = (await env.BOT_DB.prepare('SELECT * FROM contact_msgs ORDER BY created_at DESC LIMIT 200').all()).results || []; } catch (_) {}
+  const unread = rows.filter(r => r.status === 'new').length;
+  return json({ ok: true, messages: rows, unread });
+}
+
+// ── ADMIN: reply to a contact message AS support@ayilon.com ──
+async function handleAdminContactReply(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
+  await initDB(env);
+
+  const id = parseInt(body.id || 0);
+  const to = String(body.to || '').trim();
+  const reply = String(body.reply || '').trim().slice(0, 8000);
+  const subjectIn = String(body.subject || '').trim().slice(0, 200);
+  if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return json({ ok: false, error: 'invalid_to' }, 400);
+  if (reply.length < 1) return json({ ok: false, error: 'empty_reply' }, 400);
+
+  const subject = subjectIn ? `Re: ${subjectIn}` : 'AYILON Support';
+  const safeReply = escapeHtml(reply).replace(/\n/g, '<br>');
+  // Send AS support@ayilon.com (branding). reply_to = admin Gmail so any further
+  // reply from the customer lands somewhere we can actually read it.
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'AYILON Support <support@ayilon.com>',
+      to: [to],
+      reply_to: ADMIN_CONTACT_EMAIL,
+      subject,
+      html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:36px;max-width:520px;margin:0 auto;border-radius:12px;"><h1 style="font-size:22px;letter-spacing:.14em;margin:0 0 24px;">AY<span style="color:#34d39a;">I</span>LON</h1><div style="color:#e5e5e5;font-size:15px;line-height:1.7;">${safeReply}</div><hr style="border:none;border-top:1px solid #222;margin:28px 0 14px;"><p style="color:#525252;font-size:12px;margin:0;">AYILON Arena · <a href="https://ayilon.com" style="color:#60a5fa;">ayilon.com</a><br>추가 문의는 <a href="https://ayilon.com/contact.html" style="color:#60a5fa;">ayilon.com/contact</a> 에서 남겨주세요.</p></div>`,
+      text: reply + '\n\n—\nAYILON Arena · ayilon.com\n추가 문의: ayilon.com/contact'
+    })
+  });
+  if (!res.ok) {
+    let detail = ''; try { detail = JSON.stringify(await res.json()); } catch {}
+    return json({ ok: false, error: 'send_failed', status: res.status, detail }, 502);
+  }
+  if (id) {
+    try { await env.BOT_DB.prepare('UPDATE contact_msgs SET status=?, replied_at=?, reply=? WHERE id=?').bind('replied', Date.now(), reply, id).run(); } catch (_) {}
   }
   return json({ ok: true, success: true });
 }
@@ -2203,6 +2266,21 @@ async function initDB(env) {
     // Distinct active-trading-day tracking (anti single-shot hedge).
     await env.BOT_DB.prepare(`ALTER TABLE arena_score ADD COLUMN trade_days INTEGER DEFAULT 0`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE arena_score ADD COLUMN last_trade_date TEXT DEFAULT ''`).run().catch(() => {});
+
+    // Contact-form inbox (shown in admin panel).
+    await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS contact_msgs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT DEFAULT '',
+      email TEXT NOT NULL,
+      subject TEXT DEFAULT '',
+      message TEXT NOT NULL,
+      lang TEXT DEFAULT '',
+      ip TEXT DEFAULT '',
+      created_at INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'new',
+      replied_at INTEGER DEFAULT 0,
+      reply TEXT DEFAULT ''
+    )`).run();
 
     _dbReady = true;
   } catch(e) {}
