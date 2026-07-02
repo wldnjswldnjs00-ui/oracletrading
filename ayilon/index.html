@@ -1116,6 +1116,9 @@ let myWinnings=[];
 async function loadMyWinnings(){
   const wrap=document.getElementById('claimWrap'); if(!wrap)return;
   if(!authed()){wrap.innerHTML='';return;}
+  // Don't wipe an address the user is mid-typing when the 20s live-refresh fires.
+  const ae=document.activeElement;
+  if(ae&&ae.id&&ae.id.indexOf('cad_')===0) return;
   try{
     const r=await fetch(`${API}/arena/my-winnings`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token()})});
     const j=await r.json();

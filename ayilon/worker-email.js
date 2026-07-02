@@ -1251,12 +1251,13 @@ async function arenaDeclareWinners(env, now) {
   try { parts = (await env.BOT_DB.prepare('SELECT email,nickname,boards,referral_verified,demo FROM arena_participants').all()).results || []; } catch (_) {}
   const pmap = {};
   for (const p of parts) { let b = []; try { b = JSON.parse(p.boards || '[]'); } catch (_) {} pmap[p.email] = { nickname: p.nickname, boards: b, ref: p.referral_verified === 1, demo: p.demo === 1 }; }
-  let changed = false;
+  let changed = false, heavy = false;
   for (const j of ARENA_WIN_JOBS) {
     const cur = j.board === 'monthly' ? curM : curW;
     const prev = declared[j.key];
     if (!prev) { declared[j.key] = cur; changed = true; continue; }   // first run, nothing ended yet
     if (prev === cur) continue;                                        // season still active
+    heavy = true;                                                      // a real season transition → this is a heavy tick
     // Guard against double-declaration if a previous tick already wrote them.
     let already = 0;
     try { already = (await env.BOT_DB.prepare('SELECT COUNT(*) c FROM arena_winners WHERE season_id=? AND metric=? AND board=?').bind(prev, j.metric, j.board).first())?.c || 0; } catch (_) {}
@@ -1280,6 +1281,7 @@ async function arenaDeclareWinners(env, now) {
     declared[j.key] = cur; changed = true;
   }
   if (changed) await env.USERS_KV.put('arena:declared', JSON.stringify(declared));
+  return heavy;
 }
 
 // Admin diagnostic: confirm the OKX affiliate API creds work + see the raw shape
@@ -1326,7 +1328,7 @@ async function handleArenaMyWinnings(request, env) {
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
   await ensureDB(env);
   let rows = [];
-  try { rows = (await env.BOT_DB.prepare('SELECT id,season_id,board,metric,rank,value,prize,paid,payout_addr,payout_chain,declared_at FROM arena_winners WHERE email=? AND prize>0 ORDER BY declared_at DESC').bind(session.email).all()).results || []; } catch (_) {}
+  try { rows = (await env.BOT_DB.prepare('SELECT id,season_id,board,metric,rank,value,prize,paid,payout_addr,payout_chain,declared_at FROM arena_winners WHERE email=? AND prize>0 ORDER BY declared_at DESC LIMIT 60').bind(session.email).all()).results || []; } catch (_) {}
   const unclaimed = rows.filter(w => !w.payout_addr && !w.paid).length;
   return json({ ok: true, winnings: rows, unclaimed });
 }
@@ -1375,8 +1377,11 @@ async function arenaNotifyWinners(env) {
           text: `축하합니다! / Congratulations!\n\n${boardEn} ${w.metric} #${w.rank} — season ${w.season_id}\nPrize / 상금: ${prize}\n\n상금 수령: https://ayilon.com/?claim=1 에서 로그인 후 지갑 주소를 입력하세요.\nClaim your prize at https://ayilon.com/?claim=1\n\nsupport@ayilon.com`
         })
       });
-      // Mark notified whether or not the send succeeded HTTP-wise is risky; only on ok.
-      if (res.ok) await env.BOT_DB.prepare('UPDATE arena_winners SET notified=1 WHERE id=?').bind(w.id).run().catch(() => {});
+      // Mark done on success OR a permanent (4xx) failure like a bad address, so
+      // one poison message can't stall the queue. Transient (5xx/network) → retry.
+      if (res.ok || (res.status >= 400 && res.status < 500)) {
+        await env.BOT_DB.prepare('UPDATE arena_winners SET notified=1 WHERE id=?').bind(w.id).run().catch(() => {});
+      }
     } catch (_) {}
   }
 }
@@ -1386,7 +1391,15 @@ async function arenaScore(env) {
   if (!env.BOT_DB) return;
   await ensureDB(env);
   const now = new Date();
-  try { await arenaDeclareWinners(env, now); } catch (_) {}
+  // On a season-rollover tick, declaring winners + emailing them is itself a
+  // burst of subrequests. Skip the per-account scoring pass this one minute so
+  // the tick stays under the limit; scoring resumes next tick.
+  let heavyTick = false;
+  try { heavyTick = await arenaDeclareWinners(env, now); } catch (_) {}
+  // On the rollover tick, do ONLY the declaration and stop — notifying winners
+  // and scoring accounts wait for the next tick, so no single minute stacks
+  // declaration + emails + scoring past the subrequest limit.
+  if (heavyTick) return;
   try { await arenaNotifyWinners(env); } catch (_) {}
   const boards = [['weekly', arenaWeekId(now)], ['monthly', arenaMonthId(now)]];
   let allParts = [];
@@ -1400,7 +1413,7 @@ async function arenaScore(env) {
   // several OKX + D1 subrequests). The cursor advances and wraps, so every
   // account refreshes within ceil(total/BATCH) minutes. Raise SCORE_BATCH on
   // the Workers Paid plan (higher subrequest limit) for faster refresh.
-  const BATCH = parseInt(env.SCORE_BATCH) || 4;
+  const BATCH = parseInt(env.SCORE_BATCH) || 3;
   allParts.sort((a, b) => (a.email < b.email ? -1 : a.email > b.email ? 1 : 0));
   let cursor = 0;
   try { cursor = parseInt(await env.USERS_KV.get('arena:score_cursor')) || 0; } catch (_) {}
@@ -1974,6 +1987,9 @@ async function handleAdminBan(request, env) {
     try { await env.BOT_DB.prepare('DELETE FROM sessions WHERE email=?').bind(email).run(); } catch (_) {}
     try { await env.BOT_DB.prepare('DELETE FROM arena_participants WHERE email=?').bind(email).run(); } catch (_) {}
     try { await env.BOT_DB.prepare('DELETE FROM arena_score WHERE email=?').bind(email).run(); } catch (_) {}
+    // Void any UNPAID prizes (disqualification) — also removes them from the Hall
+    // of Fame. Already-paid rows are kept for accounting.
+    try { await env.BOT_DB.prepare('DELETE FROM arena_winners WHERE email=? AND paid=0').bind(email).run(); } catch (_) {}
   }
   return json({ ok: true, banned });
 }
