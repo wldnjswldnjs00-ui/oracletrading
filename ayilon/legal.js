@@ -3,7 +3,8 @@
 (function () {
   const U = 'Last updated: 29 June 2026';
   const CT = 'support@ayilon.com';
-  const mail = '<a href="mailto:' + CT + '">' + CT + '</a>';
+  // Display support@ayilon.com as branding, but link to the working contact form.
+  const mail = '<a href="/contact.html">' + CT + '</a>';
 
   // Section shapes: {h, p} | {h, li:[...]} | {note} | {cards:[{n,h,p}]} | {cta:{href,label}}
   const L = {
@@ -185,8 +186,8 @@
 
   const LANGS = [['en', 'English'], ['ko', '한국어'], ['zh', '中文'], ['es', 'Español'], ['vi', 'Tiếng Việt'], ['ru', 'Русский']];
   const FOOT = {
-    en: ['About', 'Terms', 'Privacy'], ko: ['소개', '약관', '개인정보'], zh: ['关于', '条款', '隐私'],
-    es: ['Acerca de', 'Términos', 'Privacidad'], vi: ['Giới thiệu', 'Điều khoản', 'Bảo mật'], ru: ['О нас', 'Условия', 'Конфиденциальность']
+    en: ['About', 'Terms', 'Privacy', 'Contact'], ko: ['소개', '약관', '개인정보', '문의'], zh: ['关于', '条款', '隐私', '联系'],
+    es: ['Acerca de', 'Términos', 'Privacidad', 'Contacto'], vi: ['Giới thiệu', 'Điều khoản', 'Bảo mật', 'Liên hệ'], ru: ['О нас', 'Условия', 'Конфиденциальность', 'Контакты']
   };
 
   function esc(s) { return s; } // content is trusted (authored here)
@@ -220,8 +221,8 @@
     if (sel) sel.value = lang;
     // Translate the footer links too.
     const fl = FOOT[lang] || FOOT.en;
-    const fa = document.getElementById('lfAbout'), ft = document.getElementById('lfTerms'), fp = document.getElementById('lfPrivacy');
-    if (fa) fa.textContent = fl[0]; if (ft) ft.textContent = fl[1]; if (fp) fp.textContent = fl[2];
+    const fa = document.getElementById('lfAbout'), ft = document.getElementById('lfTerms'), fp = document.getElementById('lfPrivacy'), fc = document.getElementById('lfContact');
+    if (fa) fa.textContent = fl[0]; if (ft) ft.textContent = fl[1]; if (fp) fp.textContent = fl[2]; if (fc) fc.textContent = fl[3];
   };
 
   window.buildLegalLangSel = function () {

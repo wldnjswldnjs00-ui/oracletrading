@@ -17,6 +17,7 @@ export default {
       if (path === '/send-verification')  return handleVerification(request, env);
       if (path === '/verify-code')        return handleVerifyCode(request, env);
       if (path === '/send-confirmation')  return handleConfirmation(request, env);
+      if (path === '/contact')            return handleContact(request, env);
       if (path === '/check-email')        return handleCheckEmail(request, env);
       if (path === '/check-username')     return handleCheckUsername(request, env);
       if (path === '/register-user')      return handleRegisterUser(request, env);
@@ -373,6 +374,60 @@ async function handleConfirmation(request, env) {
     })
   });
   if (!res.ok) return json({ ok: false, error: 'Failed to send email' }, 500);
+  return json({ ok: true, success: true });
+}
+
+// ── CONTACT FORM → ADMIN INBOX (via Resend) ──────────────────
+const ADMIN_CONTACT_EMAIL = 'wldnjswldnjs00@gmail.com';
+async function handleContact(request, env) {
+  let body;
+  try { body = await request.json(); } catch { return json({ ok: false, error: 'bad_request' }, 400); }
+
+  // Honeypot: bots fill hidden fields. Pretend success, drop silently.
+  if (body.company || body.website) return json({ ok: true, success: true });
+
+  const name    = String(body.name || '').trim().slice(0, 120);
+  const email   = String(body.email || '').trim().slice(0, 254);
+  const message = String(body.message || '').trim().slice(0, 5000);
+  const subject = String(body.subject || '').trim().slice(0, 200);
+  const lang    = String(body.lang || '').trim().slice(0, 8);
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: 'invalid_email' }, 400);
+  if (message.length < 5) return json({ ok: false, error: 'message_too_short' }, 400);
+
+  // Rate limit: 5 messages per IP per 15 min
+  if (env.USERS_KV) {
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const rk = 'rate:contact:ip:' + ip;
+    const rec = await env.USERS_KV.get(rk, { type: 'json' });
+    if ((rec?.count || 0) >= 5) return json({ ok: false, error: 'rate_limited' }, 429);
+    await env.USERS_KV.put(rk, JSON.stringify({ count: (rec?.count || 0) + 1 }), { expirationTtl: 900 });
+  }
+
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const ua = request.headers.get('User-Agent') || '';
+  const safeName = escapeHtml(name || '(no name)');
+  const safeEmail = escapeHtml(email);
+  const safeSubject = escapeHtml(subject || '(no subject)');
+  const safeMsg = escapeHtml(message).replace(/\n/g, '<br>');
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'),
+      to: [ADMIN_CONTACT_EMAIL],
+      reply_to: email,
+      subject: `[AYILON 문의] ${subject || name || email}`,
+      html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:32px;max-width:560px;margin:0 auto;border-radius:12px;"><h1 style="font-size:20px;margin:0 0 4px;">AYILON — 새 문의</h1><p style="color:#a3a3a3;margin:0 0 24px;font-size:13px;">Contact form submission</p><table style="width:100%;font-size:14px;border-collapse:collapse;"><tr><td style="color:#a3a3a3;padding:6px 0;width:90px;">이름</td><td style="font-weight:600;">${safeName}</td></tr><tr><td style="color:#a3a3a3;padding:6px 0;">이메일</td><td style="font-weight:600;"><a href="mailto:${safeEmail}" style="color:#60a5fa;">${safeEmail}</a></td></tr><tr><td style="color:#a3a3a3;padding:6px 0;">제목</td><td>${safeSubject}</td></tr><tr><td style="color:#a3a3a3;padding:6px 0;">언어</td><td>${escapeHtml(lang || '-')}</td></tr></table><div style="background:#111;border:1px solid #333;border-radius:10px;padding:20px;margin:20px 0;color:#e5e5e5;font-size:14px;line-height:1.6;">${safeMsg}</div><p style="color:#525252;font-size:12px;margin:0;">답장은 이 메일에 그대로 회신하면 ${safeEmail} 로 전달됩니다.<br>IP: ${escapeHtml(ip)} · UA: ${escapeHtml(ua.slice(0,120))}</p></div>`,
+      text: `새 문의\n이름: ${name}\n이메일: ${email}\n제목: ${subject}\n\n${message}\n\n답장은 이 메일에 회신하면 ${email} 로 전달됩니다.\nIP: ${ip}`
+    })
+  });
+  if (!res.ok) {
+    let detail = '';
+    try { detail = JSON.stringify(await res.json()); } catch {}
+    return json({ ok: false, error: 'send_failed', status: res.status, detail }, 502);
+  }
   return json({ ok: true, success: true });
 }
 

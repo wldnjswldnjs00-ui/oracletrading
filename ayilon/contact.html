@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — AYILON Arena</title>
+<meta name="description" content="Contact AYILON Arena support. Questions about the competition, prizes, your account or fair play — we reply to your email.">
+<meta name="robots" content="index,follow">
+<style>
+  :root{--bg:#0a0a0c;--panel:#121216;--line:#22232b;--txt:#f1f2f4;--mut:#8a8b95;--dim:#5d5e69;--accent:#34d39a;--bad:#f0616d}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  nav{border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(10,10,12,.8);backdrop-filter:blur(14px)}
+  nav .w{display:flex;justify-content:space-between;align-items:center}
+  .logo{font-weight:700;letter-spacing:.16em;font-size:16px}.logo i{font-style:normal;color:var(--accent)}
+  .w{max-width:640px;margin:0 auto;padding:16px 22px}
+  main{padding:52px 0 80px}
+  h1{font-size:clamp(28px,5vw,42px);font-weight:760;letter-spacing:-.03em;line-height:1.1;margin-bottom:14px}
+  h1 b{color:var(--accent)}
+  .lead{color:var(--mut);font-size:17px;max-width:560px;margin-bottom:14px}
+  .mailrow{color:var(--dim);font-size:14px;margin-bottom:32px}
+  .mailrow b{color:var(--txt);font-weight:600}
+  form{display:flex;flex-direction:column;gap:16px}
+  label{font-size:13px;color:var(--mut);font-weight:600;margin-bottom:6px;display:block}
+  input,textarea{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:11px;padding:13px 15px;font-size:15px;font-family:inherit;outline:none;transition:border-color .15s}
+  input:focus,textarea:focus{border-color:var(--accent)}
+  textarea{resize:vertical;min-height:150px;line-height:1.6}
+  .hp{position:absolute;left:-9999px;top:-9999px;height:0;width:0;opacity:0}
+  .btn{background:var(--accent);color:#06140e;font-weight:700;padding:14px 26px;border-radius:11px;border:none;font-size:15px;font-family:inherit;cursor:pointer;transition:opacity .15s}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .msg{border-radius:11px;padding:14px 16px;font-size:14px;display:none}
+  .msg.ok{display:block;background:rgba(52,211,154,.1);border:1px solid rgba(52,211,154,.35);color:var(--accent)}
+  .msg.err{display:block;background:rgba(240,97,109,.1);border:1px solid rgba(240,97,109,.35);color:var(--bad)}
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--dim);font-size:13px;text-align:center}
+  footer a{color:var(--mut);margin:0 8px}
+  select#lang{background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:6px 9px;font-size:13px;font-family:inherit;cursor:pointer;outline:none}
+</style>
+</head>
+<body>
+<nav><div class="w"><a href="/" class="logo">AY<i>I</i>LON</a><span style="display:inline-flex;align-items:center;gap:12px"><select id="lang"></select><a href="/" style="color:var(--mut);font-size:14px" id="backLink">← Arena</a></span></div></nav>
+<main><div class="w">
+  <h1 id="h1"></h1>
+  <p class="lead" id="lead"></p>
+  <p class="mailrow" id="mailrow"></p>
+  <div class="msg" id="msg"></div>
+  <form id="cform" autocomplete="on">
+    <input class="hp" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <div>
+      <label for="name" id="lbname"></label>
+      <input type="text" id="name" name="name" maxlength="120">
+    </div>
+    <div>
+      <label for="email" id="lemail"></label>
+      <input type="email" id="email" name="email" maxlength="254" required>
+    </div>
+    <div>
+      <label for="subject" id="lsubject"></label>
+      <input type="text" id="subject" name="subject" maxlength="200">
+    </div>
+    <div>
+      <label for="message" id="lmessage"></label>
+      <textarea id="message" name="message" maxlength="5000" required></textarea>
+    </div>
+    <button type="submit" class="btn" id="submitBtn"></button>
+  </form>
+</div></main>
+<footer><div class="w"><a href="/about.html" id="fAbout">About</a><a href="/terms.html" id="fTerms">Terms</a><a href="/privacy.html" id="fPrivacy">Privacy</a><a href="/contact.html" id="fContact">Contact</a><div style="margin-top:10px">© 2026 AYILON</div></div></footer>
+<script>
+const WORKER_URL = 'https://ayilon-email.wldnjswldnjs00.workers.dev';
+const CT = 'support@ayilon.com';
+const T = {
+  en:{title:'Contact',h1:'Get in <b>touch</b>.',lead:'Questions about the competition, prizes, your account or fair play? Send us a message and we\'ll reply to your email.',mail:'You can also email us directly at <b>'+CT+'</b>.',name:'Name',email:'Your email',subject:'Subject',message:'Message',send:'Send message',sending:'Sending…',ok:'Message sent. We\'ll reply to your email soon.',err:'Could not send. Please try again in a moment.',needEmail:'Please enter a valid email.',needMsg:'Please write a short message.',rate:'Too many messages. Please wait a few minutes.',back:'← Arena',foot:['About','Terms','Privacy','Contact']},
+  ko:{title:'문의',h1:'문의 <b>하기</b>.',lead:'대회·상금·계정·공정성 관련 궁금한 점이 있으신가요? 메시지를 보내주시면 입력하신 이메일로 답변드립니다.',mail:'<b>'+CT+'</b> 로 직접 이메일을 보내셔도 됩니다.',name:'이름',email:'이메일',subject:'제목',message:'내용',send:'메시지 보내기',sending:'보내는 중…',ok:'메시지를 보냈습니다. 입력하신 이메일로 곧 답변드리겠습니다.',err:'전송에 실패했습니다. 잠시 후 다시 시도해 주세요.',needEmail:'올바른 이메일을 입력해 주세요.',needMsg:'간단한 내용을 입력해 주세요.',rate:'메시지가 너무 많습니다. 몇 분 후 다시 시도해 주세요.',back:'← 아레나',foot:['소개','약관','개인정보','문의']},
+  zh:{title:'联系',h1:'联系<b>我们</b>。',lead:'关于赛事、奖金、账户或公平竞赛有疑问？给我们留言，我们会回复到您的邮箱。',mail:'您也可以直接发邮件至 <b>'+CT+'</b>。',name:'姓名',email:'您的邮箱',subject:'主题',message:'内容',send:'发送消息',sending:'发送中…',ok:'消息已发送，我们会尽快回复您的邮箱。',err:'发送失败，请稍后再试。',needEmail:'请输入有效的邮箱。',needMsg:'请写一段简短的内容。',rate:'消息过多，请几分钟后再试。',back:'← 竞技场',foot:['关于','条款','隐私','联系']},
+  es:{title:'Contacto',h1:'<b>Contáctanos</b>.',lead:'¿Preguntas sobre el torneo, premios, tu cuenta o el juego limpio? Envíanos un mensaje y responderemos a tu email.',mail:'También puedes escribirnos directamente a <b>'+CT+'</b>.',name:'Nombre',email:'Tu email',subject:'Asunto',message:'Mensaje',send:'Enviar mensaje',sending:'Enviando…',ok:'Mensaje enviado. Te responderemos pronto a tu email.',err:'No se pudo enviar. Inténtalo de nuevo en un momento.',needEmail:'Introduce un email válido.',needMsg:'Escribe un mensaje breve.',rate:'Demasiados mensajes. Espera unos minutos.',back:'← Arena',foot:['Acerca de','Términos','Privacidad','Contacto']},
+  vi:{title:'Liên hệ',h1:'<b>Liên hệ</b> với chúng tôi.',lead:'Có câu hỏi về giải đấu, giải thưởng, tài khoản hay luật chơi công bằng? Gửi tin nhắn và chúng tôi sẽ trả lời qua email của bạn.',mail:'Bạn cũng có thể gửi email trực tiếp tới <b>'+CT+'</b>.',name:'Tên',email:'Email của bạn',subject:'Tiêu đề',message:'Nội dung',send:'Gửi tin nhắn',sending:'Đang gửi…',ok:'Đã gửi. Chúng tôi sẽ sớm trả lời qua email của bạn.',err:'Không gửi được. Vui lòng thử lại sau giây lát.',needEmail:'Vui lòng nhập email hợp lệ.',needMsg:'Vui lòng viết một tin nhắn ngắn.',rate:'Quá nhiều tin nhắn. Vui lòng đợi vài phút.',back:'← Đấu trường',foot:['Giới thiệu','Điều khoản','Bảo mật','Liên hệ']},
+  ru:{title:'Контакты',h1:'<b>Свяжитесь</b> с нами.',lead:'Вопросы о турнире, призах, аккаунте или честной игре? Напишите нам, и мы ответим на ваш email.',mail:'Также можно написать напрямую на <b>'+CT+'</b>.',name:'Имя',email:'Ваш email',subject:'Тема',message:'Сообщение',send:'Отправить',sending:'Отправка…',ok:'Сообщение отправлено. Скоро ответим на ваш email.',err:'Не удалось отправить. Попробуйте ещё раз через минуту.',needEmail:'Введите корректный email.',needMsg:'Напишите короткое сообщение.',rate:'Слишком много сообщений. Подождите несколько минут.',back:'← Арена',foot:['О нас','Условия','Конфиденциальность','Контакты']}
+};
+const LANGS=[['en','English'],['ko','한국어'],['zh','中文'],['es','Español'],['vi','Tiếng Việt'],['ru','Русский']];
+let lang = localStorage.getItem('ayilon_lang') || (navigator.language||'en').slice(0,2).toLowerCase();
+if(!T[lang]) lang='en';
+function apply(){
+  const d=T[lang];
+  document.documentElement.lang=lang;
+  document.title=d.title+' — AYILON Arena';
+  document.getElementById('h1').innerHTML=d.h1;
+  document.getElementById('lead').textContent=d.lead;
+  document.getElementById('mailrow').innerHTML=d.mail;
+  document.getElementById('lbname').textContent=d.name;
+  document.getElementById('lemail').textContent=d.email;
+  document.getElementById('lsubject').textContent=d.subject;
+  document.getElementById('lmessage').textContent=d.message;
+  document.getElementById('submitBtn').textContent=d.send;
+  document.getElementById('backLink').textContent=d.back;
+  document.getElementById('fAbout').textContent=d.foot[0];
+  document.getElementById('fTerms').textContent=d.foot[1];
+  document.getElementById('fPrivacy').textContent=d.foot[2];
+  document.getElementById('fContact').textContent=d.foot[3];
+  document.getElementById('lang').value=lang;
+}
+const sel=document.getElementById('lang');
+sel.innerHTML=LANGS.map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join('');
+sel.addEventListener('change',()=>{lang=sel.value;localStorage.setItem('ayilon_lang',lang);apply();});
+apply();
+
+const form=document.getElementById('cform'), msgEl=document.getElementById('msg'), btn=document.getElementById('submitBtn');
+function showMsg(cls,text){msgEl.className='msg '+cls;msgEl.textContent=text;msgEl.scrollIntoView({behavior:'smooth',block:'center'});}
+form.addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const d=T[lang];
+  const email=document.getElementById('email').value.trim();
+  const message=document.getElementById('message').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showMsg('err',d.needEmail);return;}
+  if(message.length<5){showMsg('err',d.needMsg);return;}
+  btn.disabled=true;btn.textContent=d.sending;msgEl.className='msg';
+  try{
+    const res=await fetch(WORKER_URL+'/contact',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name:document.getElementById('name').value.trim(),
+        email:email,
+        subject:document.getElementById('subject').value.trim(),
+        message:message,
+        company:form.company.value,
+        lang:lang
+      })
+    });
+    const data=await res.json().catch(()=>({}));
+    if(res.ok&&data.ok){
+      showMsg('ok',d.ok);
+      form.reset();
+    }else if(res.status===429||data.error==='rate_limited'){
+      showMsg('err',d.rate);
+    }else{
+      showMsg('err',d.err);
+    }
+  }catch(_){showMsg('err',d.err);}
+  btn.disabled=false;btn.textContent=d.send;
+});
+</script>
+</body>
+</html>
