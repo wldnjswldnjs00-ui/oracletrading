@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claim your prize — AYILON Arena</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{--bg:#0a0a0c;--panel:#121216;--panel2:#0e0e12;--line:#22232b;--txt:#f1f2f4;--mut:#8a8b95;--dim:#5d5e69;--accent:#34d39a;--gold:#d8b46a;--bad:#f0616d}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  nav{border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(10,10,12,.85);backdrop-filter:blur(14px);z-index:5}
+  nav .w{display:flex;justify-content:space-between;align-items:center}
+  .logo{font-weight:700;letter-spacing:.16em;font-size:16px}.logo i{font-style:normal;color:var(--accent)}
+  .w{max-width:680px;margin:0 auto;padding:16px 22px}
+  main{padding:40px 0 90px}
+  h1{font-size:clamp(26px,4.5vw,38px);font-weight:770;letter-spacing:-.03em;margin-bottom:8px}
+  h1 b{color:var(--gold)}
+  .lead{color:var(--mut);font-size:15px;margin-bottom:28px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:16px}
+  .card h2{font-size:16px;font-weight:680;margin-bottom:4px}
+  .card .sub{color:var(--mut);font-size:13px;margin-bottom:16px}
+  .prize-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .prize-row:last-child{border-bottom:none}
+  .prize-row .amt{font-weight:750;color:var(--gold);font-variant-numeric:tabular-nums}
+  .tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+  .tag.paid{background:rgba(52,211,154,.14);color:var(--accent)}
+  .tag.pending{background:rgba(216,180,106,.14);color:var(--gold)}
+  .tag.unclaimed{background:rgba(240,97,109,.12);color:var(--bad)}
+  .sec{margin-top:22px}
+  .sec-t{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--accent);text-transform:uppercase;margin:0 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  .q{margin-bottom:15px}
+  .q label{display:block;font-size:13.5px;font-weight:600;color:var(--txt);margin-bottom:6px}
+  .q .req{color:var(--bad);margin-left:2px}
+  .q input,.q textarea,.q select{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 13px;font-size:14.5px;font-family:inherit;outline:none;transition:border-color .15s}
+  .q textarea{resize:vertical;min-height:74px;line-height:1.55}
+  .q input:focus,.q textarea:focus,.q select:focus{border-color:var(--accent)}
+  .q.invalid input,.q.invalid textarea,.q.invalid select{border-color:var(--bad)}
+  .prof{display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-bottom:4px}
+  .prof b{color:var(--txt)}
+  .wnote{background:rgba(216,180,106,.08);border:1px solid rgba(216,180,106,.32);border-radius:10px;padding:11px 14px;color:var(--gold);font-size:12.5px;line-height:1.55;margin:12px 0}
+  .btn{background:var(--accent);color:#06140e;font-weight:700;padding:14px 26px;border-radius:11px;border:none;font-size:15px;font-family:inherit;cursor:pointer;width:100%;transition:opacity .15s}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .msg{border-radius:10px;padding:13px 15px;font-size:14px;margin-top:14px;display:none}
+  .msg.ok{display:block;background:rgba(52,211,154,.1);border:1px solid rgba(52,211,154,.35);color:var(--accent)}
+  .msg.err{display:block;background:rgba(240,97,109,.1);border:1px solid rgba(240,97,109,.35);color:var(--bad)}
+  .done-note{color:var(--accent);font-size:13px;font-weight:600;margin-bottom:12px}
+  select#lang{background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:6px 9px;font-size:13px;font-family:inherit;cursor:pointer;outline:none}
+  .center{text-align:center;padding:40px 0;color:var(--mut)}
+</style>
+</head>
+<body>
+<nav><div class="w"><a href="/" class="logo">AY<i>I</i>LON</a><span style="display:inline-flex;align-items:center;gap:12px"><select id="lang"></select><a href="/" style="color:var(--mut);font-size:14px" id="backLink">← Arena</a></span></div></nav>
+<main><div class="w">
+  <h1><span id="h1"></span></h1>
+  <p class="lead" id="lead"></p>
+  <div id="content"><div class="center" id="loadingMsg">…</div></div>
+</div></main>
+<script>
+const WORKER_URL='https://ayilon-email.wldnjswldnjs00.workers.dev';
+const token=()=>localStorage.getItem('ayilon_session_token')||'';
+const TRC20=/^T[1-9A-HJ-NP-Za-km-z]{33}$/;
+
+const LANGS=[['en','English'],['ko','한국어'],['zh','中文'],['es','Español'],['vi','Tiếng Việt'],['ru','Русский']];
+const U={
+  en:{title:'Claim your <b>prize</b>',lead:'Complete the winner interview and submit your USDT (TRC20) wallet to receive your prize.',loginNeeded:'Please log in to claim your prize.',loginBtn:'Log in →',noWins:'You have no prizes to claim yet.',prizesHdr:'Your prizes',stPaid:'Paid ✓',stPending:'Payout pending',stUnclaimed:'Unclaimed',ivHdr:'Winner interview',ivIntro:'Required to receive your prize. Answer honestly — your story may be featured.',ivDone:'Interview submitted ✓ — you can edit and resubmit below.',walletHdr:'Payout wallet',walletLabel:'USDT (TRC20) address',walletNote:'⚠️ TRC20 (TRON) network ONLY. Sending on the wrong network loses the funds. Prizes are paid within 24 hours of submitting.',submit:'Submit & claim prize',submitting:'Submitting…',ok:'Submitted! Your prize will be sent within 24 hours.',required:'Please answer all required questions.',badWallet:'Enter a valid TRC20 (TRON) address (starts with T, 34 characters).',err:'Something went wrong. Please try again.',allClaimed:'All your prizes are claimed. Nothing more to do — payouts are sent within 24 hours.',nick:'Nickname',country:'Country',back:'← Arena'},
+  ko:{title:'<b>상금</b> 수령',lead:'우승자 인터뷰를 작성하고 USDT(TRC20) 지갑 주소를 제출하면 상금을 받을 수 있습니다.',loginNeeded:'상금을 받으려면 로그인하세요.',loginBtn:'로그인 →',noWins:'아직 청구할 상금이 없습니다.',prizesHdr:'내 상금',stPaid:'지급 완료 ✓',stPending:'지급 대기 중',stUnclaimed:'미청구',ivHdr:'우승자 인터뷰',ivIntro:'상금 지급에 필수입니다. 솔직하게 답해주세요 — 우승자 소개에 실릴 수 있습니다.',ivDone:'인터뷰 제출 완료 ✓ — 아래에서 수정 후 다시 제출할 수 있습니다.',walletHdr:'수령 지갑',walletLabel:'USDT (TRC20) 주소',walletNote:'⚠️ TRC20(TRON) 네트워크 전용. 다른 네트워크로 받으면 자금이 손실됩니다. 제출 후 24시간 이내에 지급됩니다.',submit:'제출하고 상금 받기',submitting:'제출 중…',ok:'제출 완료! 24시간 이내에 상금을 보내드립니다.',required:'필수 항목을 모두 작성해주세요.',badWallet:'올바른 TRC20(TRON) 주소를 입력하세요 (T로 시작, 34자).',err:'오류가 발생했습니다. 다시 시도해주세요.',allClaimed:'모든 상금을 청구했습니다. 더 하실 일은 없어요 — 24시간 이내에 지급됩니다.',nick:'닉네임',country:'국가',back:'← 아레나'},
+  zh:{title:'领取<b>奖金</b>',lead:'完成获奖者访谈并提交 USDT（TRC20）钱包地址即可领取奖金。',loginNeeded:'请登录以领取奖金。',loginBtn:'登录 →',noWins:'您暂无可领取的奖金。',prizesHdr:'我的奖金',stPaid:'已发放 ✓',stPending:'等待发放',stUnclaimed:'未领取',ivHdr:'获奖者访谈',ivIntro:'领取奖金必填。请如实作答——您的故事可能被展示。',ivDone:'访谈已提交 ✓ — 可在下方修改后重新提交。',walletHdr:'领取钱包',walletLabel:'USDT (TRC20) 地址',walletNote:'⚠️ 仅限 TRC20（TRON）网络。用错网络将丢失资金。提交后 24 小时内发放。',submit:'提交并领取奖金',submitting:'提交中…',ok:'已提交！将在 24 小时内发放奖金。',required:'请回答所有必填问题。',badWallet:'请输入有效的 TRC20（TRON）地址（以 T 开头，34 位）。',err:'出错了，请重试。',allClaimed:'您的奖金均已领取。无需再操作——24 小时内发放。',nick:'昵称',country:'国家',back:'← 竞技场'},
+  es:{title:'Reclama tu <b>premio</b>',lead:'Completa la entrevista de ganador y envía tu wallet USDT (TRC20) para recibir el premio.',loginNeeded:'Inicia sesión para reclamar tu premio.',loginBtn:'Iniciar sesión →',noWins:'Aún no tienes premios para reclamar.',prizesHdr:'Tus premios',stPaid:'Pagado ✓',stPending:'Pago pendiente',stUnclaimed:'Sin reclamar',ivHdr:'Entrevista de ganador',ivIntro:'Obligatoria para recibir el premio. Responde con sinceridad; tu historia puede destacarse.',ivDone:'Entrevista enviada ✓ — puedes editarla y reenviarla abajo.',walletHdr:'Wallet de pago',walletLabel:'Dirección USDT (TRC20)',walletNote:'⚠️ SOLO red TRC20 (TRON). Enviar por otra red pierde los fondos. El premio se paga en 24 horas tras enviar.',submit:'Enviar y reclamar premio',submitting:'Enviando…',ok:'¡Enviado! Tu premio se enviará en 24 horas.',required:'Responde todas las preguntas obligatorias.',badWallet:'Introduce una dirección TRC20 (TRON) válida (empieza por T, 34 caracteres).',err:'Algo salió mal. Inténtalo de nuevo.',allClaimed:'Todos tus premios están reclamados. Nada más que hacer — se pagan en 24 horas.',nick:'Apodo',country:'País',back:'← Arena'},
+  vi:{title:'Nhận <b>thưởng</b>',lead:'Hoàn thành phỏng vấn người thắng và gửi ví USDT (TRC20) để nhận thưởng.',loginNeeded:'Vui lòng đăng nhập để nhận thưởng.',loginBtn:'Đăng nhập →',noWins:'Bạn chưa có giải để nhận.',prizesHdr:'Giải của bạn',stPaid:'Đã trả ✓',stPending:'Chờ thanh toán',stUnclaimed:'Chưa nhận',ivHdr:'Phỏng vấn người thắng',ivIntro:'Bắt buộc để nhận thưởng. Trả lời thật lòng — câu chuyện của bạn có thể được giới thiệu.',ivDone:'Đã gửi phỏng vấn ✓ — có thể sửa và gửi lại bên dưới.',walletHdr:'Ví nhận thưởng',walletLabel:'Địa chỉ USDT (TRC20)',walletNote:'⚠️ CHỈ mạng TRC20 (TRON). Gửi sai mạng sẽ mất tiền. Thanh toán trong vòng 24 giờ sau khi gửi.',submit:'Gửi và nhận thưởng',submitting:'Đang gửi…',ok:'Đã gửi! Giải thưởng sẽ được gửi trong vòng 24 giờ.',required:'Vui lòng trả lời tất cả câu hỏi bắt buộc.',badWallet:'Nhập địa chỉ TRC20 (TRON) hợp lệ (bắt đầu bằng T, 34 ký tự).',err:'Có lỗi xảy ra. Vui lòng thử lại.',allClaimed:'Tất cả giải đã được nhận. Không cần làm gì thêm — thanh toán trong 24 giờ.',nick:'Biệt danh',country:'Quốc gia',back:'← Đấu trường'},
+  ru:{title:'Получить <b>приз</b>',lead:'Пройдите интервью победителя и укажите USDT-кошелёк (TRC20), чтобы получить приз.',loginNeeded:'Войдите, чтобы получить приз.',loginBtn:'Войти →',noWins:'У вас пока нет призов.',prizesHdr:'Ваши призы',stPaid:'Выплачено ✓',stPending:'Ожидает выплаты',stUnclaimed:'Не получено',ivHdr:'Интервью победителя',ivIntro:'Обязательно для получения приза. Отвечайте честно — вашу историю могут показать.',ivDone:'Интервью отправлено ✓ — можно изменить и отправить снова ниже.',walletHdr:'Кошелёк для выплаты',walletLabel:'Адрес USDT (TRC20)',walletNote:'⚠️ ТОЛЬКО сеть TRC20 (TRON). Отправка в другой сети — потеря средств. Выплата в течение 24 часов после отправки.',submit:'Отправить и получить приз',submitting:'Отправка…',ok:'Отправлено! Приз будет отправлен в течение 24 часов.',required:'Ответьте на все обязательные вопросы.',badWallet:'Введите корректный адрес TRC20 (TRON) (начинается с T, 34 символа).',err:'Что-то пошло не так. Попробуйте снова.',allClaimed:'Все ваши призы получены. Больше ничего не нужно — выплата в течение 24 часов.',nick:'Никнейм',country:'Страна',back:'← Арена'}
+};
+const SEC={b:{en:'Basics',ko:'기본 정보',zh:'基本信息',es:'Datos básicos',vi:'Cơ bản',ru:'Основное'},c:{en:'This competition',ko:'이번 대회',zh:'本次赛事',es:'Este torneo',vi:'Giải đấu này',ru:'Этот турнир'},p:{en:'Mindset',ko:'심리',zh:'心理',es:'Psicología',vi:'Tâm lý',ru:'Психология'},ph:{en:'Philosophy',ko:'철학',zh:'理念',es:'Filosofía',vi:'Triết lý',ru:'Философия'},x:{en:'Extra (optional)',ko:'추가 (선택)',zh:'补充（可选）',es:'Extra (opcional)',vi:'Thêm (tùy chọn)',ru:'Дополнительно'}};
+const GENDER={en:['Male','Female','Other'],ko:['남성','여성','기타'],zh:['男','女','其他'],es:['Hombre','Mujer','Otro'],vi:['Nam','Nữ','Khác'],ru:['Мужской','Женский','Другое']};
+const Q=[
+ {id:'age',sec:'b',t:'num',req:1,L:{en:'Age',ko:'나이',zh:'年龄',es:'Edad',vi:'Tuổi',ru:'Возраст'}},
+ {id:'gender',sec:'b',t:'gender',req:0,L:{en:'Gender (optional)',ko:'성별 (선택)',zh:'性别（可选）',es:'Género (opcional)',vi:'Giới tính (tùy chọn)',ru:'Пол (необязательно)'}},
+ {id:'job',sec:'b',t:'txt',req:1,L:{en:'Occupation',ko:'직업',zh:'职业',es:'Ocupación',vi:'Nghề nghiệp',ru:'Профессия'}},
+ {id:'experience',sec:'b',t:'txt',req:1,L:{en:'Trading experience (how long)',ko:'거래 경력 (기간)',zh:'交易经验（时长）',es:'Experiencia (cuánto)',vi:'Kinh nghiệm (bao lâu)',ru:'Опыт торговли (сколько)'}},
+ {id:'style',sec:'b',t:'txt',req:1,L:{en:'Trading style',ko:'거래 스타일',zh:'交易风格',es:'Estilo de trading',vi:'Phong cách giao dịch',ru:'Стиль торговли'}},
+ {id:'avgLev',sec:'b',t:'txt',req:1,L:{en:'Average leverage',ko:'평균 레버리지',zh:'平均杠杆',es:'Apalancamiento medio',vi:'Đòn bẩy trung bình',ru:'Средн. плечо'}},
+ {id:'maxLev',sec:'b',t:'txt',req:1,L:{en:'Max leverage',ko:'최대 레버리지',zh:'最大杠杆',es:'Apalancamiento máx.',vi:'Đòn bẩy tối đa',ru:'Макс. плечо'}},
+ {id:'mostCoin',sec:'b',t:'txt',req:1,L:{en:'Most-traded coin',ko:'가장 많이 거래한 코인',zh:'交易最多的币',es:'Moneda más operada',vi:'Coin giao dịch nhiều nhất',ru:'Самая торгуемая монета'}},
+ {id:'bestCoin',sec:'b',t:'txt',req:1,L:{en:"Coin you're most confident in",ko:'가장 자신 있는 코인',zh:'最有把握的币',es:'Moneda en la que más confías',vi:'Coin tự tin nhất',ru:'Монета, в которой уверены'}},
+ {id:'totalTrades',sec:'c',t:'txt',req:1,L:{en:'Total trades this competition',ko:'이번 대회 총 거래 횟수',zh:'本次赛事总交易次数',es:'Operaciones totales en el torneo',vi:'Tổng số lệnh trong giải',ru:'Всего сделок за турнир'}},
+ {id:'biggestWin',sec:'c',t:'area',req:1,L:{en:'Your biggest winning trade',ko:'가장 큰 수익 거래',zh:'最大盈利的交易',es:'Tu mayor operación ganadora',vi:'Lệnh lãi lớn nhất',ru:'Самая прибыльная сделка'}},
+ {id:'biggestLoss',sec:'c',t:'area',req:1,L:{en:'Your biggest losing trade',ko:'가장 큰 손실 거래',zh:'最大亏损的交易',es:'Tu mayor operación perdedora',vi:'Lệnh lỗ lớn nhất',ru:'Самая убыточная сделка'}},
+ {id:'hardest',sec:'c',t:'area',req:1,L:{en:'The hardest moment',ko:'가장 어려웠던 순간',zh:'最艰难的时刻',es:'El momento más difícil',vi:'Khoảnh khắc khó khăn nhất',ru:'Самый трудный момент'}},
+ {id:'happiest',sec:'c',t:'area',req:1,L:{en:'The happiest moment',ko:'가장 기뻤던 순간',zh:'最开心的时刻',es:'El momento más feliz',vi:'Khoảnh khắc vui nhất',ru:'Самый радостный момент'}},
+ {id:'regret',sec:'p',t:'area',req:1,L:{en:'The trade you regret most',ko:'가장 후회되는 거래',zh:'最后悔的交易',es:'La operación que más lamentas',vi:'Lệnh hối tiếc nhất',ru:'Сделка, о которой жалеете'}},
+ {id:'bestTrade',sec:'p',t:'area',req:1,L:{en:'The trade you did best',ko:'가장 잘한 거래',zh:'做得最好的交易',es:'La operación que mejor hiciste',vi:'Lệnh làm tốt nhất',ru:'Лучшая ваша сделка'}},
+ {id:'emotion',sec:'p',t:'txt',req:1,L:{en:'The emotion you felt most',ko:'가장 많이 느낀 감정',zh:'感受最多的情绪',es:'La emoción que más sentiste',vi:'Cảm xúc nhiều nhất',ru:'Эмоция, которую чувствовали чаще'}},
+ {id:'mistake',sec:'p',t:'area',req:1,L:{en:'Your biggest mistake',ko:'가장 큰 실수',zh:'最大的失误',es:'Tu mayor error',vi:'Sai lầm lớn nhất',ru:'Ваша самая большая ошибка'}},
+ {id:'lesson',sec:'p',t:'area',req:1,L:{en:'Your biggest realization',ko:'가장 큰 깨달음',zh:'最大的领悟',es:'Tu mayor aprendizaje',vi:'Nhận ra lớn nhất',ru:'Ваше главное осознание'}},
+ {id:'principle',sec:'ph',t:'area',req:1,L:{en:'Your trading principles',ko:'당신의 트레이딩 원칙',zh:'你的交易原则',es:'Tus principios de trading',vi:'Nguyên tắc giao dịch của bạn',ru:'Ваши принципы торговли'}},
+ {id:'quote',sec:'ph',t:'txt',req:1,L:{en:'Your favorite quote',ko:'가장 좋아하는 명언',zh:'最喜欢的名言',es:'Tu cita favorita',vi:'Câu nói yêu thích',ru:'Любимая цитата'}},
+ {id:'different',sec:'ph',t:'area',req:1,L:{en:'The one thing that set you apart',ko:'다른 참가자들과 달랐던 단 한 가지',zh:'与他人不同的一点',es:'Lo único que te diferenció',vi:'Điều duy nhất khiến bạn khác biệt',ru:'Единственное, что вас отличало'}},
+ {id:'sleep',sec:'ph',t:'txt',req:1,L:{en:'Avg hours of sleep/day while trading',ko:'트레이딩하며 하루 평균 수면시간',zh:'交易期间日均睡眠时长',es:'Horas de sueño/día operando',vi:'Giờ ngủ/ngày khi giao dịch',ru:'Средний сон в день'}},
+ {id:'toBeginners',sec:'ph',t:'area',req:1,L:{en:'A word to beginners',ko:'초보에게 한 마디',zh:'对新手说一句',es:'Un consejo para principiantes',vi:'Một lời cho người mới',ru:'Слово новичкам'}},
+ {id:'toSelf',sec:'ph',t:'area',req:1,L:{en:'A word to yourself',ko:'자신에게 한 마디',zh:'对自己说一句',es:'Un mensaje para ti mismo',vi:'Một lời cho chính mình',ru:'Слово самому себе'}},
+ {id:'whyStarted',sec:'x',t:'area',req:0,L:{en:'Why you started trading (optional)',ko:'트레이딩을 시작한 계기 (선택)',zh:'开始交易的契机（可选）',es:'Por qué empezaste (opcional)',vi:'Lý do bắt đầu (tùy chọn)',ru:'Почему начали (необязательно)'}},
+ {id:'tools',sec:'x',t:'txt',req:0,L:{en:'Indicators/tools you mainly use (optional)',ko:'주로 쓰는 지표·도구 (선택)',zh:'常用指标/工具（可选）',es:'Indicadores/herramientas (opcional)',vi:'Chỉ báo/công cụ hay dùng (tùy chọn)',ru:'Индикаторы/инструменты (необязательно)'}},
+ {id:'mentalCare',sec:'x',t:'area',req:0,L:{en:'How you manage your mindset (optional)',ko:'멘탈 관리 방법 (선택)',zh:'如何管理心态（可选）',es:'Cómo gestionas tu mentalidad (opcional)',vi:'Cách quản lý tâm lý (tùy chọn)',ru:'Как управляете настроем (необязательно)'}},
+ {id:'prizePlan',sec:'x',t:'txt',req:0,L:{en:"How you'll use the prize (optional)",ko:'상금 사용 계획 (선택)',zh:'奖金用途（可选）',es:'Cómo usarás el premio (opcional)',vi:'Dùng tiền thưởng thế nào (tùy chọn)',ru:'Как потратите приз (необязательно)'}},
+ {id:'sns',sec:'x',t:'txt',req:0,L:{en:'Public social handle for a winner feature (optional)',ko:'우승자 소개용 공개 SNS (선택)',zh:'用于展示的公开社媒（可选）',es:'Red social pública (opcional)',vi:'MXH công khai (tùy chọn)',ru:'Публичный профиль (необязательно)'}}
+];
+
+let lang=localStorage.getItem('ayilon_lang')||(navigator.language||'en').slice(0,2).toLowerCase();
+if(!U[lang]) lang='en';
+let DATA=null;
+
+function applyChrome(){
+  const u=U[lang];
+  document.documentElement.lang=lang;
+  document.getElementById('h1').innerHTML=u.title;
+  document.getElementById('lead').textContent=u.lead;
+  document.getElementById('backLink').textContent=u.back;
+  document.getElementById('lang').value=lang;
+}
+const sel=document.getElementById('lang');
+sel.innerHTML=LANGS.map(([v,n])=>`<option value="${v}">${n}</option>`).join('');
+sel.addEventListener('change',()=>{lang=sel.value;localStorage.setItem('ayilon_lang',lang);applyChrome();render();});
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function usd(v){return '$'+Number(v||0).toLocaleString(undefined,{maximumFractionDigits:2});}
+const boardName=b=>b==='weekly'?({en:'Weekly',ko:'주간',zh:'周赛',es:'Semanal',vi:'Tuần',ru:'Неделя'}[lang]):({en:'Monthly',ko:'월간',zh:'月赛',es:'Mensual',vi:'Tháng',ru:'Месяц'}[lang]);
+const metricName=m=>({return:{en:'Return',ko:'수익률',zh:'收益率',es:'Rentab.',vi:'Lợi nhuận',ru:'Доходность'},profit:{en:'Profit',ko:'수익금',zh:'盈利',es:'Beneficio',vi:'Tiền lãi',ru:'Прибыль'},volume:{en:'Volume',ko:'거래량',zh:'交易量',es:'Volumen',vi:'Khối lượng',ru:'Объём'}}[m]||{})[lang]||m;
+
+async function load(){
+  if(!token()){ DATA={noauth:true}; render(); return; }
+  try{
+    const r=await fetch(WORKER_URL+'/arena/my-winnings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token()})});
+    DATA=await r.json();
+  }catch(e){ DATA={err:true}; }
+  render();
+}
+
+function render(){
+  const u=U[lang], c=document.getElementById('content');
+  if(!DATA){ c.innerHTML='<div class="center">…</div>'; return; }
+  if(DATA.noauth){ c.innerHTML=`<div class="card"><p style="color:var(--mut);margin-bottom:16px">${u.loginNeeded}</p><a class="btn" style="display:inline-block;width:auto;text-decoration:none" href="/login.html">${u.loginBtn}</a></div>`; return; }
+  if(DATA.err||!DATA.ok){ c.innerHTML=`<div class="card"><p style="color:var(--bad)">${u.err}</p></div>`; return; }
+  const wins=DATA.winnings||[];
+  if(!wins.length){ c.innerHTML=`<div class="card"><p style="color:var(--mut)">${u.noWins}</p></div>`; return; }
+
+  // Prize list
+  let html=`<div class="card"><h2>${u.prizesHdr}</h2><div class="sub" style="margin-bottom:8px"></div>`;
+  html+=wins.map(w=>{
+    const st=w.paid?`<span class="tag paid">${u.stPaid}</span>`:(w.payout_addr?`<span class="tag pending">${u.stPending}</span>`:`<span class="tag unclaimed">${u.stUnclaimed}</span>`);
+    return `<div class="prize-row"><div><b>${boardName(w.board)} · ${metricName(w.metric)} · #${w.rank}</b><div style="color:var(--dim);font-size:12px">${esc(w.season_id)}</div></div><div style="display:flex;align-items:center;gap:12px"><span class="amt">${usd(w.prize)}</span>${st}</div></div>`;
+  }).join('');
+  html+=`</div>`;
+
+  const unclaimed=wins.filter(w=>!w.payout_addr&&!w.paid);
+  if(!unclaimed.length){
+    html+=`<div class="card"><p class="done-note">✓ ${u.allClaimed}</p></div>`;
+    c.innerHTML=html; return;
+  }
+
+  // Profile (from account)
+  html+=`<div class="card"><h2>${u.ivHdr}</h2><div class="sub">${u.ivIntro}</div>`;
+  if(DATA.interviewDone) html+=`<div class="done-note">${u.ivDone}</div>`;
+  html+=`<div class="prof"><span>${u.nick}: <b>${esc(DATA.nickname||'')}</b></span><span>${u.country}: <b>${esc(DATA.country||'')}</b></span></div>`;
+
+  // Interview sections
+  const iv=DATA.interview||{};
+  const secs=['b','c','p','ph','x'];
+  for(const s of secs){
+    html+=`<div class="sec"><div class="sec-t">${SEC[s][lang]}</div>`;
+    for(const q of Q.filter(x=>x.sec===s)){
+      const val=iv[q.id]!=null?esc(iv[q.id]):'';
+      const reqStar=q.req?'<span class="req">*</span>':'';
+      let field;
+      if(q.t==='area') field=`<textarea id="iv_${q.id}">${val}</textarea>`;
+      else if(q.t==='num') field=`<input id="iv_${q.id}" type="number" min="1" max="120" value="${val}">`;
+      else if(q.t==='gender'){ const g=GENDER[lang]; field=`<select id="iv_${q.id}"><option value="">—</option>${g.map((o,i)=>`<option value="${['male','female','other'][i]}"${iv[q.id]===['male','female','other'][i]?' selected':''}>${o}</option>`).join('')}</select>`; }
+      else field=`<input id="iv_${q.id}" type="text" value="${val}">`;
+      html+=`<div class="q" data-qid="${q.id}" data-req="${q.req}"><label>${q.L[lang]}${reqStar}</label>${field}</div>`;
+    }
+    html+=`</div>`;
+  }
+  html+=`</div>`;
+
+  // Wallet + submit
+  html+=`<div class="card"><h2>${u.walletHdr}</h2>`;
+  html+=`<div class="q" style="margin-top:12px"><label>${u.walletLabel}<span class="req">*</span></label><input id="wallet" type="text" placeholder="T... (TRON / TRC20)" autocomplete="off" spellcheck="false"></div>`;
+  html+=`<div class="wnote">${u.walletNote}</div>`;
+  html+=`<button class="btn" id="submitBtn" onclick="submitClaim()">${u.submit}</button>`;
+  html+=`<div class="msg" id="msg"></div></div>`;
+  c.innerHTML=html;
+}
+
+function collectInterview(){
+  const iv={}; let missing=null;
+  for(const q of Q){
+    const el=document.getElementById('iv_'+q.id); if(!el) continue;
+    const v=(el.value||'').trim();
+    iv[q.id]=v;
+    const wrap=document.querySelector('.q[data-qid="'+q.id+'"]');
+    if(q.req && !v){ if(wrap) wrap.classList.add('invalid'); if(!missing) missing=wrap; }
+    else if(wrap) wrap.classList.remove('invalid');
+  }
+  return {iv,missing};
+}
+
+async function submitClaim(){
+  const u=U[lang], msg=document.getElementById('msg'), btn=document.getElementById('submitBtn');
+  const {iv,missing}=collectInterview();
+  if(missing){ msg.className='msg err'; msg.textContent=u.required; missing.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  const wallet=(document.getElementById('wallet').value||'').trim();
+  if(!TRC20.test(wallet)){ msg.className='msg err'; msg.textContent=u.badWallet; document.getElementById('wallet').focus(); return; }
+  const unclaimed=(DATA.winnings||[]).filter(w=>!w.payout_addr&&!w.paid);
+  btn.disabled=true; msg.className='msg'; msg.textContent=u.submitting; msg.style.display='block'; msg.style.color='var(--mut)';
+  try{
+    let allOk=true;
+    for(const w of unclaimed){
+      const r=await fetch(WORKER_URL+'/arena/claim-prize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token(),id:w.id,address:wallet,interview:iv})});
+      const j=await r.json();
+      if(!j.ok){ allOk=false; if(j.error==='bad_trc20'){ msg.className='msg err'; msg.textContent=u.badWallet; } break; }
+    }
+    if(allOk){ msg.className='msg ok'; msg.textContent=u.ok; setTimeout(load,1200); }
+    else if(msg.className!=='msg err'){ msg.className='msg err'; msg.textContent=u.err; }
+  }catch(e){ msg.className='msg err'; msg.textContent=u.err; }
+  btn.disabled=false;
+}
+
+applyChrome();
+load();
+</script>
+</body>
+</html>

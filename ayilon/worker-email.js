@@ -68,6 +68,7 @@ export default {
       if (path === '/admin/ban')          return handleAdminBan(request, env);
       if (path === '/admin/arena-winners') return handleAdminArenaWinners(request, env);
       if (path === '/admin/affiliate-test') return handleAdminAffiliateTest(request, env);
+      if (path === '/admin/arena-interview') return handleAdminArenaInterview(request, env);
       if (path === '/admin/contact-list')  return handleAdminContactList(request, env);
       if (path === '/admin/contact-reply') return handleAdminContactReply(request, env);
     }
@@ -1320,8 +1321,16 @@ async function handleArenaWinners(request, env) {
   return json({ ok: true, winners: rows, champions });
 }
 
-// The signed-in user's own prize wins, so they can claim (submit a wallet) and
-// track payout status. Drives the "🎉 you won" banner on the home page.
+// A completed interview needs most fields answered (optional ones may be blank).
+function interviewComplete(iv) {
+  if (!iv || typeof iv !== 'object') return false;
+  let filled = 0;
+  for (const k of Object.keys(iv)) { if (typeof iv[k] === 'string' && iv[k].trim().length > 0) filled++; }
+  return filled >= 20;
+}
+
+// The signed-in user's own prize wins + interview status, so the claim page can
+// show what's left to do and prefill a previously-saved interview.
 async function handleArenaMyWinnings(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
@@ -1330,28 +1339,72 @@ async function handleArenaMyWinnings(request, env) {
   let rows = [];
   try { rows = (await env.BOT_DB.prepare('SELECT id,season_id,board,metric,rank,value,prize,paid,payout_addr,payout_chain,declared_at FROM arena_winners WHERE email=? AND prize>0 ORDER BY declared_at DESC LIMIT 60').bind(session.email).all()).results || []; } catch (_) {}
   const unclaimed = rows.filter(w => !w.payout_addr && !w.paid).length;
-  return json({ ok: true, winnings: rows, unclaimed });
+  const iv = await env.USERS_KV.get('interview:' + session.email, { type: 'json' });
+  const u = (await env.USERS_KV.get('user:' + session.email, { type: 'json' })) || {};
+  return json({ ok: true, winnings: rows, unclaimed, interviewDone: !!iv, interview: iv || null, nickname: u.username || '', country: u.country || '' });
 }
 
-// Winner submits the wallet address to receive their prize. Only the owner can
-// set it, only while unpaid; address/chain are validated lightly.
+// Winner submits their TRC20 wallet (+ the required winner interview) to receive
+// the prize. Only the owner, only while unpaid. Payouts are USDT-TRC20 only.
 async function handleArenaClaimPrize(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
   await ensureDB(env);
   const id = parseInt(body.id || 0);
-  const chain = String(body.chain || '').trim().slice(0, 24);
-  const addr = String(body.address || '').trim().slice(0, 120);
+  const addr = String(body.address || '').trim().slice(0, 80);
   if (!id) return json({ ok: false, error: 'bad_id' }, 400);
-  if (!chain) return json({ ok: false, error: 'no_chain' }, 400);
-  // Crypto addresses are alphanumeric (base58/hex/bech32); reject anything else.
-  if (addr.length < 12 || !/^[A-Za-z0-9:_-]+$/.test(addr)) return json({ ok: false, error: 'bad_address' }, 400);
-  const w = await env.BOT_DB.prepare('SELECT email,paid FROM arena_winners WHERE id=?').bind(id).first().catch(() => null);
+  // TRC20 only: TRON base58 address (starts with 'T', 34 chars). Rejects ERC20
+  // etc. so funds are never sent on the wrong chain.
+  if (!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(addr)) return json({ ok: false, error: 'bad_trc20' }, 400);
+  const w = await env.BOT_DB.prepare('SELECT email,paid,nickname,prize,board,metric,rank,season_id FROM arena_winners WHERE id=?').bind(id).first().catch(() => null);
   if (!w || w.email !== session.email) return json({ ok: false, error: 'not_your_prize' }, 403);
   if (w.paid) return json({ ok: false, error: 'already_paid' }, 400);
-  await env.BOT_DB.prepare('UPDATE arena_winners SET payout_addr=?, payout_chain=? WHERE id=?').bind(addr, chain, id).run();
+
+  // Interview: store it if a complete one is supplied, then require one on file.
+  if (body.interview && typeof body.interview === 'object' && interviewComplete(body.interview)) {
+    const clean = {};
+    for (const k of Object.keys(body.interview)) { if (typeof body.interview[k] === 'string') clean[String(k).slice(0, 40)] = body.interview[k].slice(0, 2000); }
+    clean.submittedAt = Date.now();
+    await env.USERS_KV.put('interview:' + session.email, JSON.stringify(clean));
+  }
+  const ivOnFile = await env.USERS_KV.get('interview:' + session.email);
+  if (!ivOnFile) return json({ ok: false, error: 'interview_required' }, 400);
+
+  await env.BOT_DB.prepare('UPDATE arena_winners SET payout_addr=?, payout_chain=? WHERE id=?').bind(addr, 'USDT-TRC20', id).run();
+  try { await sendAdminPayoutAlert(env, { ...w, addr }); } catch (_) {}
   return json({ ok: true });
+}
+
+// Email the admin the moment a winner submits their wallet, so payouts don't
+// depend on remembering to open the admin panel.
+async function sendAdminPayoutAlert(env, w) {
+  if (!env.RESEND_API_KEY) return;
+  const prize = '$' + Number(w.prize || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const cat = (w.board === 'weekly' ? '주간' : '월간') + ' ' + w.metric + ' #' + w.rank;
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'),
+      to: [ADMIN_CONTACT_EMAIL],
+      reply_to: w.email,
+      subject: `💸 [AYILON 지급요청] ${w.nickname} · ${prize} (TRC20)`,
+      html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:28px;max-width:520px;margin:0 auto;border-radius:12px;"><h2 style="margin:0 0 16px;font-size:18px;">💸 새 상금 지급 요청</h2><table style="width:100%;font-size:14px;border-collapse:collapse;"><tr><td style="color:#a3a3a3;padding:5px 0;width:90px;">닉네임</td><td style="font-weight:600;">${escapeHtml(w.nickname || '')}</td></tr><tr><td style="color:#a3a3a3;padding:5px 0;">부문</td><td>${escapeHtml(cat)} · ${escapeHtml(w.season_id || '')}</td></tr><tr><td style="color:#a3a3a3;padding:5px 0;">상금</td><td style="font-weight:700;color:#d8b46a;">${prize}</td></tr><tr><td style="color:#a3a3a3;padding:5px 0;">체인</td><td style="color:#34d39a;font-weight:600;">USDT-TRC20</td></tr><tr><td style="color:#a3a3a3;padding:5px 0;vertical-align:top;">주소</td><td><code style="word-break:break-all;">${escapeHtml(w.addr || '')}</code></td></tr><tr><td style="color:#a3a3a3;padding:5px 0;">이메일</td><td>${escapeHtml(w.email || '')}</td></tr></table><p style="color:#525252;font-size:12px;margin:18px 0 0;">관리자 페이지에서 이 주소로 USDT(TRC20)를 보낸 뒤 "지급 완료"를 누르세요. 24시간 이내 지급이 원칙입니다.</p></div>`,
+      text: `새 상금 지급 요청\n닉네임: ${w.nickname}\n부문: ${cat} · ${w.season_id}\n상금: ${prize}\n체인: USDT-TRC20\n주소: ${w.addr}\n이메일: ${w.email}\n\n24시간 이내 지급 원칙.`
+    })
+  });
+}
+
+// Admin: fetch a winner's submitted interview by email.
+async function handleAdminArenaInterview(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
+  const email = String(body.email || '').toLowerCase();
+  if (!email) return json({ ok: false, error: 'no_email' }, 400);
+  const iv = await env.USERS_KV.get('interview:' + email, { type: 'json' });
+  return json({ ok: true, interview: iv || null });
 }
 
 // Map the country picked at signup → the winner-email language (falls back to
@@ -1368,27 +1421,27 @@ function langFromCountry(c) {
 // Winner-email copy in each supported language. board/metric are lookup tables;
 // placed()/subj() interpolate rank, category and prize.
 const WIN_EMAIL_I18N = {
-  en: { congrats: 'Congratulations!', prizeLabel: 'YOUR PRIZE', instr: 'Log in and submit your USDT wallet address to receive your prize.', btn: 'Claim prize →', foot: 'Contact', sentTo: 'This email was sent to an AYILON Arena winner.',
+  en: { congrats: 'Congratulations!', prizeLabel: 'YOUR PRIZE', instr: 'Log in, complete the short winner interview, and submit your USDT (TRC20) wallet to receive your prize.', note: 'The interview is required — prizes are not paid without it. Payout is sent within 24 hours of submitting your wallet address (USDT-TRC20 only).', btn: 'Claim prize →', foot: 'Contact', sentTo: 'This email was sent to an AYILON Arena winner.',
         board: { weekly: 'Weekly', monthly: 'Monthly' }, metric: { return: 'Return', profit: 'Profit', volume: 'Volume' },
         placed: (r, b, m, s) => `You placed <b style="color:#fff;">#${r}</b> in <b style="color:#fff;">${b} ${m}</b> for season <b style="color:#fff;">${s}</b>.`,
         subj: (b, m, r, p) => `🏆 You won — ${b} ${m} #${r} · ${p} | AYILON` },
-  ko: { congrats: '축하합니다!', prizeLabel: '상금', instr: '로그인 후 상금을 받을 USDT 지갑 주소를 입력하세요.', btn: '상금 수령하기 →', foot: '문의', sentTo: '본 메일은 AYILON Arena 우승자에게 발송됩니다.',
+  ko: { congrats: '축하합니다!', prizeLabel: '상금', instr: '로그인 후 간단한 우승자 인터뷰를 작성하고, USDT(TRC20) 지갑 주소를 입력하면 상금을 받을 수 있습니다.', note: '인터뷰는 필수이며, 작성하지 않으면 상금이 지급되지 않습니다. 지갑 주소 입력 후 24시간 이내에 지급됩니다 (USDT-TRC20 전용).', btn: '상금 수령하기 →', foot: '문의', sentTo: '본 메일은 AYILON Arena 우승자에게 발송됩니다.',
         board: { weekly: '주간', monthly: '월간' }, metric: { return: '수익률', profit: '수익금', volume: '거래량' },
         placed: (r, b, m, s) => `<b style="color:#fff;">${s}</b> 시즌 <b style="color:#fff;">${b} ${m}</b> 부문에서 <b style="color:#fff;">${r}위</b>에 올랐습니다.`,
         subj: (b, m, r, p) => `🏆 우승! ${b} ${m} ${r}위 · ${p} | AYILON` },
-  zh: { congrats: '恭喜！', prizeLabel: '奖金', instr: '登录后填写接收奖金的 USDT 钱包地址。', btn: '领取奖金 →', foot: '联系', sentTo: '本邮件发送给 AYILON Arena 获奖者。',
+  zh: { congrats: '恭喜！', prizeLabel: '奖金', instr: '登录后完成简短的获奖者访谈，并填写 USDT（TRC20）钱包地址即可领取奖金。', note: '访谈为必填，未填写则不予发放。填写钱包地址后 24 小时内发放（仅限 USDT-TRC20）。', btn: '领取奖金 →', foot: '联系', sentTo: '本邮件发送给 AYILON Arena 获奖者。',
         board: { weekly: '周赛', monthly: '月赛' }, metric: { return: '收益率', profit: '盈利额', volume: '交易量' },
         placed: (r, b, m, s) => `您在 <b style="color:#fff;">${s}</b> 赛季 <b style="color:#fff;">${b} ${m}</b> 中获得第 <b style="color:#fff;">${r}</b> 名。`,
         subj: (b, m, r, p) => `🏆 恭喜获奖 — ${b} ${m} 第${r}名 · ${p} | AYILON` },
-  es: { congrats: '¡Enhorabuena!', prizeLabel: 'TU PREMIO', instr: 'Inicia sesión y envía tu dirección de wallet USDT para recibir el premio.', btn: 'Reclamar premio →', foot: 'Contacto', sentTo: 'Este correo se envió a un ganador de AYILON Arena.',
+  es: { congrats: '¡Enhorabuena!', prizeLabel: 'TU PREMIO', instr: 'Inicia sesión, completa la breve entrevista de ganador y envía tu wallet USDT (TRC20) para recibir el premio.', note: 'La entrevista es obligatoria; sin ella no se paga el premio. El pago se envía dentro de las 24 horas tras enviar tu dirección (solo USDT-TRC20).', btn: 'Reclamar premio →', foot: 'Contacto', sentTo: 'Este correo se envió a un ganador de AYILON Arena.',
         board: { weekly: 'Semanal', monthly: 'Mensual' }, metric: { return: 'Rentabilidad', profit: 'Beneficio', volume: 'Volumen' },
         placed: (r, b, m, s) => `Quedaste <b style="color:#fff;">#${r}</b> en <b style="color:#fff;">${b} ${m}</b> en la temporada <b style="color:#fff;">${s}</b>.`,
         subj: (b, m, r, p) => `🏆 Ganaste — ${b} ${m} #${r} · ${p} | AYILON` },
-  vi: { congrats: 'Xin chúc mừng!', prizeLabel: 'GIẢI THƯỞNG', instr: 'Đăng nhập và gửi địa chỉ ví USDT để nhận thưởng.', btn: 'Nhận thưởng →', foot: 'Liên hệ', sentTo: 'Email này được gửi cho người thắng AYILON Arena.',
+  vi: { congrats: 'Xin chúc mừng!', prizeLabel: 'GIẢI THƯỞNG', instr: 'Đăng nhập, hoàn thành bài phỏng vấn người thắng ngắn và gửi ví USDT (TRC20) để nhận thưởng.', note: 'Phỏng vấn là bắt buộc; không hoàn thành sẽ không được trả thưởng. Thanh toán trong vòng 24 giờ sau khi gửi địa chỉ ví (chỉ USDT-TRC20).', btn: 'Nhận thưởng →', foot: 'Liên hệ', sentTo: 'Email này được gửi cho người thắng AYILON Arena.',
         board: { weekly: 'Tuần', monthly: 'Tháng' }, metric: { return: 'Lợi nhuận', profit: 'Tiền lãi', volume: 'Khối lượng' },
         placed: (r, b, m, s) => `Bạn đạt hạng <b style="color:#fff;">#${r}</b> ở <b style="color:#fff;">${b} ${m}</b> mùa <b style="color:#fff;">${s}</b>.`,
         subj: (b, m, r, p) => `🏆 Bạn đã thắng — ${b} ${m} #${r} · ${p} | AYILON` },
-  ru: { congrats: 'Поздравляем!', prizeLabel: 'ВАШ ПРИЗ', instr: 'Войдите и укажите адрес USDT-кошелька для получения приза.', btn: 'Получить приз →', foot: 'Контакт', sentTo: 'Это письмо отправлено победителю AYILON Arena.',
+  ru: { congrats: 'Поздравляем!', prizeLabel: 'ВАШ ПРИЗ', instr: 'Войдите, пройдите короткое интервью победителя и укажите USDT-кошелёк (TRC20), чтобы получить приз.', note: 'Интервью обязательно — без него приз не выплачивается. Выплата в течение 24 часов после отправки адреса (только USDT-TRC20).', btn: 'Получить приз →', foot: 'Контакт', sentTo: 'Это письмо отправлено победителю AYILON Arena.',
         board: { weekly: 'Неделя', monthly: 'Месяц' }, metric: { return: 'Доходность', profit: 'Прибыль', volume: 'Объём' },
         placed: (r, b, m, s) => `Вы заняли <b style="color:#fff;">#${r}</b> в <b style="color:#fff;">${b} ${m}</b> в сезоне <b style="color:#fff;">${s}</b>.`,
         subj: (b, m, r, p) => `🏆 Вы выиграли — ${b} ${m} #${r} · ${p} | AYILON` }
@@ -1417,8 +1470,8 @@ async function arenaNotifyWinners(env) {
           from: 'AYILON Arena <support@ayilon.com>',
           to: [w.email],
           subject: T.subj(boardName, metricName, w.rank, prize),
-          html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:36px;max-width:520px;margin:0 auto;border-radius:12px;"><h1 style="font-size:22px;letter-spacing:.14em;margin:0 0 20px;">AY<span style="color:#34d39a;">I</span>LON</h1><div style="font-size:30px;font-weight:780;margin-bottom:8px;">🏆 ${T.congrats}</div><p style="color:#a3a3a3;margin:0 0 22px;font-size:15px;">${T.placed(w.rank, boardName, metricName, season)}</p><div style="background:#111;border:1px solid #333;border-radius:12px;padding:22px;text-align:center;margin-bottom:22px;"><div style="color:#a3a3a3;font-size:12px;letter-spacing:.1em;margin-bottom:6px;">${T.prizeLabel}</div><div style="font-size:40px;font-weight:780;color:#d8b46a;">${prize}</div></div><p style="color:#e5e5e5;font-size:14px;line-height:1.7;margin:0 0 22px;">${T.instr}</p><a href="https://ayilon.com/?claim=1" style="display:inline-block;background:#34d39a;color:#06140e;padding:13px 28px;border-radius:10px;font-weight:700;text-decoration:none;font-size:15px;">${T.btn}</a><hr style="border:none;border-top:1px solid #222;margin:26px 0 14px;"><p style="color:#525252;font-size:12px;margin:0;">${T.foot}: ${mail} · ${T.sentTo}</p></div>`,
-          text: `${T.congrats}\n\n${boardName} ${metricName} #${w.rank} — ${w.season_id}\n${T.prizeLabel}: ${prize}\n\nhttps://ayilon.com/?claim=1\n\nsupport@ayilon.com`
+          html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:36px;max-width:520px;margin:0 auto;border-radius:12px;"><h1 style="font-size:22px;letter-spacing:.14em;margin:0 0 20px;">AY<span style="color:#34d39a;">I</span>LON</h1><div style="font-size:30px;font-weight:780;margin-bottom:8px;">🏆 ${T.congrats}</div><p style="color:#a3a3a3;margin:0 0 22px;font-size:15px;">${T.placed(w.rank, boardName, metricName, season)}</p><div style="background:#111;border:1px solid #333;border-radius:12px;padding:22px;text-align:center;margin-bottom:20px;"><div style="color:#a3a3a3;font-size:12px;letter-spacing:.1em;margin-bottom:6px;">${T.prizeLabel}</div><div style="font-size:40px;font-weight:780;color:#d8b46a;">${prize}</div></div><p style="color:#e5e5e5;font-size:14px;line-height:1.7;margin:0 0 14px;">${T.instr}</p><div style="background:rgba(216,180,106,.08);border:1px solid rgba(216,180,106,.3);border-radius:10px;padding:12px 14px;margin:0 0 22px;color:#d8b46a;font-size:12.5px;line-height:1.6;">⚠️ ${T.note}</div><a href="https://ayilon.com/claim.html" style="display:inline-block;background:#34d39a;color:#06140e;padding:13px 28px;border-radius:10px;font-weight:700;text-decoration:none;font-size:15px;">${T.btn}</a><hr style="border:none;border-top:1px solid #222;margin:26px 0 14px;"><p style="color:#525252;font-size:12px;margin:0;">${T.foot}: ${mail} · ${T.sentTo}</p></div>`,
+          text: `${T.congrats}\n\n${boardName} ${metricName} #${w.rank} — ${w.season_id}\n${T.prizeLabel}: ${prize}\n\n${T.note}\n\nhttps://ayilon.com/claim.html\n\nsupport@ayilon.com`
         })
       });
       // Mark done on success OR a permanent (4xx) failure like a bad address, so
