@@ -235,8 +235,9 @@ async function testAffiliate(){
   const m=document.getElementById('affMsg');m.style.color='var(--mut)';m.textContent='테스트 중…';
   try{
     const r=await post('/admin/affiliate-test',{});
-    if(r.ok){m.style.color='var(--accent)';m.textContent='연결 성공 — 초대자 데이터 수신됨 ('+((r.data&&r.data.length)||0)+'건).';}
-    else{m.style.color='var(--red)';m.textContent='실패: '+(r.error||r.hint||'');}
+    if(r.ok){m.style.color='var(--accent)';m.textContent='연결 성공 — 인증 OK, 어필리에이트 확인됨 (초대자 '+(r.dataCount||0)+'건).';}
+    else if(r.error==='no_affiliate_creds'){m.style.color='var(--red)';m.textContent='키 미설정: '+(r.hint||'');}
+    else{m.style.color='var(--red)';m.textContent='실패 — OKX 응답: code '+(r.code||'?')+' · '+(r.msg||r.error||'')+(r.httpStatus?' (HTTP '+r.httpStatus+')':'')+(r.testedUid?' · uid '+r.testedUid:'');}
   }catch(e){m.style.color='var(--red)';m.textContent='요청 오류';}
 }
 function computePool(){

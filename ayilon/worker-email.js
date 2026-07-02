@@ -1138,12 +1138,21 @@ async function handleAdminAffiliateTest(request, env) {
   if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
   const hasCreds = !!(env.OKX_AFFILIATE_KEY && env.OKX_AFFILIATE_SECRET && env.OKX_AFFILIATE_PASS);
   if (!hasCreds) return json({ ok: false, error: 'no_affiliate_creds', hint: 'Set OKX_AFFILIATE_KEY / OKX_AFFILIATE_SECRET / OKX_AFFILIATE_PASS as Cloudflare worker secrets.' });
-  const uid = String(body.uid || '').trim();
+  // The affiliate endpoint REQUIRES a uid, so pick one (given, else a participant's).
+  let uid = String(body.uid || '').trim();
+  if (!uid) { try { const p = await env.BOT_DB.prepare("SELECT okx_uid FROM arena_participants WHERE okx_uid IS NOT NULL AND okx_uid!='' ORDER BY joined_at DESC LIMIT 1").first(); uid = p?.okx_uid || ''; } catch (_) {} }
+  const path = '/api/v5/affiliate/invitee/detail' + (uid ? `?uid=${uid}` : '');
   try {
-    const path = uid ? `/api/v5/affiliate/invitee/detail?uid=${uid}` : '/api/v5/affiliate/invitee/detail';
-    const r = await okxGet(env.OKX_AFFILIATE_KEY, env.OKX_AFFILIATE_SECRET, env.OKX_AFFILIATE_PASS, path, false);
-    return json({ ok: true, hasCreds: true, raw: r });
-  } catch (e) { return json({ ok: false, hasCreds: true, error: String(e.message).slice(0, 200) }); }
+    // Raw fetch so we surface OKX's real code/msg even on a non-200 status.
+    const ts = new Date().toISOString();
+    const sign = await hmac(env.OKX_AFFILIATE_SECRET, ts + 'GET' + path);
+    const res = await fetch(OKX_BASE + path, { headers: okxHeaders(env.OKX_AFFILIATE_KEY, sign, ts, env.OKX_AFFILIATE_PASS, false) });
+    const txt = await res.text();
+    let p = null; try { p = JSON.parse(txt); } catch (_) {}
+    const authOk = res.ok && p && p.code === '0';   // creds valid + is an affiliate
+    return json({ ok: authOk, httpStatus: res.status, code: p?.code || null, msg: p?.msg || txt.slice(0, 160),
+      dataCount: Array.isArray(p?.data) ? p.data.length : 0, testedUid: uid || null });
+  } catch (e) { return json({ ok: false, error: String(e.message).slice(0, 200) }); }
 }
 
 // Public: Hall of Fame (recent frozen winners) + champion (rank-1) counts.
