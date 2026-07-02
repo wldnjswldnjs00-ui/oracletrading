@@ -178,6 +178,10 @@
   };
 
   const LANGS = [['en', 'English'], ['ko', '한국어'], ['zh', '中文'], ['es', 'Español'], ['vi', 'Tiếng Việt'], ['ru', 'Русский']];
+  const FOOT = {
+    en: ['About', 'Terms', 'Privacy'], ko: ['소개', '약관', '개인정보'], zh: ['关于', '条款', '隐私'],
+    es: ['Acerca de', 'Términos', 'Privacidad'], vi: ['Giới thiệu', 'Điều khoản', 'Bảo mật'], ru: ['О нас', 'Условия', 'Конфиденциальность']
+  };
 
   function esc(s) { return s; } // content is trusted (authored here)
   function sectionHtml(s) {
@@ -207,6 +211,10 @@
     document.getElementById('legal').innerHTML = html;
     const sel = document.getElementById('legalLang');
     if (sel) sel.value = lang;
+    // Translate the footer links too.
+    const fl = FOOT[lang] || FOOT.en;
+    const fa = document.getElementById('lfAbout'), ft = document.getElementById('lfTerms'), fp = document.getElementById('lfPrivacy');
+    if (fa) fa.textContent = fl[0]; if (ft) ft.textContent = fl[1]; if (fp) fp.textContent = fl[2];
   };
 
   window.buildLegalLangSel = function () {
