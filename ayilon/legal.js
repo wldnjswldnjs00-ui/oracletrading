@@ -136,6 +136,7 @@
         { h: 'How it works', cards: [{ n: 'STEP 01', h: 'Sign up via AYILON', p: 'Create an OKX account through the AYILON referral link.' }, { n: 'STEP 02', h: 'Connect read-only', p: 'Link a read-only API key. We can never touch your funds.' }, { n: 'STEP 03', h: 'Trade & climb', p: 'Your stats are scored automatically onto the leaderboard.' }] },
         { h: 'Three categories', p: 'Compete on return %, profit and volume — each on both weekly and monthly seasons. Miss one board, still win another. New weekly seasons start every Monday 00:00 UTC.' },
         { h: 'Why it\'s safe', p: 'Entry is free, and you connect a read-only key — AYILON only reads your stats and can never trade, transfer or withdraw. Your money stays in your own exchange account the whole time.' },
+        { h: 'FAQ', faq: [ { q: 'Is it free to join?', a: 'Yes — free entry, no fee. You connect a read-only key and your funds never leave your own exchange account.' }, { q: 'Is my money safe? Can AYILON touch it?', a: 'No. The API key is read-only — we can only read your stats, never trade, transfer, or withdraw.' }, { q: 'How do I win a prize?', a: 'Finish at the top of a category when the season ends. You must have signed up via the AYILON referral link and hold the minimum balance.' }, { q: 'When do seasons start and end?', a: 'Weekly seasons reset every Monday 00:00 UTC; monthly seasons on the 1st.' }, { q: 'What is not allowed?', a: 'Multiple accounts, opposite-side hedging, and wash trading lead to disqualification and a permanent ban.' }, { q: 'How do I contact support?', a: 'Email ' + mail + '.' } ] },
         { cta: { href: '/', label: 'Enter the Arena →' } },
         { note: 'Trading involves risk of loss of principal. AYILON Arena is a competition platform and does not provide investment advice or guarantee profit. All trading decisions and outcomes are solely the participant\'s responsibility.' }
       ]},
@@ -143,6 +144,7 @@
         { h: '진행 방식', cards: [{ n: 'STEP 01', h: 'AYILON 추천으로 가입', p: 'AYILON 추천 링크로 OKX 계정을 만드세요.' }, { n: 'STEP 02', h: '읽기 전용 연결', p: '읽기 전용 API 키를 연결합니다. 자금은 절대 건드릴 수 없습니다.' }, { n: 'STEP 03', h: '거래하고 순위 오르기', p: '통계가 자동 집계되어 리더보드에 반영됩니다.' }] },
         { h: '세 가지 부문', p: '수익률·수익금·거래량 — 각 부문이 주간·월간으로 모두 열립니다. 한 부문을 놓쳐도 다른 부문에서 우승할 수 있습니다. 주간 시즌은 매주 월요일 00:00 UTC에 시작합니다.' },
         { h: '안전한 이유', p: '참가는 무료이며 읽기 전용 키만 연결합니다. AYILON은 통계만 읽을 뿐 매매·이체·출금을 할 수 없습니다. 자금은 처음부터 끝까지 당신의 거래소 계정에 그대로 있습니다.' },
+        { h: '자주 묻는 질문', faq: [ { q: '참가는 무료인가요?', a: '네, 무료입니다. 참가비 없고, 읽기 전용 키만 연결하며 자금은 당신의 거래소 계좌를 절대 떠나지 않습니다.' }, { q: '제 자금은 안전한가요? AYILON이 건드릴 수 있나요?', a: '아니요. API 키는 읽기 전용이라 통계만 읽을 뿐, 매매·이체·출금은 불가능합니다.' }, { q: '상금은 어떻게 받나요?', a: '시즌 종료 시 부문 상위에 들면 됩니다. AYILON 추천 링크로 가입했고 최소 잔고를 보유해야 자격이 됩니다.' }, { q: '시즌은 언제 시작·종료되나요?', a: '주간 시즌은 매주 월요일 00:00 UTC, 월간은 매월 1일에 초기화됩니다.' }, { q: '금지 행위는 무엇인가요?', a: '다중 계정, 양방향 헤지, 워시 트레이딩은 실격 및 영구 정지 사유입니다.' }, { q: '문의는 어떻게 하나요?', a: '이메일: ' + mail } ] },
         { cta: { href: '/', label: '아레나 입장 →' } },
         { note: '트레이딩에는 원금 손실 위험이 있습니다. AYILON Arena는 대회 플랫폼이며 투자 자문이나 수익을 보장하지 않습니다. 모든 거래 결정과 결과는 전적으로 참가자 본인의 책임입니다.' }
       ]},
@@ -150,6 +152,7 @@
         { h: '如何运作', cards: [{ n: 'STEP 01', h: '通过AYILON注册', p: '用AYILON推荐链接创建OKX账户。' }, { n: 'STEP 02', h: '只读连接', p: '连接只读API密钥。我们永远碰不到你的资金。' }, { n: 'STEP 03', h: '交易并攀升', p: '你的数据自动计入排行榜。' }] },
         { h: '三个类别', p: '在收益率、盈利额和交易量上竞争——每项都有周赛和月赛。错过一个榜，仍可赢另一个。周赛每周一00:00 UTC开始。' },
         { h: '为何安全', p: '免费参赛，你连接的是只读密钥——AYILON只读取数据，永远无法交易、转账或提现。你的资金始终留在你自己的交易所账户中。' },
+        { h: '常见问题', faq: [ { q: '参加免费吗？', a: '免费。无报名费，只需连接只读密钥，资金始终留在你自己的交易所账户。' }, { q: '我的资金安全吗？AYILON 能动吗？', a: '不能。API 密钥为只读——我们只能读取数据，无法交易、转账或提现。' }, { q: '如何获得奖金？', a: '赛季结束时进入某类别前列即可。须通过 AYILON 推荐链接注册并持有最低余额。' }, { q: '赛季何时开始和结束？', a: '周赛每周一 00:00 UTC 重置，月赛每月 1 日重置。' }, { q: '哪些行为被禁止？', a: '多账号、反向对冲、刷量都会导致取消资格并永久封禁。' }, { q: '如何联系客服？', a: '邮箱：' + mail } ] },
         { cta: { href: '/', label: '进入竞技场 →' } },
         { note: '交易存在本金亏损风险。AYILON Arena 是赛事平台，不提供投资建议或保证盈利。所有交易决定与结果均由参赛者自行负责。' }
       ]},
@@ -157,6 +160,7 @@
         { h: 'Cómo funciona', cards: [{ n: 'STEP 01', h: 'Regístrate vía AYILON', p: 'Crea una cuenta OKX con el enlace de referido de AYILON.' }, { n: 'STEP 02', h: 'Conexión solo lectura', p: 'Vincula una clave de solo lectura. Nunca tocamos tus fondos.' }, { n: 'STEP 03', h: 'Opera y sube', p: 'Tus estadísticas se puntúan automáticamente en la clasificación.' }] },
         { h: 'Tres categorías', p: 'Compite en rentabilidad %, beneficio y volumen — cada una en temporadas semanales y mensuales. Si fallas en una, aún puedes ganar otra. Las semanales empiezan cada lunes 00:00 UTC.' },
         { h: 'Por qué es seguro', p: 'La entrada es gratis y conectas una clave de solo lectura — AYILON solo lee tus estadísticas y nunca puede operar, transferir ni retirar. Tu dinero permanece en tu cuenta todo el tiempo.' },
+        { h: 'Preguntas frecuentes', faq: [ { q: '¿Es gratis participar?', a: 'Sí, gratis. Sin cuota; conectas una clave de solo lectura y tus fondos nunca salen de tu cuenta.' }, { q: '¿Mi dinero está seguro? ¿AYILON puede tocarlo?', a: 'No. La clave es de solo lectura: solo leemos tus estadísticas, nunca operamos, transferimos ni retiramos.' }, { q: '¿Cómo gano un premio?', a: 'Termina en lo alto de una categoría al final de la temporada. Debes haberte registrado por el enlace de referido de AYILON y tener el saldo mínimo.' }, { q: '¿Cuándo empiezan y terminan las temporadas?', a: 'Las semanales se reinician cada lunes 00:00 UTC; las mensuales el día 1.' }, { q: '¿Qué no está permitido?', a: 'Multicuenta, cobertura en sentido opuesto y wash trading conllevan descalificación y baneo permanente.' }, { q: '¿Cómo contacto con soporte?', a: 'Correo: ' + mail } ] },
         { cta: { href: '/', label: 'Entrar a la Arena →' } },
         { note: 'Operar implica riesgo de pérdida del capital. AYILON Arena es una plataforma de torneo y no da asesoramiento de inversión ni garantiza beneficios. Todas las decisiones y resultados son responsabilidad del participante.' }
       ]},
@@ -164,6 +168,7 @@
         { h: 'Cách hoạt động', cards: [{ n: 'STEP 01', h: 'Đăng ký qua AYILON', p: 'Tạo tài khoản OKX bằng liên kết giới thiệu của AYILON.' }, { n: 'STEP 02', h: 'Kết nối chỉ đọc', p: 'Liên kết khóa API chỉ đọc. Chúng tôi không bao giờ chạm vào tiền của bạn.' }, { n: 'STEP 03', h: 'Giao dịch & thăng hạng', p: 'Số liệu của bạn được tính tự động lên bảng xếp hạng.' }] },
         { h: 'Ba hạng mục', p: 'Thi đấu ở lợi nhuận %, tiền lãi và khối lượng — mỗi hạng mục đều có mùa tuần và tháng. Lỡ một bảng vẫn thắng bảng khác. Mùa tuần mới bắt đầu mỗi Thứ Hai 00:00 UTC.' },
         { h: 'Vì sao an toàn', p: 'Tham gia miễn phí và bạn kết nối khóa chỉ đọc — AYILON chỉ đọc số liệu, không thể giao dịch, chuyển hay rút. Tiền của bạn luôn nằm trong tài khoản sàn của bạn.' },
+        { h: 'Câu hỏi thường gặp', faq: [ { q: 'Tham gia có miễn phí không?', a: 'Có, miễn phí. Không phí; bạn kết nối khóa chỉ đọc và tiền không bao giờ rời tài khoản sàn của bạn.' }, { q: 'Tiền của tôi có an toàn không? AYILON có chạm được không?', a: 'Không. Khóa API chỉ đọc — chúng tôi chỉ đọc số liệu, không thể giao dịch, chuyển hay rút.' }, { q: 'Làm sao để thắng giải?', a: 'Đứng đầu một hạng mục khi mùa giải kết thúc. Bạn phải đăng ký qua liên kết giới thiệu AYILON và có số dư tối thiểu.' }, { q: 'Mùa giải bắt đầu và kết thúc khi nào?', a: 'Mùa tuần đặt lại mỗi Thứ Hai 00:00 UTC; mùa tháng vào ngày 1.' }, { q: 'Điều gì bị cấm?', a: 'Nhiều tài khoản, phòng hộ ngược chiều và wash trading dẫn đến loại tư cách và cấm vĩnh viễn.' }, { q: 'Liên hệ hỗ trợ thế nào?', a: 'Email: ' + mail } ] },
         { cta: { href: '/', label: 'Vào Đấu trường →' } },
         { note: 'Giao dịch có rủi ro mất vốn. AYILON Arena là nền tảng giải đấu, không tư vấn đầu tư hay đảm bảo lợi nhuận. Mọi quyết định và kết quả do người tham gia tự chịu trách nhiệm.' }
       ]},
@@ -171,6 +176,7 @@
         { h: 'Как это работает', cards: [{ n: 'STEP 01', h: 'Регистрация через AYILON', p: 'Создайте счёт OKX по реферальной ссылке AYILON.' }, { n: 'STEP 02', h: 'Подключение «только чтение»', p: 'Подключите ключ «только чтение». Мы никогда не касаемся ваших средств.' }, { n: 'STEP 03', h: 'Торгуй и поднимайся', p: 'Ваша статистика автоматически попадает в таблицу лидеров.' }] },
         { h: 'Три категории', p: 'Соревнуйтесь в доходности %, прибыли и объёме — каждая в недельных и месячных сезонах. Пропустили одну — выиграете другую. Недельные сезоны начинаются каждый понедельник в 00:00 UTC.' },
         { h: 'Почему это безопасно', p: 'Участие бесплатно, вы подключаете ключ «только чтение» — AYILON лишь читает статистику и не может торговать, переводить или выводить. Ваши деньги всё время остаются на вашем счёте.' },
+        { h: 'Частые вопросы', faq: [ { q: 'Участие бесплатно?', a: 'Да, бесплатно. Без взносов; вы подключаете ключ «только чтение», и средства не покидают ваш счёт.' }, { q: 'Мои деньги в безопасности? AYILON может их тронуть?', a: 'Нет. Ключ только для чтения — мы лишь читаем статистику, не можем торговать, переводить или выводить.' }, { q: 'Как выиграть приз?', a: 'Займите верх категории к концу сезона. Нужно зарегистрироваться по реферальной ссылке AYILON и иметь минимальный баланс.' }, { q: 'Когда начинаются и заканчиваются сезоны?', a: 'Недельные сбрасываются каждый понедельник в 00:00 UTC, месячные — 1-го числа.' }, { q: 'Что запрещено?', a: 'Несколько аккаунтов, встречный хедж и wash-трейдинг ведут к дисквалификации и вечной блокировке.' }, { q: 'Как связаться с поддержкой?', a: 'Почта: ' + mail } ] },
         { cta: { href: '/', label: 'Войти на Арену →' } },
         { note: 'Трейдинг сопряжён с риском потери капитала. AYILON Arena — платформа турнира, не даёт инвестсоветов и не гарантирует прибыль. Все решения и результаты — ответственность участника.' }
       ]}
@@ -192,6 +198,7 @@
     if (s.li) h += '<ul>' + s.li.map(x => '<li>' + x + '</li>').join('') + '</ul>';
     if (s.note) h += '<div class="note">' + s.note + '</div>';
     if (s.cards) h += '<div class="grid">' + s.cards.map(c => '<div class="card">' + (c.n ? '<div class="n">' + c.n + '</div>' : '') + '<h3>' + c.h + '</h3><p>' + c.p + '</p></div>').join('') + '</div>';
+    if (s.faq) h += s.faq.map(x => '<div style="margin-bottom:16px"><div style="font-weight:650;color:var(--txt);margin-bottom:3px">' + x.q + '</div><div style="color:var(--mut);font-size:14.5px;line-height:1.65">' + x.a + '</div></div>').join('');
     if (s.cta) h += '<a class="btn" href="' + s.cta.href + '">' + s.cta.label + '</a>';
     return h;
   }
