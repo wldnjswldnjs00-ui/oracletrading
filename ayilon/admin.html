@@ -154,7 +154,8 @@
   <!-- WINNERS / PAYOUTS -->
   <div class="card">
     <h2>우승자 · 상금 지급</h2>
-    <div class="sub">시즌 종료 시 자동 확정됩니다. 지급 완료하면 "지급 완료"를 눌러 표시하세요.</div>
+    <div class="sub">시즌 종료 시 자동 확정됩니다. 우승자가 사이트에서 지갑주소를 제출하면 "수령주소"에 표시돼요. 그 주소로 USDT를 보낸 뒤 "지급 완료"를 누르세요.</div>
+    <div id="wPayNote" style="font-size:12.5px;color:var(--gold);margin-bottom:10px"></div>
     <div style="overflow-x:auto"><table id="wTable"><tbody><tr><td class="empty">로딩 중…</td></tr></tbody></table></div>
   </div>
 
@@ -378,15 +379,28 @@ async function loadWinners(){
   const ws=r.winners||[];
   if(!ws.length){ tb.innerHTML='<tr><td class="empty">아직 확정된 우승자가 없습니다 (시즌 종료 시 자동 확정)</td></tr>'; return; }
   const label={return:'수익률',profit:'수익금',volume:'거래량'};
-  tb.parentElement.innerHTML='<thead><tr><th>시즌</th><th>부문</th><th>순위</th><th>닉네임</th><th>기록</th><th>지급액</th><th>지급</th></tr></thead><tbody>'+
+  const unpaidWithAddr=ws.filter(w=>!w.paid&&w.payout_addr).length;
+  document.getElementById('wPayNote').innerHTML = unpaidWithAddr>0
+    ? '💸 지급 대기 <b>'+unpaidWithAddr+'건</b> — 아래 수령주소로 USDT를 보낸 뒤 "지급 완료"를 누르세요.' : '';
+  tb.parentElement.innerHTML='<thead><tr><th>시즌</th><th>부문</th><th>순위</th><th>닉네임</th><th>이메일</th><th>기록</th><th>지급액</th><th>수령주소</th><th>지급</th></tr></thead><tbody>'+
     ws.map(w=>{
       const val=w.metric==='return'?pct(w.value):usd(w.value);
       const prize='<b style="color:var(--gold)">'+usd(w.prize)+'</b>';
-      const paid=w.paid?'<span class="tag ok">지급 완료</span>':'<button class="btn btn-g btn-sm" onclick="markPaid('+w.id+')">지급 완료 표시</button>';
-      return '<tr><td style="color:var(--mut)">'+esc(w.season_id)+'</td><td>'+(w.board==='weekly'?'주간':'월간')+' '+(label[w.metric]||w.metric)+'</td>'+
-        '<td><b>'+w.rank+'등</b></td><td>'+esc(w.nickname)+'</td><td style="font-variant-numeric:tabular-nums">'+val+'</td><td style="font-variant-numeric:tabular-nums">'+prize+'</td><td>'+paid+'</td></tr>';
+      let addr;
+      if(w.payout_addr){
+        addr='<div style="font-size:11px;color:var(--accent);font-weight:600">'+esc(w.payout_chain||'')+'</div>'
+          +'<code style="font-size:11px;word-break:break-all;cursor:pointer" title="클릭하면 복사" onclick="copyAddr(this,\''+esc(w.payout_addr).replace(/'/g,"")+'\')">'+esc(w.payout_addr)+'</code>';
+      } else {
+        addr='<span style="color:var(--dim);font-size:12px">주소 미제출</span>';
+      }
+      // Can only mark paid once the winner has submitted an address.
+      const paid=w.paid?'<span class="tag ok">지급 완료</span>'
+        :(w.payout_addr?'<button class="btn btn-g btn-sm" onclick="markPaid('+w.id+')">지급 완료 표시</button>':'<span style="color:var(--dim);font-size:12px">대기</span>');
+      return '<tr'+(!w.paid&&w.payout_addr?' style="background:rgba(216,180,106,.06)"':'')+'><td style="color:var(--mut)">'+esc(w.season_id)+'</td><td>'+(w.board==='weekly'?'주간':'월간')+' '+(label[w.metric]||w.metric)+'</td>'+
+        '<td><b>'+w.rank+'등</b></td><td>'+esc(w.nickname)+'</td><td class="hide-m" style="color:var(--mut);font-size:12px">'+esc(w.email||'')+'</td><td style="font-variant-numeric:tabular-nums">'+val+'</td><td style="font-variant-numeric:tabular-nums">'+prize+'</td><td style="max-width:200px">'+addr+'</td><td>'+paid+'</td></tr>';
     }).join('')+'</tbody>';
 }
+function copyAddr(el,addr){ navigator.clipboard.writeText(addr).then(()=>{const o=el.textContent;el.textContent='복사됨 ✓';setTimeout(()=>el.textContent=o,1000);}).catch(()=>{}); }
 async function markPaid(id){ const r=await post('/admin/arena-winners',{markPaid:true,id}); if(r.ok)loadWinners(); }
 
 async function refreshStats(){

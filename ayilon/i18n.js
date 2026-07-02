@@ -332,6 +332,7 @@
       'signup.pw.match': '✓ Passwords match',
       'signup.pw.nomatch':'Passwords do not match',
       'signup.terms.all':'Agree to all',
+      'signup.terms.age':'I am at least 18 and legally permitted to trade crypto derivatives in my country',
       'signup.terms.tos':'Terms of Service',
       'signup.terms.req':'(required)',
       'signup.terms.priv':'Privacy Policy',
@@ -976,6 +977,7 @@
       'signup.pw.match':      '✓ 비밀번호 일치',
       'signup.pw.nomatch':    '비밀번호가 일치하지 않습니다',
       'signup.terms.all':     '전체 동의',
+      'signup.terms.age':     '만 18세 이상이며 거주 국가에서 암호화폐 파생상품 거래가 합법적으로 허용됩니다',
       'signup.terms.tos':     '이용약관',
       'signup.terms.req':     '(필수)',
       'signup.terms.priv':    '개인정보처리방침',
@@ -1334,7 +1336,7 @@
       'nav.nosignup':'还没有账户？注册 →','nav.haveaccount':'已有账户？登录 →',
       'signup.title':'创建账户','signup.email':'邮箱（用作登录 ID）','signup.sendcode':'发送验证码','signup.verify':'验证','signup.codehint':'输入发送到你邮箱的 6 位验证码','signup.codeph':'输入 6 位验证码',
       'signup.username':'用户名','signup.username.hint':'仅限字母、数字和下划线（2–20 个字符）','signup.name':'姓名','signup.pw':'密码','signup.pw.ph':'8 位以上，字母 + 数字 + 符号','signup.pw.hint':'使用字母、数字和特殊字符（8 位以上）','signup.pw2':'确认密码','signup.pw2.ph':'再次输入密码','signup.show':'显示',
-      'signup.terms.all':'全部同意','signup.terms.req':'（必需）','signup.terms.tos':'服务条款','signup.terms.priv':'隐私政策','signup.terms.mkt':'接收营销信息（可选）','signup.submit':'创建账户','signup.haveacct':'已有账户？','signup.loginlink':'登录'
+      'signup.terms.all':'全部同意','signup.terms.req':'（必需）','signup.terms.age':'我已年满18岁，且在所在国家可合法交易加密衍生品','signup.terms.tos':'服务条款','signup.terms.priv':'隐私政策','signup.terms.mkt':'接收营销信息（可选）','signup.submit':'创建账户','signup.haveacct':'已有账户？','signup.loginlink':'登录'
     },
     es: {
       'login.title':'Iniciar sesión','login.noaccount':'¿No tienes cuenta?','login.signup':'Regístrate','login.error':'Correo o contraseña incorrectos.',
@@ -1345,7 +1347,7 @@
       'nav.nosignup':'¿No tienes cuenta? Regístrate →','nav.haveaccount':'¿Ya tienes cuenta? Inicia sesión →',
       'signup.title':'Crea tu cuenta','signup.email':'Correo (se usa como ID)','signup.sendcode':'Enviar código','signup.verify':'Verificar','signup.codehint':'Introduce el código de 6 dígitos enviado a tu correo','signup.codeph':'Introduce el código de 6 dígitos',
       'signup.username':'Nombre de usuario','signup.username.hint':'Solo letras, números y _ (2–20 caracteres)','signup.name':'Nombre completo','signup.pw':'Contraseña','signup.pw.ph':'8+ caracteres, letras + números + símbolos','signup.pw.hint':'Usa letras, números y caracteres especiales (8+)','signup.pw2':'Confirmar contraseña','signup.pw2.ph':'Vuelve a introducir tu contraseña','signup.show':'Mostrar',
-      'signup.terms.all':'Aceptar todo','signup.terms.req':'(obligatorio)','signup.terms.tos':'Términos del servicio','signup.terms.priv':'Política de privacidad','signup.terms.mkt':'Recibir comunicaciones de marketing (opcional)','signup.submit':'Crear cuenta','signup.haveacct':'¿Ya tienes cuenta?','signup.loginlink':'Inicia sesión'
+      'signup.terms.all':'Aceptar todo','signup.terms.req':'(obligatorio)','signup.terms.age':'Tengo al menos 18 años y puedo operar legalmente derivados cripto en mi país','signup.terms.tos':'Términos del servicio','signup.terms.priv':'Política de privacidad','signup.terms.mkt':'Recibir comunicaciones de marketing (opcional)','signup.submit':'Crear cuenta','signup.haveacct':'¿Ya tienes cuenta?','signup.loginlink':'Inicia sesión'
     },
     vi: {
       'login.title':'Đăng nhập','login.noaccount':'Chưa có tài khoản?','login.signup':'Đăng ký','login.error':'Email hoặc mật khẩu không đúng.',
@@ -1356,7 +1358,7 @@
       'nav.nosignup':'Chưa có tài khoản? Đăng ký →','nav.haveaccount':'Đã có tài khoản? Đăng nhập →',
       'signup.title':'Tạo tài khoản','signup.email':'Email (dùng làm ID đăng nhập)','signup.sendcode':'Gửi mã','signup.verify':'Xác minh','signup.codehint':'Nhập mã 6 số đã gửi tới email của bạn','signup.codeph':'Nhập mã 6 số',
       'signup.username':'Tên người dùng','signup.username.hint':'Chỉ chữ, số và _ (2–20 ký tự)','signup.name':'Họ và tên','signup.pw':'Mật khẩu','signup.pw.ph':'8+ ký tự, chữ + số + ký hiệu','signup.pw.hint':'Dùng chữ, số và ký tự đặc biệt (8+ ký tự)','signup.pw2':'Xác nhận mật khẩu','signup.pw2.ph':'Nhập lại mật khẩu','signup.show':'Hiện',
-      'signup.terms.all':'Đồng ý tất cả','signup.terms.req':'(bắt buộc)','signup.terms.tos':'Điều khoản dịch vụ','signup.terms.priv':'Chính sách bảo mật','signup.terms.mkt':'Nhận thông tin tiếp thị (tùy chọn)','signup.submit':'Tạo tài khoản','signup.haveacct':'Đã có tài khoản?','signup.loginlink':'Đăng nhập'
+      'signup.terms.all':'Đồng ý tất cả','signup.terms.req':'(bắt buộc)','signup.terms.age':'Tôi đủ 18 tuổi và được phép giao dịch phái sinh crypto hợp pháp tại quốc gia của mình','signup.terms.tos':'Điều khoản dịch vụ','signup.terms.priv':'Chính sách bảo mật','signup.terms.mkt':'Nhận thông tin tiếp thị (tùy chọn)','signup.submit':'Tạo tài khoản','signup.haveacct':'Đã có tài khoản?','signup.loginlink':'Đăng nhập'
     },
     ru: {
       'login.title':'Вход','login.noaccount':'Нет аккаунта?','login.signup':'Зарегистрироваться','login.error':'Неверная почта или пароль.',
@@ -1367,7 +1369,7 @@
       'nav.nosignup':'Нет аккаунта? Зарегистрироваться →','nav.haveaccount':'Уже есть аккаунт? Войти →',
       'signup.title':'Создайте аккаунт','signup.email':'Почта (используется как ID)','signup.sendcode':'Отправить код','signup.verify':'Подтвердить','signup.codehint':'Введите 6-значный код из письма','signup.codeph':'Введите 6-значный код',
       'signup.username':'Имя пользователя','signup.username.hint':'Только буквы, цифры и _ (2–20 символов)','signup.name':'Полное имя','signup.pw':'Пароль','signup.pw.ph':'8+ символов, буквы + цифры + символы','signup.pw.hint':'Используйте буквы, цифры и спецсимволы (8+)','signup.pw2':'Подтвердите пароль','signup.pw2.ph':'Повторите пароль','signup.show':'Показать',
-      'signup.terms.all':'Принять всё','signup.terms.req':'(обязательно)','signup.terms.tos':'Условия использования','signup.terms.priv':'Политика конфиденциальности','signup.terms.mkt':'Получать маркетинговые сообщения (необязательно)','signup.submit':'Создать аккаунт','signup.haveacct':'Уже есть аккаунт?','signup.loginlink':'Войти'
+      'signup.terms.all':'Принять всё','signup.terms.req':'(обязательно)','signup.terms.age':'Мне не менее 18 лет, и мне законно разрешено торговать крипто-деривативами в моей стране','signup.terms.tos':'Условия использования','signup.terms.priv':'Политика конфиденциальности','signup.terms.mkt':'Получать маркетинговые сообщения (необязательно)','signup.submit':'Создать аккаунт','signup.haveacct':'Уже есть аккаунт?','signup.loginlink':'Войти'
     },
 
     /* ════════════════════════════════════════

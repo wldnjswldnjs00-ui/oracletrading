@@ -171,6 +171,22 @@
   .mine .l{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
   .mst{font-size:12px;color:var(--dim)}
   .mst b{display:block;color:var(--txt);font-size:17px;font-weight:720;font-variant-numeric:tabular-nums;margin-top:1px}
+  /* prize claim */
+  .claim{background:linear-gradient(150deg,rgba(216,180,106,.14),rgba(52,211,154,.05));border:1px solid rgba(216,180,106,.4);border-radius:var(--r);padding:16px 20px;margin-bottom:12px}
+  .claim.done{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel);border-color:var(--line)}
+  .claim-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .claim .ct{font-size:15px;font-weight:700}
+  .claim .camt{font-size:22px;font-weight:780;color:var(--gold);font-variant-numeric:tabular-nums}
+  .claim-sub{font-size:12.5px;color:var(--mut);margin:6px 0 12px;line-height:1.5}
+  .claim-form{display:flex;gap:8px;flex-wrap:wrap}
+  .claim-form select,.claim-form input{background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none}
+  .claim-form input{flex:1;min-width:180px}
+  .claim-form select:focus,.claim-form input:focus{border-color:var(--gold)}
+  .cstat{font-size:12.5px;color:var(--mut);white-space:nowrap}
+  .cstat.ok{color:var(--accent);font-weight:700}
+  .cmsg{font-size:12.5px;margin-top:8px;min-height:1px}
+  .cmsg.ok{color:var(--accent)}
+  .cmsg.err{color:var(--red)}
   /* steps / cards */
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:26px}
@@ -329,6 +345,8 @@
         <button class="btn btn-ghost btn-sm" id="mineManage" data-i18n="mine.manage">연결 관리</button>
       </div>
     </div>
+
+    <div id="claimWrap"></div>
 
     <div class="lb-ctl">
       <div class="seg" id="periodSeg">
@@ -518,6 +536,7 @@ const I18N = {
     'pz.pool':'이번 주 상금 풀','pz.pool.m':'이번 달 상금 풀','pz.ends':'시즌 종료까지',
     'pz.note':'상금 풀은 AYILON의 거래보상에서 적립되며, AYILON의 규모·참가자 수·전체 거래량에 따라 매주·매월 변동됩니다. OKX 내 어떤 종목(현물·선물 등)으로 거래해도 인정됩니다. 상금은 AYILON 추천으로 가입한 계정만 대상입니다. 다중 계정·양방향 헤지 등 공정성을 해치는 행위는 실격 및 영구 정지 처리됩니다.',
     'mine.rank':'내 순위','mine.ret':'수익률','mine.profit':'수익금','mine.eq':'평가금','mine.manage':'연결 관리','mine.share':'순위 카드 공유',
+    'cl.sub':'상금을 받을 USDT 지갑 주소를 입력하세요. 관리자 확인 후 지급됩니다.','cl.addrph':'지갑 주소 (USDT)','cl.submit':'주소 제출','cl.paid':'지급 완료 ✓','cl.pending':'지급 대기 중','cl.badaddr':'올바른 주소를 입력하세요','cl.sending':'제출 중…','cl.ok':'주소 제출됨 — 곧 지급됩니다','cl.err':'제출 실패 — 다시 시도',
     'how.title':'참가 방법','how.sub':'로그인하고, 추천으로 가입하고, 키를 연결하면 끝입니다.',
     'how.1.t':'AYILON 추천으로 가입','how.1.d':'AYILON 추천 링크로 OKX 계정을 만드세요. 상금은 추천 가입 계정만 받을 수 있습니다.',
     'how.2.t':'읽기전용 키 연결','how.2.d':'거래·출금 권한이 없는 읽기전용 키만 연결합니다. 자금은 절대 건드릴 수 없습니다.',
@@ -560,6 +579,7 @@ const I18N = {
     'pz.pool':'This week\'s prize pool','pz.pool.m':'This month\'s prize pool','pz.ends':'Season ends in',
     'pz.note':'The prize pool is funded by AYILON\'s trading rewards and varies each week and month with AYILON\'s scale, the number of participants, and total trading volume. Any instrument on OKX (spot, futures, etc.) counts. Prizes are for AYILON-referred accounts only. Multi-accounting, opposite-side hedging, or any fair-play abuse leads to disqualification and a permanent ban.',
     'mine.rank':'My rank','mine.ret':'Return','mine.profit':'Profit','mine.eq':'Equity','mine.manage':'Manage','mine.share':'Share rank card',
+    'cl.sub':'Enter your USDT wallet address to receive your prize. Paid after admin review.','cl.addrph':'Wallet address (USDT)','cl.submit':'Submit address','cl.paid':'Paid ✓','cl.pending':'Payout pending','cl.badaddr':'Enter a valid address','cl.sending':'Submitting…','cl.ok':'Address submitted — payout soon','cl.err':'Submit failed — try again',
     'how.title':'How it works','how.sub':'Log in, sign up via referral, connect your key. Done.',
     'how.1.t':'Sign up via AYILON','how.1.d':'Create an OKX account through the AYILON referral link. Prizes are for referred accounts only.',
     'how.2.t':'Connect a read-only key','how.2.d':'Only a read-only key (no trade/withdraw). We can never touch your funds.',
@@ -602,6 +622,7 @@ const I18N = {
     'pz.pool':'本周奖池','pz.pool.m':'本月奖池','pz.ends':'赛季结束倒计时',
     'pz.note':'奖池来自 AYILON 的交易返佣，并根据 AYILON 的规模、参赛人数和总交易量每周、每月浮动。在 OKX 上交易任何品种（现货、合约等）均计入。奖金仅限通过 AYILON 推荐注册的账户。多账号、反向对冲等破坏公平的行为将被取消资格并永久封禁。',
     'mine.rank':'我的排名','mine.ret':'收益率','mine.profit':'盈利额','mine.eq':'净值','mine.manage':'管理','mine.share':'分享排名卡',
+    'cl.sub':'输入接收奖金的USDT钱包地址，管理员核实后发放。','cl.addrph':'钱包地址 (USDT)','cl.submit':'提交地址','cl.paid':'已发放 ✓','cl.pending':'等待发放','cl.badaddr':'请输入有效地址','cl.sending':'提交中…','cl.ok':'地址已提交 — 即将发放','cl.err':'提交失败 — 重试',
     'how.title':'参与方式','how.sub':'登录、通过推荐注册、连接密钥即可。',
     'how.1.t':'通过 AYILON 推荐注册','how.1.d':'用 AYILON 推荐链接创建 OKX 账户。奖金仅限推荐注册账户。',
     'how.2.t':'连接只读密钥','how.2.d':'仅连接只读密钥（无交易/提现权限）。我们绝不会动用你的资金。',
@@ -644,6 +665,7 @@ const I18N = {
     'pz.pool':'Bote de esta semana','pz.pool.m':'Bote de este mes','pz.ends':'La temporada termina en',
     'pz.note':'El bote se financia con las recompensas de trading de AYILON y varía cada semana y mes según la escala de AYILON, el número de participantes y el volumen total. Cuenta cualquier instrumento en OKX (spot, futuros, etc.). Los premios son solo para cuentas referidas por AYILON. El multicuenta, la cobertura en sentido opuesto o cualquier abuso del juego limpio conllevan descalificación y baneo permanente.',
     'mine.rank':'Mi posición','mine.ret':'Rentab.','mine.profit':'Beneficio','mine.eq':'Capital','mine.manage':'Gestionar','mine.share':'Compartir tarjeta',
+    'cl.sub':'Introduce tu dirección de wallet USDT para recibir el premio. Se paga tras revisión.','cl.addrph':'Dirección de wallet (USDT)','cl.submit':'Enviar dirección','cl.paid':'Pagado ✓','cl.pending':'Pago pendiente','cl.badaddr':'Introduce una dirección válida','cl.sending':'Enviando…','cl.ok':'Dirección enviada — pago pronto','cl.err':'Error al enviar — reintenta',
     'how.title':'Cómo funciona','how.sub':'Entra, regístrate por referido y conecta tu clave. Listo.',
     'how.1.t':'Regístrate vía AYILON','how.1.d':'Crea una cuenta OKX con el enlace de referido de AYILON. Los premios son solo para cuentas referidas.',
     'how.2.t':'Conecta una clave de solo lectura','how.2.d':'Solo una clave de solo lectura (sin trading/retiro). Nunca podemos tocar tus fondos.',
@@ -686,6 +708,7 @@ const I18N = {
     'pz.pool':'Quỹ thưởng tuần này','pz.pool.m':'Quỹ thưởng tháng này','pz.ends':'Mùa giải kết thúc sau',
     'pz.note':'Quỹ thưởng đến từ phần thưởng giao dịch của AYILON và thay đổi theo tuần, theo tháng tùy vào quy mô AYILON, số người tham gia và tổng khối lượng giao dịch. Giao dịch bất kỳ sản phẩm nào trên OKX (spot, futures, v.v.) đều được tính. Giải thưởng chỉ dành cho tài khoản đăng ký qua AYILON. Nhiều tài khoản, phòng hộ ngược chiều hay mọi hành vi gian lận sẽ bị loại và cấm vĩnh viễn.',
     'mine.rank':'Hạng của tôi','mine.ret':'Lợi nhuận','mine.profit':'Tiền lãi','mine.eq':'Tài sản','mine.manage':'Quản lý','mine.share':'Chia sẻ thẻ hạng',
+    'cl.sub':'Nhập địa chỉ ví USDT để nhận thưởng. Thanh toán sau khi quản trị viên xác minh.','cl.addrph':'Địa chỉ ví (USDT)','cl.submit':'Gửi địa chỉ','cl.paid':'Đã trả ✓','cl.pending':'Chờ thanh toán','cl.badaddr':'Nhập địa chỉ hợp lệ','cl.sending':'Đang gửi…','cl.ok':'Đã gửi địa chỉ — sắp thanh toán','cl.err':'Gửi thất bại — thử lại',
     'how.title':'Cách tham gia','how.sub':'Đăng nhập, đăng ký qua giới thiệu, kết nối khóa. Xong.',
     'how.1.t':'Đăng ký qua AYILON','how.1.d':'Tạo tài khoản OKX qua link giới thiệu AYILON. Giải thưởng chỉ cho tài khoản được giới thiệu.',
     'how.2.t':'Kết nối khóa chỉ đọc','how.2.d':'Chỉ khóa chỉ đọc (không giao dịch/rút). Chúng tôi không bao giờ động tới tiền của bạn.',
@@ -728,6 +751,7 @@ const I18N = {
     'pz.pool':'Призовой фонд недели','pz.pool.m':'Призовой фонд месяца','pz.ends':'До конца сезона',
     'pz.note':'Призовой фонд формируется из торговых вознаграждений AYILON и меняется каждую неделю и месяц в зависимости от масштаба AYILON, числа участников и общего объёма торгов. Засчитывается любой инструмент на OKX (спот, фьючерсы и т. д.). Призы только для аккаунтов, зарегистрированных по реферальной ссылке AYILON. Мультиаккаунты, встречный хедж и любое нарушение честной игры ведут к дисквалификации и вечной блокировке.',
     'mine.rank':'Моё место','mine.ret':'Доходн.','mine.profit':'Прибыль','mine.eq':'Капитал','mine.manage':'Управление','mine.share':'Карточка ранга',
+    'cl.sub':'Укажите адрес USDT-кошелька для получения приза. Выплата после проверки.','cl.addrph':'Адрес кошелька (USDT)','cl.submit':'Отправить адрес','cl.paid':'Выплачено ✓','cl.pending':'Ожидает выплаты','cl.badaddr':'Введите корректный адрес','cl.sending':'Отправка…','cl.ok':'Адрес отправлен — скоро выплата','cl.err':'Ошибка — повторите',
     'how.title':'Как участвовать','how.sub':'Войдите, зарегистрируйтесь по реферальной ссылке, подключите ключ. Готово.',
     'how.1.t':'Регистрация через AYILON','how.1.d':'Создайте счёт OKX по реферальной ссылке AYILON. Призы только для рефералов.',
     'how.2.t':'Подключите ключ «только чтение»','how.2.d':'Только ключ для чтения (без торговли/вывода). Мы никогда не трогаем ваши средства.',
@@ -1063,7 +1087,8 @@ document.getElementById('jAvatarRemove').onclick=async()=>{
 
 /* ---------- my standing ---------- */
 async function loadMine(){
-  if(!authed()){document.getElementById('mineBar').classList.remove('show');return;}
+  if(!authed()){document.getElementById('mineBar').classList.remove('show');document.getElementById('claimWrap').innerHTML='';return;}
+  loadMyWinnings();
   try{
     const r=await fetch(`${API}/arena/me`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:'{}'});
     const j=await r.json();const bar=document.getElementById('mineBar');
@@ -1083,6 +1108,57 @@ async function loadMine(){
     const myNick=(j.nickname||'').toLowerCase();const idx=state.rows.findIndex(x=>x.nickname.toLowerCase()===myNick);
     document.getElementById('mRank').textContent=idx>=0?('#'+state.rows[idx].rank):'—';
   }catch(e){}
+}
+
+/* ---------- prize claim ---------- */
+const CLAIM_CHAINS=['USDT-TRC20','USDT-ERC20','USDT-Arbitrum','USDT-Optimism','USDT-Polygon','USDT-Solana','USDT-BEP20'];
+let myWinnings=[];
+async function loadMyWinnings(){
+  const wrap=document.getElementById('claimWrap'); if(!wrap)return;
+  if(!authed()){wrap.innerHTML='';return;}
+  try{
+    const r=await fetch(`${API}/arena/my-winnings`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token()})});
+    const j=await r.json();
+    if(!j.ok||!j.winnings||!j.winnings.length){wrap.innerHTML='';return;}
+    myWinnings=j.winnings;
+    renderClaims();
+    // Auto-open when arriving from the winner email link (?claim=1).
+    if(new URLSearchParams(location.search).get('claim')&&j.unclaimed>0){ wrap.scrollIntoView({behavior:'smooth',block:'center'}); }
+  }catch(e){ wrap.innerHTML=''; }
+}
+const catLabel=m=>m==='return'?t('lb.m.return'):m==='profit'?t('lb.m.profit'):t('lb.m.volume');
+function renderClaims(){
+  const wrap=document.getElementById('claimWrap');
+  wrap.innerHTML=myWinnings.map(w=>{
+    const bd=w.board==='weekly'?t('lb.weekly'):t('lb.monthly');
+    const title=`${bd} · ${catLabel(w.metric)} · #${w.rank}`;
+    const prize=fmtUsd(w.prize);
+    if(w.paid){
+      return `<div class="claim done"><div><span class="ct">🏆 ${title}</span><span class="camt">${prize}</span></div><span class="cstat ok">${t('cl.paid')}</span></div>`;
+    }
+    if(w.payout_addr){
+      return `<div class="claim done"><div><span class="ct">🏆 ${title}</span><span class="camt">${prize}</span></div><span class="cstat">${t('cl.pending')}</span></div>`;
+    }
+    return `<div class="claim"><div class="claim-h"><span class="ct">🎉 ${title}</span><span class="camt">${prize}</span></div>`
+      +`<div class="claim-sub">${t('cl.sub')}</div>`
+      +`<div class="claim-form"><select id="cch_${w.id}">${CLAIM_CHAINS.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`
+      +`<input id="cad_${w.id}" type="text" placeholder="${t('cl.addrph')}" autocomplete="off" spellcheck="false">`
+      +`<button class="btn btn-primary btn-sm" onclick="submitClaim(${w.id})">${t('cl.submit')}</button></div>`
+      +`<div class="cmsg" id="cmsg_${w.id}"></div></div>`;
+  }).join('');
+}
+async function submitClaim(id){
+  const ch=document.getElementById('cch_'+id).value;
+  const ad=(document.getElementById('cad_'+id).value||'').trim();
+  const m=document.getElementById('cmsg_'+id);
+  if(ad.length<12){m.textContent=t('cl.badaddr');m.className='cmsg err';return;}
+  m.textContent=t('cl.sending');m.className='cmsg';
+  try{
+    const r=await fetch(`${API}/arena/claim-prize`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token(),id,chain:ch,address:ad})});
+    const j=await r.json();
+    if(j.ok){ m.textContent=t('cl.ok');m.className='cmsg ok'; setTimeout(loadMyWinnings,900); }
+    else{ m.textContent=t('cl.err')+(j.error?(' ('+j.error+')'):''); m.className='cmsg err'; }
+  }catch(e){ m.textContent=t('cl.err'); m.className='cmsg err'; }
 }
 
 /* ---------- hall of fame (podium) ---------- */

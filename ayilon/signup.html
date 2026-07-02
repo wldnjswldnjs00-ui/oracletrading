@@ -205,6 +205,10 @@
           </div>
           <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
             <div class="terms-check">
+              <input type="checkbox" id="terms0" />
+              <label for="terms0"><span data-i18n="signup.terms.age">I am at least 18 years old and legally permitted to trade crypto derivatives in my country</span> <span data-i18n="signup.terms.req">(required)</span></label>
+            </div>
+            <div class="terms-check">
               <input type="checkbox" id="terms1" />
               <label for="terms1"><a href="terms.html" target="_blank" data-i18n="signup.terms.tos">Terms of Service</a> <span data-i18n="signup.terms.req">(required)</span></label>
             </div>
@@ -434,7 +438,7 @@
     }
 
     function toggleAll(el) {
-      ['terms1','terms2','terms3'].forEach(id => document.getElementById(id).checked = el.checked);
+      ['terms0','terms1','terms2','terms3'].forEach(id => document.getElementById(id).checked = el.checked);
     }
 
     async function handleSignup(e) {
@@ -445,6 +449,7 @@
       const country  = document.getElementById('country').value;
       const password = document.getElementById('password').value;
       const confirm  = document.getElementById('passwordConfirm').value;
+      const terms0   = document.getElementById('terms0').checked;
       const terms1   = document.getElementById('terms1').checked;
       const terms2   = document.getElementById('terms2').checked;
 
@@ -453,6 +458,7 @@
       if (!emailVerified) { alert('Please verify your email first.'); return; }
       if (!nicknameAvailable && nicknameAvailable !== null) { alert('Please choose a valid, available username.'); return; }
       if (password !== confirm) { alert('Passwords do not match.'); return; }
+      if (!terms0) { alert('You must confirm you are at least 18 and legally allowed to trade.'); return; }
       if (!terms1 || !terms2) { alert('Please agree to the required terms.'); return; }
 
       const btn = document.getElementById('submitBtn');

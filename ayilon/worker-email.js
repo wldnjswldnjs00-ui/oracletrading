@@ -61,6 +61,8 @@ export default {
       if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
       if (path === '/arena/season')      return handleArenaSeason(request, env);
       if (path === '/arena/winners')     return handleArenaWinners(request, env);
+      if (path === '/arena/my-winnings') return handleArenaMyWinnings(request, env);
+      if (path === '/arena/claim-prize') return handleArenaClaimPrize(request, env);
       if (path === '/admin/arena-config') return handleAdminArenaConfig(request, env);
       if (path === '/admin/arena-list')   return handleAdminArenaList(request, env);
       if (path === '/admin/ban')          return handleAdminBan(request, env);
@@ -513,6 +515,39 @@ function corsResponse(body, status) {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     }
   });
+}
+
+// ── FIELD ENCRYPTION (AES-GCM at rest for stored API keys) ───
+// Graceful: if ENCRYPTION_KEY secret isn't set, values pass through as plaintext
+// (behaves exactly as before). Once set, new keys are encrypted; legacy plaintext
+// rows still decrypt (no "enc:v1:" prefix → returned as-is). Don't rotate the key
+// or existing encrypted keys become unreadable.
+let _aesKeyCache = null;
+async function aesKey(env) {
+  if (!env.ENCRYPTION_KEY) return null;
+  if (_aesKeyCache) return _aesKeyCache;
+  const raw = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(env.ENCRYPTION_KEY));
+  _aesKeyCache = await crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+  return _aesKeyCache;
+}
+function _b64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function _unb64(s) { return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+async function encField(env, plain) {
+  const k = await aesKey(env);
+  if (!k || plain == null || plain === '') return plain;
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, new TextEncoder().encode(plain));
+  return 'enc:v1:' + _b64(iv) + ':' + _b64(ct);
+}
+async function decField(env, stored) {
+  if (typeof stored !== 'string' || !stored.startsWith('enc:v1:')) return stored;
+  const k = await aesKey(env);
+  if (!k) return stored;
+  try {
+    const parts = stored.split(':');
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: _unb64(parts[2]) }, k, _unb64(parts[3]));
+    return new TextDecoder().decode(pt);
+  } catch (_) { return stored; }
 }
 
 // PBKDF2 password hash with random per-user salt
@@ -1283,25 +1318,102 @@ async function handleArenaWinners(request, env) {
   return json({ ok: true, winners: rows, champions });
 }
 
+// The signed-in user's own prize wins, so they can claim (submit a wallet) and
+// track payout status. Drives the "🎉 you won" banner on the home page.
+async function handleArenaMyWinnings(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  await ensureDB(env);
+  let rows = [];
+  try { rows = (await env.BOT_DB.prepare('SELECT id,season_id,board,metric,rank,value,prize,paid,payout_addr,payout_chain,declared_at FROM arena_winners WHERE email=? AND prize>0 ORDER BY declared_at DESC').bind(session.email).all()).results || []; } catch (_) {}
+  const unclaimed = rows.filter(w => !w.payout_addr && !w.paid).length;
+  return json({ ok: true, winnings: rows, unclaimed });
+}
+
+// Winner submits the wallet address to receive their prize. Only the owner can
+// set it, only while unpaid; address/chain are validated lightly.
+async function handleArenaClaimPrize(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  await ensureDB(env);
+  const id = parseInt(body.id || 0);
+  const chain = String(body.chain || '').trim().slice(0, 24);
+  const addr = String(body.address || '').trim().slice(0, 120);
+  if (!id) return json({ ok: false, error: 'bad_id' }, 400);
+  if (!chain) return json({ ok: false, error: 'no_chain' }, 400);
+  // Crypto addresses are alphanumeric (base58/hex/bech32); reject anything else.
+  if (addr.length < 12 || !/^[A-Za-z0-9:_-]+$/.test(addr)) return json({ ok: false, error: 'bad_address' }, 400);
+  const w = await env.BOT_DB.prepare('SELECT email,paid FROM arena_winners WHERE id=?').bind(id).first().catch(() => null);
+  if (!w || w.email !== session.email) return json({ ok: false, error: 'not_your_prize' }, 403);
+  if (w.paid) return json({ ok: false, error: 'already_paid' }, 400);
+  await env.BOT_DB.prepare('UPDATE arena_winners SET payout_addr=?, payout_chain=? WHERE id=?').bind(addr, chain, id).run();
+  return json({ ok: true });
+}
+
+// Cron: email newly-declared winners (batched to stay under subrequest limits).
+// Each unnotified winner gets a bilingual congrats + link to claim their prize.
+async function arenaNotifyWinners(env) {
+  if (!env.BOT_DB || !env.RESEND_API_KEY) return;
+  let rows = [];
+  try { rows = (await env.BOT_DB.prepare('SELECT id,email,nickname,board,metric,rank,prize,season_id FROM arena_winners WHERE notified=0 AND prize>0 ORDER BY declared_at ASC LIMIT 3').all()).results || []; } catch (_) { return; }
+  const label = { return: 'Return / 수익률', profit: 'Profit / 수익금', volume: 'Volume / 거래량' };
+  for (const w of rows) {
+    const boardKo = w.board === 'weekly' ? '주간' : '월간';
+    const boardEn = w.board === 'weekly' ? 'Weekly' : 'Monthly';
+    const prize = '$' + Number(w.prize || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: 'AYILON Arena <support@ayilon.com>',
+          to: [w.email],
+          subject: `🏆 You won — ${boardEn} ${w.metric} #${w.rank} · ${prize} | AYILON`,
+          html: `<div style="background:#000;color:#fff;font-family:Inter,sans-serif;padding:36px;max-width:520px;margin:0 auto;border-radius:12px;"><h1 style="font-size:22px;letter-spacing:.14em;margin:0 0 20px;">AY<span style="color:#34d39a;">I</span>LON</h1><div style="font-size:30px;font-weight:780;margin-bottom:8px;">🏆 축하합니다!</div><p style="color:#a3a3a3;margin:0 0 22px;font-size:15px;">You placed <b style="color:#fff;">#${w.rank}</b> in <b style="color:#fff;">${boardEn} ${label[w.metric] || w.metric}</b> for season <b style="color:#fff;">${escapeHtml(w.season_id)}</b>.</p><div style="background:#111;border:1px solid #333;border-radius:12px;padding:22px;text-align:center;margin-bottom:22px;"><div style="color:#a3a3a3;font-size:12px;letter-spacing:.1em;margin-bottom:6px;">YOUR PRIZE / 상금</div><div style="font-size:40px;font-weight:780;color:#d8b46a;">${prize}</div></div><p style="color:#e5e5e5;font-size:14px;line-height:1.7;margin:0 0 22px;">상금을 받으려면 아래 버튼을 눌러 로그인한 뒤, 받을 지갑 주소(USDT)를 입력하세요.<br><span style="color:#a3a3a3;">Log in and submit your USDT wallet address to receive your prize.</span></p><a href="https://ayilon.com/?claim=1" style="display:inline-block;background:#34d39a;color:#06140e;padding:13px 28px;border-radius:10px;font-weight:700;text-decoration:none;font-size:15px;">상금 수령하기 · Claim prize →</a><hr style="border:none;border-top:1px solid #222;margin:26px 0 14px;"><p style="color:#525252;font-size:12px;margin:0;">문의: <a href="https://ayilon.com/contact.html" style="color:#60a5fa;">support@ayilon.com</a> · 본 메일은 AYILON Arena 우승자에게 발송됩니다.</p></div>`,
+          text: `축하합니다! / Congratulations!\n\n${boardEn} ${w.metric} #${w.rank} — season ${w.season_id}\nPrize / 상금: ${prize}\n\n상금 수령: https://ayilon.com/?claim=1 에서 로그인 후 지갑 주소를 입력하세요.\nClaim your prize at https://ayilon.com/?claim=1\n\nsupport@ayilon.com`
+        })
+      });
+      // Mark notified whether or not the send succeeded HTTP-wise is risky; only on ok.
+      if (res.ok) await env.BOT_DB.prepare('UPDATE arena_winners SET notified=1 WHERE id=?').bind(w.id).run().catch(() => {});
+    } catch (_) {}
+  }
+}
+
 // Cron: snapshot every connected account, accumulate metrics per board.
 async function arenaScore(env) {
   if (!env.BOT_DB) return;
   await ensureDB(env);
   const now = new Date();
   try { await arenaDeclareWinners(env, now); } catch (_) {}
+  try { await arenaNotifyWinners(env); } catch (_) {}
   const boards = [['weekly', arenaWeekId(now)], ['monthly', arenaMonthId(now)]];
-  let parts = [];
-  try { parts = (await env.BOT_DB.prepare('SELECT * FROM arena_participants').all()).results || []; } catch (_) { return; }
+  let allParts = [];
+  try { allParts = (await env.BOT_DB.prepare('SELECT * FROM arena_participants').all()).results || []; } catch (_) { return; }
 
-  // Auto-affiliate: sum the cumulative commission earned across all referred
-  // participants → this becomes the prize-pool source when autoAffiliate is on.
   const scfg = await getArenaConfig(env);
   const affiliateOn = !!(scfg.autoAffiliate && env.OKX_AFFILIATE_KEY && env.OKX_AFFILIATE_SECRET && env.OKX_AFFILIATE_PASS);
-  let commissionSum = 0;
+
+  // Round-robin batching: score only a slice of participants each minute so one
+  // cron tick stays under Cloudflare's subrequest limit (each account costs
+  // several OKX + D1 subrequests). The cursor advances and wraps, so every
+  // account refreshes within ceil(total/BATCH) minutes. Raise SCORE_BATCH on
+  // the Workers Paid plan (higher subrequest limit) for faster refresh.
+  const BATCH = parseInt(env.SCORE_BATCH) || 4;
+  allParts.sort((a, b) => (a.email < b.email ? -1 : a.email > b.email ? 1 : 0));
+  let cursor = 0;
+  try { cursor = parseInt(await env.USERS_KV.get('arena:score_cursor')) || 0; } catch (_) {}
+  if (cursor >= allParts.length) cursor = 0;
+  const parts = allParts.slice(cursor, cursor + BATCH);
+  const nextCursor = (cursor + BATCH >= allParts.length) ? 0 : cursor + BATCH;
+  try { await env.USERS_KV.put('arena:score_cursor', String(nextCursor)); } catch (_) {}
 
   for (const p of parts) {
     try {
       if (!p.api_key || !p.api_secret || !p.api_pass) continue;
+      // Decrypt the stored keys once; downstream helpers read p.api_* directly.
+      p.api_key = await decField(env, p.api_key); p.api_secret = await decField(env, p.api_secret); p.api_pass = await decField(env, p.api_pass);
       const demo = p.demo === 1;
       const bal = await okxGet(p.api_key, p.api_secret, p.api_pass, '/api/v5/account/balance', demo).catch(() => null);
       const eq = parseFloat(bal?.data?.[0]?.totalEq || '0');
@@ -1336,7 +1448,9 @@ async function arenaScore(env) {
       const volRes = await arenaFetchVolumeDelta(env, p);
       const volDelta = volRes && volRes.delta ? volRes.delta : 0;
       const volCum   = volRes && volRes.cum   ? volRes.cum   : parseFloat(p.last_vol_cum || 0);
-      if (affiliateOn && volRes && volRes.commission) commissionSum += volRes.commission;
+      // Lifetime commission for THIS account, stored on its row so the pool total
+      // can be summed across ALL participants (not just this tick's batch).
+      const pComm = (affiliateOn && volRes && volRes.commission) ? volRes.commission : parseFloat(p.last_commission || 0);
       // Distinct-trading-day tracking: a day counts as active if volume grew or
       // equity moved > 0.3% since the last tick (blocks single-shot hedge entries).
       const today = new Date(nowTs).toISOString().slice(0, 10);
@@ -1375,18 +1489,21 @@ async function arenaScore(env) {
         }
       }
       const depSrcs = JSON.stringify(flows.froms || []);
-      await env.BOT_DB.prepare('UPDATE arena_participants SET last_equity=?, last_flow_ts=?, last_vol_cum=?, last_update=?, dep_srcs=?, err=NULL WHERE email=?')
-        .bind(eq, newFlowTs, volCum, nowTs, depSrcs, p.email).run();
+      await env.BOT_DB.prepare('UPDATE arena_participants SET last_equity=?, last_flow_ts=?, last_vol_cum=?, last_update=?, dep_srcs=?, last_commission=?, err=NULL WHERE email=?')
+        .bind(eq, newFlowTs, volCum, nowTs, depSrcs, Math.round(pComm * 100) / 100, p.email).run();
     } catch (e) {
       try { await env.BOT_DB.prepare('UPDATE arena_participants SET err=? WHERE email=?').bind(String(e.message).slice(0, 120), p.email).run(); } catch (_) {}
     }
   }
 
   // Persist the auto-computed commission total so the prize pool tracks it live.
-  // Commission is lifetime-cumulative, so never let a transient partial sync (a
-  // participant whose OKX call failed this tick contributes 0) shrink the pool.
+  // Sum the per-participant stored commission across EVERYONE (not just this
+  // tick's batch), so batching never shrinks the pool. Monotonic floor guards
+  // against a transient partial as well.
   if (affiliateOn) {
     try {
+      let commissionSum = 0;
+      try { commissionSum = parseFloat((await env.BOT_DB.prepare('SELECT SUM(last_commission) s FROM arena_participants').first())?.s || 0); } catch (_) {}
       const latest = await getArenaConfig(env);
       latest.commissionTotal = Math.max(parseFloat(latest.commissionTotal || 0), Math.round(commissionSum * 100) / 100);
       latest.commissionSyncedAt = Date.now();
@@ -1454,6 +1571,8 @@ async function handleArenaJoin(request, env) {
 
   const joinIp = request.headers.get('CF-Connecting-IP') || 'unknown';
   const fp = String(body.fp || '').trim().slice(0, 64) || null;
+  // Encrypt the read-only keys at rest (no-op if ENCRYPTION_KEY isn't configured).
+  const encKey = await encField(env, apiKey), encSec = await encField(env, apiSecret), encPass = await encField(env, apiPass);
   // Store the equity we just read so it shows immediately, instead of $0 until
   // the next cron tick.
   await env.BOT_DB.prepare(
@@ -1462,7 +1581,7 @@ async function handleArenaJoin(request, env) {
      ON CONFLICT(email) DO UPDATE SET nickname=excluded.nickname,country=excluded.country,okx_uid=excluded.okx_uid,
        api_key=excluded.api_key,api_secret=excluded.api_secret,api_pass=excluded.api_pass,demo=excluded.demo,
        referral_verified=excluded.referral_verified,boards=excluded.boards,ip=excluded.ip,fp=excluded.fp,last_equity=excluded.last_equity`
-  ).bind(session.email, nickname, freshUser.country || '', String(uid), apiKey, apiSecret, apiPass, demo ? 1 : 0, refVerified, JSON.stringify(boards), Date.now(), joinIp, fp, eq).run();
+  ).bind(session.email, nickname, freshUser.country || '', String(uid), encKey, encSec, encPass, demo ? 1 : 0, refVerified, JSON.stringify(boards), Date.now(), joinIp, fp, eq).run();
 
   return json({ ok: true, uid: String(uid), equity: eq, referralVerified: refVerified === 1, boards, nickname });
 }
@@ -1870,7 +1989,7 @@ async function handleAdminArenaWinners(request, env) {
     return json({ ok: true });
   }
   let rows = [];
-  try { rows = (await env.BOT_DB.prepare('SELECT id,season_id,board,metric,rank,email,nickname,value,prize,paid,declared_at FROM arena_winners ORDER BY declared_at DESC, rank ASC LIMIT 120').all()).results || []; } catch (_) {}
+  try { rows = (await env.BOT_DB.prepare('SELECT id,season_id,board,metric,rank,email,nickname,value,prize,paid,payout_addr,payout_chain,declared_at FROM arena_winners ORDER BY declared_at DESC, rank ASC LIMIT 120').all()).results || []; } catch (_) {}
   return json({ ok: true, winners: rows });
 }
 
@@ -2236,6 +2355,7 @@ async function initDB(env) {
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN ip TEXT DEFAULT NULL`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN fp TEXT DEFAULT NULL`).run().catch(() => {});          // device fingerprint
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN dep_srcs TEXT DEFAULT NULL`).run().catch(() => {});    // deposit source addresses (JSON)
+    await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN last_commission REAL DEFAULT 0`).run().catch(() => {}); // per-participant lifetime affiliate commission (batch-safe pool sum)
     // Hall of Fame — winners frozen at each season's end.
     await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_winners (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2251,6 +2371,10 @@ async function initDB(env) {
     )`).run();
     await env.BOT_DB.prepare(`ALTER TABLE arena_winners ADD COLUMN paid INTEGER DEFAULT 0`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE arena_winners ADD COLUMN prize REAL DEFAULT 0`).run().catch(() => {});
+    // Prize payout: winner-submitted wallet, chain, and whether we emailed them.
+    await env.BOT_DB.prepare(`ALTER TABLE arena_winners ADD COLUMN payout_addr TEXT DEFAULT ''`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE arena_winners ADD COLUMN payout_chain TEXT DEFAULT ''`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE arena_winners ADD COLUMN notified INTEGER DEFAULT 0`).run().catch(() => {});
     // Per-board (weekly/monthly) running season metrics.
     await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_score (
       email TEXT NOT NULL,
