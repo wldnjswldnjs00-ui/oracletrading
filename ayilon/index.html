@@ -114,6 +114,8 @@
   .cat-info{position:relative;z-index:1}
   .cat-info h3{font-size:19px;font-weight:740;letter-spacing:-.02em}
   .cat-info p{color:var(--mut);font-size:13.5px;margin-top:4px;max-width:520px;line-height:1.5}
+  .ret-note{color:var(--gold,#d8b46a)!important;font-size:12.5px!important;margin-top:8px!important;background:rgba(216,180,106,.08);border:1px solid rgba(216,180,106,.28);border-radius:8px;padding:7px 11px;display:inline-block}
+  .ret-note b{color:var(--gold,#d8b46a)}
   /* Return — rising line chart */
   .v-line{width:92px;height:62px;overflow:visible}
   .v-line .ar{fill:url(#lgRet);opacity:0;animation:lnfill 2.8s ease-in-out infinite}
@@ -399,7 +401,7 @@
 
     <div class="cat-hero" id="catHero">
       <div class="cat-viz" id="catViz"></div>
-      <div class="cat-info"><h3 id="catTitle">—</h3><p id="catDesc">—</p></div>
+      <div class="cat-info"><h3 id="catTitle">—</h3><p id="catDesc">—</p><p class="ret-note" id="retNote" style="display:none"></p></div>
     </div>
 
     <div class="lb">
@@ -575,7 +577,7 @@ const I18N = {
     'how.2.t':'읽기전용 키 연결','how.2.d':'거래·출금 권한이 없는 읽기전용 키만 연결합니다. 자금은 절대 건드릴 수 없습니다.',
     'how.3.t':'거래하고 순위에 오르기','how.3.d':'평소처럼 거래하면 매일 자동 집계되어 리더보드에 반영됩니다.',
     'cat.title':'부문','cat.sub':'수익률은 주간·월간, 수익금과 거래량은 월간으로 진행됩니다.',
-    'cat.1.t':'수익률','cat.1.d':'기간 내 수익률. 주간과 월간 두 가지로 열립니다.',
+    'cat.1.t':'수익률','cat.1.d':'기간 내 수익률. 주간과 월간 두 가지로 열립니다.','cat.retmin':'수익률 부문 상금은 시작 잔고 {min} 이상만 대상 — 소액 몰빵(풀레버리지)으로 순위를 farming하는 걸 막아 실력 경쟁으로 유지합니다.',
     'cat.2.t':'수익금','cat.2.d':'절대 수익 금액. 주간·월간 모두 열립니다.',
     'cat.3.t':'거래량','cat.3.d':'기간 내 누적 거래량. 주간·월간 모두 열립니다.',
     'cta.title':'이번 시즌, 당신의 이름을 올리세요','cta.sub':'매주 월요일 00:00 UTC에 새 시즌이 시작됩니다.','cta.btn':'대회 참가하기',
@@ -618,7 +620,7 @@ const I18N = {
     'how.2.t':'Connect a read-only key','how.2.d':'Only a read-only key (no trade/withdraw). We can never touch your funds.',
     'how.3.t':'Trade and climb','how.3.d':'Trade as usual — your stats are auto-scored daily onto the board.',
     'cat.title':'Categories','cat.sub':'Return runs weekly and monthly; profit and volume run monthly.',
-    'cat.1.t':'Return','cat.1.d':'Return over the period. Runs both weekly and monthly.',
+    'cat.1.t':'Return','cat.1.d':'Return over the period. Runs both weekly and monthly.','cat.retmin':'Return prizes require a starting balance of {min}+ — this stops tiny all-in, high-leverage bets from farming the ranking, keeping it a skill contest.',
     'cat.2.t':'Profit','cat.2.d':'Absolute profit. Runs both weekly and monthly.',
     'cat.3.t':'Volume','cat.3.d':'Cumulative volume over the period. Runs both weekly and monthly.',
     'cta.title':'Put your name on the board this season','cta.sub':'A new season starts every Monday at 00:00 UTC.','cta.btn':'Join the league',
@@ -661,7 +663,7 @@ const I18N = {
     'how.2.t':'连接只读密钥','how.2.d':'仅连接只读密钥（无交易/提现权限）。我们绝不会动用你的资金。',
     'how.3.t':'交易并冲榜','how.3.d':'像平常一样交易——你的数据每天自动统计上榜。',
     'cat.title':'比赛项目','cat.sub':'收益率有周赛和月赛；盈利额和交易量仅月赛。',
-    'cat.1.t':'收益率','cat.1.d':'赛期内的收益率。周赛和月赛都有。',
+    'cat.1.t':'收益率','cat.1.d':'赛期内的收益率。周赛和月赛都有。','cat.retmin':'收益率奖金仅限起始余额 {min} 以上——防止小额满仓高杠杆刷排名，保持实力比拼。',
     'cat.2.t':'盈利额','cat.2.d':'绝对盈利金额。周赛和月赛都有。',
     'cat.3.t':'交易量','cat.3.d':'赛期内累计交易量。周赛和月赛都有。',
     'cta.title':'本赛季，把你的名字留在榜上','cta.sub':'每周一 00:00 UTC 开启新赛季。','cta.btn':'参加联赛',
@@ -704,7 +706,7 @@ const I18N = {
     'how.2.t':'Conecta una clave de solo lectura','how.2.d':'Solo una clave de solo lectura (sin trading/retiro). Nunca podemos tocar tus fondos.',
     'how.3.t':'Opera y sube','how.3.d':'Opera como siempre: tus datos se puntúan a diario en la tabla.',
     'cat.title':'Categorías','cat.sub':'Rentabilidad es semanal y mensual; beneficio y volumen son mensuales.',
-    'cat.1.t':'Rentabilidad','cat.1.d':'Rentabilidad del periodo. Semanal y mensual.',
+    'cat.1.t':'Rentabilidad','cat.1.d':'Rentabilidad del periodo. Semanal y mensual.','cat.retmin':'Los premios de rentabilidad requieren un saldo inicial de {min}+ — evita que apuestas all-in con alto apalancamiento inflen el ranking, manteniéndolo una competición de habilidad.',
     'cat.2.t':'Beneficio','cat.2.d':'Beneficio absoluto. Semanal y mensual.',
     'cat.3.t':'Volumen','cat.3.d':'Volumen acumulado del periodo. Semanal y mensual.',
     'cta.title':'Esta temporada, pon tu nombre en la tabla','cta.sub':'Una nueva temporada empieza cada lunes a las 00:00 UTC.','cta.btn':'Unirse a la liga',
@@ -747,7 +749,7 @@ const I18N = {
     'how.2.t':'Kết nối khóa chỉ đọc','how.2.d':'Chỉ khóa chỉ đọc (không giao dịch/rút). Chúng tôi không bao giờ động tới tiền của bạn.',
     'how.3.t':'Giao dịch và leo hạng','how.3.d':'Giao dịch như bình thường — số liệu tự động lên bảng mỗi ngày.',
     'cat.title':'Hạng mục','cat.sub':'Lợi nhuận có tuần và tháng; tiền lãi và khối lượng chỉ theo tháng.',
-    'cat.1.t':'Lợi nhuận %','cat.1.d':'Lợi nhuận trong kỳ. Có cả tuần và tháng.',
+    'cat.1.t':'Lợi nhuận %','cat.1.d':'Lợi nhuận trong kỳ. Có cả tuần và tháng.','cat.retmin':'Giải lợi nhuận (%) yêu cầu số dư khởi đầu từ {min} — ngăn lệnh all-in đòn bẩy cao thao túng bảng xếp hạng, giữ là cuộc thi kỹ năng.',
     'cat.2.t':'Tiền lãi','cat.2.d':'Lợi nhuận tuyệt đối. Có cả tuần và tháng.',
     'cat.3.t':'Khối lượng','cat.3.d':'Khối lượng tích lũy trong kỳ. Có cả tuần và tháng.',
     'cta.title':'Mùa này, ghi tên bạn lên bảng','cta.sub':'Mùa giải mới bắt đầu mỗi thứ Hai lúc 00:00 UTC.','cta.btn':'Tham gia giải',
@@ -790,7 +792,7 @@ const I18N = {
     'how.2.t':'Подключите ключ «только чтение»','how.2.d':'Только ключ для чтения (без торговли/вывода). Мы никогда не трогаем ваши средства.',
     'how.3.t':'Торгуйте и поднимайтесь','how.3.d':'Торгуйте как обычно — данные автоматически попадают в таблицу каждый день.',
     'cat.title':'Номинации','cat.sub':'Доходность — неделя и месяц; прибыль и объём — только месяц.',
-    'cat.1.t':'Доходность','cat.1.d':'Доходность за период. И неделя, и месяц.',
+    'cat.1.t':'Доходность','cat.1.d':'Доходность за период. И неделя, и месяц.','cat.retmin':'Призы за доходность доступны при стартовом балансе от {min} — это не даёт ставкам ва-банк с высоким плечом накручивать рейтинг, сохраняя состязание мастерства.',
     'cat.2.t':'Прибыль','cat.2.d':'Абсолютная прибыль. И неделя, и месяц.',
     'cat.3.t':'Объём','cat.3.d':'Накопленный объём за период. И неделя, и месяц.',
     'cta.title':'В этом сезоне впишите своё имя в таблицу','cta.sub':'Новый сезон стартует каждый понедельник в 00:00 UTC.','cta.btn':'Вступить в лигу',
@@ -841,6 +843,9 @@ function renderCatHero(){
   document.getElementById('catTitle').textContent=t(c.t);
   document.getElementById('catDesc').textContent=t(c.d);
   document.getElementById('catHero').style.setProperty('--glow',c.glow);
+  // Return board carries a higher balance floor (anti small-account all-in).
+  const rn=document.getElementById('retNote');
+  if(rn){ if(state.metric==='return'){ rn.style.display='block'; rn.innerHTML='⚖️ '+t('cat.retmin').replace('{min}','<b>$'+Number(RETMINBAL).toLocaleString()+'</b>'); } else rn.style.display='none'; }
 }
 // Weekly = return only; monthly = all three.
 function updateMetricTabs(){
@@ -894,8 +899,8 @@ let qT;document.getElementById('lbSearch').addEventListener('input',e=>{clearTim
 
 /* ---------- prize + countdown ---------- */
 let season=null;
-let MINBAL=100;
-async function fetchSeason(){ try{const r=await fetch(`${API}/arena/season`);const j=await r.json();season=j.season;if(j.minBalance!=null)MINBAL=j.minBalance;}catch(e){season=null;} renderPrize(); updateMinNote(); }
+let MINBAL=100, RETMINBAL=500;
+async function fetchSeason(){ try{const r=await fetch(`${API}/arena/season`);const j=await r.json();season=j.season;if(j.minBalance!=null)MINBAL=j.minBalance;if(j.returnMinBalance!=null)RETMINBAL=j.returnMinBalance;}catch(e){season=null;} renderPrize(); updateMinNote(); renderCatHero(); }
 function updateMinNote(){ const el=document.getElementById('jMinNote'); if(el) el.innerHTML=t('jm.minnote').replace('{min}','<b>$'+MINBAL.toLocaleString()+'</b>'); }
 // Live-rising prize pool: the commission-funded pool visibly accrues. Each 60s
 // fetch re-anchors to the true server value; between fetches a small monotonic

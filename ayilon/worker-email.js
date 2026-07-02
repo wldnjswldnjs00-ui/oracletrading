@@ -1268,7 +1268,9 @@ async function arenaDeclareWinners(env, now) {
       // Prize-eligible only: opted-in + AYILON-referred + started the season with ≥ min
       // balance + traded on at least the required number of distinct days (anti-hedge).
       const minDays = parseInt(cfg.minTradeDays || 0);
-      rows = rows.filter(r => pmap[r.email] && !pmap[r.email].demo && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0 && (r.start_equity || 0) >= minBal && (r.trade_days || 0) >= minDays);
+      // Return board requires a higher starting balance (anti small-account all-in).
+      const effMin = j.metric === 'return' ? Math.max(minBal, parseFloat(cfg.returnMinBalance || 0)) : minBal;
+      rows = rows.filter(r => pmap[r.email] && !pmap[r.email].demo && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0 && (r.start_equity || 0) >= effMin && (r.trade_days || 0) >= minDays);
       rows.sort((a, b) => (b[j.sort] || 0) - (a[j.sort] || 0));
       const catPool = boardPoolOf(j.board) / ((cfg.boards[j.board] || ['return']).length || 1);
       const rankSplit = cfg.split[j.board] || [];
@@ -1842,6 +1844,8 @@ async function handleArenaLeaderboard(request, env) {
   const cfg = await getArenaConfig(env);
   const minBal = parseFloat(cfg.minBalance || 0);
   const minDays = parseInt(cfg.minTradeDays || 0);
+  // The return (%) board needs a higher balance floor to be prize-eligible.
+  const effMin = metric === 'return' ? Math.max(minBal, parseFloat(cfg.returnMinBalance || 0)) : minBal;
   const sortKey = metric === 'volume' ? 'volume' : metric === 'profit' ? 'profit' : 'return_pct';
   rows.sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
   const ranked = rows.map((r, i) => ({
@@ -1850,9 +1854,9 @@ async function handleArenaLeaderboard(request, env) {
     country: r.country || '',
     verified: r.referral_verified === 1,
     avatar: r.has_avatar ? 1 : 0,
-    // Prize-eligible = AYILON-referred, started the season with ≥ min balance, and
-    // met the distinct-trading-day requirement (same rule the payout uses).
-    eligible: r.referral_verified === 1 && (r.start_equity || 0) >= minBal && (r.trade_days || 0) >= minDays,
+    // Prize-eligible = AYILON-referred, started the season with ≥ the board's min
+    // balance, and met the distinct-trading-day requirement (same rule the payout uses).
+    eligible: r.referral_verified === 1 && (r.start_equity || 0) >= effMin && (r.trade_days || 0) >= minDays,
     returnPct: r.return_pct || 0,
     profit: r.profit || 0,
     volume: r.volume || 0,
@@ -1893,7 +1897,9 @@ const ARENA_DEFAULT_CONFIG = {
   split: { weekly: [50, 30, 20], monthly: [40, 25, 15, 12, 8] },        // % of pool per rank
   // Both weekly and monthly run all three categories; weekly prizes are ~1/4 of monthly.
   boards: { weekly: ['return', 'profit', 'volume'], monthly: ['return', 'profit', 'volume'] },
-  minBalance: 100,          // $ floor to be prize-eligible
+  minBalance: 100,          // $ floor to join + be prize-eligible (profit/volume boards)
+  returnMinBalance: 500,    // higher $ floor to be prize-eligible on the RETURN board —
+                            // stops $100 max-leverage all-ins from farming the % board
   minTrades: 3,
   minTradeDays: 0           // distinct active trading days required for prizes (0 = off)
 };
@@ -1964,7 +1970,7 @@ async function handleArenaSeason(request, env) {
     };
   }
   return json({ ok: true, poolMode: cfg.poolMode, commissionPct, commissionTotal: Math.round(commissionTotal * 100) / 100,
-    minBalance: cfg.minBalance, minTrades: cfg.minTrades, season: out });
+    minBalance: cfg.minBalance, returnMinBalance: Math.max(parseFloat(cfg.minBalance || 0), parseFloat(cfg.returnMinBalance || 0)), minTrades: cfg.minTrades, season: out });
 }
 
 // Admin: set manual pool / caps / splits.
@@ -1985,6 +1991,7 @@ async function handleAdminArenaConfig(request, env) {
   if (body.commissionSplit) next.commissionSplit = { ...cur.commissionSplit, ...body.commissionSplit };
   if (body.autoAffiliate != null) next.autoAffiliate = !!body.autoAffiliate;
   if (body.minBalance != null)    next.minBalance = parseFloat(body.minBalance);
+  if (body.returnMinBalance != null) next.returnMinBalance = Math.max(0, parseFloat(body.returnMinBalance) || 0);
   if (body.minTrades != null)     next.minTrades = parseInt(body.minTrades);
   if (body.minTradeDays != null)  next.minTradeDays = Math.max(0, parseInt(body.minTradeDays) || 0);
   await env.USERS_KV.put('arena:config', JSON.stringify(next));
