@@ -181,7 +181,13 @@ const token=()=>localStorage.getItem('ayilon_session_token')||'';
 const email=()=>localStorage.getItem('ayilon_email')||'';
 const usd=v=>'$'+Number(v||0).toLocaleString(undefined,{maximumFractionDigits:2});
 const pct=v=>v==null?'—':((v>=0?'+':'')+(v*100).toFixed(1)+'%');
-function post(path,body){return fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token(),...body})}).then(async r=>{try{const j=await r.json();if(j&&j.ok==null)j.ok=r.ok;return j;}catch(e){return{ok:false,error:'bad_response',httpStatus:r.status};}}).catch(e=>({ok:false,error:'network'}));}
+function post(path,body){
+  const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),12000);
+  return fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token(),...body}),signal:ctrl.signal})
+    .then(async r=>{try{const j=await r.json();if(j&&j.ok==null)j.ok=r.ok;return j;}catch(e){return{ok:false,error:'bad_response',httpStatus:r.status};}})
+    .catch(e=>({ok:false,error:e&&e.name==='AbortError'?'timeout':'network'}))
+    .finally(()=>clearTimeout(to));
+}
 function loadErr(r){return '연결 실패 — 자동으로 다시 시도합니다'+(r&&r.httpStatus?(' (HTTP '+r.httpStatus+')'):(r&&r.error?(' ('+r.error+')'):''));}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
@@ -190,7 +196,8 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;',
   if(email().toLowerCase()!==ADMIN){ document.getElementById('denied').style.display='block'; return; }
   document.getElementById('app').style.display='block';
   document.getElementById('admEmail').textContent=email();
-  await loadConfig(); await loadList(); await loadWinners(); await loadContact();
+  // Fire independently so one slow/hung request can't freeze the others.
+  loadConfig(); loadList(); loadWinners(); loadContact();
 })();
 
 /* ---- contact inbox ---- */

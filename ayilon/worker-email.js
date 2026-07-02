@@ -411,7 +411,7 @@ async function handleContact(request, env) {
 
   // Store in the admin inbox (primary channel — readable without Gmail).
   try {
-    await initDB(env);
+    await ensureDB(env);
     await env.BOT_DB.prepare(
       'INSERT INTO contact_msgs (name,email,subject,message,lang,ip,created_at,status) VALUES (?,?,?,?,?,?,?,?)'
     ).bind(name, email.toLowerCase(), subject, message, lang, ip, Date.now(), 'new').run();
@@ -447,7 +447,7 @@ async function handleAdminContactList(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
   if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
-  await initDB(env);
+  await ensureDB(env);
   let rows = [];
   try { rows = (await env.BOT_DB.prepare('SELECT * FROM contact_msgs ORDER BY created_at DESC LIMIT 200').all()).results || []; } catch (_) {}
   const unread = rows.filter(r => r.status === 'new').length;
@@ -459,7 +459,7 @@ async function handleAdminContactReply(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
   if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
-  await initDB(env);
+  await ensureDB(env);
 
   const id = parseInt(body.id || 0);
   const to = String(body.to || '').trim();
@@ -1275,7 +1275,7 @@ async function handleAdminAffiliateTest(request, env) {
 
 // Public: Hall of Fame (recent frozen winners) + champion (rank-1) counts.
 async function handleArenaWinners(request, env) {
-  await initDB(env);
+  await ensureDB(env);
   let rows = [];
   try { rows = (await env.BOT_DB.prepare('SELECT season_id,board,metric,rank,nickname,value,declared_at FROM arena_winners ORDER BY declared_at DESC, rank ASC LIMIT 80').all()).results || []; } catch (_) {}
   const champions = {};
@@ -1286,7 +1286,7 @@ async function handleArenaWinners(request, env) {
 // Cron: snapshot every connected account, accumulate metrics per board.
 async function arenaScore(env) {
   if (!env.BOT_DB) return;
-  await initDB(env);
+  await ensureDB(env);
   const now = new Date();
   try { await arenaDeclareWinners(env, now); } catch (_) {}
   const boards = [['weekly', arenaWeekId(now)], ['monthly', arenaMonthId(now)]];
@@ -1400,7 +1400,7 @@ async function handleArenaJoin(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
-  await initDB(env);
+  await ensureDB(env);
 
   const apiKey = (body.apiKey || '').trim();
   const apiSecret = (body.apiSecret || '').trim();
@@ -1488,7 +1488,7 @@ async function handleArenaNickname(request, env) {
   }
   user.username = nick;
   await env.USERS_KV.put('user:' + session.email, JSON.stringify(user));
-  await initDB(env);
+  await ensureDB(env);
   await env.BOT_DB.prepare('UPDATE arena_participants SET nickname=? WHERE email=?').bind(nick, session.email).run().catch(() => {});
   await env.BOT_DB.prepare('UPDATE sessions SET username=? WHERE email=?').bind(nick, session.email).run().catch(() => {});
   if (body.sessionToken) {
@@ -1510,7 +1510,7 @@ async function handleArenaSetAvatar(request, env) {
     if (typeof avatar !== 'string' || !/^data:image\/(png|jpeg|webp);base64,/.test(avatar)) return json({ ok: false, error: 'bad_image' });
     if (avatar.length > 120000) return json({ ok: false, error: 'too_large' }); // ~90KB
   }
-  await initDB(env);
+  await ensureDB(env);
   await env.BOT_DB.prepare('UPDATE arena_participants SET avatar=? WHERE email=?').bind(avatar, session.email).run().catch(() => {});
   const u = await env.USERS_KV.get('user:' + session.email, { type: 'json' });
   if (u) { u.avatar = avatar; await env.USERS_KV.put('user:' + session.email, JSON.stringify(u)); }
@@ -1519,7 +1519,7 @@ async function handleArenaSetAvatar(request, env) {
 
 // Serve a participant's avatar image by nickname. Public, cacheable.
 async function handleArenaGetAvatar(request, env) {
-  await initDB(env);
+  await ensureDB(env);
   const url = new URL(request.url);
   const nick = String(url.searchParams.get('n') || '').trim();
   if (!nick) return new Response('', { status: 404 });
@@ -1578,7 +1578,7 @@ async function handleArenaLeave(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
-  await initDB(env);
+  await ensureDB(env);
   await env.BOT_DB.prepare('DELETE FROM arena_participants WHERE email=?').bind(session.email).run().catch(() => {});
   await env.BOT_DB.prepare('DELETE FROM arena_score WHERE email=?').bind(session.email).run().catch(() => {});
   return json({ ok: true });
@@ -1586,7 +1586,7 @@ async function handleArenaLeave(request, env) {
 
 // Public leaderboard — full list, 3 boards, optional ?board=&period=&q= search.
 async function handleArenaLeaderboard(request, env) {
-  await initDB(env);
+  await ensureDB(env);
   const body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
   const url = new URL(request.url);
   const period = (body.period || url.searchParams.get('period') || 'weekly').toLowerCase() === 'monthly' ? 'monthly' : 'weekly';
@@ -1639,7 +1639,7 @@ async function handleArenaMe(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
-  await initDB(env);
+  await ensureDB(env);
   const p = await env.BOT_DB.prepare('SELECT * FROM arena_participants WHERE email=?').bind(session.email).first();
   if (!p) return json({ ok: true, joined: false });
   const scores = (await env.BOT_DB.prepare('SELECT * FROM arena_score WHERE email=?').bind(session.email).all()).results || [];
@@ -1768,7 +1768,7 @@ async function handleAdminArenaList(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
   if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
-  await initDB(env);
+  await ensureDB(env);
   const cfg = await getArenaConfig(env);
   const minBal = parseFloat(cfg.minBalance || 0);
   const q = String(body.q || '').trim().toLowerCase();
@@ -1782,10 +1782,13 @@ async function handleAdminArenaList(request, env) {
   // collusion flags stay accurate even while searching, then cluster by IP, device
   // fingerprint, and deposit-source address.
   const info = {}, ipGroups = {}, fpGroups = {}, depGroups = {};
+  // Bulk-fetch this season's scores in 2 queries (not 2 per participant) so this
+  // stays well under Cloudflare's subrequest limit as the league grows.
+  const wkMap = {}, moMap = {};
+  try { for (const r of ((await env.BOT_DB.prepare('SELECT email,return_pct,profit,volume,start_equity,trade_days FROM arena_score WHERE board=? AND season_id=?').bind('weekly', wId).all()).results || [])) wkMap[r.email] = r; } catch (_) {}
+  try { for (const r of ((await env.BOT_DB.prepare('SELECT email,return_pct,profit,volume,start_equity,trade_days FROM arena_score WHERE board=? AND season_id=?').bind('monthly', mId).all()).results || [])) moMap[r.email] = r; } catch (_) {}
   for (const p of rows) {
-    let wk = null, mo = null;
-    try { wk = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity,trade_days FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'weekly', wId).first(); } catch (_) {}
-    try { mo = await env.BOT_DB.prepare('SELECT return_pct,profit,volume,start_equity,trade_days FROM arena_score WHERE email=? AND board=? AND season_id=?').bind(p.email, 'monthly', mId).first(); } catch (_) {}
+    const wk = wkMap[p.email] || null, mo = moMap[p.email] || null;
     info[p.email] = { row: p, wk, mo };
     const ip = String(p.ip || '').trim();
     if (ip && ip !== 'unknown') (ipGroups[ip] = ipGroups[ip] || []).push(p.email);
@@ -1848,7 +1851,7 @@ async function handleAdminBan(request, env) {
   if (banned) { u.bannedAt = Date.now(); } else { delete u.bannedAt; }
   await env.USERS_KV.put('user:' + email, JSON.stringify(u));
   if (banned) {
-    await initDB(env);
+    await ensureDB(env);
     try { await env.BOT_DB.prepare('DELETE FROM sessions WHERE email=?').bind(email).run(); } catch (_) {}
     try { await env.BOT_DB.prepare('DELETE FROM arena_participants WHERE email=?').bind(email).run(); } catch (_) {}
     try { await env.BOT_DB.prepare('DELETE FROM arena_score WHERE email=?').bind(email).run(); } catch (_) {}
@@ -1861,7 +1864,7 @@ async function handleAdminArenaWinners(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
   if (!session || session.email !== ADMIN_EMAIL_CONST) return json({ ok: false, error: 'forbidden' }, 403);
-  await initDB(env);
+  await ensureDB(env);
   if (body.markPaid && body.id != null) {
     await env.BOT_DB.prepare('UPDATE arena_winners SET paid=1 WHERE id=?').bind(parseInt(body.id)).run().catch(() => {});
     return json({ ok: true });
@@ -1877,7 +1880,7 @@ async function handleBotStatus(request, env) {
   const session = await requireSession(body, env, request);
   if (!session) return json({ running: false, logs: [], error: 'unauthorized' }, 401);
 
-  await initDB(env);
+  await ensureDB(env);
   const u = session.email;
   const [config, botStateRow] = await Promise.all([
     env.USERS_KV.get('bot:config:' + u, { type: 'json' }),
@@ -1956,7 +1959,7 @@ async function handleBotControl(request, env) {
   const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
 
-  await initDB(env);
+  await ensureDB(env);
 
   // ── STOP: D1 only — never writes KV (KV daily limit must not be wasted here) ──
   if (action === 'stop') {
@@ -2368,7 +2371,7 @@ async function getTicker(instId) {
 
 async function runBot(env) {
   if (!env.USERS_KV) return;
-  await initDB(env);
+  await ensureDB(env);
   try {
     const { keys } = await env.USERS_KV.list({ prefix: 'bot:config:' });
     for (const key of keys) {
