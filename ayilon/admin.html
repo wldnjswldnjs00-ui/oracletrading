@@ -13,6 +13,8 @@
   nav .w{max-width:1120px;margin:0 auto;padding:15px 24px;display:flex;justify-content:space-between;align-items:center}
   .logo{font-weight:700;letter-spacing:.15em;font-size:16px}.logo i{font-style:normal;color:var(--accent)}
   .adm{font-size:12px;color:var(--gold);border:1px solid rgba(216,180,106,.35);border-radius:20px;padding:3px 10px;margin-left:10px}
+  .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(52,211,154,.6);animation:livePulse 2s infinite}
+  @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(52,211,154,.55)}70%{box-shadow:0 0 0 6px rgba(52,211,154,0)}100%{box-shadow:0 0 0 0 rgba(52,211,154,0)}}
   .w{max-width:1120px;margin:0 auto;padding:0 24px}
   main{padding:26px 0 80px}
   .btn{border:none;cursor:pointer;font-family:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;transition:.15s}
@@ -63,6 +65,7 @@
   <div><span class="logo">AY<i>I</i>LON</span><span class="adm">ADMIN</span></div>
   <div style="display:flex;gap:12px;align-items:center">
     <a href="/" style="color:var(--mut);font-size:13px">← Arena</a>
+    <span id="liveBadge" style="font-size:11px;color:var(--accent);display:inline-flex;align-items:center;gap:5px"><span class="live-dot"></span>실시간</span>
     <span id="admEmail" style="font-size:12px;color:var(--dim)"></span>
     <button class="btn btn-g btn-sm" onclick="doLogout()">로그아웃</button>
   </div>
@@ -386,6 +389,23 @@ async function refreshStats(){
   }catch(e){}
 }
 setTimeout(refreshStats,400);
+
+/* ---- live auto-refresh (no F5 needed) ---- */
+// Refresh participants, winners, stats and the inbox every 20s. Pauses while
+// the tab is hidden. Skips the prize-config fields (admin may be editing them)
+// and skips the inbox while a reply is open/being typed, so nothing you're
+// working on gets wiped out mid-edit.
+function adminLiveRefresh(){
+  if(document.hidden) return;
+  loadList();
+  loadWinners();
+  refreshStats();
+  const ae=document.activeElement;
+  const replying=!!document.querySelector('#cList details[open]') || (ae&&ae.id&&ae.id.indexOf('creply_')===0);
+  if(!replying) loadContact();
+}
+setInterval(adminLiveRefresh,20000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) adminLiveRefresh(); });
 </script>
 </body>
 </html>
