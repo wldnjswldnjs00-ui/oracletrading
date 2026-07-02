@@ -1268,9 +1268,10 @@ async function arenaDeclareWinners(env, now) {
       // Prize-eligible only: opted-in + AYILON-referred + started the season with ≥ min
       // balance + traded on at least the required number of distinct days (anti-hedge).
       const minDays = parseInt(cfg.minTradeDays || 0);
+      const minVol = parseFloat(cfg.minVolume || 0);
       // Return board requires a higher starting balance (anti small-account all-in).
       const effMin = j.metric === 'return' ? Math.max(minBal, parseFloat(cfg.returnMinBalance || 0)) : minBal;
-      rows = rows.filter(r => pmap[r.email] && !pmap[r.email].demo && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0 && (r.start_equity || 0) >= effMin && (r.trade_days || 0) >= minDays);
+      rows = rows.filter(r => pmap[r.email] && !pmap[r.email].demo && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0 && (r.start_equity || 0) >= effMin && (r.trade_days || 0) >= minDays && (r.volume || 0) >= minVol);
       rows.sort((a, b) => (b[j.sort] || 0) - (a[j.sort] || 0));
       const catPool = boardPoolOf(j.board) / ((cfg.boards[j.board] || ['return']).length || 1);
       const rankSplit = cfg.split[j.board] || [];
@@ -1844,6 +1845,7 @@ async function handleArenaLeaderboard(request, env) {
   const cfg = await getArenaConfig(env);
   const minBal = parseFloat(cfg.minBalance || 0);
   const minDays = parseInt(cfg.minTradeDays || 0);
+  const minVol = parseFloat(cfg.minVolume || 0);
   // The return (%) board needs a higher balance floor to be prize-eligible.
   const effMin = metric === 'return' ? Math.max(minBal, parseFloat(cfg.returnMinBalance || 0)) : minBal;
   const sortKey = metric === 'volume' ? 'volume' : metric === 'profit' ? 'profit' : 'return_pct';
@@ -1856,7 +1858,7 @@ async function handleArenaLeaderboard(request, env) {
     avatar: r.has_avatar ? 1 : 0,
     // Prize-eligible = AYILON-referred, started the season with ≥ the board's min
     // balance, and met the distinct-trading-day requirement (same rule the payout uses).
-    eligible: r.referral_verified === 1 && (r.start_equity || 0) >= effMin && (r.trade_days || 0) >= minDays,
+    eligible: r.referral_verified === 1 && (r.start_equity || 0) >= effMin && (r.trade_days || 0) >= minDays && (r.volume || 0) >= minVol,
     returnPct: r.return_pct || 0,
     profit: r.profit || 0,
     volume: r.volume || 0,
@@ -1901,7 +1903,9 @@ const ARENA_DEFAULT_CONFIG = {
   returnMinBalance: 500,    // higher $ floor to be prize-eligible on the RETURN board —
                             // stops $100 max-leverage all-ins from farming the % board
   minTrades: 3,
-  minTradeDays: 0           // distinct active trading days required for prizes (0 = off)
+  minTradeDays: 0,          // distinct active trading days required for prizes (0 = off)
+  minVolume: 1000           // min season trading volume ($) to be prize-eligible — ensures
+                            // each winner actually traded (generated commission), not parked cash
 };
 async function getArenaConfig(env) {
   try {
@@ -1992,6 +1996,7 @@ async function handleAdminArenaConfig(request, env) {
   if (body.autoAffiliate != null) next.autoAffiliate = !!body.autoAffiliate;
   if (body.minBalance != null)    next.minBalance = parseFloat(body.minBalance);
   if (body.returnMinBalance != null) next.returnMinBalance = Math.max(0, parseFloat(body.returnMinBalance) || 0);
+  if (body.minVolume != null)     next.minVolume = Math.max(0, parseFloat(body.minVolume) || 0);
   if (body.minTrades != null)     next.minTrades = parseInt(body.minTrades);
   if (body.minTradeDays != null)  next.minTradeDays = Math.max(0, parseInt(body.minTradeDays) || 0);
   await env.USERS_KV.put('arena:config', JSON.stringify(next));
