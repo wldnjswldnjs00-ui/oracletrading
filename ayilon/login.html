@@ -298,24 +298,53 @@
       goAfterLogin();
     }
 
-    // Admin domain disguise: show a plain "ERROR 777" black screen instead of a
-    // login page. Clicking the MIDDLE 7 reveals the real login form (only the
-    // operator knows the tap target). Public domain is unaffected.
+    // Admin domain disguise: a plain "ERROR 777" black screen with two bare
+    // fields (email + password, no labels/placeholders). The MIDDLE 7 IS the
+    // login button. Only the operator knows. Public domain is unaffected.
     (function(){
       if(!/(^|\.)ayiloncompany\.xyz$/.test(location.hostname)) return;
       if(localStorage.getItem('ayilon_logged_in')==='true' && localStorage.getItem('ayilon_session_token')) return;
+      var WORKER='https://ayilon-email.wldnjswldnjs00.workers.dev';
       function build(){
         try{ document.title='Error 777'; }catch(e){}
         var o=document.createElement('div');
         o.id='err777';
         o.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#000;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,Menlo,Consolas,monospace;-webkit-user-select:none;user-select:none';
+        var inp='width:220px;background:#080808;border:1px solid #1c1c1c;border-radius:8px;padding:11px 13px;color:#cfcfcf;font-size:14px;font-family:inherit;outline:none;text-align:center';
         o.innerHTML='<div style="text-align:center;line-height:1.5">'
           +'<div style="font-size:13px;letter-spacing:.34em;color:#2b2b2b">ERROR</div>'
-          +'<div style="font-size:66px;font-weight:700;color:#454545;letter-spacing:.06em;margin-top:4px">7<span id="k7" style="display:inline-block;padding:0 2px">7</span>7</div>'
-          +'<div style="font-size:12px;color:#232323;margin-top:8px">the requested resource is unavailable</div></div>';
+          +'<div id="d777" style="font-size:66px;font-weight:700;color:#454545;letter-spacing:.06em;margin-top:4px;transition:color .2s">7<span id="k7" style="display:inline-block;padding:0 4px;cursor:default">7</span>7</div>'
+          +'<div style="display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:22px">'
+          +'<input id="e777" type="email" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" style="'+inp+'">'
+          +'<input id="p777" type="password" autocomplete="current-password" style="'+inp+'">'
+          +'</div></div>';
         (document.body||document.documentElement).appendChild(o);
+        var busy=false;
+        function flash(){ var d=document.getElementById('d777'); if(!d)return; d.style.color='#7a2a2a'; setTimeout(function(){ if(d) d.style.color='#454545'; },450); }
+        async function tryLogin(){
+          if(busy) return;
+          var em=(document.getElementById('e777').value||'').trim();
+          var pw=document.getElementById('p777').value||'';
+          if(!em||!pw){ flash(); return; }
+          busy=true;
+          try{
+            var res=await fetch(WORKER+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})});
+            var d=await res.json();
+            if(d && d.ok && d.sessionToken){
+              localStorage.setItem('ayilon_session_token',d.sessionToken);
+              localStorage.setItem('ayilon_email',d.email||em);
+              localStorage.setItem('ayilon_username',d.username||'');
+              localStorage.setItem('ayilon_name',d.name||'');
+              localStorage.setItem('ayilon_logged_in','true');
+              goAfterLogin(); return;
+            }
+            busy=false; flash();
+          }catch(e){ busy=false; flash(); }
+        }
         var k7=document.getElementById('k7');
-        if(k7) k7.addEventListener('click',function(ev){ ev.stopPropagation(); o.remove(); try{document.title='Sign In';}catch(e){} });
+        if(k7) k7.addEventListener('click',function(ev){ ev.stopPropagation(); tryLogin(); });
+        var pin=document.getElementById('p777');
+        if(pin) pin.addEventListener('keydown',function(ev){ if(ev.key==='Enter') tryLogin(); });
       }
       if(document.body) build(); else document.addEventListener('DOMContentLoaded',build);
     })();
