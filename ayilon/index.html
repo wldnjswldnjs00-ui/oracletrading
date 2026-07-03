@@ -290,23 +290,27 @@
   #splash .sbar::after{content:'';position:absolute;left:-40%;top:0;height:100%;width:40%;border-radius:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:sslide 1.1s ease-in-out infinite}
   @keyframes sslide{to{left:100%}}
   /* prize vault — money-rain accrual (above leaderboard) */
-  #poolVault{padding:34px 0 4px}
-  .vault{position:relative;overflow:hidden;border:1px solid rgba(216,180,106,.34);border-radius:22px;min-height:190px;display:flex;align-items:center;justify-content:center;text-align:center;
-    background:radial-gradient(130% 120% at 50% -10%,rgba(216,180,106,.16),rgba(52,211,154,.05) 42%,transparent 72%),var(--panel);
-    box-shadow:0 0 70px rgba(216,180,106,.09) inset,0 20px 50px -30px rgba(0,0,0,.6)}
-  .vault-in{position:relative;z-index:2;padding:34px 20px}
+  #poolVault{padding:40px 0 10px}
+  .vault{position:relative;overflow:hidden;min-height:230px;display:flex;align-items:center;justify-content:center;text-align:center;
+    background:radial-gradient(120% 135% at 50% -25%,rgba(216,180,106,.14),rgba(52,211,154,.03) 46%,transparent 66%)}
+  .vault-in{position:relative;z-index:2;padding:30px 20px}
   .vault-lbl{display:inline-flex;align-items:center;gap:8px;color:var(--mut);font-size:13px;font-weight:600;letter-spacing:.04em;margin-bottom:8px}
   .vault-amt{font-size:clamp(42px,8.5vw,76px);font-weight:820;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;
     background:linear-gradient(180deg,#ffeab0,#e6c877 48%,#c69f4a);-webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 6px 26px rgba(216,180,106,.35))}
   .vault-sub{color:var(--dim);font-size:13px;margin-top:13px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.5}
   .rain{position:absolute;inset:0;z-index:1;pointer-events:none}
-  .rain b{position:absolute;top:-30px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:800;color:#3a2c08;
-    box-shadow:0 4px 10px rgba(0,0,0,.32),inset 0 1px 2px rgba(255,255,255,.5);opacity:0;animation:vrain linear infinite;will-change:transform,opacity}
-  .rain b.g{background:radial-gradient(circle at 34% 28%,#ffeaa6,#d8b46a 62%,#a97f2e)}
-  .rain b.e{background:radial-gradient(circle at 34% 28%,#8dffd6,#34d39a 62%,#1c8f66);color:#04140d}
-  @keyframes vrain{0%{transform:translateY(0) rotate(0);opacity:0}9%{opacity:.92}90%{opacity:.92}100%{transform:translateY(250px) rotate(220deg);opacity:0}}
-  @media(max-width:560px){.vault{min-height:170px}.rain b{display:none}.rain b:nth-child(-n+12){display:flex}}
+  /* refined metallic discs — no glyphs, soft sheen, subtle rim */
+  .rain b{position:absolute;top:-34px;border-radius:50%;opacity:0;animation:vrain linear infinite;will-change:transform,opacity;
+    background:radial-gradient(circle at 36% 30%,rgba(255,255,255,.7),rgba(255,255,255,0) 42%),linear-gradient(150deg,#f4dd9e,#d8b46a 52%,#a9812f);
+    box-shadow:0 4px 11px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.16),inset 0 -3px 6px rgba(120,88,26,.45)}
+  .rain b.e{background:radial-gradient(circle at 36% 30%,rgba(255,255,255,.6),rgba(255,255,255,0) 42%),linear-gradient(150deg,#a9f6d8,#34d39a 52%,#118a5f);
+    box-shadow:0 4px 11px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.2),inset 0 -3px 6px rgba(10,90,60,.45)}
+  .rain b.bk{filter:blur(2.5px);opacity:.42}   /* depth-of-field back layer */
+  @keyframes vrain{0%{transform:translateY(0) rotate(0);opacity:0}12%{opacity:.9}86%{opacity:.9}100%{transform:translateY(272px) rotate(180deg);opacity:0}}
+  .rain b.bk{animation-name:vrainB}
+  @keyframes vrainB{0%{transform:translateY(0) rotate(0);opacity:0}12%{opacity:.42}86%{opacity:.42}100%{transform:translateY(272px) rotate(140deg);opacity:0}}
+  @media(max-width:560px){.vault{min-height:200px}.rain b{display:none}.rain b:nth-child(-n+14){display:block}}
 </style>
 </head>
 <body>
@@ -995,8 +999,12 @@ function poolFrame(ts){
 // Fill the vault with continuously falling coins (gold $ + green USDT).
 function buildRain(){
   const r=document.getElementById('vaultRain'); if(!r||r.childElementCount)return;
-  let h=''; for(let i=0;i<24;i++){ const g=Math.random()<0.62?'g':'e'; const sz=15+Math.random()*11;
-    h+=`<b class="${g}" style="left:${(Math.random()*98).toFixed(1)}%;width:${sz.toFixed(0)}px;height:${sz.toFixed(0)}px;font-size:${(sz*0.5).toFixed(0)}px;animation-duration:${(2.6+Math.random()*3.2).toFixed(2)}s;animation-delay:${(-Math.random()*6).toFixed(2)}s">${g==='e'?'₮':'$'}</b>`; }
+  let h=''; for(let i=0;i<26;i++){
+    const green=Math.random()<0.28;                 // mostly gold, a few accent-green
+    const back=Math.random()<0.4;                   // ~40% pushed to a blurred back layer
+    const sz=(back?11:15)+Math.random()*(back?8:12);
+    const cls=(green?'e ':'')+(back?'bk':'');
+    h+=`<b class="${cls}" style="left:${(Math.random()*98).toFixed(1)}%;width:${sz.toFixed(0)}px;height:${sz.toFixed(0)}px;animation-duration:${((back?3.4:2.6)+Math.random()*3.2).toFixed(2)}s;animation-delay:${(-Math.random()*6).toFixed(2)}s"></b>`; }
   r.innerHTML=h;
 }
 function renderPrize(){
