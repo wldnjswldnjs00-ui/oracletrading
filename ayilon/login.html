@@ -254,7 +254,7 @@
           localStorage.setItem('ayilon_username',d.username||'');
           localStorage.setItem('ayilon_name',d.name||'');
           localStorage.setItem('ayilon_logged_in','true');
-          window.location.href = /(^|\.)ayiloncompany\.xyz$/.test(location.hostname)?'admin.html':'/';
+          goAfterLogin();
         } else { alert('Google sign-in failed.'); }
       }).catch(function(){ alert('Google sign-in failed.'); });
     }
@@ -274,14 +274,28 @@
     var _2faChallengeToken = null;
     var _2faMethods = [];
     var _2faCurrentMethod = null;
+    var ADMIN_EMAIL = 'wldnjswldnjs00@gmail.com';
+    // The admin domain (ayiloncompany.xyz) is owner-only. Any other account that
+    // authenticates there is signed straight back out and shown a locked screen.
+    function lockAdminDomain(){
+      ['ayilon_session_token','ayilon_logged_in','ayilon_email','ayilon_username','ayilon_name'].forEach(function(k){localStorage.removeItem(k);});
+      var html='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0a0c;color:#f1f2f4;font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center;padding:24px"><div><div style="font-size:44px;margin-bottom:14px">&#128274;</div><h2 style="margin:0 0 8px;font-weight:700">&#50868;&#50689;&#51088; &#51204;&#50857;</h2><p style="color:#8a8b95;margin:0;font-size:14px">This page is restricted to the AYILON operator.</p></div></div>';
+      if(document.body){document.body.innerHTML=html;} else {document.addEventListener('DOMContentLoaded',function(){document.body.innerHTML=html;});}
+    }
+    function goAfterLogin(){
+      var onAdmin=/(^|\.)ayiloncompany\.xyz$/.test(location.hostname);
+      if(!onAdmin){ window.location.href='/'; return; }
+      if((localStorage.getItem('ayilon_email')||'').toLowerCase()===ADMIN_EMAIL){ window.location.href='admin.html'; return; }
+      lockAdminDomain();
+    }
     // Clean up inconsistent state: logged_in=true but no valid token
     if (localStorage.getItem('ayilon_logged_in') === 'true' && !localStorage.getItem('ayilon_session_token')) {
       localStorage.removeItem('ayilon_logged_in');
     }
 
-    // If already logged in (both flags present), go straight to dashboard (admin page on the admin domain)
+    // If already logged in, route appropriately (admin domain is owner-only).
     if (localStorage.getItem('ayilon_logged_in') === 'true' && localStorage.getItem('ayilon_session_token')) {
-      window.location.href = /(^|\.)ayiloncompany\.xyz$/.test(location.hostname) ? 'admin.html' : '/';
+      goAfterLogin();
     }
 
     function togglePassword() {
@@ -453,8 +467,8 @@
 
     function finishLogin() {
       localStorage.setItem('ayilon_logged_in', 'true');
-      // On the admin domain, land on the admin page after login
-      window.location.href = /(^|\.)ayiloncompany\.xyz$/.test(location.hostname) ? 'admin.html' : '/';
+      // Admins land on the admin panel; the admin domain rejects everyone else.
+      goAfterLogin();
     }
 
     async function resendCode() {

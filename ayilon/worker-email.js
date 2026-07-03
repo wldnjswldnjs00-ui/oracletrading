@@ -684,6 +684,19 @@ async function handleLogin(request, env) {
 
     if (user.banned) return json({ ok: false, error: 'banned' }, 403);
 
+    // Owner/admin account signs in with password only — no email code. The admin
+    // panel (ayiloncompany.xyz) is owner-only, so this removes the login friction
+    // for the operator while every admin endpoint stays email-locked server-side.
+    if (user.email.toLowerCase() === ADMIN_EMAIL_CONST.toLowerCase()) {
+      await ensureDB(env);
+      const sessionToken = crypto.randomUUID();
+      const expiresAt = Date.now() + 604800 * 1000; // 7 days
+      await env.BOT_DB.prepare(
+        'INSERT OR REPLACE INTO sessions (token, email, username, name, expires_at) VALUES (?, ?, ?, ?, ?)'
+      ).bind(sessionToken, user.email, user.username || '', user.name || '', expiresAt).run();
+      return json({ ok: true, sessionToken, email: user.email, username: user.username || '', name: user.name || '' });
+    }
+
     // Mandatory email verification on every login (TOTP/authenticator 2FA was
     // removed; this email code is required for all users).
     {
