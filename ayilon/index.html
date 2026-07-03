@@ -557,6 +557,7 @@
 
     <div class="step">
       <div class="st"><span class="b">2</span><span data-i18n="jm.s2">읽기전용 API 키 연결</span></div>
+      <div class="hint" id="jKeyStatus" style="display:none;border-color:rgba(52,211,154,.32);background:rgba(52,211,154,.07);color:var(--accent);margin-bottom:12px"></div>
       <div class="field"><label data-i18n="jm.k">API Key</label><input id="jKey" autocomplete="off" spellcheck="false"></div>
       <div class="field"><label data-i18n="jm.s">Secret Key</label><input id="jSecret" type="password" autocomplete="off" spellcheck="false"></div>
       <div class="field"><label data-i18n="jm.p">Passphrase</label><input id="jPass" type="password" autocomplete="off" spellcheck="false"></div>
@@ -628,7 +629,7 @@ const I18N = {
     'jm.s1':'AYILON 추천으로 OKX 가입','jm.s1d':'이미 AYILON 추천으로 가입했다면 2단계로 넘어가세요.','jm.open':'가입하기 ↗',
     'jm.s2':'읽기전용 API 키 연결','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
     'jm.hint':'OKX → 프로필 → API → 읽기(Read) 권한만 체크. 거래·출금은 절대 체크 금지. <b>IP 제한은 비워두세요</b>(우리 서버 IP가 고정이 아니라 IP를 묶으면 연결이 거부됩니다). Passphrase는 키 만들 때 직접 정한 문구입니다.',
-    'jm.submit':'연결하고 참가','jm.leave':'대회에서 나가기',
+    'jm.submit':'연결하고 참가','jm.save':'저장','jm.saved':'저장되었습니다 ✓','jm.kconn':'읽기전용 키가 연결되어 있습니다','jm.kchange':'키를 바꾸려면 아래에 새 키를 입력하세요 (선택)','jm.keyopt':'변경 시에만 입력','jm.leave':'대회에서 나가기',
     'am.title':'로그인이 필요합니다','am.lead':'대회 참가는 로그인 후 진행됩니다.','am.login':'로그인','am.signup':'회원가입',
     'lb.noresults':'검색 결과 없음','lb.empty':'아직 참가자가 없습니다','lb.befirst':'첫 번째 도전자가 되어보세요.','lb.meta':'시즌 {s} · 총 {n}명 참가','lb.more':'더 보기 (+{n})',
     'pz.accruing':'적립 중','pz.upto':'최대 ','pz.share':'실시간 상금 풀을 순위별 %로 분배','pz.utc':'월요일 00:00 UTC 기준','pz.rank':'등','pz.dunit':'일',
@@ -671,7 +672,7 @@ const I18N = {
     'jm.s1':'Sign up to OKX via AYILON','jm.s1d':'Already signed up via AYILON? Skip to step 2.','jm.open':'Sign up ↗',
     'jm.s2':'Connect a read-only API key','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
     'jm.hint':'OKX → profile → API → check Read permission only. Never check trade/withdraw. <b>Leave the IP whitelist empty</b> (our server IP is not fixed, so binding an IP blocks the connection). The Passphrase is the phrase you set when creating the key.',
-    'jm.submit':'Connect & join','jm.leave':'Leave the arena',
+    'jm.submit':'Connect & join','jm.save':'Save','jm.saved':'Saved ✓','jm.kconn':'Read-only key connected','jm.kchange':'To change it, enter a new key below (optional)','jm.keyopt':'Only to change','jm.leave':'Leave the arena',
     'am.title':'Login required','am.lead':'Joining requires login.','am.login':'Log in','am.signup':'Sign up',
     'lb.noresults':'No results','lb.empty':'No participants yet','lb.befirst':'Be the first challenger.','lb.meta':'Season {s} · {n} participants','lb.more':'Show more (+{n})',
     'pz.accruing':'Accruing','pz.upto':'up to ','pz.share':'a live % share of the real prize pool','pz.utc':'resets Mon 00:00 UTC','pz.rank':'','pz.dunit':'d',
@@ -714,7 +715,7 @@ const I18N = {
     'jm.s1':'通过 AYILON 注册 OKX','jm.s1d':'已通过 AYILON 注册？请跳到第 2 步。','jm.open':'去注册 ↗',
     'jm.s2':'连接只读 API 密钥','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
     'jm.hint':'OKX → 个人资料 → API → 仅勾选“读取(Read)”权限。切勿勾选交易/提现。<b>请留空 IP 白名单</b>（我们的服务器 IP 不固定，绑定 IP 会导致连接被拒）。Passphrase 是你创建密钥时自设的口令。',
-    'jm.submit':'连接并参加','jm.leave':'退出联赛',
+    'jm.submit':'连接并参加','jm.save':'保存','jm.saved':'已保存 ✓','jm.kconn':'只读密钥已连接','jm.kchange':'如需更换，请在下方输入新密钥（可选）','jm.keyopt':'仅更换时填写','jm.leave':'退出联赛',
     'am.title':'需要登录','am.lead':'参加联赛需先登录。','am.login':'登录','am.signup':'注册',
     'lb.noresults':'无搜索结果','lb.empty':'暂无参赛者','lb.befirst':'成为第一个挑战者。','lb.meta':'赛季 {s} · 共 {n} 人参加','lb.more':'查看更多 (+{n})',
     'pz.accruing':'累积中','pz.upto':'最高 ','pz.share':'按名次比例分配实时奖池','pz.utc':'每周一 00:00 UTC 重置','pz.rank':'名','pz.dunit':'天',
@@ -757,7 +758,7 @@ const I18N = {
     'jm.s1':'Regístrate en OKX vía AYILON','jm.s1d':'¿Ya te registraste vía AYILON? Pasa al paso 2.','jm.open':'Registrarse ↗',
     'jm.s2':'Conecta una clave API de solo lectura','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
     'jm.hint':'OKX → perfil → API → marca solo el permiso de Lectura (Read). Nunca marques trading/retiro. <b>Deja vacía la lista de IP</b> (la IP de nuestro servidor no es fija; vincular una IP bloquea la conexión). La Passphrase es la frase que tú definiste al crear la clave.',
-    'jm.submit':'Conectar y unirse','jm.leave':'Salir de la arena',
+    'jm.submit':'Conectar y unirse','jm.save':'Guardar','jm.saved':'Guardado ✓','jm.kconn':'Clave de solo lectura conectada','jm.kchange':'Para cambiarla, introduce una nueva clave abajo (opcional)','jm.keyopt':'Solo para cambiar','jm.leave':'Salir de la arena',
     'am.title':'Inicia sesión','am.lead':'Para unirte debes iniciar sesión.','am.login':'Entrar','am.signup':'Registrarse',
     'lb.noresults':'Sin resultados','lb.empty':'Aún no hay participantes','lb.befirst':'Sé el primer retador.','lb.meta':'Temporada {s} · {n} participantes','lb.more':'Ver más (+{n})',
     'pz.accruing':'Acumulando','pz.upto':'hasta ','pz.share':'reparto en % del bote real en vivo','pz.utc':'se reinicia lun 00:00 UTC','pz.rank':'º','pz.dunit':'d',
@@ -800,7 +801,7 @@ const I18N = {
     'jm.s1':'Đăng ký OKX qua AYILON','jm.s1d':'Đã đăng ký qua AYILON? Bỏ qua bước 2.','jm.open':'Đăng ký ↗',
     'jm.s2':'Kết nối khóa API chỉ đọc','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
     'jm.hint':'OKX → hồ sơ → API → chỉ tích quyền Đọc (Read). Tuyệt đối không tích giao dịch/rút tiền. <b>Để trống danh sách IP</b> (IP máy chủ của chúng tôi không cố định; ràng buộc IP sẽ chặn kết nối). Passphrase là cụm từ bạn tự đặt khi tạo khóa.',
-    'jm.submit':'Kết nối và tham gia','jm.leave':'Rời giải',
+    'jm.submit':'Kết nối và tham gia','jm.save':'Lưu','jm.saved':'Đã lưu ✓','jm.kconn':'Đã kết nối khóa chỉ đọc','jm.kchange':'Để đổi, nhập khóa mới bên dưới (tùy chọn)','jm.keyopt':'Chỉ khi đổi','jm.leave':'Rời giải',
     'am.title':'Cần đăng nhập','am.lead':'Tham gia giải cần đăng nhập trước.','am.login':'Đăng nhập','am.signup':'Đăng ký',
     'lb.noresults':'Không có kết quả','lb.empty':'Chưa có người tham gia','lb.befirst':'Hãy là người thách đấu đầu tiên.','lb.meta':'Mùa {s} · {n} người tham gia','lb.more':'Xem thêm (+{n})',
     'pz.accruing':'Đang tích lũy','pz.upto':'tối đa ','pz.share':'chia theo % của quỹ thưởng thực tế','pz.utc':'đặt lại Thứ Hai 00:00 UTC','pz.rank':'','pz.dunit':'ngày',
@@ -843,7 +844,7 @@ const I18N = {
     'jm.s1':'Регистрация в OKX через AYILON','jm.s1d':'Уже зарегистрированы через AYILON? Перейдите к шагу 2.','jm.open':'Регистрация ↗',
     'jm.s2':'Подключите API-ключ «только чтение»','jm.k':'API Key','jm.s':'Secret Key','jm.p':'Passphrase',
     'jm.hint':'OKX → профиль → API → отметьте только право Чтение (Read). Никогда не отмечайте торговлю/вывод. <b>Оставьте список IP пустым</b> (IP нашего сервера не фиксирован, привязка IP блокирует подключение). Passphrase — это фраза, которую вы задали при создании ключа.',
-    'jm.submit':'Подключить и вступить','jm.leave':'Покинуть арену',
+    'jm.submit':'Подключить и вступить','jm.save':'Сохранить','jm.saved':'Сохранено ✓','jm.kconn':'Ключ только для чтения подключён','jm.kchange':'Чтобы сменить, введите новый ключ ниже (необязательно)','jm.keyopt':'Только для смены','jm.leave':'Покинуть арену',
     'am.title':'Нужен вход','am.lead':'Для участия необходимо войти.','am.login':'Войти','am.signup':'Регистрация',
     'lb.noresults':'Ничего не найдено','lb.empty':'Пока нет участников','lb.befirst':'Станьте первым претендентом.','lb.meta':'Сезон {s} · участников: {n}','lb.more':'Показать ещё (+{n})',
     'pz.accruing':'Накапливается','pz.upto':'до ','pz.share':'доля в % от реального призового фонда','pz.utc':'сброс в пн 00:00 UTC','pz.rank':'место','pz.dunit':'д',
@@ -1114,9 +1115,12 @@ async function deviceFp(){
 document.getElementById('jSubmit').onclick=async()=>{
   const msg=document.getElementById('jmMsg');msg.className='msg';msg.textContent='';
   const apiKey=document.getElementById('jKey').value.trim(),apiSecret=document.getElementById('jSecret').value.trim(),apiPassphrase=document.getElementById('jPass').value.trim();
-  if(!apiKey||!apiSecret||!apiPassphrase){msg.className='msg err';msg.textContent=t('jm.allfields');return;}
   let boards=[]; ['bRet','bPro','bVol'].forEach(id=>{const el=document.getElementById(id);if(el&&el.checked)boards.push(...el.dataset.boards.split(','));});
   if(!boards.length){msg.className='msg err';msg.textContent=t('jm.pickone');return;}
+  const joined=!!window._arenaJoined, anyKey=apiKey||apiSecret||apiPassphrase;
+  // Already connected + no new key typed → boards-only update (keep stored key).
+  // Otherwise all three fields are required to connect or change the key.
+  if(!(joined&&!anyKey) && (!apiKey||!apiSecret||!apiPassphrase)){msg.className='msg err';msg.textContent=t('jm.allfields');return;}
   const btn=document.getElementById('jSubmit');btn.disabled=true;btn.textContent='…';
   try{
     const fp=await deviceFp();
@@ -1124,7 +1128,7 @@ document.getElementById('jSubmit').onclick=async()=>{
     const j=await r.json();
     if(j.ok){
       msg.className='msg ok';
-      msg.textContent=t('jm.connected')+(j.referralVerified?t('jm.refok'):t('jm.refno'));
+      msg.textContent=j.updated?t('jm.saved'):(t('jm.connected')+(j.referralVerified?t('jm.refok'):t('jm.refno')));
       document.getElementById('jKey').value='';document.getElementById('jSecret').value='';document.getElementById('jPass').value='';
       setTimeout(()=>{joinModal.classList.remove('open');fetchLB();loadMine();},1800);
     }else{
@@ -1187,8 +1191,20 @@ async function loadMine(){
     const r=await fetch(`${API}/arena/me`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:'{}'});
     const j=await r.json();const bar=document.getElementById('mineBar');
     document.getElementById('jLeaveWrap').hidden=!j.joined;
-    if(!j.ok||!j.joined){bar.classList.remove('show');return;}
+    const ks=document.getElementById('jKeyStatus');
+    if(!j.ok||!j.joined){
+      bar.classList.remove('show'); window._arenaJoined=false;
+      if(ks)ks.style.display='none';
+      ['jKey','jSecret','jPass'].forEach(id=>{const el=document.getElementById(id);if(el)el.placeholder='';});
+      document.getElementById('jSubmit').textContent=I18N[LANG]['jm.submit'];
+      return;
+    }
     bar.classList.add('show');
+    // Already connected → show status, make keys optional (secret is never sent back).
+    window._arenaJoined=true;
+    if(ks){ ks.style.display='block'; ks.innerHTML='✓ '+t('jm.kconn')+(j.uid?(' · UID <b>'+esc(String(j.uid))+'</b>'):'')+'<br><span style="color:var(--mut)">'+t('jm.kchange')+'</span>'; }
+    ['jKey','jSecret','jPass'].forEach(id=>{const el=document.getElementById(id);if(el)el.placeholder='('+t('jm.keyopt')+')';});
+    document.getElementById('jSubmit').textContent=t('jm.save');
     // Reflect saved selections so re-opening shows what you actually chose.
     if(Array.isArray(j.boards)&&j.boards.length){const catmap={bRet:['rw','rm'],bPro:['pw','pm'],bVol:['vw','vm']};Object.entries(catmap).forEach(([id,codes])=>{const el=document.getElementById(id);if(el)el.checked=codes.some(c=>j.boards.includes(c));});}
     if(j.nickname)document.getElementById('jNick').value=j.nickname;

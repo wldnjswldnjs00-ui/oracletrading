@@ -1636,7 +1636,22 @@ async function handleArenaJoin(request, env) {
   const apiSecret = (body.apiSecret || '').trim();
   const apiPass = (body.apiPassphrase || body.apiPass || '').trim();
   const demo = body.demoMode === true;
-  if (!apiKey || !apiSecret || !apiPass) return json({ ok: false, error: 'missing_key' });
+
+  const VALID_BOARDS_J = ['rw', 'rm', 'pm', 'vm', 'pw', 'vw'];
+  let boardsIn = Array.isArray(body.boards) ? body.boards.filter(b => VALID_BOARDS_J.includes(b)) : null;
+  if (!boardsIn || boardsIn.length === 0) boardsIn = [...VALID_BOARDS_J];
+
+  // Already connected + no new key entered → just update the chosen boards and keep
+  // the stored (encrypted) key. Lets users change categories without re-typing keys
+  // (we never send the secret back to the browser, so the fields render empty).
+  if (!apiKey || !apiSecret || !apiPass) {
+    const ex = await env.BOT_DB.prepare('SELECT okx_uid,last_equity,nickname,referral_verified FROM arena_participants WHERE email=?').bind(session.email).first().catch(() => null);
+    if (ex) {
+      await env.BOT_DB.prepare('UPDATE arena_participants SET boards=? WHERE email=?').bind(JSON.stringify(boardsIn), session.email).run();
+      return json({ ok: true, uid: ex.okx_uid, equity: ex.last_equity, referralVerified: ex.referral_verified === 1, boards: boardsIn, nickname: ex.nickname, updated: true });
+    }
+    return json({ ok: false, error: 'missing_key' });
+  }
 
   // Validate the key is real + read it (UID). Surface OKX's real reason so the
   // user can fix it (most common: IP whitelist on the key, wrong passphrase).
@@ -1883,7 +1898,7 @@ async function handleArenaMe(request, env) {
   let boards = []; try { boards = JSON.parse(p.boards || '[]'); } catch (_) {}
   return json({
     ok: true, joined: true, demo: p.demo === 1, referralVerified: p.referral_verified === 1, boards, hasAvatar: !!p.avatar,
-    nickname: p.nickname, equity: p.last_equity, lastUpdate: p.last_update, err: p.err || null, scores: out
+    nickname: p.nickname, uid: p.okx_uid || '', equity: p.last_equity, lastUpdate: p.last_update, err: p.err || null, scores: out
   });
 }
 
