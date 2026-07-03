@@ -106,7 +106,7 @@ const Q=[
  {id:'sns',sec:'x',t:'txt',req:0,L:{en:'Public social handle for a winner feature (optional)',ko:'우승자 소개용 공개 SNS (선택)',zh:'用于展示的公开社媒（可选）',es:'Red social pública (opcional)',vi:'MXH công khai (tùy chọn)',ru:'Публичный профиль (необязательно)'}}
 ];
 
-let lang=localStorage.getItem('ayilon_lang')||(navigator.language||'en').slice(0,2).toLowerCase();
+let lang=localStorage.getItem('ayilon_lang')||'en';
 if(!U[lang]) lang='en';
 let DATA=null;
 

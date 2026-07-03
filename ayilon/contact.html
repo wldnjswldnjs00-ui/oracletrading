@@ -78,7 +78,7 @@ const T = {
   ru:{title:'Контакты',h1:'<b>Свяжитесь</b> с нами.',lead:'Вопросы о турнире, призах, аккаунте или честной игре? Напишите нам, и мы ответим на ваш email.',mail:'Также можно написать напрямую на <b>'+CT+'</b>.',name:'Имя',email:'Ваш email',subject:'Тема',message:'Сообщение',send:'Отправить',sending:'Отправка…',ok:'Сообщение отправлено. Скоро ответим на ваш email.',err:'Не удалось отправить. Попробуйте ещё раз через минуту.',needEmail:'Введите корректный email.',needMsg:'Напишите короткое сообщение.',rate:'Слишком много сообщений. Подождите несколько минут.',back:'← Арена',foot:['О нас','Условия','Конфиденциальность','Контакты']}
 };
 const LANGS=[['en','English'],['ko','한국어'],['zh','中文'],['es','Español'],['vi','Tiếng Việt'],['ru','Русский']];
-let lang = localStorage.getItem('ayilon_lang') || (navigator.language||'en').slice(0,2).toLowerCase();
+let lang = localStorage.getItem('ayilon_lang') || 'en';
 if(!T[lang]) lang='en';
 function apply(){
   const d=T[lang];

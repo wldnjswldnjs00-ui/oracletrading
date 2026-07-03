@@ -279,7 +279,7 @@
   window.renderLegal = function () {
     const page = window.LEGAL_PAGE;
     const data = L[page]; if (!data) return;
-    let lang = localStorage.getItem('ayilon_lang') || (navigator.language || 'en').slice(0, 2).toLowerCase();
+    let lang = localStorage.getItem('ayilon_lang') || 'en';
     if (!data[lang]) lang = 'en';
     const d = data[lang];
     document.title = d.t + (page === 'about' ? '' : ' — AYILON Arena');

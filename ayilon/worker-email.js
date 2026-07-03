@@ -58,6 +58,7 @@ export default {
       if (path === '/arena/set-avatar')  return handleArenaSetAvatar(request, env);
       if (path === '/arena/leave')       return handleArenaLeave(request, env);
       if (path === '/arena/me')          return handleArenaMe(request, env);
+      if (path === '/arena/setlang')     return handleArenaSetLang(request, env);
       if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
       if (path === '/arena/season')      return handleArenaSeason(request, env);
       if (path === '/arena/winners')     return handleArenaWinners(request, env);
@@ -1908,16 +1909,35 @@ async function handleArenaMe(request, env) {
   const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
   await ensureDB(env);
+  const acctUser = await env.USERS_KV.get('user:' + session.email.toLowerCase(), { type: 'json' }).catch(() => null);
+  const acctLang = (acctUser && acctUser.lang) || '';
   const p = await env.BOT_DB.prepare('SELECT * FROM arena_participants WHERE email=?').bind(session.email).first();
-  if (!p) return json({ ok: true, joined: false });
+  if (!p) return json({ ok: true, joined: false, lang: acctLang });
   const scores = (await env.BOT_DB.prepare('SELECT * FROM arena_score WHERE email=?').bind(session.email).all()).results || [];
   const out = {};
   for (const s of scores) out[s.board] = { returnPct: s.return_pct, profit: s.profit, volume: s.volume, equity: s.last_equity, seasonId: s.season_id };
   let boards = []; try { boards = JSON.parse(p.boards || '[]'); } catch (_) {}
   return json({
     ok: true, joined: true, demo: p.demo === 1, referralVerified: p.referral_verified === 1, boards, hasAvatar: !!p.avatar,
-    nickname: p.nickname, uid: p.okx_uid || '', equity: p.last_equity, lastUpdate: p.last_update, err: p.err || null, scores: out
+    nickname: p.nickname, uid: p.okx_uid || '', equity: p.last_equity, lastUpdate: p.last_update, err: p.err || null, scores: out,
+    lang: acctLang
   });
+}
+
+// Persist the UI language on the logged-in account so it follows the user
+// across devices/sessions. Only the 6 supported codes are accepted.
+async function handleArenaSetLang(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const session = await requireSession(body, env, request);
+  if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
+  const lang = String(body.lang || '').slice(0, 2).toLowerCase();
+  if (!['en', 'ko', 'zh', 'es', 'vi', 'ru'].includes(lang)) return json({ ok: false, error: 'bad_lang' }, 400);
+  const key = 'user:' + session.email.toLowerCase();
+  const user = await env.USERS_KV.get(key, { type: 'json' }).catch(() => null);
+  if (!user) return json({ ok: false, error: 'user_not_found' }, 404);
+  user.lang = lang;
+  await env.USERS_KV.put(key, JSON.stringify(user));
+  return json({ ok: true, lang });
 }
 
 // ── Prize pool config (admin-settable; affiliate-auto when creds present) ──
