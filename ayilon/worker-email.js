@@ -1309,10 +1309,17 @@ async function handleAdminAffiliateTest(request, env) {
     const res = await fetch(OKX_BASE + path, { headers: okxHeaders(env.OKX_AFFILIATE_KEY, sign, ts, env.OKX_AFFILIATE_PASS, false) });
     const txt = await res.text();
     let p = null; try { p = JSON.parse(txt); } catch (_) {}
-    const authOk = res.ok && p && p.code === '0';   // creds valid + is an affiliate
-    return json({ ok: authOk, httpStatus: res.status, code: p?.code || null, msg: p?.msg || txt.slice(0, 160),
+    const code = p?.code != null ? String(p.code) : null;
+    const authOk = res.ok && code === '0';   // creds valid + a real invitee returned
+    // Auth-layer failures (bad key / signature / passphrase / timestamp). Anything
+    // else that came back with an OKX code means the keys DID authenticate.
+    const AUTH_ERRS = ['50111', '50113', '50105', '50102', '50103', '50104', '50101', '50100', '50000'];
+    const credsValid = res.status !== 401 && code != null && !AUTH_ERRS.includes(code);
+    // 50014 = "uid is required": creds are fine, we just had no participant UID to test with.
+    const noUidYet = !uid || code === '50014';
+    return json({ ok: authOk, credsValid, noUidYet, httpStatus: res.status, code, msg: p?.msg || txt.slice(0, 160),
       dataCount: Array.isArray(p?.data) ? p.data.length : 0, testedUid: uid || null });
-  } catch (e) { return json({ ok: false, error: String(e.message).slice(0, 200) }); }
+  } catch (e) { return json({ ok: false, credsValid: false, error: String(e.message).slice(0, 200) }); }
 }
 
 // Public: Hall of Fame (recent frozen winners) + champion (rank-1) counts.
