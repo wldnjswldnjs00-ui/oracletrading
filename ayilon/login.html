@@ -298,6 +298,28 @@
       goAfterLogin();
     }
 
+    // Admin domain disguise: show a plain "ERROR 777" black screen instead of a
+    // login page. Clicking the MIDDLE 7 reveals the real login form (only the
+    // operator knows the tap target). Public domain is unaffected.
+    (function(){
+      if(!/(^|\.)ayiloncompany\.xyz$/.test(location.hostname)) return;
+      if(localStorage.getItem('ayilon_logged_in')==='true' && localStorage.getItem('ayilon_session_token')) return;
+      function build(){
+        try{ document.title='Error 777'; }catch(e){}
+        var o=document.createElement('div');
+        o.id='err777';
+        o.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#000;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,Menlo,Consolas,monospace;-webkit-user-select:none;user-select:none';
+        o.innerHTML='<div style="text-align:center;line-height:1.5">'
+          +'<div style="font-size:13px;letter-spacing:.34em;color:#2b2b2b">ERROR</div>'
+          +'<div style="font-size:66px;font-weight:700;color:#454545;letter-spacing:.06em;margin-top:4px">7<span id="k7" style="display:inline-block;padding:0 2px">7</span>7</div>'
+          +'<div style="font-size:12px;color:#232323;margin-top:8px">the requested resource is unavailable</div></div>';
+        (document.body||document.documentElement).appendChild(o);
+        var k7=document.getElementById('k7');
+        if(k7) k7.addEventListener('click',function(ev){ ev.stopPropagation(); o.remove(); try{document.title='Sign In';}catch(e){} });
+      }
+      if(document.body) build(); else document.addEventListener('DOMContentLoaded',build);
+    })();
+
     function togglePassword() {
       var el = document.getElementById('loginPassword');
       var btn = el.nextElementSibling;
