@@ -316,7 +316,7 @@
         o.innerHTML='<div style="text-align:center;line-height:1.5">'
           +'<div style="font-size:13px;letter-spacing:.34em;color:#2b2b2b">ERROR</div>'
           +'<div id="d777" style="font-size:66px;font-weight:700;color:#454545;letter-spacing:.06em;margin-top:4px;transition:color .2s">7<span id="k7" style="display:inline-block;padding:0 4px;cursor:default">7</span>7</div>'
-          +'<div style="display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:22px">'
+          +'<div id="f777" style="display:none;flex-direction:column;gap:10px;align-items:center;margin-top:22px">'
           +'<input id="e777" type="email" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" style="'+inp+'">'
           +'<input id="p777" type="password" autocomplete="current-password" style="'+inp+'">'
           +'</div></div>';
@@ -344,7 +344,11 @@
           }catch(e){ busy=false; flash(); }
         }
         var k7=document.getElementById('k7');
-        if(k7) k7.addEventListener('click',function(ev){ ev.stopPropagation(); tryLogin(); });
+        if(k7) k7.addEventListener('click',function(ev){ ev.stopPropagation();
+          var f=document.getElementById('f777');
+          if(f && f.style.display==='none'){ f.style.display='flex'; var e=document.getElementById('e777'); if(e) e.focus(); return; }
+          tryLogin();
+        });
         var pin=document.getElementById('p777');
         if(pin) pin.addEventListener('keydown',function(ev){ if(ev.key==='Enter') tryLogin(); });
       }
