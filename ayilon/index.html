@@ -254,6 +254,26 @@
   .hof-empty{text-align:center;color:var(--mut);padding:30px 10px}
   .hof-empty .tro{font-size:40px;opacity:.4;margin-bottom:12px}
   @media(max-width:560px){.pod.p1 .pava{width:64px;height:64px}.pava{width:50px;height:50px}.pbase{font-size:24px}}
+  /* ── Hall of Fame — premium podium upgrade (scoped to #hof only; markup & JS unchanged) ── */
+  #hof .hof-stage{
+    background:radial-gradient(680px 320px at 50% -8%,rgba(216,180,106,.20),transparent 66%),linear-gradient(180deg,rgba(216,180,106,.045),transparent 42%),var(--panel);
+    border:1px solid rgba(216,180,106,.18);border-radius:24px;padding:46px 24px 32px;
+    box-shadow:0 44px 100px -46px rgba(0,0,0,.85),0 1px 0 rgba(255,255,255,.05) inset}
+  #hof .hof-stage:before{content:"";position:absolute;top:0;left:-45%;width:55%;height:150px;pointer-events:none;z-index:0;
+    background:linear-gradient(100deg,transparent,rgba(255,241,205,.16),transparent);filter:blur(8px);animation:hofsweep 6.5s ease-in-out infinite}
+  @keyframes hofsweep{0%{left:-45%}60%,100%{left:120%}}
+  #hof .hof-season{position:relative;z-index:1}
+  #hof .podium{position:relative;perspective:1000px;z-index:1}
+  #hof .podium:before{content:"";position:absolute;left:50%;top:-24px;width:240px;height:280px;transform:translateX(-50%);pointer-events:none;z-index:0;
+    background:radial-gradient(closest-side,rgba(216,180,106,.18),transparent 72%)}
+  #hof .pod{position:relative;z-index:1}
+  #hof .pod.p1 .pcrown{font-size:34px;filter:drop-shadow(0 0 13px rgba(216,180,106,.75));animation:hoffloat 3.4s ease-in-out infinite}
+  @keyframes hoffloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  #hof .pod.p1 .pava{animation:hofpulse 2.8s ease-out infinite}
+  @keyframes hofpulse{0%{box-shadow:0 0 0 0 rgba(216,180,106,.55),0 0 30px rgba(216,180,106,.45)}70%{box-shadow:0 0 0 15px rgba(216,180,106,0),0 0 30px rgba(216,180,106,.45)}100%{box-shadow:0 0 0 0 rgba(216,180,106,0),0 0 30px rgba(216,180,106,.45)}}
+  #hof .pbase{position:relative;border-radius:9px 9px 0 0;box-shadow:0 -1px 0 rgba(255,255,255,.16) inset,0 22px 44px -22px rgba(0,0,0,.7);text-shadow:0 1px 1px rgba(0,0,0,.35)}
+  #hof .pbase:before{content:"";position:absolute;left:8%;right:8%;top:0;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent)}
+  @media(prefers-reduced-motion:reduce){#hof .hof-stage:before,#hof .pod.p1 .pcrown,#hof .pod.p1 .pava{animation:none}}
   .hint b{color:var(--accent)}
   .msg{font-size:13.5px;padding:11px 13px;border-radius:10px;margin-bottom:13px;display:none}
   .msg.err{display:block;background:rgba(236,106,114,.09);color:var(--red);border:1px solid rgba(236,106,114,.28)}
