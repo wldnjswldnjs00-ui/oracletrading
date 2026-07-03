@@ -19,14 +19,10 @@
 <meta name="twitter:description" content="A global real-money trading league. Free entry, read-only, prizes for the top.">
 <style>
   :root{
-    --bg:#08090c;
-    --panel:rgba(18,20,26,.85); --panel2:rgba(12,13,18,.80); --panel-solid:#111319;
-    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.15);
-    --txt:#f1f2f4; --mut:#8a8b95; --dim:#5a5b66;
-    --accent:#34d39a; --accent2:#2ee6c0; --accent-d:#1f9e74;
-    --violet:#7c5cff; --cyan:#37b7ff;
-    --gold:#e2c079; --silver:#c4c9d2; --bronze:#c2895a; --red:#ec6a72;
-    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace;
+    --bg:#0a0a0c; --panel:#121216; --panel2:#0e0e12; --line:#22232b; --line2:#2c2d37;
+    --txt:#f1f2f4; --mut:#8a8b95; --dim:#5d5e69;
+    --accent:#34d39a; --accent-d:#1f9e74;
+    --gold:#d8b46a; --silver:#c4c9d2; --bronze:#c2895a; --red:#ec6a72;
     --r:16px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -316,75 +312,9 @@
     -webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 4px 18px rgba(216,180,106,.28));animation:vshim 2.8s linear infinite}
   @keyframes vshim{to{background-position:-220% 0}}
-
-  /* ============================================================
-     Resend-style visual redesign layer (design only — no markup/logic changes).
-     Everything below restyles existing elements; class names & JS are untouched.
-     ============================================================ */
-  body{background:var(--bg)}
-  /* ambient aurora + fine grain (fixed atmosphere behind all content) */
-  .fx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-  .fx .orb{position:absolute;border-radius:50%;filter:blur(115px);opacity:.5;mix-blend-mode:screen;will-change:transform}
-  .fx .o1{width:640px;height:640px;left:2%;top:-260px;background:radial-gradient(circle,rgba(52,211,154,.9),transparent 60%);animation:fxd1 20s ease-in-out infinite}
-  .fx .o2{width:600px;height:600px;right:-2%;top:-230px;background:radial-gradient(circle,rgba(124,92,255,.8),transparent 60%);animation:fxd2 24s ease-in-out infinite}
-  .fx .o3{width:560px;height:560px;left:34%;top:-120px;background:radial-gradient(circle,rgba(55,183,255,.6),transparent 60%);animation:fxd3 28s ease-in-out infinite}
-  @keyframes fxd1{0%,100%{transform:translate(0,0)}50%{transform:translate(50px,40px)}}
-  @keyframes fxd2{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,34px)}}
-  @keyframes fxd3{0%,100%{transform:translate(0,0)}50%{transform:translate(24px,-30px)}}
-  .fx .grain{position:absolute;inset:0;opacity:.045;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-  /* lift real content above the atmosphere */
-  header,section,footer{position:relative;z-index:1}
-
-  /* glassy nav */
-  nav{background:linear-gradient(to bottom,rgba(8,9,12,.82),rgba(8,9,12,.42));border-bottom:1px solid rgba(255,255,255,.06);backdrop-filter:saturate(160%) blur(16px)}
-
-  /* buttons — gradient primary with glow, glass ghost */
-  .btn-primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#04140d;
-    box-shadow:0 8px 24px -6px rgba(52,211,154,.5),inset 0 1px 0 rgba(255,255,255,.35)}
-  .btn-primary:hover{background:linear-gradient(135deg,#4ff0cf,#3ee0a8);transform:translateY(-1px);
-    box-shadow:0 12px 30px -6px rgba(52,211,154,.6),inset 0 1px 0 rgba(255,255,255,.4)}
-  .btn-ghost{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}
-  .btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2)}
-
-  /* hero — mono pill eyebrow, gradient display headline */
-  .hero:before{background:radial-gradient(760px 420px at 50% -14%,rgba(52,211,154,.14),transparent 66%)}
-  .hero .kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;color:var(--accent2);
-    border:1px solid rgba(52,211,154,.28);background:rgba(52,211,154,.06);border-radius:999px;padding:7px 15px 7px 13px}
-  .hero .kicker:before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);
-    box-shadow:0 0 10px var(--accent);margin-right:9px;vertical-align:middle}
-  .hero h1{background:linear-gradient(180deg,#fff 34%,#b7bac2);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .hero h1 b{background:linear-gradient(120deg,var(--accent2),var(--accent) 55%,#8fe9cf);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .meta{font-family:var(--mono);letter-spacing:.02em}
-
-  /* glass surfaces — translucent panels sit over the aurora */
-  .lb,.card,.mine,.prize,.cat-hero,.hof-stage,.pz,.step,.hint{backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%)}
-  .lb,.card,.mine,.prize,.cat-hero{box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 30px 60px -42px rgba(0,0,0,.85)}
-  .card:hover{border-color:rgba(255,255,255,.16);transition:border-color .18s}
-  .card .ico{background:rgba(52,211,154,.08);border-color:rgba(52,211,154,.25)}
-
-  /* section eyebrow feel for headings */
-  .sec-h h2{background:linear-gradient(180deg,#fff,#c3c6cd);-webkit-background-clip:text;background-clip:text;color:transparent}
-
-  /* leaderboard — medal rank chips + gradient avatar */
-  .lb-r .rk{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;font-size:13px;
-    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--mut)}
-  .lb-r .rk.r1{background:linear-gradient(135deg,#f4dd8a,var(--gold));color:#04140d;border:none}
-  .lb-r .rk.r2{background:linear-gradient(135deg,#eef1f6,#b8bec8);color:#0c0d10;border:none}
-  .lb-r .rk.r3{background:linear-gradient(135deg,#e6b487,#c2895a);color:#1a0f07;border:none}
-  .lbav.ini{background:linear-gradient(135deg,var(--accent2),var(--violet));color:#04140d;font-weight:700}
-  .lb-r.me{background:rgba(52,211,154,.07)}
-  .seg button.on{background:rgba(255,255,255,.09);color:var(--txt)}
-
-  /* modal sheet needs solid ground for legibility */
-  .sheet{background:rgba(15,16,22,.94);border:1px solid rgba(255,255,255,.11);backdrop-filter:blur(20px)}
-
-  /* footer hairline */
-  footer{border-top:1px solid rgba(255,255,255,.06)}
 </style>
 </head>
 <body>
-<div class="fx" aria-hidden="true"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="grain"></div></div>
 <div id="splash">
   <div class="slogo"><svg class="ayl" viewBox="0 0 404 72" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="AYILON" style="height:1em;width:auto;display:inline-block;vertical-align:-.12em"><path d="M0 64L23 8L46 64"/><path d="M80 8L103 36L126 8M103 36L103 64"/><path d="M162 8L162 64"/><path d="M198 8L198 64L232 64"/><circle cx="294" cy="36" r="28"/><path d="M356 64L356 8L402 64L402 8"/></svg></div>
   <svg class="schart" viewBox="0 0 340 130">
