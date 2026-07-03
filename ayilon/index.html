@@ -277,18 +277,13 @@
   #splash .slogo{font-weight:700;letter-spacing:.28em;font-size:22px;color:var(--txt)}
   #splash .slogo i{font-style:normal;color:var(--accent)}
   #splash .schart{width:min(340px,74vw);height:130px;overflow:visible}
-  #splash .sar{fill:url(#lgSplash);opacity:0;animation:sfill 2s ease-out .35s forwards}
-  #splash .sln{fill:none;stroke:#34d39a;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 4px 12px rgba(52,211,154,.55));stroke-dasharray:340;stroke-dashoffset:340;animation:sdraw 1.5s cubic-bezier(.4,0,.2,1) .15s forwards}
-  #splash .sdot{fill:#7ffccd;filter:drop-shadow(0 0 8px #34d39a);opacity:0;animation:sdot .5s ease .95s forwards,spulse 1.1s ease 1.45s infinite}
-  #splash .spct{font-variant-numeric:tabular-nums;font-weight:750;font-size:15px;fill:#34d39a;opacity:0;animation:sfade .4s ease 1s forwards}
-  @keyframes sdraw{to{stroke-dashoffset:0}}
-  @keyframes sfill{to{opacity:.85}}
-  @keyframes sdot{to{opacity:1}}
-  @keyframes sfade{to{opacity:1}}
-  @keyframes spulse{0%,100%{r:4.5}50%{r:6.5}}
-  #splash .sbar{width:min(300px,64vw);height:3px;border-radius:3px;background:var(--line);overflow:hidden;position:relative}
-  #splash .sbar::after{content:'';position:absolute;left:-40%;top:0;height:100%;width:40%;border-radius:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:sslide 1.1s ease-in-out infinite}
-  @keyframes sslide{to{left:100%}}
+  /* line perpetually draws upward, holds at the peak, fades, repeats — contained in frame */
+  #splash .sar{fill:url(#lgSplash);opacity:0;animation:sfill 3.2s ease-in-out infinite}
+  #splash .sln{fill:none;stroke:#34d39a;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 4px 12px rgba(52,211,154,.55));stroke-dasharray:340;stroke-dashoffset:340;animation:sdraw 3.2s cubic-bezier(.45,0,.25,1) infinite}
+  #splash .sdot{fill:#7ffccd;filter:drop-shadow(0 0 8px #34d39a);opacity:0;animation:sdot 3.2s ease-in-out infinite}
+  @keyframes sdraw{0%{stroke-dashoffset:340;opacity:0}8%{opacity:1}55%{stroke-dashoffset:0;opacity:1}82%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+  @keyframes sfill{0%,18%{opacity:0}55%{opacity:.85}82%{opacity:.85}100%{opacity:0}}
+  @keyframes sdot{0%,46%{opacity:0}56%{opacity:1}82%{opacity:1}100%{opacity:0}}
   /* prize vault — money-rain accrual (above leaderboard) */
   #poolVault{padding:40px 0 10px}
   .vault{position:relative;overflow:hidden;min-height:230px;display:flex;align-items:center;justify-content:center;text-align:center;
@@ -327,9 +322,7 @@
     <path class="sar" d="M6,104 L46,96 L86,101 L126,80 L166,88 L206,58 L246,66 L286,34 L326,12 L326,128 L6,128 Z"/>
     <polyline class="sln" points="6,104 46,96 86,101 126,80 166,88 206,58 246,66 286,34 326,12"/>
     <circle class="sdot" cx="326" cy="12" r="4.5"/>
-    <text class="spct" x="300" y="8">+</text>
   </svg>
-  <div class="sbar"></div>
 </div>
 <nav>
   <div class="wrap">
