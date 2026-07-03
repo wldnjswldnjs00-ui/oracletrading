@@ -1683,7 +1683,25 @@ async function handleArenaJoin(request, env) {
   // Mirror UID onto the user record + try affiliate auto-verify (reuses existing engine).
   try { await captureUidAndVerifyReferral(env, session.email, { apiKey, apiSecret, apiPassphrase: apiPass, demoMode: demo }); } catch (_) {}
   let freshUser = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || user;
-  const refVerified = !!(freshUser.referral && freshUser.referral.verified) || session.email.toLowerCase() === ADMIN_EMAIL_CONST ? 1 : 0;
+  let refVerified = (!!(freshUser.referral && freshUser.referral.verified) || session.email.toLowerCase() === ADMIN_EMAIL_CONST) ? 1 : 0;
+
+  // Referral-only gate: block connecting an OKX account that is NOT under the
+  // AYILON referral — but ONLY when the affiliate API definitively confirms it
+  // (code 0, empty invitee list). On any API error / not-yet-indexed / missing
+  // creds we allow the join and verify later, so legit users are never locked
+  // out by timing. Admin is exempt. Toggle with config.enforceReferral.
+  const affActive = !!(env.OKX_AFFILIATE_KEY && env.OKX_AFFILIATE_SECRET && env.OKX_AFFILIATE_PASS);
+  if (joinCfg.enforceReferral !== false && affActive && !refVerified && session.email.toLowerCase() !== ADMIN_EMAIL_CONST) {
+    let notReferred = false;
+    try {
+      const inv = await okxGet(env.OKX_AFFILIATE_KEY, env.OKX_AFFILIATE_SECRET, env.OKX_AFFILIATE_PASS, `/api/v5/affiliate/invitee/detail?uid=${uid}`, false);
+      if (inv?.code === '0') {
+        if (Array.isArray(inv.data) && inv.data.length > 0) refVerified = 1;   // is an invitee after all
+        else notReferred = true;                                               // confirmed NOT referred
+      }
+    } catch (_) {}
+    if (notReferred) return json({ ok: false, error: 'not_referred', uid: String(uid), ref: 'https://www.okx.com/join/AYILON' });
+  }
   // Default nickname = unique "AYILON User #####" if the user never set one.
   let nickname = freshUser.username;
   if (!nickname) {
@@ -1919,8 +1937,9 @@ const ARENA_DEFAULT_CONFIG = {
                             // stops $100 max-leverage all-ins from farming the % board
   minTrades: 3,
   minTradeDays: 0,          // distinct active trading days required for prizes (0 = off)
-  minVolume: 1000           // min season trading volume ($) to be prize-eligible — ensures
+  minVolume: 1000,          // min season trading volume ($) to be prize-eligible — ensures
                             // each winner actually traded (generated commission), not parked cash
+  enforceReferral: true     // block connecting an OKX account not under AYILON referral
 };
 async function getArenaConfig(env) {
   try {
@@ -2012,6 +2031,7 @@ async function handleAdminArenaConfig(request, env) {
   if (body.minBalance != null)    next.minBalance = parseFloat(body.minBalance);
   if (body.returnMinBalance != null) next.returnMinBalance = Math.max(0, parseFloat(body.returnMinBalance) || 0);
   if (body.minVolume != null)     next.minVolume = Math.max(0, parseFloat(body.minVolume) || 0);
+  if (body.enforceReferral != null) next.enforceReferral = !!body.enforceReferral;
   if (body.minTrades != null)     next.minTrades = parseInt(body.minTrades);
   if (body.minTradeDays != null)  next.minTradeDays = Math.max(0, parseInt(body.minTradeDays) || 0);
   await env.USERS_KV.put('arena:config', JSON.stringify(next));

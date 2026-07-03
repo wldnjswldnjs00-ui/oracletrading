@@ -129,6 +129,7 @@
       <div><label>수익률 부문 최소 잔고 ($) — 소액 몰빵 방지 (권장 500+)</label><input id="cfgRetMinBal" type="number" min="0" placeholder="500"></div>
       <div><label>상금 자격 최소 거래량 ($) — 무거래 무임승차 방지 (권장 1,000)</label><input id="cfgMinVol" type="number" min="0" placeholder="1000"></div>
       <div><label>상금 자격 최소 거래일 수 (0 = 없음) — 단발성 헤지 방지</label><input id="cfgMinDays" type="number" min="0" placeholder="0"></div>
+      <div style="display:flex;align-items:center;gap:8px;align-self:end;padding-bottom:8px"><input type="checkbox" id="cfgEnforceRef" style="width:auto"><label for="cfgEnforceRef" style="margin:0;cursor:pointer">추천 UID만 연결 허용 — 비추천 계정은 연결 자체를 차단</label></div>
     </div>
     <div class="poolview">
       <div style="font-size:12px;color:var(--mut);margin-bottom:4px">현재 상금 풀 (실시간 계산)</div>
@@ -276,6 +277,7 @@ async function loadConfig(){
   document.getElementById('cfgRetMinBal').value=cfg.returnMinBalance!=null?cfg.returnMinBalance:500;
   document.getElementById('cfgMinVol').value=cfg.minVolume!=null?cfg.minVolume:1000;
   document.getElementById('cfgMinDays').value=cfg.minTradeDays!=null?cfg.minTradeDays:0;
+  document.getElementById('cfgEnforceRef').checked=cfg.enforceReferral!==false;
   const auto=document.getElementById('cfgAutoAff'); auto.checked=!!cfg.autoAffiliate;
   renderAffStatus();
   document.getElementById('cfgCommTotal').readOnly=(affReady&&cfg.autoAffiliate);
@@ -332,7 +334,7 @@ function computePool(){
 }
 async function saveConfig(){
   const m=document.getElementById('cfgMsg');m.style.color='var(--mut)';m.textContent='저장 중…';
-  const body={poolMode:cfg.poolMode||'commission',minBalance:parseFloat(document.getElementById('cfgMinBal').value)||0,returnMinBalance:parseFloat(document.getElementById('cfgRetMinBal').value)||0,minVolume:parseFloat(document.getElementById('cfgMinVol').value)||0,minTradeDays:parseInt(document.getElementById('cfgMinDays').value)||0,autoAffiliate:document.getElementById('cfgAutoAff').checked};
+  const body={poolMode:cfg.poolMode||'commission',minBalance:parseFloat(document.getElementById('cfgMinBal').value)||0,returnMinBalance:parseFloat(document.getElementById('cfgRetMinBal').value)||0,minVolume:parseFloat(document.getElementById('cfgMinVol').value)||0,enforceReferral:document.getElementById('cfgEnforceRef').checked,minTradeDays:parseInt(document.getElementById('cfgMinDays').value)||0,autoAffiliate:document.getElementById('cfgAutoAff').checked};
   if(body.poolMode==='commission'){ body.commissionPct=parseFloat(document.getElementById('cfgCommPct').value)||0; if(!(affReady&&body.autoAffiliate)) body.commissionTotal=parseFloat(document.getElementById('cfgCommTotal').value)||0; }
   else { body.manualPool={weekly:parseFloat(document.getElementById('cfgWeekly').value)||0,monthly:parseFloat(document.getElementById('cfgMonthly').value)||0}; }
   const r=await post('/admin/arena-config',body);
