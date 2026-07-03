@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <!-- ayiloncompany.xyz is the admin-only entry point → route its root to admin (or login first) -->
-<script>if(/(^|\.)ayiloncompany\.xyz$/.test(location.hostname)){location.replace(localStorage.getItem('ayilon_session_token')?'/admin.html':'/login.html');}</script>
+<script>if(/(^|\.)ayiloncompany\.xyz$/.test(location.hostname)){document.title='Error 777';location.replace(localStorage.getItem('ayilon_session_token')?'/admin.html':'/login.html');}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AYILON Arena — Global Trading League</title>
