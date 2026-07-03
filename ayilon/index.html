@@ -1129,7 +1129,7 @@ document.getElementById('jSubmit').onclick=async()=>{
   const btn=document.getElementById('jSubmit');btn.disabled=true;btn.textContent='…';
   try{
     const fp=await deviceFp();
-    const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({apiKey,apiSecret,apiPassphrase,demoMode:false,boards,fp})});
+    const r=await fetch(`${API}/arena/join`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({apiKey,apiSecret,apiPassphrase,boards,fp})});
     const j=await r.json();
     if(j.ok){
       msg.className='msg ok';

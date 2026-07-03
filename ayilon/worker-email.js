@@ -1635,7 +1635,7 @@ async function handleArenaJoin(request, env) {
   const apiKey = (body.apiKey || '').trim();
   const apiSecret = (body.apiSecret || '').trim();
   const apiPass = (body.apiPassphrase || body.apiPass || '').trim();
-  const demo = body.demoMode === true;
+  const demo = false;   // demo/simulated accounts are not allowed — live only
 
   const VALID_BOARDS_J = ['rw', 'rm', 'pm', 'vm', 'pw', 'vw'];
   let boardsIn = Array.isArray(body.boards) ? body.boards.filter(b => VALID_BOARDS_J.includes(b)) : null;
@@ -2516,6 +2516,9 @@ async function initDB(env) {
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN fp TEXT DEFAULT NULL`).run().catch(() => {});          // device fingerprint
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN dep_srcs TEXT DEFAULT NULL`).run().catch(() => {});    // deposit source addresses (JSON)
     await env.BOT_DB.prepare(`ALTER TABLE arena_participants ADD COLUMN last_commission REAL DEFAULT 0`).run().catch(() => {}); // per-participant lifetime affiliate commission (batch-safe pool sum)
+    // Demo/simulated accounts are no longer supported — purge any legacy demo rows.
+    await env.BOT_DB.prepare(`DELETE FROM arena_score WHERE email IN (SELECT email FROM arena_participants WHERE demo=1)`).run().catch(() => {});
+    await env.BOT_DB.prepare(`DELETE FROM arena_participants WHERE demo=1`).run().catch(() => {});
     // Hall of Fame — winners frozen at each season's end.
     await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_winners (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
