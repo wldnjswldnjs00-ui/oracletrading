@@ -2079,7 +2079,7 @@ async function buildArenaSnapshot(env) {
   const snap = { ok: true, updatedAt: Date.now(), seasonIds, boards,
     season: sp.season, poolMode: sp.poolMode, commissionPct: sp.commissionPct, commissionTotal: sp.commissionTotal,
     minBalance: sp.minBalance, returnMinBalance: sp.returnMinBalance, minTrades: sp.minTrades };
-  try { await env.USERS_KV.put('arena:snapshot', JSON.stringify(snap)); } catch (_) {}
+  try { await env.BOT_DB.prepare('INSERT OR REPLACE INTO arena_cache(k,v,t) VALUES(?,?,?)').bind('snapshot', JSON.stringify(snap), Date.now()).run(); } catch (_) {}
   return snap;
 }
 async function handleArenaLive(request, env) {
@@ -2087,7 +2087,9 @@ async function handleArenaLive(request, env) {
   const cacheKey = new Request('https://ayilon.internal/arena/live', { method: 'GET' });
   const hit = await cache.match(cacheKey).catch(() => null);
   if (hit) return hit;
-  let snap = await env.USERS_KV.get('arena:snapshot', { type: 'json' }).catch(() => null);
+  await ensureDB(env);
+  let snap = null;
+  try { const row = await env.BOT_DB.prepare('SELECT v FROM arena_cache WHERE k=?').bind('snapshot').first(); if (row && row.v) snap = JSON.parse(row.v); } catch (_) {}
   if (!snap) { try { snap = await buildArenaSnapshot(env); } catch (_) { snap = { ok: true, boards: {}, season: {} }; } }
   const resp = new Response(JSON.stringify(snap), { headers: {
     'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=20'
@@ -2655,6 +2657,14 @@ async function initDB(env) {
       status TEXT DEFAULT 'new',
       replied_at INTEGER DEFAULT 0,
       reply TEXT DEFAULT ''
+    )`).run();
+
+    // Small key/value cache in D1 (used for the precomputed leaderboard snapshot).
+    // D1 gives ~100k writes/day free vs KV's 1k/day, so a per-minute cron write is safe.
+    await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS arena_cache (
+      k TEXT PRIMARY KEY,
+      v TEXT NOT NULL,
+      t INTEGER DEFAULT 0
     )`).run();
 
     _dbReady = true;
