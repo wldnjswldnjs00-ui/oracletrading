@@ -1240,7 +1240,7 @@ async function arenaDeclareWinners(env, now) {
     try { already = (await env.BOT_DB.prepare('SELECT COUNT(*) c FROM arena_winners WHERE season_id=? AND metric=? AND board=?').bind(prev, j.metric, j.board).first())?.c || 0; } catch (_) {}
     if (!already) {
       let rows = [];
-      try { rows = (await env.BOT_DB.prepare('SELECT email,return_pct,profit,volume,start_equity,trade_days FROM arena_score WHERE board=? AND season_id=?').bind(j.board, prev).all()).results || []; } catch (_) {}
+      try { rows = (await env.BOT_DB.prepare('SELECT email,return_pct,profit,volume,start_equity,trade_days,max_dd FROM arena_score WHERE board=? AND season_id=?').bind(j.board, prev).all()).results || []; } catch (_) {}
       // Prize-eligible only: opted-in + AYILON-referred + started the season with ≥ min
       // balance + traded on at least the required number of distinct days (anti-hedge).
       const minDays = parseInt(cfg.minTradeDays || 0);
@@ -1248,7 +1248,9 @@ async function arenaDeclareWinners(env, now) {
       // Return board requires a higher starting balance (anti small-account all-in).
       const effMin = j.metric === 'return' ? Math.max(minBal, parseFloat(cfg.returnMinBalance || 0)) : minBal;
       rows = rows.filter(r => pmap[r.email] && !pmap[r.email].demo && pmap[r.email].boards.includes(j.opt) && pmap[r.email].ref && (r[j.sort] || 0) !== 0 && (r.start_equity || 0) >= effMin && (r.trade_days || 0) >= minDays && (r.volume || 0) >= minVol);
-      rows.sort((a, b) => (b[j.sort] || 0) - (a[j.sort] || 0));
+      // Return winners are ranked risk-adjusted (same as the live board); profit/volume raw.
+      const winKey = j.metric === 'return' ? (r => arenaRiskAdj(r)) : (r => r[j.sort] || 0);
+      rows.sort((a, b) => winKey(b) - winKey(a));
       const catPool = boardPoolOf(j.board) / ((cfg.boards[j.board] || ['return']).length || 1);
       const rankSplit = cfg.split[j.board] || [];
       for (let i = 0; i < Math.min(j.topN, rows.length); i++) {
@@ -1588,28 +1590,32 @@ async function arenaScore(env) {
         const nTd = bump ? (row.trade_days || 0) + 1 : (row ? row.trade_days || 0 : 0);
         const nLtd = bump ? today : (row ? row.last_trade_date || '' : '');
         if (!row || row.season_id !== sid) {
-          // New season → full reset, baseline at current equity.
+          // New season → full reset, baseline at current equity (peak=eq, drawdown=0).
           await env.BOT_DB.prepare(
-            `INSERT INTO arena_score(email,board,season_id,start_equity,deposits,withdrawals,last_equity,volume,return_pct,profit,last_update,trade_days,last_trade_date)
-             VALUES(?,?,?,?,0,0,?,0,0,0,?,?,?)
+            `INSERT INTO arena_score(email,board,season_id,start_equity,deposits,withdrawals,last_equity,volume,return_pct,profit,last_update,trade_days,last_trade_date,peak_equity,max_dd)
+             VALUES(?,?,?,?,0,0,?,0,0,0,?,?,?,?,0)
              ON CONFLICT(email,board) DO UPDATE SET season_id=excluded.season_id,start_equity=excluded.start_equity,
                deposits=0,withdrawals=0,last_equity=excluded.last_equity,volume=0,return_pct=0,profit=0,last_update=excluded.last_update,
-               trade_days=excluded.trade_days,last_trade_date=excluded.last_trade_date`
-          ).bind(p.email, board, sid, eq, eq, nowTs, activeToday ? 1 : 0, activeToday ? today : '').run();
+               trade_days=excluded.trade_days,last_trade_date=excluded.last_trade_date,peak_equity=excluded.peak_equity,max_dd=0`
+          ).bind(p.email, board, sid, eq, eq, nowTs, activeToday ? 1 : 0, activeToday ? today : '', eq).run();
         } else if (flowDetected) {
-          // Cash moved in/out → re-baseline equity; performance resets, not inflated. Volume is kept.
+          // Cash moved in/out → re-baseline equity + reset drawdown; performance resets, not inflated. Volume is kept.
           await env.BOT_DB.prepare(
-            'UPDATE arena_score SET start_equity=?,last_equity=?,return_pct=0,profit=0,volume=?,last_update=?,trade_days=?,last_trade_date=? WHERE email=? AND board=?'
-          ).bind(eq, eq, (row.volume || 0) + volDelta, nowTs, nTd, nLtd, p.email, board).run();
+            'UPDATE arena_score SET start_equity=?,last_equity=?,return_pct=0,profit=0,volume=?,last_update=?,trade_days=?,last_trade_date=?,peak_equity=?,max_dd=0 WHERE email=? AND board=?'
+          ).bind(eq, eq, (row.volume || 0) + volDelta, nowTs, nTd, nLtd, eq, p.email, board).run();
         } else {
           const start = row.start_equity || 0;
           // Empty/dust accounts (under $1) always score 0 — no meaningful % to report.
           const meaningful = start >= 1 && eq >= 1;
           const profit = meaningful ? eq - start : 0;
           const ret = meaningful ? profit / start : 0;
+          // Track season peak + worst peak-to-trough drawdown (for risk-adjusted ranking).
+          const peak = Math.max(row.peak_equity || start || eq, eq);
+          const dd = peak > 0 ? Math.max(0, (peak - eq) / peak) : 0;
+          const maxDd = Math.max(row.max_dd || 0, dd);
           await env.BOT_DB.prepare(
-            'UPDATE arena_score SET last_equity=?,volume=?,return_pct=?,profit=?,last_update=?,trade_days=?,last_trade_date=? WHERE email=? AND board=?'
-          ).bind(eq, (row.volume || 0) + volDelta, ret, profit, nowTs, nTd, nLtd, p.email, board).run();
+            'UPDATE arena_score SET last_equity=?,volume=?,return_pct=?,profit=?,last_update=?,trade_days=?,last_trade_date=?,peak_equity=?,max_dd=? WHERE email=? AND board=?'
+          ).bind(eq, (row.volume || 0) + volDelta, ret, profit, nowTs, nTd, nLtd, peak, maxDd, p.email, board).run();
         }
       }
       const depSrcs = JSON.stringify(flows.froms || []);
@@ -1878,7 +1884,7 @@ async function handleArenaLeaderboard(request, env) {
   let rows = [];
   try {
     rows = (await env.BOT_DB.prepare(
-      `SELECT s.email,s.return_pct,s.profit,s.volume,s.last_equity,s.start_equity,s.last_update,s.trade_days,
+      `SELECT s.email,s.return_pct,s.profit,s.volume,s.last_equity,s.start_equity,s.last_update,s.trade_days,s.max_dd,
               p.nickname,p.country,p.referral_verified,p.boards,(p.avatar IS NOT NULL) AS has_avatar
        FROM arena_score s JOIN arena_participants p ON p.email=s.email
        WHERE s.board=? AND s.season_id=? AND p.demo=0`
@@ -1893,7 +1899,8 @@ async function handleArenaLeaderboard(request, env) {
   // The return (%) board needs a higher balance floor to be prize-eligible.
   const effMin = metric === 'return' ? Math.max(minBal, parseFloat(cfg.returnMinBalance || 0)) : minBal;
   const sortKey = metric === 'volume' ? 'volume' : metric === 'profit' ? 'profit' : 'return_pct';
-  rows.sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
+  const lbKey = metric === 'return' ? (r => arenaRiskAdj(r)) : (r => r[sortKey] || 0);
+  rows.sort((a, b) => lbKey(b) - lbKey(a));
   const ranked = rows.map((r, i) => ({
     rank: i + 1,
     nickname: r.nickname || (r.email || '').split('@')[0],
@@ -2035,6 +2042,13 @@ async function handleArenaSeason(request, env) {
   return json(buildSeasonPayload(cfg, new Date()));
 }
 
+// Risk-adjusted return = return penalized by the season's worst peak-to-trough
+// drawdown. A high-drawdown gamble ranks below a steadier trader with the same
+// headline return, so luck/leverage can't top the board on the return metric.
+function arenaRiskAdj(r) {
+  return (r.return_pct || 0) / (1 + 4 * Math.max(0, r.max_dd || 0));
+}
+
 // ── Static leaderboard snapshot (free-at-scale reads) ──────────────────────
 // The cron precomputes ALL boards + season into one KV blob. Viewers hit
 // /arena/live which serves that blob (one cheap read, zero DB queries per view)
@@ -2053,7 +2067,7 @@ async function buildArenaSnapshot(env) {
     let rows = [];
     try {
       rows = (await env.BOT_DB.prepare(
-        `SELECT s.email,s.return_pct,s.profit,s.volume,s.last_equity,s.start_equity,s.trade_days,
+        `SELECT s.email,s.return_pct,s.profit,s.volume,s.last_equity,s.start_equity,s.trade_days,s.max_dd,
                 p.nickname,p.country,p.referral_verified,p.boards,(p.avatar IS NOT NULL) AS has_avatar
          FROM arena_score s JOIN arena_participants p ON p.email=s.email
          WHERE s.board=? AND s.season_id=? AND p.demo=0`).bind(period, sid).all()).results || [];
@@ -2065,7 +2079,10 @@ async function buildArenaSnapshot(env) {
       const effMin = metric === 'return' ? retMin : minBal;
       const sortKey = metric === 'volume' ? 'volume' : metric === 'profit' ? 'profit' : 'return_pct';
       const opted = rows.filter(r => { let b = []; try { b = JSON.parse(r.boards || '[]'); } catch (_) {} return b.includes(optCode); });
-      opted.sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
+      // Return board ranks by risk-adjusted return (penalized by worst drawdown) so
+      // a high-drawdown gamble can't top a steadier trader; profit/volume rank raw.
+      const key = metric === 'return' ? (r => arenaRiskAdj(r)) : (r => r[sortKey] || 0);
+      opted.sort((a, b) => key(b) - key(a));
       const list = opted.slice(0, 100).map((r, i) => ({
         rank: i + 1, nickname: r.nickname || (r.email || '').split('@')[0], country: r.country || '',
         verified: r.referral_verified === 1, avatar: r.has_avatar ? 1 : 0,
@@ -2643,6 +2660,10 @@ async function initDB(env) {
     // Distinct active-trading-day tracking (anti single-shot hedge).
     await env.BOT_DB.prepare(`ALTER TABLE arena_score ADD COLUMN trade_days INTEGER DEFAULT 0`).run().catch(() => {});
     await env.BOT_DB.prepare(`ALTER TABLE arena_score ADD COLUMN last_trade_date TEXT DEFAULT ''`).run().catch(() => {});
+    // Risk-adjusted scoring: season peak equity + worst peak-to-trough drawdown,
+    // used to rank the return board by return-per-risk (penalizes gambling).
+    await env.BOT_DB.prepare(`ALTER TABLE arena_score ADD COLUMN peak_equity REAL DEFAULT 0`).run().catch(() => {});
+    await env.BOT_DB.prepare(`ALTER TABLE arena_score ADD COLUMN max_dd REAL DEFAULT 0`).run().catch(() => {});
 
     // Contact-form inbox (shown in admin panel).
     await env.BOT_DB.prepare(`CREATE TABLE IF NOT EXISTS contact_msgs (
