@@ -1514,7 +1514,8 @@ async function arenaScore(env) {
   // declaration + emails + scoring past the subrequest limit.
   if (heavyTick) return;
   try { await arenaNotifyWinners(env); } catch (_) {}
-  const boards = [['weekly', arenaWeekId(now)], ['monthly', arenaMonthId(now)]];
+  // Score only the active period(s) — monthly (weekly removed) — to halve DB writes.
+  const boards = ARENA_PERIODS.map(pd => [pd, pd === 'monthly' ? arenaMonthId(now) : arenaWeekId(now)]);
   let allParts = [];
   try { allParts = (await env.BOT_DB.prepare('SELECT * FROM arena_participants').all()).results || []; } catch (_) { return; }
 
