@@ -17,3 +17,11 @@ EMAIL_FROM = "AYILON <noreply@ayilon.com>"
 
 [triggers]
 crons = ["*/1 * * * *"]
+
+# Custom domain for the API so the edge cache activates (unlimited-free reads).
+# Auto-provisioned on deploy IF ayilon.com is a zone in this Cloudflare account
+# and the deploy token has DNS edit permission. If not, the deploy fails harmlessly
+# (the previously-deployed worker keeps serving) — remove this block to revert.
+[[routes]]
+pattern = "api.ayilon.com"
+custom_domain = true
