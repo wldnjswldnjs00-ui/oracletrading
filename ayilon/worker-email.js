@@ -684,56 +684,16 @@ async function handleLogin(request, env) {
 
     if (user.banned) return json({ ok: false, error: 'banned' }, 403);
 
-    // Owner/admin account signs in with password only — no email code. The admin
-    // panel (ayiloncompany.xyz) is owner-only, so this removes the login friction
-    // for the operator while every admin endpoint stays email-locked server-side.
-    if (user.email.toLowerCase() === ADMIN_EMAIL_CONST.toLowerCase()) {
-      await ensureDB(env);
-      const sessionToken = crypto.randomUUID();
-      const expiresAt = Date.now() + 604800 * 1000; // 7 days
-      await env.BOT_DB.prepare(
-        'INSERT OR REPLACE INTO sessions (token, email, username, name, expires_at) VALUES (?, ?, ?, ?, ?)'
-      ).bind(sessionToken, user.email, user.username || '', user.name || '', expiresAt).run();
-      return json({ ok: true, sessionToken, email: user.email, username: user.username || '', name: user.name || '' });
-    }
-
-    // Mandatory email verification on every login (TOTP/authenticator 2FA was
-    // removed; this email code is required for all users).
-    {
-      await ensureDB(env);
-      const challengeToken = crypto.randomUUID();
-      const emailCode = String(Math.floor(100000 + Math.random() * 900000));
-      // The login code is mandatory, so a failed send must NOT look like success —
-      // otherwise the user is stuck on the OTP screen with no code. Surface it.
-      let emailSent = false;
-      try {
-        const r = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'), to: [user.email],
-            subject: 'AYILON Login Verification Code',
-            html: `<div style="font-family:sans-serif;padding:24px;"><h2>Login Code</h2><p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#111;">${emailCode}</p><p style="color:#666;">This code expires in 10 minutes.</p></div>`
-          })
-        });
-        emailSent = r.ok;
-      } catch (e) {}
-      if (!emailSent) return json({ ok: false, error: 'email_send_failed' }, 502);
-      await env.BOT_DB.prepare('INSERT OR REPLACE INTO challenges VALUES (?,?,?,?,?)').bind(
-        challengeToken, user.email.toLowerCase(), 'login', emailCode, Date.now() + 600000
-      ).run();
-      return json({ ok: true, requires2FA: true, methods: ['email'], challengeToken });
-    }
-
+    // Password-only login for everyone. Read-only API keys mean a stolen login
+    // can't move funds; the one money-sensitive action — submitting a prize
+    // payout wallet — is separately gated with an email code at claim time. This
+    // also keeps email volume near-zero so the free email tier is plenty.
+    await ensureDB(env);
     const sessionToken = crypto.randomUUID();
     const expiresAt = Date.now() + 604800 * 1000; // 7 days
-
-    // Write session to D1 (no KV write limit)
-    await ensureDB(env);
     await env.BOT_DB.prepare(
       'INSERT OR REPLACE INTO sessions (token, email, username, name, expires_at) VALUES (?, ?, ?, ?, ?)'
     ).bind(sessionToken, user.email, user.username || '', user.name || '', expiresAt).run();
-
     return json({ ok: true, sessionToken, email: user.email, username: user.username || '', name: user.name || '' });
   } catch(e) {
     return json({ ok: false, error: 'server_error', detail: String(e) }, 500);
@@ -1394,6 +1354,34 @@ async function handleArenaClaimPrize(request, env) {
   }
   const ivOnFile = await env.USERS_KV.get('interview:' + session.email);
   if (!ivOnFile) return json({ ok: false, error: 'interview_required' }, 400);
+
+  // Money-sensitive step: confirming the payout wallet requires an email code,
+  // so a stolen password alone can never redirect a prize. Login itself is
+  // password-only — this claim step is the single place we still verify by email.
+  const otp = String(body.otp || '').trim();
+  const otpKey = 'claimotp:' + session.email.toLowerCase();
+  if (!otp) {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    let sent = false;
+    try {
+      const r = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: (env.EMAIL_FROM || 'AYILON <onboarding@resend.dev>'), to: [session.email],
+          subject: 'AYILON — Prize payout verification code',
+          html: `<div style="font-family:sans-serif;padding:24px;"><h2>Payout verification</h2><p>Enter this code to confirm your USDT (TRC20) payout wallet:</p><p style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#111;">${code}</p><p style="color:#666;">Expires in 10 minutes. If you didn't request this, ignore it.</p></div>`
+        })
+      });
+      sent = r.ok;
+    } catch (_) {}
+    if (!sent) return json({ ok: false, error: 'otp_send_failed' }, 502);
+    await env.USERS_KV.put(otpKey, JSON.stringify({ code, addr }), { expirationTtl: 600 });
+    return json({ ok: false, error: 'otp_sent' });
+  }
+  const rec = await env.USERS_KV.get(otpKey, { type: 'json' });
+  if (!rec || rec.code !== otp || rec.addr !== addr) return json({ ok: false, error: 'otp_bad' });
+  // Kept until its 10-min TTL so a multi-prize claim can verify each prize with one code.
 
   await env.BOT_DB.prepare('UPDATE arena_winners SET payout_addr=?, payout_chain=? WHERE id=?').bind(addr, 'USDT-TRC20', id).run();
   try { await sendAdminPayoutAlert(env, { ...w, addr }); } catch (_) {}

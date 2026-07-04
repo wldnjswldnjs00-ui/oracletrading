@@ -204,6 +204,28 @@ function collectInterview(){
   return {iv,missing};
 }
 
+// Payout-wallet email verification (localized; only winners ever see this).
+const OTP_T={
+  otpLabel:{en:'Verification code',ko:'인증 코드',zh:'验证码',es:'Código de verificación',vi:'Mã xác minh',ru:'Код подтверждения'},
+  otpSent:{en:'We emailed you a 6-digit code — enter it and submit again.',ko:'이메일로 6자리 코드를 보냈어요. 입력 후 다시 제출하세요.',zh:'已向您的邮箱发送6位验证码，请输入后再次提交。',es:'Te enviamos un código de 6 dígitos por correo. Introdúcelo y envía de nuevo.',vi:'Chúng tôi đã gửi mã 6 số qua email — nhập mã và gửi lại.',ru:'Мы отправили 6-значный код на почту — введите его и отправьте снова.'},
+  otpEnter:{en:'Enter the code we emailed you.',ko:'이메일로 받은 코드를 입력하세요.',zh:'请输入邮箱收到的验证码。',es:'Introduce el código que te enviamos.',vi:'Nhập mã đã gửi qua email.',ru:'Введите код из письма.'},
+  otpBad:{en:'That code is incorrect or expired.',ko:'코드가 올바르지 않거나 만료되었습니다.',zh:'验证码错误或已过期。',es:'El código es incorrecto o ha caducado.',vi:'Mã không đúng hoặc đã hết hạn.',ru:'Код неверен или истёк.'},
+  otpFail:{en:'Could not send the code. Try again.',ko:'코드 발송에 실패했습니다. 다시 시도해주세요.',zh:'发送验证码失败，请重试。',es:'No se pudo enviar el código. Inténtalo de nuevo.',vi:'Không gửi được mã. Vui lòng thử lại.',ru:'Не удалось отправить код. Повторите.'}
+};
+function ot(k){ return (OTP_T[k]&&(OTP_T[k][lang]||OTP_T[k].en))||''; }
+let otpRequested=false;
+function showOtpField(){
+  var wrap=document.getElementById('otpWrap');
+  if(!wrap){
+    var btn=document.getElementById('submitBtn');
+    wrap=document.createElement('div'); wrap.id='otpWrap'; wrap.style.cssText='margin:0 0 14px;text-align:left';
+    wrap.innerHTML='<label style="display:block;font-size:13px;color:var(--mut);margin-bottom:6px">'+ot('otpLabel')+'</label>'
+      +'<input id="claimOtp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--txt);font-size:16px;letter-spacing:6px;text-align:center;outline:none">';
+    btn.parentNode.insertBefore(wrap,btn);
+  }
+  wrap.style.display='block';
+  var f=document.getElementById('claimOtp'); if(f) f.focus();
+}
 async function submitClaim(){
   const u=U[lang], msg=document.getElementById('msg'), btn=document.getElementById('submitBtn');
   const {iv,missing}=collectInterview();
@@ -211,16 +233,33 @@ async function submitClaim(){
   const wallet=(document.getElementById('wallet').value||'').trim();
   if(!TRC20.test(wallet)){ msg.className='msg err'; msg.textContent=u.badWallet; document.getElementById('wallet').focus(); return; }
   const unclaimed=(DATA.winnings||[]).filter(w=>!w.payout_addr&&!w.paid);
-  btn.disabled=true; msg.className='msg'; msg.textContent=u.submitting; msg.style.display='block'; msg.style.color='var(--mut)';
+  if(!unclaimed.length) return;
+  const otpEl=document.getElementById('claimOtp');
+  const otpVal=(otpEl&&otpEl.value||'').trim();
+  btn.disabled=true; msg.className='msg'; msg.style.display='block'; msg.style.color='var(--mut)'; msg.textContent=u.submitting;
   try{
-    let allOk=true;
-    for(const w of unclaimed){
-      const r=await fetch(WORKER_URL+'/arena/claim-prize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token(),id:w.id,address:wallet,interview:iv})});
+    // Step 1 — request the email code once (single call, no wallet stored yet).
+    if(!otpRequested){
+      const r=await fetch(WORKER_URL+'/arena/claim-prize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token(),id:unclaimed[0].id,address:wallet,interview:iv})});
       const j=await r.json();
-      if(!j.ok){ allOk=false; if(j.error==='bad_trc20'){ msg.className='msg err'; msg.textContent=u.badWallet; } break; }
+      if(j.error==='otp_sent'){ otpRequested=true; showOtpField(); msg.className='msg'; msg.style.color='var(--mut)'; msg.textContent=ot('otpSent'); btn.disabled=false; return; }
+      if(j.error==='bad_trc20'){ msg.className='msg err'; msg.textContent=u.badWallet; btn.disabled=false; return; }
+      if(j.error==='interview_required'){ msg.className='msg err'; msg.textContent=u.required; btn.disabled=false; return; }
+      if(j.error==='otp_send_failed'){ msg.className='msg err'; msg.textContent=ot('otpFail'); btn.disabled=false; return; }
+      msg.className='msg err'; msg.textContent=u.err; btn.disabled=false; return;
     }
-    if(allOk){ msg.className='msg ok'; msg.textContent=u.ok; setTimeout(load,1200); }
-    else if(msg.className!=='msg err'){ msg.className='msg err'; msg.textContent=u.err; }
+    // Step 2 — verify the entered code and claim every unclaimed prize.
+    if(!otpVal){ msg.className='msg err'; msg.textContent=ot('otpEnter'); btn.disabled=false; return; }
+    let allOk=true, err='';
+    for(const w of unclaimed){
+      const r=await fetch(WORKER_URL+'/arena/claim-prize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionToken:token(),id:w.id,address:wallet,interview:iv,otp:otpVal})});
+      const j=await r.json();
+      if(!j.ok){ allOk=false; err=j.error||''; break; }
+    }
+    if(allOk){ msg.className='msg ok'; msg.textContent=u.ok; setTimeout(load,1400); }
+    else if(err==='otp_bad'){ msg.className='msg err'; msg.textContent=ot('otpBad'); }
+    else if(err==='bad_trc20'){ msg.className='msg err'; msg.textContent=u.badWallet; }
+    else{ msg.className='msg err'; msg.textContent=u.err; }
   }catch(e){ msg.className='msg err'; msg.textContent=u.err; }
   btn.disabled=false;
 }
