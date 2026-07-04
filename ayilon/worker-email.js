@@ -1204,14 +1204,14 @@ async function genUniqueNickname(env) {
 // At each season boundary, freeze the ending season's standings into the Hall of
 // Fame — automatically, once. Runs at the very start of the cron BEFORE any
 // per-participant re-baseline, so arena_score still holds the final values.
+// Monthly is the only cash competition (weekly was removed: cash-flow, integrity
+// and solo-operator load all favor a single monthly season).
 const ARENA_WIN_JOBS = [
-  { key: 'return_weekly',  board: 'weekly',  metric: 'return', sort: 'return_pct', topN: 3, opt: 'rw' },
-  { key: 'profit_weekly',  board: 'weekly',  metric: 'profit', sort: 'profit',     topN: 3, opt: 'pw' },
-  { key: 'volume_weekly',  board: 'weekly',  metric: 'volume', sort: 'volume',     topN: 3, opt: 'vw' },
   { key: 'return_monthly', board: 'monthly', metric: 'return', sort: 'return_pct', topN: 5, opt: 'rm' },
   { key: 'profit_monthly', board: 'monthly', metric: 'profit', sort: 'profit',     topN: 5, opt: 'pm' },
   { key: 'volume_monthly', board: 'monthly', metric: 'volume', sort: 'volume',     topN: 5, opt: 'vm' }
 ];
+const ARENA_PERIODS = ['monthly'];   // active competition periods
 async function arenaDeclareWinners(env, now) {
   const curW = arenaWeekId(now), curM = arenaMonthId(now);
   const cfg = await getArenaConfig(env);
@@ -1955,13 +1955,13 @@ const ARENA_DEFAULT_CONFIG = {
   poolMode: 'commission',   // 'commission' = pool is a % of my OKX commission; 'manual' = fixed amount
   commissionPct: 10,        // % of my referral commission that funds prizes
   commissionTotal: 0,       // accumulated commission ($) — affiliate-auto (if creds) or admin-entered
-  commissionSplit: { weekly: 25, monthly: 75 }, // how the commission pool is allocated per period
+  commissionSplit: { weekly: 0, monthly: 100 }, // 100% of the pool funds the monthly season (weekly removed)
   autoAffiliate: false,     // when true + affiliate creds → commissionTotal auto-computed
   manualPool: { weekly: 0, monthly: 0 },      // used only when poolMode==='manual'
   cap:   { weekly: [250, 125, 25], monthly: [1000, 500, 100, 50, 10] }, // max $ per rank (weekly ≈ 1/4 of monthly)
   split: { weekly: [50, 30, 20], monthly: [40, 25, 15, 12, 8] },        // % of pool per rank
   // Both weekly and monthly run all three categories; weekly prizes are ~1/4 of monthly.
-  boards: { weekly: ['return', 'profit', 'volume'], monthly: ['return', 'profit', 'volume'] },
+  boards: { monthly: ['return', 'profit', 'volume'] },   // monthly only (weekly removed)
   minBalance: 100,          // $ floor to join + be prize-eligible (profit/volume boards)
   returnMinBalance: 500,    // higher $ floor to be prize-eligible on the RETURN board —
                             // stops $100 max-leverage all-ins from farming the % board
@@ -2011,7 +2011,7 @@ function buildSeasonPayload(cfg, now) {
   const commissionPool = commissionTotal * commissionPct / 100;
   const csplit = cfg.commissionSplit || { weekly: 25, monthly: 75 };
   const out = {};
-  for (const board of ['weekly', 'monthly']) {
+  for (const board of ARENA_PERIODS) {
     const boardPool = cfg.poolMode === 'manual'
       ? parseFloat(cfg.manualPool[board] || 0)
       : commissionPool * (parseFloat(csplit[board] || 0) / 100);
@@ -2047,7 +2047,7 @@ async function buildArenaSnapshot(env) {
   const minBal = parseFloat(cfg.minBalance || 0), minDays = parseInt(cfg.minTradeDays || 0), minVol = parseFloat(cfg.minVolume || 0);
   const retMin = Math.max(minBal, parseFloat(cfg.returnMinBalance || 0));
   const boards = {}, seasonIds = {};
-  for (const period of ['weekly', 'monthly']) {
+  for (const period of ARENA_PERIODS) {
     const sid = period === 'monthly' ? arenaMonthId(now) : arenaWeekId(now);
     seasonIds[period] = sid;
     let rows = [];

@@ -437,8 +437,7 @@
 
     <div class="lb-ctl">
       <div class="seg" id="periodSeg">
-        <button data-period="weekly" class="on" data-i18n="lb.weekly">주간</button>
-        <button data-period="monthly" data-i18n="lb.monthly">월간</button>
+        <button data-period="monthly" class="on" data-i18n="lb.monthly">월간</button>
       </div>
       <div class="seg metric" id="metricSeg">
         <button data-metric="return" class="on" data-i18n="lb.m.return">수익률</button>
@@ -508,8 +507,7 @@
   <div class="wrap">
     <div class="sec-h"><h2 data-i18n="hof.title">명예의 전당</h2><p data-i18n="hof.sub">시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.</p></div>
     <div class="hof-tabs" id="hofTabs">
-      <button data-g="rw" class="on" data-i18n="hof.rw">수익률 · 주간</button>
-      <button data-g="rm" data-i18n="hof.rm">수익률 · 월간</button>
+      <button data-g="rm" class="on" data-i18n="hof.rm">수익률 · 월간</button>
       <button data-g="pm" data-i18n="hof.pm">수익금 · 월간</button>
       <button data-g="vm" data-i18n="hof.vm">거래량 · 월간</button>
     </div>
@@ -897,7 +895,7 @@ function setLang(code,persist){
 document.getElementById('langSel').onchange=(e)=>setLang(e.target.value,true);
 
 /* ---------- leaderboard ---------- */
-let state={period:'weekly',metric:'return',q:'',rows:[],total:0,seasonId:''};
+let state={period:'monthly',metric:'return',q:'',rows:[],total:0,seasonId:''};
 const fmtPct=v=>(v>=0?'+':'')+(v*100).toFixed(2)+'%';
 const fmtUsd=v=>(v>=0?'+':'-')+'$'+Math.abs(v).toLocaleString(undefined,{maximumFractionDigits:0});
 const fmtVol=v=>'$'+Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
@@ -1325,7 +1323,7 @@ function renderClaims(){
 
 /* ---------- hall of fame (podium) ---------- */
 const HOF_MAP={rw:['weekly','return'],rm:['monthly','return'],pm:['monthly','profit'],vm:['monthly','volume']};
-let hofData={winners:[],champions:{}}, hofG='rw';
+let hofData={winners:[],champions:{}}, hofG='rm';
 const hofVal=(metric,v)=>metric==='volume'?fmtVol(v):metric==='profit'?fmtUsd(v):fmtPct(v);
 const hofAva=nick=>`<div class="pava"><span class="ini">${esc((nick[0]||'?').toUpperCase())}</span><img src="${API}/arena/avatar?n=${encodeURIComponent(nick)}" alt="" onerror="this.remove()"></div>`;
 async function fetchHOF(){

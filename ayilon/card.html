@@ -61,8 +61,7 @@
     <button data-type="top" id="btTop"></button>
   </div>
   <div class="seg" id="perSeg">
-    <button data-period="weekly" class="on" id="btWeekly"></button>
-    <button data-period="monthly" id="btMonthly"></button>
+    <button data-period="monthly" class="on" id="btMonthly"></button>
   </div>
   <select class="lang" id="langSel">
     <option value="en">English</option><option value="ko">한국어</option><option value="zh">中文</option>
@@ -122,7 +121,7 @@ const T={
 let LANG=(qs.get('lang')||localStorage.getItem('ayilon_lang')||'en'); if(!T[LANG])LANG='en';
 const t=(k,v)=>{let s=(T[LANG]&&T[LANG][k])||T.en[k]||k; if(v)for(const p in v)s=s.replace('{'+p+'}',v[p]); return s;};
 
-let state={type:qs.get('type')||'rank',period:qs.get('period')||'weekly',metric:'return',nick:qs.get('nick')||localStorage.getItem('ayilon_username')||''};
+let state={type:qs.get('type')||'rank',period:qs.get('period')||'monthly',metric:'return',nick:qs.get('nick')||localStorage.getItem('ayilon_username')||''};
 const medal=r=>r===1?'🥇':r===2?'🥈':r===3?'🥉':'';
 const fmtPct=v=>(v>=0?'+':'')+(v*100).toFixed(2)+'%';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -134,7 +133,6 @@ function applyChrome(){
   document.getElementById('btRank').textContent=t('rank');
   document.getElementById('btWinner').textContent=t('winner');
   document.getElementById('btTop').textContent=t('top');
-  document.getElementById('btWeekly').textContent=t('weekly');
   document.getElementById('btMonthly').textContent=t('monthly');
   document.getElementById('dl').textContent=t('dl');
   document.getElementById('copy').textContent=t('copy');
