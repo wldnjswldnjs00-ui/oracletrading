@@ -1966,7 +1966,7 @@ const ARENA_DEFAULT_CONFIG = {
   returnMinBalance: 500,    // higher $ floor to be prize-eligible on the RETURN board —
                             // stops $100 max-leverage all-ins from farming the % board
   minTrades: 3,
-  minTradeDays: 0,          // distinct active trading days required for prizes (0 = off)
+  minTradeDays: 3,          // must trade on ≥3 distinct days to be prize-eligible (anti one-shot gamble)
   minVolume: 1000,          // min season trading volume ($) to be prize-eligible — ensures
                             // each winner actually traded (generated commission), not parked cash
   enforceReferral: true     // block connecting an OKX account not under AYILON referral
