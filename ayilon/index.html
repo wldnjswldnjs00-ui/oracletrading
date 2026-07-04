@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AYILON Arena — Global Trading League</title>
-<meta name="description" content="A global real-money trading league. Compete on return, profit and volume every week and month. Free to enter, read-only, prizes for the top.">
+<meta name="description" content="A global real-money trading league. Compete on return, profit and volume every month. Free to enter, read-only, prizes for the top.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0a0c'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='18' font-weight='700' fill='%2334d39a' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="AYILON Arena">
@@ -370,7 +370,7 @@
   <div class="wrap">
     <span class="kicker" data-i18n="hero.kicker">Global Trading League</span>
     <h1 data-i18n="hero.title">실력을 <b>증명</b>하는<br>글로벌 트레이딩 리그</h1>
-    <p data-i18n="hero.sub">매주·매달, 실제 OKX 계좌의 성과로 전 세계 트레이더와 경쟁합니다. 참가비는 없습니다. 자금은 당신의 계좌에 그대로 있습니다.</p>
+    <p data-i18n="hero.sub">매달, 실제 OKX 계좌의 성과로 전 세계 트레이더와 경쟁합니다. 참가비는 없습니다. 자금은 당신의 계좌에 그대로 있습니다.</p>
     <div class="hero-cta">
       <button class="btn btn-primary" id="heroJoin" data-i18n="hero.cta1">대회 참가하기</button>
       <a class="btn btn-ghost" href="#leaderboard" data-i18n="hero.cta2">리더보드 보기</a>
@@ -494,9 +494,9 @@
 
 <section>
   <div class="wrap">
-    <div class="sec-h"><h2 data-i18n="cat.title">부문</h2><p data-i18n="cat.sub">수익률은 주간·월간, 수익금과 거래량은 월간으로 진행됩니다.</p></div>
+    <div class="sec-h"><h2 data-i18n="cat.title">부문</h2><p data-i18n="cat.sub">세 부문(수익률·수익금·거래량) 모두 월간으로 진행됩니다.</p></div>
     <div class="grid3">
-      <div class="card"><h3 data-i18n="cat.1.t">수익률</h3><p data-i18n="cat.1.d">기간 내 수익률. 주간과 월간 두 가지로 열립니다.</p></div>
+      <div class="card"><h3 data-i18n="cat.1.t">수익률</h3><p data-i18n="cat.1.d">월간 수익률. 위험조정 수익률로 순위를 매깁니다.</p></div>
       <div class="card"><h3 data-i18n="cat.2.t">수익금</h3><p data-i18n="cat.2.d">절대 수익 금액. 월간으로만 진행됩니다.</p></div>
       <div class="card"><h3 data-i18n="cat.3.t">거래량</h3><p data-i18n="cat.3.d">기간 내 누적 거래량. 월간으로만 진행됩니다.</p></div>
     </div>
@@ -517,7 +517,7 @@
 
 <section class="center" style="border-top:1px solid var(--line)">
   <div class="wrap">
-    <div class="sec-h"><h2 data-i18n="cta.title">이번 시즌, 당신의 이름을 올리세요</h2><p data-i18n="cta.sub">매주 월요일 00:00 UTC에 새 시즌이 시작됩니다.</p></div>
+    <div class="sec-h"><h2 data-i18n="cta.title">이번 시즌, 당신의 이름을 올리세요</h2><p data-i18n="cta.sub">매월 1일 00:00 UTC에 새 시즌이 시작됩니다.</p></div>
     <button class="btn btn-primary" id="ctaJoin" data-i18n="cta.btn">대회 참가하기</button>
   </div>
 </section>
@@ -581,9 +581,9 @@
     <div class="step">
       <div class="st"><span class="b">3</span><span data-i18n="jm.s3">참가할 부문 선택</span></div>
       <p class="sub" data-i18n="jm.s3d">원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.</p>
-      <label class="chk"><input type="checkbox" id="bRet" data-boards="rw,rm" checked><span data-i18n="jm.b.return">수익률 (주간·월간)</span></label>
-      <label class="chk"><input type="checkbox" id="bPro" data-boards="pw,pm" checked><span data-i18n="jm.b.profit">수익금 (주간·월간)</span></label>
-      <label class="chk"><input type="checkbox" id="bVol" data-boards="vw,vm" checked><span data-i18n="jm.b.volume">거래량 (주간·월간)</span></label>
+      <label class="chk"><input type="checkbox" id="bRet" data-boards="rw,rm" checked><span data-i18n="jm.b.return">수익률</span></label>
+      <label class="chk"><input type="checkbox" id="bPro" data-boards="pw,pm" checked><span data-i18n="jm.b.profit">수익금</span></label>
+      <label class="chk"><input type="checkbox" id="bVol" data-boards="vw,vm" checked><span data-i18n="jm.b.volume">거래량</span></label>
     </div>
 
     <button class="btn btn-primary" id="jSubmit" style="width:100%" data-i18n="jm.submit">연결하고 참가</button>
@@ -614,29 +614,29 @@ const I18N = {
     'nav.board':'리더보드','nav.how':'참가방법','nav.hof':'명예의전당','nav.login':'로그인','nav.manage':'연결 관리','nav.logout':'로그아웃',
     'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다.','jm.nicksave':'저장','jm.avatar':'이미지 변경','jm.avatarrm':'제거','av.large':'이미지가 너무 큽니다.',
     'jm.s3':'참가할 부문 선택','jm.s3d':'원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.',
-    'jm.b.return':'수익률 (주간·월간)','jm.b.profit':'수익금 (주간·월간)','jm.b.volume':'거래량 (주간·월간)',
+    'jm.b.return':'수익률','jm.b.profit':'수익금','jm.b.volume':'거래량',
     'hof.title':'명예의 전당','hof.sub':'시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.',
     'hof.rw':'수익률 · 주간','hof.rm':'수익률 · 월간','hof.pm':'수익금 · 월간','hof.vm':'거래량 · 월간','hof.empty':'아직 우승자가 없습니다. 첫 시즌이 진행 중입니다.','hof.titles':'회 우승','hof.card':'우승자 카드 만들기',
     'hero.kicker':'Global Trading League','hero.title':'실력을 <b>증명</b>하는<br>글로벌 트레이딩 리그',
-    'hero.sub':'매주·매달, 실제 OKX 계좌의 성과로 전 세계 트레이더와 경쟁합니다. 참가비는 없습니다. 자금은 당신의 계좌에 그대로 있습니다.',
+    'hero.sub':'매달, 실제 OKX 계좌의 성과로 전 세계 트레이더와 경쟁합니다. 참가비는 없습니다. 자금은 당신의 계좌에 그대로 있습니다.',
     'hero.cta1':'대회 참가하기','hero.cta2':'리더보드 보기','hero.login':'로그인하고 시작하기',
     'hero.m1':'참가비 무료','hero.m2':'읽기전용 연결 · 자금 안전','hero.m3':'매일 자동 집계',
     'lb.title':'라이브 리더보드','lb.sub':'전체 참가자 실시간 순위. 닉네임으로 본인을 검색하세요.',
     'lb.weekly':'주간','lb.monthly':'월간','lb.m.return':'수익률','lb.m.profit':'수익금','lb.m.volume':'거래량',
     'lb.search':'닉네임 검색','lb.h.rank':'순위','lb.h.trader':'트레이더','lb.h.eq':'평가금',
     'pz.pool':'이번 주 상금 풀','pz.pool.m':'이번 달 상금 풀','vault.sub':'거래량이 쌓일수록 상금이 실시간으로 커집니다','pz.ends':'시즌 종료까지',
-    'pz.note':'상금 풀은 AYILON의 거래보상에서 적립되며, AYILON의 규모·참가자 수·전체 거래량에 따라 매주·매월 변동됩니다. OKX 내 어떤 종목(현물·선물 등)으로 거래해도 인정됩니다. 상금은 AYILON 추천으로 가입한 계정만 대상입니다. 다중 계정·양방향 헤지 등 공정성을 해치는 행위는 실격 및 영구 정지 처리됩니다.',
+    'pz.note':'상금 풀은 AYILON의 거래보상에서 적립되며, AYILON의 규모·참가자 수·전체 거래량에 따라 매월 변동됩니다. OKX 내 어떤 종목(현물·선물 등)으로 거래해도 인정됩니다. 상금은 AYILON 추천으로 가입한 계정만 대상입니다. 다중 계정·양방향 헤지 등 공정성을 해치는 행위는 실격 및 영구 정지 처리됩니다.',
     'mine.rank':'내 순위','mine.ret':'수익률','mine.profit':'수익금','mine.eq':'평가금','mine.manage':'연결 관리','mine.share':'순위 카드 공유',
     'cl.won':'당첨! 받을 상금이 있어요','cl.go':'상금 수령하기 →','cl.sub':'우승자 인터뷰 작성 후 USDT(TRC20) 지갑주소를 제출하면 24시간 이내에 지급됩니다.','cl.paid':'지급 완료 ✓','cl.pending':'지급 대기 중',
     'how.title':'참가 방법','how.sub':'로그인하고, 추천으로 가입하고, 키를 연결하면 끝입니다.',
     'how.1.t':'AYILON 추천으로 가입','how.1.d':'AYILON 추천 링크로 OKX 계정을 만드세요. 상금은 추천 가입 계정만 받을 수 있습니다.',
     'how.2.t':'읽기전용 키 연결','how.2.d':'거래·출금 권한이 없는 읽기전용 키만 연결합니다. 자금은 절대 건드릴 수 없습니다.',
     'how.3.t':'거래하고 순위에 오르기','how.3.d':'평소처럼 거래하면 매일 자동 집계되어 리더보드에 반영됩니다.',
-    'cat.title':'부문','cat.sub':'수익률은 주간·월간, 수익금과 거래량은 월간으로 진행됩니다.',
-    'cat.1.t':'수익률','cat.1.d':'기간 내 수익률. 주간과 월간 두 가지로 열립니다.','cat.retmin':'수익률 부문 상금은 시작 잔고 {min} 이상만 대상 — 소액 몰빵(풀레버리지)으로 순위를 farming하는 걸 막아 실력 경쟁으로 유지합니다.',
-    'cat.2.t':'수익금','cat.2.d':'절대 수익 금액. 주간·월간 모두 열립니다.',
-    'cat.3.t':'거래량','cat.3.d':'기간 내 누적 거래량. 주간·월간 모두 열립니다.',
-    'cta.title':'이번 시즌, 당신의 이름을 올리세요','cta.sub':'매주 월요일 00:00 UTC에 새 시즌이 시작됩니다.','cta.btn':'대회 참가하기',
+    'cat.title':'부문','cat.sub':'세 부문(수익률·수익금·거래량) 모두 월간으로 진행됩니다.',
+    'cat.1.t':'수익률','cat.1.d':'월간 수익률. 위험조정 수익률로 순위를 매깁니다.','cat.retmin':'수익률 부문 상금은 시작 잔고 {min} 이상만 대상 — 소액 몰빵(풀레버리지)으로 순위를 farming하는 걸 막아 실력 경쟁으로 유지합니다.',
+    'cat.2.t':'수익금','cat.2.d':'월간 절대 수익 금액.',
+    'cat.3.t':'거래량','cat.3.d':'월간 누적 거래량.',
+    'cta.title':'이번 시즌, 당신의 이름을 올리세요','cta.sub':'매월 1일 00:00 UTC에 새 시즌이 시작됩니다.','cta.btn':'대회 참가하기',
     'ft.about':'소개','ft.terms':'약관','ft.privacy':'개인정보','ft.contact':'문의',
     'ft.disc':'투자에는 원금 손실 위험이 따릅니다. AYILON 아레나는 트레이딩 대회 플랫폼이며 투자 자문이나 수익을 보장하지 않습니다. 모든 거래 결정과 결과는 전적으로 참가자 본인의 책임입니다. 리더보드는 참가자 본인의 실거래 성과이며 특정 매매 방식을 권유하지 않습니다.',
     'jm.title':'대회 참가','jm.lead':'아래 순서대로 진행하세요. 자금은 100% 당신의 OKX 계좌에 있습니다.',
@@ -646,7 +646,7 @@ const I18N = {
     'jm.submit':'연결하고 참가','jm.save':'저장','jm.changekey':'키 변경','jm.notref':'이 OKX 계정은 AYILON 추천으로 가입되지 않았습니다. 상금 대상이 되려면 아래 추천 링크로 새 OKX 계정을 만들어 연결하세요.','jm.saved':'저장되었습니다 ✓','jm.kconn':'읽기전용 키가 연결되어 있습니다','jm.kchange':'키를 바꾸려면 아래에 새 키를 입력하세요 (선택)','jm.keyopt':'변경 시에만 입력','jm.leave':'대회에서 나가기',
     'am.title':'로그인이 필요합니다','am.lead':'대회 참가는 로그인 후 진행됩니다.','am.login':'로그인','am.signup':'회원가입',
     'lb.noresults':'검색 결과 없음','lb.empty':'아직 참가자가 없습니다','lb.befirst':'첫 번째 도전자가 되어보세요.','lb.meta':'시즌 {s} · 총 {n}명 참가','lb.more':'더 보기 (+{n})',
-    'pz.accruing':'적립 중','pz.upto':'최대 ','pz.share':'실시간 상금 풀을 순위별 %로 분배','pz.utc':'월요일 00:00 UTC 기준','pz.rank':'등','pz.dunit':'일',
+    'pz.accruing':'적립 중','pz.upto':'최대 ','pz.share':'실시간 상금 풀을 순위별 %로 분배','pz.utc':'매월 1일 00:00 UTC 기준','pz.rank':'등','pz.dunit':'일',
     'nick.min':'2자 이상 입력하세요.','nick.saved':'닉네임 저장됨','nick.taken':'이미 사용 중인 닉네임입니다.','nick.len':'2~24자로 입력하세요.','nick.chars':'사용할 수 없는 문자가 있습니다.','nick.fail':'저장 실패',
     'err.net':'네트워크 오류',
     'jm.allfields':'API 키를 모두 입력하세요.','jm.pickone':'참가할 부문을 하나 이상 선택하세요.','jm.connected':'연결 완료. ','jm.refok':'AYILON 추천 인증됨 — 상금 대상입니다.','jm.refno':'순위 등재 완료. 상금은 AYILON 추천 가입 계정만 대상입니다.','jm.missing':'키를 모두 입력하세요.','jm.relogin':'다시 로그인해주세요.','jm.failprefix':'연결 실패: ','jm.leaveconfirm':'대회에서 나가고 연결을 해제할까요?',
@@ -657,11 +657,11 @@ const I18N = {
     'nav.board':'Leaderboard','nav.how':'How it works','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage','nav.logout':'Log out',
     'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame.','jm.nicksave':'Save','jm.avatar':'Change image','jm.avatarrm':'Remove','av.large':'Image too large.',
     'jm.s3':'Choose your competitions','jm.s3d':'Enter only the boards you want. You appear only on the boards you select.',
-    'jm.b.return':'Return (Weekly · Monthly)','jm.b.profit':'Profit (Weekly · Monthly)','jm.b.volume':'Volume (Weekly · Monthly)',
+    'jm.b.return':'Return','jm.b.profit':'Profit','jm.b.volume':'Volume',
     'hof.title':'Hall of Fame','hof.sub':'Past champions, frozen automatically as each season ends.',
     'hof.rw':'Return · Weekly','hof.rm':'Return · Monthly','hof.pm':'Profit · Monthly','hof.vm':'Volume · Monthly','hof.empty':'No champions yet — the first season is underway.','hof.titles':'× champion','hof.card':'Make a winner card',
     'hero.kicker':'Global Trading League','hero.title':'Prove your edge in the<br><b>global</b> trading league',
-    'hero.sub':'Compete with traders worldwide on your real OKX account, every week and month. No entry fee. Your funds stay in your account.',
+    'hero.sub':'Compete with traders worldwide on your real OKX account, every month. No entry fee. Your funds stay in your account.',
     'hero.cta1':'Join the league','hero.cta2':'View leaderboard','hero.login':'Log in to start',
     'hero.m1':'Free entry','hero.m2':'Read-only · funds stay yours','hero.m3':'Auto-scored daily',
     'lb.title':'Live Leaderboard','lb.sub':'All participants, ranked live. Search your nickname.',
@@ -675,11 +675,11 @@ const I18N = {
     'how.1.t':'Sign up via AYILON','how.1.d':'Create an OKX account through the AYILON referral link. Prizes are for referred accounts only.',
     'how.2.t':'Connect a read-only key','how.2.d':'Only a read-only key (no trade/withdraw). We can never touch your funds.',
     'how.3.t':'Trade and climb','how.3.d':'Trade as usual — your stats are auto-scored daily onto the board.',
-    'cat.title':'Categories','cat.sub':'Return runs weekly and monthly; profit and volume run monthly.',
-    'cat.1.t':'Return','cat.1.d':'Return over the period. Runs both weekly and monthly.','cat.retmin':'Return prizes require a starting balance of {min}+ — this stops tiny all-in, high-leverage bets from farming the ranking, keeping it a skill contest.',
-    'cat.2.t':'Profit','cat.2.d':'Absolute profit. Runs both weekly and monthly.',
-    'cat.3.t':'Volume','cat.3.d':'Cumulative volume over the period. Runs both weekly and monthly.',
-    'cta.title':'Put your name on the board this season','cta.sub':'A new season starts every Monday at 00:00 UTC.','cta.btn':'Join the league',
+    'cat.title':'Categories','cat.sub':'All three categories (return %, profit, volume) run monthly.',
+    'cat.1.t':'Return','cat.1.d':'Monthly return, ranked by risk-adjusted return.','cat.retmin':'Return prizes require a starting balance of {min}+ — this stops tiny all-in, high-leverage bets from farming the ranking, keeping it a skill contest.',
+    'cat.2.t':'Profit','cat.2.d':'Absolute monthly profit.',
+    'cat.3.t':'Volume','cat.3.d':'Cumulative monthly volume.',
+    'cta.title':'Put your name on the board this season','cta.sub':'A new monthly season starts on the 1st at 00:00 UTC.','cta.btn':'Join the league',
     'ft.about':'About','ft.terms':'Terms','ft.privacy':'Privacy','ft.contact':'Contact',
     'ft.disc':'Trading involves risk of loss of principal. AYILON Arena is a trading-competition platform and does not provide investment advice or guarantee profit. All trading decisions and outcomes are solely the participant\'s responsibility. Leaderboards reflect participants\' own real trading and do not endorse any strategy.',
     'jm.title':'Join the league','jm.lead':'Follow the steps below. Your funds stay 100% in your OKX account.',
@@ -700,29 +700,29 @@ const I18N = {
     'nav.board':'排行榜','nav.how':'参与方式','nav.hof':'名人堂','nav.login':'登录','nav.manage':'管理','nav.logout':'退出',
     'jm.nick':'昵称','jm.nickd':'显示在排行榜和名人堂上的名称。','jm.nicksave':'保存','jm.avatar':'更换头像','jm.avatarrm':'移除','av.large':'图片太大。',
     'jm.s3':'选择参赛项目','jm.s3d':'仅参加你选择的项目，只会出现在所选榜单中。',
-    'jm.b.return':'收益率（周赛·月赛）','jm.b.profit':'盈利额（周赛·月赛）','jm.b.volume':'交易量（周赛·月赛）',
+    'jm.b.return':'收益率','jm.b.profit':'盈利额','jm.b.volume':'交易量',
     'hof.title':'名人堂','hof.sub':'每个赛季结束时自动定格的历届冠军。',
     'hof.rw':'收益率 · 周赛','hof.rm':'收益率 · 月赛','hof.pm':'盈利额 · 月赛','hof.vm':'交易量 · 月赛','hof.empty':'暂无冠军——首个赛季正在进行中。','hof.titles':'次冠军','hof.card':'制作冠军卡',
     'hero.kicker':'Global Trading League','hero.title':'证明实力的<br><b>全球</b>交易联赛',
-    'hero.sub':'每周、每月，用你真实的 OKX 账户与全球交易者竞争。无报名费。资金始终在你的账户里。',
+    'hero.sub':'每月，用你真实的 OKX 账户与全球交易者竞争。无报名费。资金始终在你的账户里。',
     'hero.cta1':'参加联赛','hero.cta2':'查看排行榜','hero.login':'登录后开始',
     'hero.m1':'免费参加','hero.m2':'只读连接 · 资金安全','hero.m3':'每日自动统计',
     'lb.title':'实时排行榜','lb.sub':'全部参赛者实时排名。用昵称搜索自己。',
     'lb.weekly':'周赛','lb.monthly':'月赛','lb.m.return':'收益率','lb.m.profit':'盈利额','lb.m.volume':'交易量',
     'lb.search':'搜索昵称','lb.h.rank':'排名','lb.h.trader':'交易者','lb.h.eq':'净值',
     'pz.pool':'本周奖池','pz.pool.m':'本月奖池','vault.sub':'随着交易量累积，奖池实时增长','pz.ends':'赛季结束倒计时',
-    'pz.note':'奖池来自 AYILON 的交易返佣，并根据 AYILON 的规模、参赛人数和总交易量每周、每月浮动。在 OKX 上交易任何品种（现货、合约等）均计入。奖金仅限通过 AYILON 推荐注册的账户。多账号、反向对冲等破坏公平的行为将被取消资格并永久封禁。',
+    'pz.note':'奖池来自 AYILON 的交易返佣，并根据 AYILON 的规模、参赛人数和总交易量每月浮动。在 OKX 上交易任何品种（现货、合约等）均计入。奖金仅限通过 AYILON 推荐注册的账户。多账号、反向对冲等破坏公平的行为将被取消资格并永久封禁。',
     'mine.rank':'我的排名','mine.ret':'收益率','mine.profit':'盈利额','mine.eq':'净值','mine.manage':'管理','mine.share':'分享排名卡',
     'cl.won':'恭喜获奖！有待领取奖金','cl.go':'领取奖金 →','cl.sub':'完成获奖者访谈并提交 USDT（TRC20）钱包地址，24 小时内发放。','cl.paid':'已发放 ✓','cl.pending':'等待发放',
     'how.title':'参与方式','how.sub':'登录、通过推荐注册、连接密钥即可。',
     'how.1.t':'通过 AYILON 推荐注册','how.1.d':'用 AYILON 推荐链接创建 OKX 账户。奖金仅限推荐注册账户。',
     'how.2.t':'连接只读密钥','how.2.d':'仅连接只读密钥（无交易/提现权限）。我们绝不会动用你的资金。',
     'how.3.t':'交易并冲榜','how.3.d':'像平常一样交易——你的数据每天自动统计上榜。',
-    'cat.title':'比赛项目','cat.sub':'收益率有周赛和月赛；盈利额和交易量仅月赛。',
-    'cat.1.t':'收益率','cat.1.d':'赛期内的收益率。周赛和月赛都有。','cat.retmin':'收益率奖金仅限起始余额 {min} 以上——防止小额满仓高杠杆刷排名，保持实力比拼。',
-    'cat.2.t':'盈利额','cat.2.d':'绝对盈利金额。周赛和月赛都有。',
-    'cat.3.t':'交易量','cat.3.d':'赛期内累计交易量。周赛和月赛都有。',
-    'cta.title':'本赛季，把你的名字留在榜上','cta.sub':'每周一 00:00 UTC 开启新赛季。','cta.btn':'参加联赛',
+    'cat.title':'比赛项目','cat.sub':'三个类别（收益率、盈利额、交易量）均为月度赛季。',
+    'cat.1.t':'收益率','cat.1.d':'月度收益率，按风险调整后收益排名。','cat.retmin':'收益率奖金仅限起始余额 {min} 以上——防止小额满仓高杠杆刷排名，保持实力比拼。',
+    'cat.2.t':'盈利额','cat.2.d':'绝对月度盈利。',
+    'cat.3.t':'交易量','cat.3.d':'累计月度交易量。',
+    'cta.title':'本赛季，把你的名字留在榜上','cta.sub':'每月 1 日 00:00 UTC 开启新赛季。','cta.btn':'参加联赛',
     'ft.about':'关于','ft.terms':'条款','ft.privacy':'隐私','ft.contact':'联系',
     'ft.disc':'交易存在本金损失风险。AYILON Arena 是交易竞赛平台，不提供投资建议，也不保证盈利。所有交易决策及结果完全由参赛者本人负责。排行榜反映参赛者自身的真实交易，不推荐任何交易策略。',
     'jm.title':'参加联赛','jm.lead':'请按以下步骤操作。资金 100% 留在你的 OKX 账户中。',
@@ -732,7 +732,7 @@ const I18N = {
     'jm.submit':'连接并参加','jm.save':'保存','jm.changekey':'更换密钥','jm.notref':'此 OKX 账户不是通过 AYILON 推荐注册的。若要具备奖金资格，请通过推荐链接创建新的 OKX 账户并连接。','jm.saved':'已保存 ✓','jm.kconn':'只读密钥已连接','jm.kchange':'如需更换，请在下方输入新密钥（可选）','jm.keyopt':'仅更换时填写','jm.leave':'退出联赛',
     'am.title':'需要登录','am.lead':'参加联赛需先登录。','am.login':'登录','am.signup':'注册',
     'lb.noresults':'无搜索结果','lb.empty':'暂无参赛者','lb.befirst':'成为第一个挑战者。','lb.meta':'赛季 {s} · 共 {n} 人参加','lb.more':'查看更多 (+{n})',
-    'pz.accruing':'累积中','pz.upto':'最高 ','pz.share':'按名次比例分配实时奖池','pz.utc':'每周一 00:00 UTC 重置','pz.rank':'名','pz.dunit':'天',
+    'pz.accruing':'累积中','pz.upto':'最高 ','pz.share':'按名次比例分配实时奖池','pz.utc':'每月 1 日 00:00 UTC 重置','pz.rank':'名','pz.dunit':'天',
     'nick.min':'请至少输入 2 个字符。','nick.saved':'昵称已保存','nick.taken':'该昵称已被占用。','nick.len':'请使用 2-24 个字符。','nick.chars':'包含无效字符。','nick.fail':'保存失败',
     'err.net':'网络错误',
     'jm.allfields':'请填写所有密钥字段。','jm.pickone':'请至少选择一个参赛项目。','jm.connected':'连接成功。','jm.refok':'AYILON 推荐已验证——具备领奖资格。','jm.refno':'已上榜。奖金仅限 AYILON 推荐注册账户。','jm.missing':'请填写所有密钥字段。','jm.relogin':'请重新登录。','jm.failprefix':'失败：','jm.leaveconfirm':'确定退出联赛并断开连接？',
@@ -743,29 +743,29 @@ const I18N = {
     'nav.board':'Clasificación','nav.how':'Cómo funciona','nav.hof':'Salón de la Fama','nav.login':'Entrar','nav.manage':'Gestionar','nav.logout':'Salir',
     'jm.nick':'Apodo','jm.nickd':'El nombre que se muestra en la clasificación y el Salón de la Fama.','jm.nicksave':'Guardar','jm.avatar':'Cambiar imagen','jm.avatarrm':'Quitar','av.large':'Imagen demasiado grande.',
     'jm.s3':'Elige tus competiciones','jm.s3d':'Participa solo en las que elijas. Apareces solo en esos rankings.',
-    'jm.b.return':'Rentabilidad (Semanal · Mensual)','jm.b.profit':'Beneficio (Semanal · Mensual)','jm.b.volume':'Volumen (Semanal · Mensual)',
+    'jm.b.return':'Rentabilidad','jm.b.profit':'Beneficio','jm.b.volume':'Volumen',
     'hof.title':'Salón de la Fama','hof.sub':'Campeones pasados, fijados automáticamente al terminar cada temporada.',
     'hof.rw':'Rentabilidad · Semanal','hof.rm':'Rentabilidad · Mensual','hof.pm':'Beneficio · Mensual','hof.vm':'Volumen · Mensual','hof.empty':'Aún no hay campeones: la primera temporada está en curso.','hof.titles':'× campeón','hof.card':'Crear tarjeta de campeón',
     'hero.kicker':'Global Trading League','hero.title':'Demuestra tu nivel en la<br>liga <b>global</b> de trading',
-    'hero.sub':'Cada semana y mes, compite con traders de todo el mundo con tu cuenta real de OKX. Sin cuota. Tus fondos siguen en tu cuenta.',
+    'hero.sub':'Cada mes, compite con traders de todo el mundo con tu cuenta real de OKX. Sin cuota. Tus fondos siguen en tu cuenta.',
     'hero.cta1':'Unirse a la liga','hero.cta2':'Ver clasificación','hero.login':'Entra para empezar',
     'hero.m1':'Entrada gratis','hero.m2':'Solo lectura · fondos seguros','hero.m3':'Puntuación diaria automática',
     'lb.title':'Clasificación en vivo','lb.sub':'Todos los participantes, en tiempo real. Busca tu apodo.',
     'lb.weekly':'Semanal','lb.monthly':'Mensual','lb.m.return':'Rentab.','lb.m.profit':'Beneficio','lb.m.volume':'Volumen',
     'lb.search':'Buscar apodo','lb.h.rank':'Pos.','lb.h.trader':'Trader','lb.h.eq':'Capital',
     'pz.pool':'Bote de esta semana','pz.pool.m':'Bote de este mes','vault.sub':'El bote crece en tiempo real a medida que se acumula el volumen','pz.ends':'La temporada termina en',
-    'pz.note':'El bote se financia con las recompensas de trading de AYILON y varía cada semana y mes según la escala de AYILON, el número de participantes y el volumen total. Cuenta cualquier instrumento en OKX (spot, futuros, etc.). Los premios son solo para cuentas referidas por AYILON. El multicuenta, la cobertura en sentido opuesto o cualquier abuso del juego limpio conllevan descalificación y baneo permanente.',
+    'pz.note':'El bote se financia con las recompensas de trading de AYILON y varía cada mes según la escala de AYILON, el número de participantes y el volumen total. Cuenta cualquier instrumento en OKX (spot, futuros, etc.). Los premios son solo para cuentas referidas por AYILON. El multicuenta, la cobertura en sentido opuesto o cualquier abuso del juego limpio conllevan descalificación y baneo permanente.',
     'mine.rank':'Mi posición','mine.ret':'Rentab.','mine.profit':'Beneficio','mine.eq':'Capital','mine.manage':'Gestionar','mine.share':'Compartir tarjeta',
     'cl.won':'¡Ganaste! Premio en espera','cl.go':'Reclamar premio →','cl.sub':'Completa la entrevista de ganador y envía tu wallet USDT (TRC20) — pago en 24 horas.','cl.paid':'Pagado ✓','cl.pending':'Pago pendiente',
     'how.title':'Cómo funciona','how.sub':'Entra, regístrate por referido y conecta tu clave. Listo.',
     'how.1.t':'Regístrate vía AYILON','how.1.d':'Crea una cuenta OKX con el enlace de referido de AYILON. Los premios son solo para cuentas referidas.',
     'how.2.t':'Conecta una clave de solo lectura','how.2.d':'Solo una clave de solo lectura (sin trading/retiro). Nunca podemos tocar tus fondos.',
     'how.3.t':'Opera y sube','how.3.d':'Opera como siempre: tus datos se puntúan a diario en la tabla.',
-    'cat.title':'Categorías','cat.sub':'Rentabilidad es semanal y mensual; beneficio y volumen son mensuales.',
-    'cat.1.t':'Rentabilidad','cat.1.d':'Rentabilidad del periodo. Semanal y mensual.','cat.retmin':'Los premios de rentabilidad requieren un saldo inicial de {min}+ — evita que apuestas all-in con alto apalancamiento inflen el ranking, manteniéndolo una competición de habilidad.',
-    'cat.2.t':'Beneficio','cat.2.d':'Beneficio absoluto. Semanal y mensual.',
-    'cat.3.t':'Volumen','cat.3.d':'Volumen acumulado del periodo. Semanal y mensual.',
-    'cta.title':'Esta temporada, pon tu nombre en la tabla','cta.sub':'Una nueva temporada empieza cada lunes a las 00:00 UTC.','cta.btn':'Unirse a la liga',
+    'cat.title':'Categorías','cat.sub':'Las tres categorías se disputan mensualmente.',
+    'cat.1.t':'Rentabilidad','cat.1.d':'Rentabilidad mensual, ordenada por rentabilidad ajustada al riesgo.','cat.retmin':'Los premios de rentabilidad requieren un saldo inicial de {min}+ — evita que apuestas all-in con alto apalancamiento inflen el ranking, manteniéndolo una competición de habilidad.',
+    'cat.2.t':'Beneficio','cat.2.d':'Beneficio mensual absoluto.',
+    'cat.3.t':'Volumen','cat.3.d':'Volumen mensual acumulado.',
+    'cta.title':'Esta temporada, pon tu nombre en la tabla','cta.sub':'Una nueva temporada mensual empieza el día 1 a las 00:00 UTC.','cta.btn':'Unirse a la liga',
     'ft.about':'Acerca de','ft.terms':'Términos','ft.privacy':'Privacidad','ft.contact':'Contacto',
     'ft.disc':'Operar conlleva riesgo de pérdida del capital. AYILON Arena es una plataforma de competición de trading y no ofrece asesoramiento de inversión ni garantiza beneficios. Todas las decisiones y resultados son responsabilidad exclusiva del participante. La clasificación refleja el trading real de los participantes y no respalda ninguna estrategia.',
     'jm.title':'Unirse a la liga','jm.lead':'Sigue los pasos. Tus fondos siguen 100% en tu cuenta de OKX.',
@@ -786,29 +786,29 @@ const I18N = {
     'nav.board':'Bảng xếp hạng','nav.how':'Cách tham gia','nav.hof':'Đại sảnh Danh vọng','nav.login':'Đăng nhập','nav.manage':'Quản lý','nav.logout':'Đăng xuất',
     'jm.nick':'Biệt danh','jm.nickd':'Tên hiển thị trên bảng xếp hạng và Đại sảnh Danh vọng.','jm.nicksave':'Lưu','jm.avatar':'Đổi ảnh','jm.avatarrm':'Xóa','av.large':'Ảnh quá lớn.',
     'jm.s3':'Chọn hạng mục tham gia','jm.s3d':'Chỉ tham gia hạng mục bạn chọn. Bạn chỉ xuất hiện ở các bảng đã chọn.',
-    'jm.b.return':'Lợi nhuận (Tuần · Tháng)','jm.b.profit':'Tiền lãi (Tuần · Tháng)','jm.b.volume':'Khối lượng (Tuần · Tháng)',
+    'jm.b.return':'Lợi nhuận','jm.b.profit':'Tiền lãi','jm.b.volume':'Khối lượng',
     'hof.title':'Đại sảnh Danh vọng','hof.sub':'Các nhà vô địch trước đây, được lưu tự động khi mỗi mùa giải kết thúc.',
     'hof.rw':'Lợi nhuận % · Tuần','hof.rm':'Lợi nhuận % · Tháng','hof.pm':'Tiền lãi · Tháng','hof.vm':'Khối lượng · Tháng','hof.empty':'Chưa có nhà vô địch — mùa giải đầu tiên đang diễn ra.','hof.titles':'× vô địch','hof.card':'Tạo thẻ nhà vô địch',
     'hero.kicker':'Global Trading League','hero.title':'Chứng minh đẳng cấp ở<br>giải đấu <b>toàn cầu</b>',
-    'hero.sub':'Mỗi tuần và mỗi tháng, thi đấu với trader toàn cầu bằng tài khoản OKX thật. Miễn phí tham gia. Tiền vẫn nằm trong tài khoản của bạn.',
+    'hero.sub':'Mỗi tháng, thi đấu với trader toàn cầu bằng tài khoản OKX thật. Miễn phí tham gia. Tiền vẫn nằm trong tài khoản của bạn.',
     'hero.cta1':'Tham gia giải','hero.cta2':'Xem bảng xếp hạng','hero.login':'Đăng nhập để bắt đầu',
     'hero.m1':'Miễn phí tham gia','hero.m2':'Chỉ đọc · tiền an toàn','hero.m3':'Tự động tính mỗi ngày',
     'lb.title':'Bảng xếp hạng trực tiếp','lb.sub':'Toàn bộ người chơi, xếp hạng trực tiếp. Tìm biệt danh của bạn.',
     'lb.weekly':'Tuần','lb.monthly':'Tháng','lb.m.return':'Lợi nhuận','lb.m.profit':'Tiền lãi','lb.m.volume':'Khối lượng',
     'lb.search':'Tìm biệt danh','lb.h.rank':'Hạng','lb.h.trader':'Trader','lb.h.eq':'Tài sản',
     'pz.pool':'Quỹ thưởng tuần này','pz.pool.m':'Quỹ thưởng tháng này','vault.sub':'Quỹ thưởng tăng theo thời gian thực khi khối lượng giao dịch tích lũy','pz.ends':'Mùa giải kết thúc sau',
-    'pz.note':'Quỹ thưởng đến từ phần thưởng giao dịch của AYILON và thay đổi theo tuần, theo tháng tùy vào quy mô AYILON, số người tham gia và tổng khối lượng giao dịch. Giao dịch bất kỳ sản phẩm nào trên OKX (spot, futures, v.v.) đều được tính. Giải thưởng chỉ dành cho tài khoản đăng ký qua AYILON. Nhiều tài khoản, phòng hộ ngược chiều hay mọi hành vi gian lận sẽ bị loại và cấm vĩnh viễn.',
+    'pz.note':'Quỹ thưởng đến từ phần thưởng giao dịch của AYILON và thay đổi theo tháng tùy vào quy mô AYILON, số người tham gia và tổng khối lượng giao dịch. Giao dịch bất kỳ sản phẩm nào trên OKX (spot, futures, v.v.) đều được tính. Giải thưởng chỉ dành cho tài khoản đăng ký qua AYILON. Nhiều tài khoản, phòng hộ ngược chiều hay mọi hành vi gian lận sẽ bị loại và cấm vĩnh viễn.',
     'mine.rank':'Hạng của tôi','mine.ret':'Lợi nhuận','mine.profit':'Tiền lãi','mine.eq':'Tài sản','mine.manage':'Quản lý','mine.share':'Chia sẻ thẻ hạng',
     'cl.won':'Bạn đã thắng! Có giải chờ nhận','cl.go':'Nhận thưởng →','cl.sub':'Hoàn thành phỏng vấn và gửi ví USDT (TRC20) — thanh toán trong 24 giờ.','cl.paid':'Đã trả ✓','cl.pending':'Chờ thanh toán',
     'how.title':'Cách tham gia','how.sub':'Đăng nhập, đăng ký qua giới thiệu, kết nối khóa. Xong.',
     'how.1.t':'Đăng ký qua AYILON','how.1.d':'Tạo tài khoản OKX qua link giới thiệu AYILON. Giải thưởng chỉ cho tài khoản được giới thiệu.',
     'how.2.t':'Kết nối khóa chỉ đọc','how.2.d':'Chỉ khóa chỉ đọc (không giao dịch/rút). Chúng tôi không bao giờ động tới tiền của bạn.',
     'how.3.t':'Giao dịch và leo hạng','how.3.d':'Giao dịch như bình thường — số liệu tự động lên bảng mỗi ngày.',
-    'cat.title':'Hạng mục','cat.sub':'Lợi nhuận có tuần và tháng; tiền lãi và khối lượng chỉ theo tháng.',
-    'cat.1.t':'Lợi nhuận %','cat.1.d':'Lợi nhuận trong kỳ. Có cả tuần và tháng.','cat.retmin':'Giải lợi nhuận (%) yêu cầu số dư khởi đầu từ {min} — ngăn lệnh all-in đòn bẩy cao thao túng bảng xếp hạng, giữ là cuộc thi kỹ năng.',
-    'cat.2.t':'Tiền lãi','cat.2.d':'Lợi nhuận tuyệt đối. Có cả tuần và tháng.',
-    'cat.3.t':'Khối lượng','cat.3.d':'Khối lượng tích lũy trong kỳ. Có cả tuần và tháng.',
-    'cta.title':'Mùa này, ghi tên bạn lên bảng','cta.sub':'Mùa giải mới bắt đầu mỗi thứ Hai lúc 00:00 UTC.','cta.btn':'Tham gia giải',
+    'cat.title':'Hạng mục','cat.sub':'Cả ba hạng mục đều theo mùa giải hàng tháng.',
+    'cat.1.t':'Lợi nhuận %','cat.1.d':'Lợi nhuận hàng tháng, xếp theo lợi nhuận điều chỉnh rủi ro.','cat.retmin':'Giải lợi nhuận (%) yêu cầu số dư khởi đầu từ {min} — ngăn lệnh all-in đòn bẩy cao thao túng bảng xếp hạng, giữ là cuộc thi kỹ năng.',
+    'cat.2.t':'Tiền lãi','cat.2.d':'Lợi nhuận tuyệt đối hàng tháng.',
+    'cat.3.t':'Khối lượng','cat.3.d':'Khối lượng tích lũy hàng tháng.',
+    'cta.title':'Mùa này, ghi tên bạn lên bảng','cta.sub':'Mùa giải hàng tháng mới bắt đầu vào ngày 1 lúc 00:00 UTC.','cta.btn':'Tham gia giải',
     'ft.about':'Giới thiệu','ft.terms':'Điều khoản','ft.privacy':'Bảo mật','ft.contact':'Liên hệ',
     'ft.disc':'Giao dịch có rủi ro mất vốn. AYILON Arena là nền tảng thi đấu giao dịch, không tư vấn đầu tư và không bảo đảm lợi nhuận. Mọi quyết định và kết quả hoàn toàn do người tham gia chịu trách nhiệm. Bảng xếp hạng phản ánh giao dịch thật của người chơi và không khuyến nghị bất kỳ chiến lược nào.',
     'jm.title':'Tham gia giải','jm.lead':'Làm theo các bước dưới đây. Tiền của bạn vẫn nằm 100% trong tài khoản OKX.',
@@ -818,7 +818,7 @@ const I18N = {
     'jm.submit':'Kết nối và tham gia','jm.save':'Lưu','jm.changekey':'Đổi khóa','jm.notref':'Tài khoản OKX này không được tạo qua giới thiệu AYILON. Để đủ điều kiện nhận thưởng, hãy tạo tài khoản OKX mới bằng liên kết giới thiệu và kết nối.','jm.saved':'Đã lưu ✓','jm.kconn':'Đã kết nối khóa chỉ đọc','jm.kchange':'Để đổi, nhập khóa mới bên dưới (tùy chọn)','jm.keyopt':'Chỉ khi đổi','jm.leave':'Rời giải',
     'am.title':'Cần đăng nhập','am.lead':'Tham gia giải cần đăng nhập trước.','am.login':'Đăng nhập','am.signup':'Đăng ký',
     'lb.noresults':'Không có kết quả','lb.empty':'Chưa có người tham gia','lb.befirst':'Hãy là người thách đấu đầu tiên.','lb.meta':'Mùa {s} · {n} người tham gia','lb.more':'Xem thêm (+{n})',
-    'pz.accruing':'Đang tích lũy','pz.upto':'tối đa ','pz.share':'chia theo % của quỹ thưởng thực tế','pz.utc':'đặt lại Thứ Hai 00:00 UTC','pz.rank':'','pz.dunit':'ngày',
+    'pz.accruing':'Đang tích lũy','pz.upto':'tối đa ','pz.share':'chia theo % của quỹ thưởng thực tế','pz.utc':'đặt lại ngày 1 lúc 00:00 UTC','pz.rank':'','pz.dunit':'ngày',
     'nick.min':'Nhập ít nhất 2 ký tự.','nick.saved':'Đã lưu biệt danh','nick.taken':'Biệt danh đã có người dùng.','nick.len':'Dùng 2-24 ký tự.','nick.chars':'Có ký tự không hợp lệ.','nick.fail':'Lưu thất bại',
     'err.net':'Lỗi mạng',
     'jm.allfields':'Nhập đủ tất cả các trường khóa.','jm.pickone':'Chọn ít nhất một hạng mục.','jm.connected':'Đã kết nối. ','jm.refok':'Đã xác minh giới thiệu AYILON — đủ điều kiện nhận thưởng.','jm.refno':'Đã lên bảng. Giải thưởng cần tài khoản đăng ký qua AYILON.','jm.missing':'Nhập đủ tất cả các trường khóa.','jm.relogin':'Vui lòng đăng nhập lại.','jm.failprefix':'Thất bại: ','jm.leaveconfirm':'Rời giải và ngắt kết nối?',
@@ -829,29 +829,29 @@ const I18N = {
     'nav.board':'Рейтинг','nav.how':'Как участвовать','nav.hof':'Зал славы','nav.login':'Войти','nav.manage':'Управление','nav.logout':'Выйти',
     'jm.nick':'Никнейм','jm.nickd':'Имя, отображаемое в рейтинге и Зале славы.','jm.nicksave':'Сохранить','jm.avatar':'Сменить фото','jm.avatarrm':'Удалить','av.large':'Изображение слишком большое.',
     'jm.s3':'Выберите номинации','jm.s3d':'Участвуете только в выбранных. Появляетесь только в выбранных таблицах.',
-    'jm.b.return':'Доходность (Неделя · Месяц)','jm.b.profit':'Прибыль (Неделя · Месяц)','jm.b.volume':'Объём (Неделя · Месяц)',
+    'jm.b.return':'Доходность','jm.b.profit':'Прибыль','jm.b.volume':'Объём',
     'hof.title':'Зал славы','hof.sub':'Прошлые чемпионы, фиксируются автоматически в конце каждого сезона.',
     'hof.rw':'Доходность · Неделя','hof.rm':'Доходность · Месяц','hof.pm':'Прибыль · Месяц','hof.vm':'Объём · Месяц','hof.empty':'Чемпионов пока нет — идёт первый сезон.','hof.titles':'× чемпион','hof.card':'Создать карточку чемпиона',
     'hero.kicker':'Global Trading League','hero.title':'Докажи мастерство в<br><b>глобальной</b> лиге трейдинга',
-    'hero.sub':'Каждую неделю и месяц соревнуйтесь с трейдерами со всего мира на реальном счёте OKX. Без взноса. Средства остаются на вашем счёте.',
+    'hero.sub':'Каждый месяц соревнуйтесь с трейдерами со всего мира на реальном счёте OKX. Без взноса. Средства остаются на вашем счёте.',
     'hero.cta1':'Вступить в лигу','hero.cta2':'Смотреть рейтинг','hero.login':'Войдите, чтобы начать',
     'hero.m1':'Участие бесплатно','hero.m2':'Только чтение · средства в безопасности','hero.m3':'Ежедневный авто-подсчёт',
     'lb.title':'Живой рейтинг','lb.sub':'Все участники в реальном времени. Найдите свой никнейм.',
     'lb.weekly':'Неделя','lb.monthly':'Месяц','lb.m.return':'Доходн.','lb.m.profit':'Прибыль','lb.m.volume':'Объём',
     'lb.search':'Поиск никнейма','lb.h.rank':'Место','lb.h.trader':'Трейдер','lb.h.eq':'Капитал',
     'pz.pool':'Призовой фонд недели','pz.pool.m':'Призовой фонд месяца','vault.sub':'Фонд растёт в реальном времени по мере накопления объёма','pz.ends':'До конца сезона',
-    'pz.note':'Призовой фонд формируется из торговых вознаграждений AYILON и меняется каждую неделю и месяц в зависимости от масштаба AYILON, числа участников и общего объёма торгов. Засчитывается любой инструмент на OKX (спот, фьючерсы и т. д.). Призы только для аккаунтов, зарегистрированных по реферальной ссылке AYILON. Мультиаккаунты, встречный хедж и любое нарушение честной игры ведут к дисквалификации и вечной блокировке.',
+    'pz.note':'Призовой фонд формируется из торговых вознаграждений AYILON и меняется каждый месяц в зависимости от масштаба AYILON, числа участников и общего объёма торгов. Засчитывается любой инструмент на OKX (спот, фьючерсы и т. д.). Призы только для аккаунтов, зарегистрированных по реферальной ссылке AYILON. Мультиаккаунты, встречный хедж и любое нарушение честной игры ведут к дисквалификации и вечной блокировке.',
     'mine.rank':'Моё место','mine.ret':'Доходн.','mine.profit':'Прибыль','mine.eq':'Капитал','mine.manage':'Управление','mine.share':'Карточка ранга',
     'cl.won':'Вы выиграли! Приз ждёт','cl.go':'Получить приз →','cl.sub':'Пройдите интервью и укажите USDT-кошелёк (TRC20) — выплата за 24 часа.','cl.paid':'Выплачено ✓','cl.pending':'Ожидает выплаты',
     'how.title':'Как участвовать','how.sub':'Войдите, зарегистрируйтесь по реферальной ссылке, подключите ключ. Готово.',
     'how.1.t':'Регистрация через AYILON','how.1.d':'Создайте счёт OKX по реферальной ссылке AYILON. Призы только для рефералов.',
     'how.2.t':'Подключите ключ «только чтение»','how.2.d':'Только ключ для чтения (без торговли/вывода). Мы никогда не трогаем ваши средства.',
     'how.3.t':'Торгуйте и поднимайтесь','how.3.d':'Торгуйте как обычно — данные автоматически попадают в таблицу каждый день.',
-    'cat.title':'Номинации','cat.sub':'Доходность — неделя и месяц; прибыль и объём — только месяц.',
-    'cat.1.t':'Доходность','cat.1.d':'Доходность за период. И неделя, и месяц.','cat.retmin':'Призы за доходность доступны при стартовом балансе от {min} — это не даёт ставкам ва-банк с высоким плечом накручивать рейтинг, сохраняя состязание мастерства.',
-    'cat.2.t':'Прибыль','cat.2.d':'Абсолютная прибыль. И неделя, и месяц.',
-    'cat.3.t':'Объём','cat.3.d':'Накопленный объём за период. И неделя, и месяц.',
-    'cta.title':'В этом сезоне впишите своё имя в таблицу','cta.sub':'Новый сезон стартует каждый понедельник в 00:00 UTC.','cta.btn':'Вступить в лигу',
+    'cat.title':'Номинации','cat.sub':'Все три номинации — месячные.',
+    'cat.1.t':'Доходность','cat.1.d':'Месячная доходность, ранжируется с поправкой на риск.','cat.retmin':'Призы за доходность доступны при стартовом балансе от {min} — это не даёт ставкам ва-банк с высоким плечом накручивать рейтинг, сохраняя состязание мастерства.',
+    'cat.2.t':'Прибыль','cat.2.d':'Абсолютная месячная прибыль.',
+    'cat.3.t':'Объём','cat.3.d':'Накопленный месячный объём.',
+    'cta.title':'В этом сезоне впишите своё имя в таблицу','cta.sub':'Новый месячный сезон стартует 1-го числа в 00:00 UTC.','cta.btn':'Вступить в лигу',
     'ft.about':'О нас','ft.terms':'Условия','ft.privacy':'Конфиденциальность','ft.contact':'Контакты',
     'ft.disc':'Торговля сопряжена с риском потери капитала. AYILON Arena — платформа торговых соревнований, не предоставляет инвестиционных советов и не гарантирует прибыль. Все решения и результаты — исключительно ответственность участника. Рейтинг отражает реальную торговлю участников и не рекомендует никакую стратегию.',
     'jm.title':'Вступить в лигу','jm.lead':'Следуйте шагам ниже. Ваши средства на 100% остаются на счёте OKX.',
@@ -861,7 +861,7 @@ const I18N = {
     'jm.submit':'Подключить и вступить','jm.save':'Сохранить','jm.changekey':'Сменить ключ','jm.notref':'Этот аккаунт OKX создан не по реферальной ссылке AYILON. Чтобы претендовать на призы, создайте новый аккаунт OKX по реферальной ссылке и подключите его.','jm.saved':'Сохранено ✓','jm.kconn':'Ключ только для чтения подключён','jm.kchange':'Чтобы сменить, введите новый ключ ниже (необязательно)','jm.keyopt':'Только для смены','jm.leave':'Покинуть арену',
     'am.title':'Нужен вход','am.lead':'Для участия необходимо войти.','am.login':'Войти','am.signup':'Регистрация',
     'lb.noresults':'Ничего не найдено','lb.empty':'Пока нет участников','lb.befirst':'Станьте первым претендентом.','lb.meta':'Сезон {s} · участников: {n}','lb.more':'Показать ещё (+{n})',
-    'pz.accruing':'Накапливается','pz.upto':'до ','pz.share':'доля в % от реального призового фонда','pz.utc':'сброс в пн 00:00 UTC','pz.rank':'место','pz.dunit':'д',
+    'pz.accruing':'Накапливается','pz.upto':'до ','pz.share':'доля в % от реального призового фонда','pz.utc':'сброс 1-го числа 00:00 UTC','pz.rank':'место','pz.dunit':'д',
     'nick.min':'Минимум 2 символа.','nick.saved':'Никнейм сохранён','nick.taken':'Этот никнейм занят.','nick.len':'Используйте 2-24 символа.','nick.chars':'Содержит недопустимые символы.','nick.fail':'Ошибка',
     'err.net':'Ошибка сети',
     'jm.allfields':'Заполните все поля ключа.','jm.pickone':'Выберите хотя бы одну номинацию.','jm.connected':'Подключено. ','jm.refok':'Реферал AYILON подтверждён — есть право на приз.','jm.refno':'Вы в таблице. Призы требуют аккаунт, зарегистрированный через AYILON.','jm.missing':'Заполните все поля ключа.','jm.relogin':'Войдите снова.','jm.failprefix':'Ошибка: ','jm.leaveconfirm':'Покинуть арену и отключить ключ?',
@@ -1271,9 +1271,9 @@ async function loadMine(){
     // Reflect saved selections so re-opening shows what you actually chose.
     if(Array.isArray(j.boards)&&j.boards.length){const catmap={bRet:['rw','rm'],bPro:['pw','pm'],bVol:['vw','vm']};Object.entries(catmap).forEach(([id,codes])=>{const el=document.getElementById(id);if(el)el.checked=codes.some(c=>j.boards.includes(c));});}
     if(j.nickname)document.getElementById('jNick').value=j.nickname;
-    const sh=document.getElementById('mineShare');sh.href='/card.html?type=rank&period=weekly&nick='+encodeURIComponent(j.nickname||localStorage.getItem('ayilon_username')||'');sh.target='_blank';
+    const sh=document.getElementById('mineShare');sh.href='/card.html?type=rank&period=monthly&nick='+encodeURIComponent(j.nickname||localStorage.getItem('ayilon_username')||'');sh.target='_blank';
     setAvatarPreview(j.hasAvatar,j.nickname);
-    const wk=(j.scores&&j.scores.weekly)?j.scores.weekly:{returnPct:0,profit:0};
+    const wk=(j.scores&&j.scores.monthly)?j.scores.monthly:{returnPct:0,profit:0};
     document.getElementById('mRet').textContent=fmtPct(wk.returnPct||0);
     document.getElementById('mRet').style.color=(wk.returnPct||0)>=0?'var(--accent)':'var(--red)';
     document.getElementById('mProfit').textContent=fmtUsd(wk.profit||0);
