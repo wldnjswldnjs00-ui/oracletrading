@@ -936,12 +936,17 @@ function applyBoard(resetPage){
   if(resetPage) lbLimit=LB_PAGE;
   renderLB();
 }
+// Read the leaderboard from the custom domain (api.ayilon.com) so Cloudflare's edge
+// cache serves most hits without invoking the Worker — unlimited-free reads. Falls
+// back to the worker URL automatically if the custom domain isn't reachable yet
+// (e.g. while its SSL cert is still provisioning), so it can never break.
+const LIVE_CDN='https://api.ayilon.com';
 async function fetchLive(){
-  try{
-    const r=await fetch(`${API}/arena/live`);
-    const j=await r.json();
-    if(j&&j.boards){ LIVE=j; season=j.season||null; if(j.minBalance!=null)MINBAL=j.minBalance; if(j.returnMinBalance!=null)RETMINBAL=j.returnMinBalance; }
-  }catch(e){}
+  let j=null;
+  for(const base of [LIVE_CDN, API]){
+    try{ const r=await fetch(`${base}/arena/live`); if(r.ok){ const d=await r.json(); if(d&&d.boards){ j=d; break; } } }catch(e){}
+  }
+  if(j){ LIVE=j; season=j.season||null; if(j.minBalance!=null)MINBAL=j.minBalance; if(j.returnMinBalance!=null)RETMINBAL=j.returnMinBalance; }
   applyBoard(false); renderPrize(); updateMinNote(); renderCatHero();
 }
 // Legacy callers (e.g. nickname save) just re-render the current board from the snapshot — no network.
