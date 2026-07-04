@@ -924,15 +924,28 @@ function updateMetricTabs(){
   // Both weekly and monthly now run all three categories — always show every tab.
   document.querySelectorAll('#metricSeg .m-only').forEach(b=>b.style.display='');
 }
-async function fetchLB(opts){
-  const keepPage=opts&&opts.preservePage;
-  try{
-    const r=await fetch(`${API}/arena/leaderboard?period=${state.period}&metric=${state.metric}`);
-    const j=await r.json(); state.rows=j.leaderboard||[]; state.total=j.total||0; state.seasonId=j.seasonId||'';
-  }catch(e){ if(!keepPage){ state.rows=[]; state.total=0; } }
-  if(!keepPage) lbLimit=LB_PAGE;
+// The server precomputes ALL boards + season into one edge-cached snapshot, so a
+// single /arena/live call powers every tab. Switching period/metric = zero extra
+// requests (rendered from the cached snapshot), and viewer reads never touch the DB.
+let LIVE=null;
+function applyBoard(resetPage){
+  const bd=(LIVE&&LIVE.boards&&LIVE.boards[state.period]&&LIVE.boards[state.period][state.metric])||null;
+  state.rows=bd?(bd.list||[]):[];
+  state.total=bd?(bd.total||0):0;
+  state.seasonId=(LIVE&&LIVE.seasonIds&&LIVE.seasonIds[state.period])||'';
+  if(resetPage) lbLimit=LB_PAGE;
   renderLB();
 }
+async function fetchLive(){
+  try{
+    const r=await fetch(`${API}/arena/live`);
+    const j=await r.json();
+    if(j&&j.boards){ LIVE=j; season=j.season||null; if(j.minBalance!=null)MINBAL=j.minBalance; if(j.returnMinBalance!=null)RETMINBAL=j.returnMinBalance; }
+  }catch(e){}
+  applyBoard(false); renderPrize(); updateMinNote(); renderCatHero();
+}
+// Legacy callers (e.g. nickname save) just re-render the current board from the snapshot — no network.
+function fetchLB(){ applyBoard(true); }
 const LB_PAGE=50; let lbLimit=LB_PAGE;
 function lbRowHtml(r,myNick){
   const mv=state.metric==='volume'?fmtVol(r.volume):state.metric==='profit'?fmtUsd(r.profit):fmtPct(r.returnPct);
@@ -965,8 +978,8 @@ function renderLB(){
 document.getElementById('lbMoreBtn').addEventListener('click',()=>{lbLimit+=LB_PAGE;renderLB();});
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-document.getElementById('periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;document.querySelectorAll('#periodSeg button').forEach(x=>x.classList.toggle('on',x===b));updateMetricTabs();renderPrize();fetchLB();});
-document.getElementById('metricSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.style.display==='none')return;state.metric=b.dataset.metric;document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x===b));syncMetricHeader();fetchLB();});
+document.getElementById('periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;document.querySelectorAll('#periodSeg button').forEach(x=>x.classList.toggle('on',x===b));updateMetricTabs();renderPrize();applyBoard(true);});
+document.getElementById('metricSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.style.display==='none')return;state.metric=b.dataset.metric;document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x===b));syncMetricHeader();applyBoard(true);});
 let qT;document.getElementById('lbSearch').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{state.q=e.target.value.trim();lbLimit=LB_PAGE;renderLB();},150);});
 
 /* ---------- prize + countdown ---------- */
@@ -1343,7 +1356,6 @@ applyLang();
 setAuthUI();
 buildRain();
 updateMetricTabs();
-fetchSeason();
 fetchHOF();
 // Hide the splash once the leaderboard is in (min visible time so it doesn't
 // flash; hard fallback so a slow/failed fetch never traps the user behind it).
@@ -1351,13 +1363,13 @@ const _splashStart=Date.now();
 function hideSplash(){ const el=document.getElementById('splash'); if(!el||el.classList.contains('hide'))return;
   const wait=Math.max(0,650-(Date.now()-_splashStart));
   setTimeout(()=>{ el.classList.add('hide'); setTimeout(()=>el.remove(),600); },wait); }
-fetchLB().then(loadMine).finally(hideSplash);
+fetchLive().then(loadMine).finally(hideSplash);
 setTimeout(hideSplash,4000);
-// Live auto-refresh: pull fresh scores every 20s without an F5, but keep the
-// viewer's place (pagination/search preserved). Pauses while the tab is hidden
-// and refreshes immediately when they come back.
-function liveRefresh(){ if(document.hidden) return; fetchLB({preservePage:true}); fetchSeason(); if(authed())loadMine(); }
-setInterval(liveRefresh,20000);
+// Live auto-refresh: one cheap /arena/live call every 10s (all boards + season in
+// a single edge-cached response). Pauses while the tab is hidden and refreshes
+// immediately when the viewer returns. Tab switches render locally (no request).
+function liveRefresh(){ if(document.hidden) return; fetchLive(); if(authed())loadMine(); }
+setInterval(liveRefresh,10000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) liveRefresh(); });
 </script>
 </body>

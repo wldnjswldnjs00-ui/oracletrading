@@ -78,6 +78,7 @@ export default {
       if (path === '/bot-status') return handleBotStatus(request, env);
       if (path === '/arena/leaderboard') return handleArenaLeaderboard(request, env);
       if (path === '/arena/season')      return handleArenaSeason(request, env);
+      if (path === '/arena/live')        return handleArenaLive(request, env);
       if (path === '/arena/winners')     return handleArenaWinners(request, env);
       if (path === '/arena/avatar')      return handleArenaGetAvatar(request, env);
     }
@@ -87,7 +88,8 @@ export default {
 
   async scheduled(event, env, ctx) {
     ctx.waitUntil(cronCheckPayments(env));
-    ctx.waitUntil(arenaScore(env));   // Arena replaces the auto-trading engine
+    // Score, then rebuild the public leaderboard snapshot so viewer reads never touch the DB.
+    ctx.waitUntil((async () => { try { await arenaScore(env); } catch (_) {} try { await buildArenaSnapshot(env); } catch (_) {} })());
   }
 };
 
@@ -2001,9 +2003,7 @@ function arenaPrizeBreakdown(pool, board, cfg) {
 }
 
 // Public: current season pool, prize breakdown, countdown, eligibility rules.
-async function handleArenaSeason(request, env) {
-  const cfg = await getArenaConfig(env);
-  const now = new Date();
+function buildSeasonPayload(cfg, now) {
   const ends = arenaSeasonEnds(now);
   // Prize pool = a fixed % of my accumulated OKX commission, allocated per period.
   const commissionTotal = parseFloat(cfg.commissionTotal || 0);
@@ -2012,9 +2012,6 @@ async function handleArenaSeason(request, env) {
   const csplit = cfg.commissionSplit || { weekly: 25, monthly: 75 };
   const out = {};
   for (const board of ['weekly', 'monthly']) {
-    // Total budget for this period, then split evenly across its categories so the
-    // grand total across every board/category/rank equals the funded pool exactly
-    // (never more than the configured % of commission — no over-promising).
     const boardPool = cfg.poolMode === 'manual'
       ? parseFloat(cfg.manualPool[board] || 0)
       : commissionPool * (parseFloat(csplit[board] || 0) / 100);
@@ -2022,21 +2019,81 @@ async function handleArenaSeason(request, env) {
     const numCat = cats.length || 1;
     const catPool = boardPool / numCat;
     const split = cfg.split[board] || [];
-    // Each prize is a real % share of the (real) category pool — always payable.
     const prizes = split.map((pct, i) => ({ rank: i + 1, pct, amount: Math.round(catPool * pct / 100 * 100) / 100 }));
     const r2 = v => Math.round(v * 100) / 100;
     out[board] = {
       seasonId: board === 'monthly' ? arenaMonthId(now) : arenaWeekId(now),
-      endsAt: ends[board],
-      pool: r2(catPool),            // funds the prizes shown for one category
-      boardPool: r2(boardPool),     // total across all categories this period
-      numCategories: numCat,
-      prizes,
-      boards: cats
+      endsAt: ends[board], pool: r2(catPool), boardPool: r2(boardPool),
+      numCategories: numCat, prizes, boards: cats
     };
   }
-  return json({ ok: true, poolMode: cfg.poolMode, commissionPct, commissionTotal: Math.round(commissionTotal * 100) / 100,
-    minBalance: cfg.minBalance, returnMinBalance: Math.max(parseFloat(cfg.minBalance || 0), parseFloat(cfg.returnMinBalance || 0)), minTrades: cfg.minTrades, season: out });
+  return { ok: true, poolMode: cfg.poolMode, commissionPct, commissionTotal: Math.round(commissionTotal * 100) / 100,
+    minBalance: cfg.minBalance, returnMinBalance: Math.max(parseFloat(cfg.minBalance || 0), parseFloat(cfg.returnMinBalance || 0)), minTrades: cfg.minTrades, season: out };
+}
+async function handleArenaSeason(request, env) {
+  const cfg = await getArenaConfig(env);
+  return json(buildSeasonPayload(cfg, new Date()));
+}
+
+// ── Static leaderboard snapshot (free-at-scale reads) ──────────────────────
+// The cron precomputes ALL boards + season into one KV blob. Viewers hit
+// /arena/live which serves that blob (one cheap read, zero DB queries per view)
+// and edge-caches it — so no amount of traffic can overload the database, and
+// on a custom domain the edge cache serves most hits without invoking the Worker.
+async function buildArenaSnapshot(env) {
+  await ensureDB(env);
+  const cfg = await getArenaConfig(env);
+  const now = new Date();
+  const minBal = parseFloat(cfg.minBalance || 0), minDays = parseInt(cfg.minTradeDays || 0), minVol = parseFloat(cfg.minVolume || 0);
+  const retMin = Math.max(minBal, parseFloat(cfg.returnMinBalance || 0));
+  const boards = {}, seasonIds = {};
+  for (const period of ['weekly', 'monthly']) {
+    const sid = period === 'monthly' ? arenaMonthId(now) : arenaWeekId(now);
+    seasonIds[period] = sid;
+    let rows = [];
+    try {
+      rows = (await env.BOT_DB.prepare(
+        `SELECT s.email,s.return_pct,s.profit,s.volume,s.last_equity,s.start_equity,s.trade_days,
+                p.nickname,p.country,p.referral_verified,p.boards,(p.avatar IS NOT NULL) AS has_avatar
+         FROM arena_score s JOIN arena_participants p ON p.email=s.email
+         WHERE s.board=? AND s.season_id=? AND p.demo=0`).bind(period, sid).all()).results || [];
+    } catch (_) {}
+    boards[period] = {};
+    for (const metric of ['return', 'profit', 'volume']) {
+      const optCode = period === 'monthly' ? (metric === 'volume' ? 'vm' : metric === 'profit' ? 'pm' : 'rm')
+                                           : (metric === 'volume' ? 'vw' : metric === 'profit' ? 'pw' : 'rw');
+      const effMin = metric === 'return' ? retMin : minBal;
+      const sortKey = metric === 'volume' ? 'volume' : metric === 'profit' ? 'profit' : 'return_pct';
+      const opted = rows.filter(r => { let b = []; try { b = JSON.parse(r.boards || '[]'); } catch (_) {} return b.includes(optCode); });
+      opted.sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
+      const list = opted.slice(0, 100).map((r, i) => ({
+        rank: i + 1, nickname: r.nickname || (r.email || '').split('@')[0], country: r.country || '',
+        verified: r.referral_verified === 1, avatar: r.has_avatar ? 1 : 0,
+        eligible: r.referral_verified === 1 && (r.start_equity || 0) >= effMin && (r.trade_days || 0) >= minDays && (r.volume || 0) >= minVol,
+        returnPct: r.return_pct || 0, profit: r.profit || 0, volume: r.volume || 0, equity: r.last_equity || 0
+      }));
+      boards[period][metric] = { list, total: opted.length };
+    }
+  }
+  const sp = buildSeasonPayload(cfg, now);
+  const snap = { ok: true, updatedAt: Date.now(), seasonIds, boards,
+    season: sp.season, poolMode: sp.poolMode, commissionPct: sp.commissionPct, commissionTotal: sp.commissionTotal,
+    minBalance: sp.minBalance, returnMinBalance: sp.returnMinBalance, minTrades: sp.minTrades };
+  try { await env.USERS_KV.put('arena:snapshot', JSON.stringify(snap)); } catch (_) {}
+  return snap;
+}
+async function handleArenaLive(request, env) {
+  const cache = caches.default;
+  const cacheKey = new Request('https://ayilon.internal/arena/live', { method: 'GET' });
+  const hit = await cache.match(cacheKey).catch(() => null);
+  if (hit) return hit;
+  let snap = await env.USERS_KV.get('arena:snapshot', { type: 'json' }).catch(() => null);
+  if (!snap) { try { snap = await buildArenaSnapshot(env); } catch (_) { snap = { ok: true, boards: {}, season: {} }; } }
+  const resp = new Response(JSON.stringify(snap), { headers: {
+    'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=20'
+  } });
+  try { await cache.put(cacheKey, resp.clone()); } catch (_) {}
+  return resp;
 }
 
 // Admin: set manual pool / caps / splits.
