@@ -13,6 +13,7 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    try {
     if (request.method === 'POST') {
       if (path === '/send-verification')  return handleVerification(request, env);
       if (path === '/verify-code')        return handleVerifyCode(request, env);
@@ -84,6 +85,11 @@ export default {
     }
 
     return corsResponse(JSON.stringify({ error: 'Not found' }), 404);
+    } catch (e) {
+      // Any unhandled throw still returns a CORS'd JSON 500 so the browser can
+      // read it (instead of surfacing an opaque cross-origin/network failure).
+      return corsResponse(JSON.stringify({ ok: false, error: 'server_error', detail: String((e && e.message) || e).slice(0, 200) }), 500);
+    }
   },
 
   async scheduled(event, env, ctx) {
