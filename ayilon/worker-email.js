@@ -1736,9 +1736,13 @@ async function handleArenaJoin(request, env) {
     eq = parseFloat(bal?.data?.[0]?.totalEq || '0');
   } catch (_) {}
 
-  // Hard entry gate: must have at least the minimum balance to join the competition.
-  if (minBal > 0 && eq < minBal) {
-    return json({ ok: false, error: 'min_balance', minBalance: minBal, equity: +eq.toFixed(2), short: +(minBal - eq).toFixed(2) });
+  // Hard entry gate. If the user selected ONLY the return board, the floor that
+  // matters is the higher return floor ($500) — so the message names the real
+  // number instead of the generic $100.
+  const onlyReturnSel = boardsIn.length > 0 && boardsIn.every(b => b === 'rw' || b === 'rm');
+  const entryFloor = onlyReturnSel ? retMinJoin : minBal;
+  if (entryFloor > 0 && eq < entryFloor) {
+    return json({ ok: false, error: onlyReturnSel ? 'return_min_balance' : 'min_balance', minBalance: entryFloor, equity: +eq.toFixed(2), short: +(entryFloor - eq).toFixed(2) });
   }
 
   const user = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || {};

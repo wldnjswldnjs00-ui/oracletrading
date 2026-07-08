@@ -195,6 +195,8 @@
   .cmsg.err{color:var(--red)}
   /* steps / cards */
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .rules-tiers{background:linear-gradient(180deg,rgba(216,180,106,.09),rgba(216,180,106,.03));border:1px solid rgba(216,180,106,.28);border-radius:var(--r);padding:16px 20px;margin-bottom:18px;color:var(--txt);font-size:14px;line-height:1.6}
+  .rules-tiers b{color:var(--gold,#d8b46a)}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:26px}
   .card .ico{width:38px;height:38px;border-radius:10px;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:var(--accent)}
   .card h3{font-size:17px;font-weight:640;margin-bottom:7px;letter-spacing:-.01em}
@@ -353,6 +355,7 @@
     <div class="nav-r">
       <a href="#leaderboard" class="nav-lnk hide-m" data-i18n="nav.board">리더보드</a>
       <a href="#how" class="nav-lnk hide-m" data-i18n="nav.how">참가방법</a>
+      <a href="#rules" class="nav-lnk hide-m" data-i18n="nav.rules">대회 규칙</a>
       <a href="#hof" class="nav-lnk hide-m" data-i18n="nav.hof">명예의전당</a>
       <a href="/about.html" class="nav-lnk hide-m" data-i18n="ft.about">소개</a>
       <select class="lang" id="langSel" aria-label="Language">
@@ -506,6 +509,22 @@
   </div>
 </section>
 
+<section id="rules" style="border-top:1px solid var(--line)">
+  <div class="wrap">
+    <div class="sec-h"><h2 data-i18n="rules.title">대회 규칙</h2><p data-i18n="rules.sub">공정한 실력 경쟁을 위한 핵심 규칙입니다.</p></div>
+    <div class="rules-tiers" id="rulesTiers" data-i18n="rules.tiers">💰 <b>잔고 $100 이상</b>이면 수익금·거래량 부문에 참가할 수 있고, <b>잔고 $500 이상</b>이면 수익률 부문까지 3개 부문 전부 참가할 수 있습니다.</div>
+    <div class="grid3">
+      <div class="card"><h3 data-i18n="rules.1.t">참가 자격</h3><p data-i18n="rules.1.d">AYILON 추천 링크로 만든 OKX 계정만 상금 대상입니다. 연결은 거래·출금 권한이 없는 읽기전용 키만 사용하며, 자금은 100% 본인 계좌에 있습니다.</p></div>
+      <div class="card"><h3 data-i18n="rules.2.t">최소 잔고</h3><p data-i18n="rules.2.d">참가 최소 잔고는 $100입니다. 수익률(%) 부문은 소액 몰빵으로 순위를 farming하는 것을 막기 위해 시작 잔고 $500 이상만 참가·수상할 수 있습니다.</p></div>
+      <div class="card"><h3 data-i18n="rules.3.t">부문 · 시즌</h3><p data-i18n="rules.3.d">수익률·수익금·거래량 3개 부문이 모두 월간으로 진행됩니다. 매월 1일 00:00 UTC에 새 시즌이 시작되고, 종료와 함께 우승자가 자동 확정됩니다.</p></div>
+      <div class="card"><h3 data-i18n="rules.4.t">순위 산정</h3><p data-i18n="rules.4.d">수익률 부문은 최대 낙폭을 반영한 위험조정 수익률로 순위를 매겨, 고배율 도박이 꾸준한 트레이더를 이기지 못하게 합니다. 수익금·거래량은 실제 값으로 순위를 매깁니다.</p></div>
+      <div class="card"><h3 data-i18n="rules.5.t">상금 자격</h3><p data-i18n="rules.5.d">상금은 최소 3거래일 이상 거래하고 누적 거래량 $1,000 이상인 참가자만 대상입니다. 단발성 진입·무거래 무임승차를 막기 위한 조건입니다.</p></div>
+      <div class="card"><h3 data-i18n="rules.6.t">공정성</h3><p data-i18n="rules.6.d">1인 1계정 원칙이며, 다계정·자전거래·헤지 어뷰징이 적발되면 실격됩니다. 입출금이 감지되면 성과가 재기준화되어 자금 이동이 수익으로 잡히지 않습니다.</p></div>
+    </div>
+    <p class="rules-foot" style="text-align:center;margin-top:22px"><a href="/terms.html" style="color:var(--accent);font-size:13.5px" data-i18n="rules.more">전체 약관·규칙 보기 →</a></p>
+  </div>
+</section>
+
 <section id="hof" style="background:var(--panel2);border-top:1px solid var(--line)">
   <div class="wrap">
     <div class="sec-h"><h2 data-i18n="hof.title">명예의 전당</h2><p data-i18n="hof.sub">시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.</p></div>
@@ -584,6 +603,7 @@
     <div class="step">
       <div class="st"><span class="b">3</span><span data-i18n="jm.s3">참가할 부문 선택</span></div>
       <p class="sub" data-i18n="jm.s3d">원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.</p>
+      <div class="hint" id="jTierNote" style="margin:2px 0 12px;border-color:rgba(216,180,106,.28);background:rgba(216,180,106,.05)" data-i18n="jm.tiers">💰 잔고 $100 이상: 수익금·거래량 참가 가능 · 잔고 $500 이상: 수익률 포함 3개 부문 전부 참가 가능.</div>
       <label class="chk"><input type="checkbox" id="bRet" data-boards="rw,rm" checked><span data-i18n="jm.b.return">수익률</span></label>
       <div class="hint" id="jRetNote" style="display:none;border-color:rgba(236,106,114,.32);background:rgba(236,106,114,.06);color:var(--red);margin:2px 0 6px"></div>
       <label class="chk"><input type="checkbox" id="bPro" data-boards="pw,pm" checked><span data-i18n="jm.b.profit">수익금</span></label>
@@ -615,11 +635,21 @@ const authed = () => !!token();
 
 const I18N = {
   ko:{
-    'nav.board':'리더보드','nav.how':'참가방법','nav.hof':'명예의전당','nav.login':'로그인','nav.manage':'연결 관리','nav.logout':'로그아웃',
+    'nav.board':'리더보드','nav.how':'참가방법','nav.rules':'대회 규칙','nav.hof':'명예의전당','nav.login':'로그인','nav.manage':'연결 관리','nav.logout':'로그아웃',
+    'rules.title':'대회 규칙','rules.sub':'공정한 실력 경쟁을 위한 핵심 규칙입니다.',
+    'rules.tiers':'💰 <b>잔고 $100 이상</b>이면 수익금·거래량 부문에 참가할 수 있고, <b>잔고 $500 이상</b>이면 수익률 부문까지 3개 부문 전부 참가할 수 있습니다.',
+    'rules.1.t':'참가 자격','rules.1.d':'AYILON 추천 링크로 만든 OKX 계정만 상금 대상입니다. 거래·출금 권한이 없는 읽기전용 키만 연결하며, 자금은 100% 본인 계좌에 있습니다.',
+    'rules.2.t':'최소 잔고','rules.2.d':'참가 최소 잔고는 $100입니다. 수익률(%) 부문은 소액 몰빵으로 순위를 파밍하는 것을 막기 위해 시작 잔고 $500 이상만 참가·수상할 수 있습니다.',
+    'rules.3.t':'부문 · 시즌','rules.3.d':'수익률·수익금·거래량 3개 부문이 모두 월간으로 진행됩니다. 매월 1일 00:00 UTC에 새 시즌이 시작되고 종료와 함께 우승자가 자동 확정됩니다.',
+    'rules.4.t':'순위 산정','rules.4.d':'수익률 부문은 최대 낙폭을 반영한 위험조정 수익률로 순위를 매겨 고배율 도박이 꾸준한 트레이더를 이기지 못하게 합니다. 수익금·거래량은 실제 값으로 순위를 매깁니다.',
+    'rules.5.t':'상금 자격','rules.5.d':'상금은 최소 3거래일 이상 거래하고 누적 거래량 $1,000 이상인 참가자만 대상입니다. 단발성 진입·무거래 무임승차를 막기 위한 조건입니다.',
+    'rules.6.t':'공정성','rules.6.d':'1인 1계정 원칙이며 다계정·자전거래·헤지 어뷰징이 적발되면 실격됩니다. 입출금이 감지되면 성과가 재기준화되어 자금 이동이 수익으로 잡히지 않습니다.',
+    'rules.more':'전체 약관·규칙 보기 →',
     'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다. 영문·숫자 2~9자, 중복 불가.','jm.nicksave':'저장','jm.avatar':'이미지 변경','jm.avatarrm':'제거','av.large':'이미지가 너무 큽니다.',
     'jm.s3':'참가할 부문 선택','jm.s3d':'원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.',
     'jm.b.return':'수익률','jm.b.profit':'수익금','jm.b.volume':'거래량',
     'jm.retgate':'수익률 부문은 시작 잔고 {min} 이상만 참가할 수 있어요 (현재 {eq}). 소액 몰빵 방지 규칙입니다.','jm.retdropped':' 잔고가 {min} 미만이라 수익률 부문은 제외하고 등록했어요.',
+    'jm.tiers':'💰 잔고 <b>$100 이상</b>: 수익금·거래량 참가 가능 · 잔고 <b>$500 이상</b>: 수익률 포함 3개 부문 전부 참가 가능.',
     'hof.title':'명예의 전당','hof.sub':'시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.',
     'hof.rw':'수익률 · 주간','hof.rm':'수익률 · 월간','hof.pm':'수익금 · 월간','hof.vm':'거래량 · 월간','hof.empty':'아직 우승자가 없습니다. 첫 시즌이 진행 중입니다.','hof.titles':'회 우승','hof.card':'우승자 카드 만들기',
     'hero.kicker':'Global Trading League','hero.title':'실력을 <b>증명</b>하는<br>글로벌 트레이딩 리그',
@@ -659,11 +689,21 @@ const I18N = {
     'jm.minbal':'대회 참가 최소 잔고는 {min}입니다. 현재 잔고 {eq} — {short} 부족합니다.','lb.prize':'상금 대상','lb.minbal':'상금 자격: 잔고 부족','jm.minnote':'참가하려면 OKX 잔고가 {min} 이상이어야 합니다.'
   },
   en:{
-    'nav.board':'Leaderboard','nav.how':'How it works','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage','nav.logout':'Log out',
+    'nav.board':'Leaderboard','nav.how':'How it works','nav.rules':'Rules','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage','nav.logout':'Log out',
+    'rules.title':'Competition Rules','rules.sub':'The core rules that keep it a fair test of skill.',
+    'rules.tiers':'💰 With <b>$100+</b> you can enter Profit and Volume; with <b>$500+</b> you can enter all three divisions including Return.',
+    'rules.1.t':'Eligibility','rules.1.d':'Only OKX accounts created via the AYILON referral link are prize-eligible. You connect a read-only key with no trade or withdrawal access — funds stay 100% in your own account.',
+    'rules.2.t':'Minimum balance','rules.2.d':'The minimum to enter is $100. The Return (%) division requires a $500+ starting balance to enter and win, so small all-in accounts can\'t farm the percentage board.',
+    'rules.3.t':'Divisions · season','rules.3.d':'Return, Profit and Volume all run monthly. A new season starts on the 1st at 00:00 UTC, and winners are locked in automatically when it ends.',
+    'rules.4.t':'Scoring','rules.4.d':'The Return division ranks by drawdown-adjusted return, so a high-leverage gamble can\'t beat a steadier trader. Profit and Volume rank by their raw values.',
+    'rules.5.t':'Prize eligibility','rules.5.d':'Prizes go only to entrants who traded on at least 3 distinct days with $1,000+ in cumulative volume — blocking one-shot entries and no-trade free-riding.',
+    'rules.6.t':'Fairness','rules.6.d':'One account per person. Multi-accounting, wash trading and hedge abuse are disqualified. Deposits/withdrawals re-baseline your performance so moving cash never counts as profit.',
+    'rules.more':'Read the full terms & rules →',
     'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame. Letters & digits, 2–9 chars, must be unique.','jm.nicksave':'Save','jm.avatar':'Change image','jm.avatarrm':'Remove','av.large':'Image too large.',
     'jm.s3':'Choose your competitions','jm.s3d':'Enter only the boards you want. You appear only on the boards you select.',
     'jm.b.return':'Return','jm.b.profit':'Profit','jm.b.volume':'Volume',
     'jm.retgate':'The Return board is open only to accounts starting at {min}+ (you have {eq}). This keeps small all-in accounts from farming the % board.','jm.retdropped':' Your balance is under {min}, so the Return board was left out.',
+    'jm.tiers':'💰 With <b>$100+</b>: enter Profit & Volume · with <b>$500+</b>: enter all three including Return.',
     'hof.title':'Hall of Fame','hof.sub':'Past champions, frozen automatically as each season ends.',
     'hof.rw':'Return · Weekly','hof.rm':'Return · Monthly','hof.pm':'Profit · Monthly','hof.vm':'Volume · Monthly','hof.empty':'No champions yet — the first season is underway.','hof.titles':'× champion','hof.card':'Make a winner card',
     'hero.kicker':'Global Trading League','hero.title':'Prove your edge in the<br><b>global</b> trading league',
@@ -703,11 +743,21 @@ const I18N = {
     'jm.minbal':'Minimum balance to join is {min}. You have {eq} — {short} short.','lb.prize':'Prize-eligible','lb.minbal':'Below minimum balance for prizes','jm.minnote':'You need at least {min} in your OKX account to join.'
   },
   zh:{
-    'nav.board':'排行榜','nav.how':'参与方式','nav.hof':'名人堂','nav.login':'登录','nav.manage':'管理','nav.logout':'退出',
+    'nav.board':'排行榜','nav.how':'参与方式','nav.rules':'赛事规则','nav.hof':'名人堂','nav.login':'登录','nav.manage':'管理','nav.logout':'退出',
+    'rules.title':'赛事规则','rules.sub':'保障公平实力竞争的核心规则。',
+    'rules.tiers':'💰 <b>余额 $100 以上</b>可参加盈利额与交易量榜；<b>余额 $500 以上</b>可参加包括收益率在内的全部三个榜单。',
+    'rules.1.t':'参赛资格','rules.1.d':'仅通过 AYILON 推荐链接注册的 OKX 账户才有奖金资格。仅连接无交易/提现权限的只读密钥，资金 100% 留在你自己的账户。',
+    'rules.2.t':'最低余额','rules.2.d':'参赛最低余额为 $100。收益率（%）榜要求起始余额 $500 以上才能参赛并获奖，以防止小额满仓账户刷榜。',
+    'rules.3.t':'榜单 · 赛季','rules.3.d':'收益率、盈利额、交易量三个榜单均按月进行。每月 1 日 00:00 UTC 开启新赛季，结束时自动确定冠军。',
+    'rules.4.t':'排名计算','rules.4.d':'收益率榜按回撤调整后的收益率排名，使高杠杆豪赌无法战胜稳健交易者。盈利额与交易量按实际数值排名。',
+    'rules.5.t':'奖金资格','rules.5.d':'奖金仅发放给至少在 3 个不同日期交易、且累计交易量 $1,000 以上的参赛者，杜绝一次性进场与无交易搭便车。',
+    'rules.6.t':'公平性','rules.6.d':'每人仅限一个账户。多账户、自成交与对冲滥用将被取消资格。检测到充提时业绩会重新基准化，资金转移不会计为盈利。',
+    'rules.more':'查看完整条款与规则 →',
     'jm.nick':'昵称','jm.nickd':'显示在排行榜和名人堂上的名称。字母或数字，2–9 位，不可重复。','jm.nicksave':'保存','jm.avatar':'更换头像','jm.avatarrm':'移除','av.large':'图片太大。',
     'jm.s3':'选择参赛项目','jm.s3d':'仅参加你选择的项目，只会出现在所选榜单中。',
     'jm.b.return':'收益率','jm.b.profit':'盈利额','jm.b.volume':'交易量',
     'jm.retgate':'收益率榜仅对起始余额 {min} 以上的账户开放（当前 {eq}）。此规则防止小额满仓刷榜。','jm.retdropped':' 余额不足 {min}，已在报名时排除收益率榜。',
+    'jm.tiers':'💰 <b>余额 $100 以上</b>：可参加盈利额与交易量 · <b>余额 $500 以上</b>：可参加含收益率在内的全部三个榜单。',
     'hof.title':'名人堂','hof.sub':'每个赛季结束时自动定格的历届冠军。',
     'hof.rw':'收益率 · 周赛','hof.rm':'收益率 · 月赛','hof.pm':'盈利额 · 月赛','hof.vm':'交易量 · 月赛','hof.empty':'暂无冠军——首个赛季正在进行中。','hof.titles':'次冠军','hof.card':'制作冠军卡',
     'hero.kicker':'Global Trading League','hero.title':'证明实力的<br><b>全球</b>交易联赛',
@@ -747,11 +797,21 @@ const I18N = {
     'jm.minbal':'参赛最低余额为 {min}。你当前 {eq}——还差 {short}。','lb.prize':'可领奖','lb.minbal':'余额不足，无法领奖','jm.minnote':'参赛需要 OKX 账户余额至少 {min}。'
   },
   es:{
-    'nav.board':'Clasificación','nav.how':'Cómo funciona','nav.hof':'Salón de la Fama','nav.login':'Entrar','nav.manage':'Gestionar','nav.logout':'Salir',
+    'nav.board':'Clasificación','nav.how':'Cómo funciona','nav.rules':'Reglas','nav.hof':'Salón de la Fama','nav.login':'Entrar','nav.manage':'Gestionar','nav.logout':'Salir',
+    'rules.title':'Reglas de la competición','rules.sub':'Las reglas clave que la mantienen como una prueba justa de habilidad.',
+    'rules.tiers':'💰 Con <b>$100+</b> puedes entrar en Beneficio y Volumen; con <b>$500+</b> entras en las tres divisiones, incluida Rentabilidad.',
+    'rules.1.t':'Elegibilidad','rules.1.d':'Solo las cuentas de OKX creadas con el enlace de referido de AYILON optan a premio. Conectas una clave de solo lectura sin acceso a operar ni retirar: los fondos quedan 100% en tu cuenta.',
+    'rules.2.t':'Saldo mínimo','rules.2.d':'El mínimo para participar es $100. La división de Rentabilidad (%) exige un saldo inicial de $500+ para entrar y ganar, evitando que cuentas pequeñas «all-in» inflen el ranking.',
+    'rules.3.t':'Divisiones · temporada','rules.3.d':'Rentabilidad, Beneficio y Volumen son mensuales. Cada temporada empieza el día 1 a las 00:00 UTC y los ganadores se fijan automáticamente al terminar.',
+    'rules.4.t':'Puntuación','rules.4.d':'La división de Rentabilidad se ordena por rentabilidad ajustada al drawdown, para que una apuesta apalancada no supere a un trader constante. Beneficio y Volumen se ordenan por su valor real.',
+    'rules.5.t':'Elegibilidad de premio','rules.5.d':'Los premios solo van a quienes operaron al menos 3 días distintos con $1.000+ de volumen acumulado, bloqueando entradas únicas y el parasitismo sin operar.',
+    'rules.6.t':'Juego limpio','rules.6.d':'Una cuenta por persona. El multicuenta, el wash trading y el abuso de coberturas se descalifican. Los depósitos/retiros rebasan tu rendimiento para que mover fondos nunca cuente como beneficio.',
+    'rules.more':'Ver los términos y reglas completos →',
     'jm.nick':'Apodo','jm.nickd':'El nombre que se muestra en la clasificación y el Salón de la Fama. Letras y números, 2–9 caracteres, único.','jm.nicksave':'Guardar','jm.avatar':'Cambiar imagen','jm.avatarrm':'Quitar','av.large':'Imagen demasiado grande.',
     'jm.s3':'Elige tus competiciones','jm.s3d':'Participa solo en las que elijas. Apareces solo en esos rankings.',
     'jm.b.return':'Rentabilidad','jm.b.profit':'Beneficio','jm.b.volume':'Volumen',
     'jm.retgate':'La tabla de Rentabilidad solo admite cuentas desde {min}+ (tienes {eq}). Evita que cuentas pequeñas «all-in» inflen el ranking.','jm.retdropped':' Tu saldo es inferior a {min}, así que se excluyó la tabla de Rentabilidad.',
+    'jm.tiers':'💰 Con <b>$100+</b>: Beneficio y Volumen · con <b>$500+</b>: las tres divisiones, incluida Rentabilidad.',
     'hof.title':'Salón de la Fama','hof.sub':'Campeones pasados, fijados automáticamente al terminar cada temporada.',
     'hof.rw':'Rentabilidad · Semanal','hof.rm':'Rentabilidad · Mensual','hof.pm':'Beneficio · Mensual','hof.vm':'Volumen · Mensual','hof.empty':'Aún no hay campeones: la primera temporada está en curso.','hof.titles':'× campeón','hof.card':'Crear tarjeta de campeón',
     'hero.kicker':'Global Trading League','hero.title':'Demuestra tu nivel en la<br>liga <b>global</b> de trading',
@@ -791,11 +851,21 @@ const I18N = {
     'jm.minbal':'El saldo mínimo para participar es {min}. Tienes {eq} — te faltan {short}.','lb.prize':'Con derecho a premio','lb.minbal':'Saldo por debajo del mínimo para premios','jm.minnote':'Necesitas al menos {min} en tu cuenta OKX para participar.'
   },
   vi:{
-    'nav.board':'Bảng xếp hạng','nav.how':'Cách tham gia','nav.hof':'Đại sảnh Danh vọng','nav.login':'Đăng nhập','nav.manage':'Quản lý','nav.logout':'Đăng xuất',
+    'nav.board':'Bảng xếp hạng','nav.how':'Cách tham gia','nav.rules':'Luật thi','nav.hof':'Đại sảnh Danh vọng','nav.login':'Đăng nhập','nav.manage':'Quản lý','nav.logout':'Đăng xuất',
+    'rules.title':'Luật thi đấu','rules.sub':'Những quy tắc cốt lõi giữ cho cuộc thi là sân chơi công bằng về kỹ năng.',
+    'rules.tiers':'💰 Với <b>$100+</b> bạn có thể tham gia hạng Tiền lãi và Khối lượng; với <b>$500+</b> bạn tham gia cả ba hạng, gồm cả Lợi nhuận.',
+    'rules.1.t':'Điều kiện tham gia','rules.1.d':'Chỉ tài khoản OKX tạo qua liên kết giới thiệu AYILON mới đủ điều kiện nhận thưởng. Bạn kết nối khóa chỉ đọc, không có quyền giao dịch hay rút tiền — tiền vẫn 100% trong tài khoản của bạn.',
+    'rules.2.t':'Số dư tối thiểu','rules.2.d':'Số dư tối thiểu để tham gia là $100. Hạng Lợi nhuận (%) yêu cầu số dư khởi điểm từ $500 để tham gia và thắng, nhằm chặn tài khoản nhỏ all-in cày thứ hạng.',
+    'rules.3.t':'Hạng · mùa giải','rules.3.d':'Lợi nhuận, Tiền lãi và Khối lượng đều theo tháng. Mùa mới bắt đầu ngày 1 lúc 00:00 UTC và người thắng được chốt tự động khi kết thúc.',
+    'rules.4.t':'Cách tính hạng','rules.4.d':'Hạng Lợi nhuận xếp theo lợi nhuận điều chỉnh theo mức sụt giảm, nên canh bạc đòn bẩy cao không thắng được người giao dịch ổn định. Tiền lãi và Khối lượng xếp theo giá trị thực.',
+    'rules.5.t':'Điều kiện nhận thưởng','rules.5.d':'Giải thưởng chỉ dành cho người giao dịch ít nhất 3 ngày khác nhau với khối lượng tích lũy từ $1.000, chặn vào lệnh một lần và ăn theo không giao dịch.',
+    'rules.6.t':'Công bằng','rules.6.d':'Mỗi người một tài khoản. Đa tài khoản, wash trading và lạm dụng phòng hộ sẽ bị loại. Khi phát hiện nạp/rút, hiệu suất được đặt lại mốc để việc chuyển tiền không tính là lãi.',
+    'rules.more':'Xem toàn bộ điều khoản & luật →',
     'jm.nick':'Biệt danh','jm.nickd':'Tên hiển thị trên bảng xếp hạng và Đại sảnh Danh vọng. Chữ và số, 2–9 ký tự, không trùng.','jm.nicksave':'Lưu','jm.avatar':'Đổi ảnh','jm.avatarrm':'Xóa','av.large':'Ảnh quá lớn.',
     'jm.s3':'Chọn hạng mục tham gia','jm.s3d':'Chỉ tham gia hạng mục bạn chọn. Bạn chỉ xuất hiện ở các bảng đã chọn.',
     'jm.b.return':'Lợi nhuận','jm.b.profit':'Tiền lãi','jm.b.volume':'Khối lượng',
     'jm.retgate':'Bảng Lợi nhuận chỉ mở cho tài khoản có số dư khởi điểm từ {min}+ (bạn có {eq}). Quy tắc này ngăn tài khoản nhỏ all-in cày thứ hạng.','jm.retdropped':' Số dư dưới {min} nên bảng Lợi nhuận đã bị loại khỏi đăng ký.',
+    'jm.tiers':'💰 Với <b>$100+</b>: tham gia Tiền lãi & Khối lượng · với <b>$500+</b>: cả ba hạng, gồm cả Lợi nhuận.',
     'hof.title':'Đại sảnh Danh vọng','hof.sub':'Các nhà vô địch trước đây, được lưu tự động khi mỗi mùa giải kết thúc.',
     'hof.rw':'Lợi nhuận % · Tuần','hof.rm':'Lợi nhuận % · Tháng','hof.pm':'Tiền lãi · Tháng','hof.vm':'Khối lượng · Tháng','hof.empty':'Chưa có nhà vô địch — mùa giải đầu tiên đang diễn ra.','hof.titles':'× vô địch','hof.card':'Tạo thẻ nhà vô địch',
     'hero.kicker':'Global Trading League','hero.title':'Chứng minh đẳng cấp ở<br>giải đấu <b>toàn cầu</b>',
@@ -835,11 +905,21 @@ const I18N = {
     'jm.minbal':'Số dư tối thiểu để tham gia là {min}. Bạn có {eq} — còn thiếu {short}.','lb.prize':'Đủ điều kiện nhận thưởng','lb.minbal':'Số dư dưới mức tối thiểu để nhận thưởng','jm.minnote':'Bạn cần ít nhất {min} trong tài khoản OKX để tham gia.'
   },
   ru:{
-    'nav.board':'Рейтинг','nav.how':'Как участвовать','nav.hof':'Зал славы','nav.login':'Войти','nav.manage':'Управление','nav.logout':'Выйти',
+    'nav.board':'Рейтинг','nav.how':'Как участвовать','nav.rules':'Правила','nav.hof':'Зал славы','nav.login':'Войти','nav.manage':'Управление','nav.logout':'Выйти',
+    'rules.title':'Правила турнира','rules.sub':'Ключевые правила, которые сохраняют честное соревнование в мастерстве.',
+    'rules.tiers':'💰 С <b>$100+</b> доступны зачёты «Прибыль» и «Объём»; с <b>$500+</b> — все три зачёта, включая «Доходность».',
+    'rules.1.t':'Право на участие','rules.1.d':'Право на призы имеют только счета OKX, созданные по реферальной ссылке AYILON. Вы подключаете ключ «только чтение» без доступа к торговле и выводу — средства на 100% остаются на вашем счёте.',
+    'rules.2.t':'Минимальный баланс','rules.2.d':'Минимум для участия — $100. Зачёт «Доходность» (%) требует стартового баланса от $500 для участия и победы, чтобы мелкие счета «ва-банк» не накручивали рейтинг.',
+    'rules.3.t':'Зачёты · сезон','rules.3.d':'«Доходность», «Прибыль» и «Объём» проводятся ежемесячно. Новый сезон стартует 1-го числа в 00:00 UTC, а победители фиксируются автоматически по его окончании.',
+    'rules.4.t':'Подсчёт','rules.4.d':'Зачёт «Доходность» ранжируется по доходности с поправкой на просадку, поэтому азарт на высоком плече не обыграет стабильного трейдера. «Прибыль» и «Объём» — по фактическим значениям.',
+    'rules.5.t':'Право на приз','rules.5.d':'Призы получают только участники, торговавшие минимум в 3 разных дня с накопленным объёмом от $1000, — это блокирует разовые входы и безторговое паразитирование.',
+    'rules.6.t':'Честность','rules.6.d':'Один счёт на человека. Мультиаккаунт, вош-трейдинг и злоупотребление хеджем ведут к дисквалификации. При депозите/выводе результат пересчитывается, так что перемещение средств не считается прибылью.',
+    'rules.more':'Полные условия и правила →',
     'jm.nick':'Никнейм','jm.nickd':'Имя, отображаемое в рейтинге и Зале славы. Буквы и цифры, 2–9 символов, уникально.','jm.nicksave':'Сохранить','jm.avatar':'Сменить фото','jm.avatarrm':'Удалить','av.large':'Изображение слишком большое.',
     'jm.s3':'Выберите номинации','jm.s3d':'Участвуете только в выбранных. Появляетесь только в выбранных таблицах.',
     'jm.b.return':'Доходность','jm.b.profit':'Прибыль','jm.b.volume':'Объём',
     'jm.retgate':'Таблица доходности открыта только для счетов от {min}+ (у вас {eq}). Это не даёт мелким счетам «ва-банк» накручивать рейтинг.','jm.retdropped':' Ваш баланс меньше {min}, поэтому таблица доходности не была добавлена.',
+    'jm.tiers':'💰 С <b>$100+</b>: «Прибыль» и «Объём» · с <b>$500+</b>: все три зачёта, включая «Доходность».',
     'hof.title':'Зал славы','hof.sub':'Прошлые чемпионы, фиксируются автоматически в конце каждого сезона.',
     'hof.rw':'Доходность · Неделя','hof.rm':'Доходность · Месяц','hof.pm':'Прибыль · Месяц','hof.vm':'Объём · Месяц','hof.empty':'Чемпионов пока нет — идёт первый сезон.','hof.titles':'× чемпион','hof.card':'Создать карточку чемпиона',
     'hero.kicker':'Global Trading League','hero.title':'Докажи мастерство в<br><b>глобальной</b> лиге трейдинга',
@@ -1244,6 +1324,8 @@ document.getElementById('jSubmit').onclick=async()=>{
       setTimeout(()=>{joinModal.classList.remove('open');fetchLB();loadMine();},j.retExcluded?2600:1800);
     }else{
       msg.className='msg err';
+      // We just learned the account balance — reflect it on the checkboxes.
+      if(j.equity!=null) applyJoinBoardGates(j.equity);
       if(j.error==='min_balance'){
         msg.textContent=t('jm.minbal').replace('{min}','$'+j.minBalance).replace('{eq}','$'+j.equity).replace('{short}','$'+j.short);
       }else if(j.error==='return_min_balance'){
