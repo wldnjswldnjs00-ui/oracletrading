@@ -308,24 +308,25 @@
   @keyframes sfill{0%,18%{opacity:0}55%{opacity:.85}82%{opacity:.85}100%{opacity:0}}
   @keyframes sdot{0%,46%{opacity:0}56%{opacity:1}82%{opacity:1}100%{opacity:0}}
   /* prize vault — money-rain accrual (above leaderboard) */
-  /* Full-bleed glow on the section itself (spans the whole page width) so the
-     pool area blends into the page with no boxed edges. */
-  #poolVault{position:relative;overflow:hidden;padding:40px 0 10px;
-    background:radial-gradient(140% 150% at 50% -30%,rgba(216,180,106,.13),rgba(52,211,154,.03) 46%,transparent 64%)}
-  .vault{position:relative;min-height:230px;display:flex;align-items:center;justify-content:center;text-align:center}
+  /* No background at all — the section is the same black as the page, so there is
+     no boxed rectangle. Coins are masked to fade at the top/bottom edges, so there
+     is no visible horizontal border where the coin field starts or ends. */
+  #poolVault{position:relative;overflow:hidden;padding:54px 0 26px;background:none}
+  .vault{position:relative;min-height:220px;display:flex;align-items:center;justify-content:center;text-align:center}
   .vault-in{position:relative;z-index:2;padding:30px 20px}
   .vault-lbl{display:inline-flex;align-items:center;gap:8px;color:var(--mut);font-size:13px;font-weight:600;letter-spacing:.04em;margin-bottom:8px}
   .vault-amt{font-size:clamp(42px,8.5vw,76px);font-weight:820;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;
     background:linear-gradient(180deg,#ffeab0,#e6c877 48%,#c69f4a);-webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 6px 26px rgba(216,180,106,.35))}
   .vault-sub{color:var(--dim);font-size:13px;margin-top:13px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.5}
-  .rain{position:absolute;inset:0;z-index:1;pointer-events:none}
+  .rain{position:absolute;inset:0;z-index:1;pointer-events:none;
+    -webkit-mask-image:linear-gradient(to bottom,transparent,#000 24%,#000 76%,transparent);
+    mask-image:linear-gradient(to bottom,transparent,#000 24%,#000 76%,transparent)}
   /* falling crypto coins — each a brand-colored disc with the token's mark */
   .rain b{position:absolute;top:-40px;border-radius:50%;opacity:0;animation:vrain linear infinite;will-change:transform,opacity;
     display:flex;align-items:center;justify-content:center;overflow:hidden;
     box-shadow:0 4px 12px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.24),inset 0 -3px 7px rgba(0,0,0,.32)}
-  .rain b span{color:#fff;font-weight:800;line-height:1;letter-spacing:-.02em;font-family:inherit}
-  .rain b svg{width:60%;height:60%;fill:#fff}
+  .rain b svg{width:64%;height:64%;fill:#fff}
   .rain b.bk{filter:blur(2.5px);opacity:.42}   /* depth-of-field back layer */
   @keyframes vrain{0%{transform:translateY(0) rotate(0);opacity:0}12%{opacity:.9}86%{opacity:.9}100%{transform:translateY(272px) rotate(180deg);opacity:0}}
   .rain b.bk{animation-name:vrainB}
@@ -1160,46 +1161,59 @@ function poolFrame(ts){
   updatePrizeCells(poolAnim.cur);
   poolRAF=requestAnimationFrame(poolFrame);
 }
-// Fill the vault with continuously falling CRYPTO coins — ~50 well-known tokens,
-// each a disc in its real brand color with the token's mark (glyph, ticker, or a
-// small logo shape). type: 'g' glyph · 't' ticker text · 's' inline logo svg.
-const _cS={
-  eth:'<svg viewBox="0 0 32 32"><path d="M16 3l-8 13 8-4z"/><path d="M16 3l8 13-8-4z" opacity=".62"/><path d="M16 13l-8 4 8 5z"/><path d="M16 13l8 4-8 5z" opacity=".62"/><path d="M16 23l-8-5 8 12z"/><path d="M16 23l8-5-8 12z" opacity=".62"/></svg>',
-  bnb:'<svg viewBox="0 0 32 32"><rect x="13.5" y="13.5" width="5" height="5" transform="rotate(45 16 16)"/><rect x="13.5" y="4" width="5" height="5" transform="rotate(45 16 6.5)"/><rect x="13.5" y="23" width="5" height="5" transform="rotate(45 16 25.5)"/><rect x="4" y="13.5" width="5" height="5" transform="rotate(45 6.5 16)"/><rect x="23" y="13.5" width="5" height="5" transform="rotate(45 25.5 16)"/></svg>',
-  sol:'<svg viewBox="0 0 32 32"><path d="M7 8L27 8L23 12L3 12Z"/><path d="M3 14L23 14L27 18L7 18Z"/><path d="M7 20L27 20L23 24L3 24Z"/></svg>',
-  dot:'<svg viewBox="0 0 32 32"><circle cx="16" cy="7" r="3"/><circle cx="16" cy="25" r="3"/><circle cx="8.5" cy="11.5" r="3"/><circle cx="23.5" cy="11.5" r="3"/><circle cx="8.5" cy="20.5" r="3"/><circle cx="23.5" cy="20.5" r="3"/></svg>'
+// Falling crypto coins — each a disc in the token's real brand color with the
+// token's actual logo MARK drawn as inline SVG (no text). ~30 well-known coins.
+const CL={
+  BTC:'<svg viewBox="0 0 24 24"><path d="M9.7 5.6h1.5V4.1h1.3v1.5h.9c1.8 0 3 1 3 2.7 0 1-.5 1.8-1.5 2.2 1.2.4 2 1.2 2 2.6 0 1.9-1.4 2.9-3.4 3v1.5h-1.3v-1.5h-1.1v1.5H9.8v-1.5H7.6v-1.4h.9c.5 0 .6-.1.6-.5V9c0-.4-.1-.5-.6-.5h-.9V7.1h2zm1.5 2.9v2.1h1.6c.8 0 1.3-.4 1.3-1.1s-.5-1-1.4-1zm0 3.4v2.3h1.9c.9 0 1.5-.4 1.5-1.2s-.6-1.1-1.6-1.1z"/></svg>',
+  ETH:'<svg viewBox="0 0 24 24"><path d="M12 3l-5 8.2 5-2.3z"/><path d="M12 3l5 8.2-5-2.3z" opacity=".55"/><path d="M12 15.4l-5-2.9 5 6.5z"/><path d="M12 15.4l5-2.9-5 6.5z" opacity=".55"/><path d="M12 8.9l-5 2.3 5 2.9z" opacity=".22"/><path d="M12 8.9l5 2.3-5 2.9z" opacity=".45"/></svg>',
+  USDT:'<svg viewBox="0 0 24 24"><path d="M6 6.3h12v2.6h-4.7v1.3c3 .1 5.3.8 5.3 1.7 0 .9-2.6 1.6-5.9 1.6s-5.9-.7-5.9-1.6c0-.9 2.3-1.6 5.3-1.7V8.9H6zm6 6.5c2.7 0 4.9-.4 4.9-1 0-.5-1.6-.9-3.7-1v1c0 .3-.5.4-1.2.4s-1.2-.1-1.2-.4v-1c-2.1.1-3.7.5-3.7 1 0 .6 2.2 1 4.9 1z"/><rect x="10.7" y="12.3" width="2.6" height="5.4"/></svg>',
+  BNB:'<svg viewBox="0 0 24 24"><rect x="9.9" y="9.9" width="4.2" height="4.2" transform="rotate(45 12 12)"/><rect x="9.9" y="2.9" width="4.2" height="4.2" transform="rotate(45 12 5)"/><rect x="9.9" y="16.9" width="4.2" height="4.2" transform="rotate(45 12 19)"/><rect x="2.9" y="9.9" width="4.2" height="4.2" transform="rotate(45 5 12)"/><rect x="16.9" y="9.9" width="4.2" height="4.2" transform="rotate(45 19 12)"/></svg>',
+  SOL:'<svg viewBox="0 0 24 24"><path d="M6 6.6l1.7-1.7h10.3L16.3 6.6z"/><path d="M17.9 12.9l-1.6 1.7H6l1.7-1.7z" opacity="0"/><path d="M6 9.3h12l-1.7 1.7H4.3z" opacity="0"/><path d="M6 6.6l1.7-1.7h10.3L16.3 6.6z"/><path d="M18 11l-1.7 1.7H6L7.7 11z"/><path d="M6 17.4l1.7-1.7h10.3L16.3 17.4z"/></svg>',
+  XRP:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6.5c2.7 3.6 4.6 3.6 7 0"/><path d="M19 6.5c-2.7 3.6-4.6 3.6-7 0"/><path d="M5 17.5c2.7-3.6 4.6-3.6 7 0"/><path d="M19 17.5c-2.7-3.6-4.6-3.6-7 0"/></svg>',
+  USDC:'<svg viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 100 17 8.5 8.5 0 000-17zm0 2.6a5.9 5.9 0 015.2 3.1H14a3.3 3.3 0 100 5.6h3.2A5.9 5.9 0 1112 6.1z"/></svg>',
+  DOGE:'<svg viewBox="0 0 24 24"><path d="M6.5 5h4.8c3.7 0 6.2 2.7 6.2 7s-2.5 7-6.2 7H6.5v-5.8H5v-2h1.5zm2.6 2.3v3.9h2.1v2H9.1v3.5h1.9c2.4 0 3.9-1.8 3.9-4.7s-1.5-4.7-3.9-4.7z"/></svg>',
+  ADA:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="4.8" r="1.15"/><circle cx="12" cy="19.2" r="1.15"/><circle cx="5.8" cy="8.4" r="1.15"/><circle cx="18.2" cy="8.4" r="1.15"/><circle cx="5.8" cy="15.6" r="1.15"/><circle cx="18.2" cy="15.6" r="1.15"/><circle cx="12" cy="8.2" r=".75"/><circle cx="12" cy="15.8" r=".75"/><circle cx="8.8" cy="12" r=".75"/><circle cx="15.2" cy="12" r=".75"/></svg>',
+  TRX:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"><path d="M4 6l16 2-8.5 12z"/><path d="M4 6l7.5 4M20 8l-8.5 2m0 0v9.5"/></svg>',
+  LINK:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5l7.4 4.3v8.4L12 20.5l-7.4-4.3V7.8z"/></svg>',
+  AVAX:'<svg viewBox="0 0 24 24"><path d="M12 4.5L20 19H4z"/></svg>',
+  DOT:'<svg viewBox="0 0 24 24"><ellipse cx="12" cy="5.4" rx="2.5" ry="1.8"/><ellipse cx="12" cy="18.6" rx="2.5" ry="1.8"/><ellipse cx="6.3" cy="8.7" rx="2.5" ry="1.8"/><ellipse cx="17.7" cy="8.7" rx="2.5" ry="1.8"/><ellipse cx="6.3" cy="15.3" rx="2.5" ry="1.8"/><ellipse cx="17.7" cy="15.3" rx="2.5" ry="1.8"/></svg>',
+  LTC:'<svg viewBox="0 0 24 24"><path d="M12.4 4h3.1l-2 8 2.2-.8-.5 2-2.2.8-.8 3.2h6.3l-.6 2.8H7.9l1.3-5.1-1.9.7.5-2 1.9-.7z"/></svg>',
+  XLM:'<svg viewBox="0 0 24 24"><path d="M12 3l1.7 6.3L20 11l-6.3 1.7L12 19l-1.7-6.3L4 11l6.3-1.7z"/></svg>',
+  ATOM:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.3"><circle cx="12" cy="12" r="1.7" fill="#fff" stroke="none"/><ellipse cx="12" cy="12" rx="8.4" ry="3.3"/><ellipse cx="12" cy="12" rx="8.4" ry="3.3" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="8.4" ry="3.3" transform="rotate(120 12 12)"/></svg>',
+  XMR:'<svg viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 00-8.5 8.5H7V7.5l5 5 5-5V12h3.5A8.5 8.5 0 0012 3.5z"/><path d="M4 13.2h3v3.3H4zm13 0h3v3.3h-3zM8.6 16.5l3.4-3.4 3.4 3.4v.1h-1.8L12 15.2l-1.6 1.4H8.6z"/></svg>',
+  ETC:'<svg viewBox="0 0 24 24"><path d="M12 3l-5 8.2 5-2.3z"/><path d="M12 3l5 8.2-5-2.3z" opacity=".55"/><path d="M12 15.4l-5-2.9 5 6.5z"/><path d="M12 15.4l5-2.9-5 6.5z" opacity=".55"/><path d="M12 8.9l-5 2.3 5 2.9z" opacity=".22"/><path d="M12 8.9l5 2.3-5 2.9z" opacity=".45"/></svg>',
+  HBAR:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M8.2 7.4h1.5v3.3h4.6V7.4h1.5v9.2h-1.5v-3.4H9.7v3.4H8.2z"/></svg>',
+  NEO:'<svg viewBox="0 0 24 24"><path d="M7 5.5h2.3l5.4 6.6V5.5H17v13h-2.3L9.3 12v6.5H7z"/></svg>',
+  ICP:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M8 9.5c-2 0-3.5 1.1-3.5 2.5S6 14.5 8 14.5c2 0 3.2-1.4 4-2.5.8-1.1 2-2.5 4-2.5 1.9 0 3.5 1.1 3.5 2.5s-1.6 2.5-3.5 2.5c-2 0-3.2-1.4-4-2.5"/></svg>',
+  VET:'<svg viewBox="0 0 24 24"><path d="M4.5 6h3.2l4.3 8.4L16.3 6h3.2l-6.6 12.4h-1.8z"/></svg>',
+  ZEC:'<svg viewBox="0 0 24 24"><path d="M11 4h2v1.8h3.2v2L12.4 14H16v2h-3v1.9h-2V16H7.8v-2L11.6 8H8V6h3z"/></svg>',
+  OP:'<svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 100 16 8 8 0 000-16zm0 3.2a4.8 4.8 0 110 9.6 4.8 4.8 0 010-9.6z"/></svg>',
+  SUI:'<svg viewBox="0 0 24 24"><path d="M12 3.5c3.4 4.4 5.4 7 5.4 9.6a5.4 5.4 0 01-10.8 0c0-2.6 2-5.2 5.4-9.6zm0 3.7c-1.9 2.6-3 4.3-3 5.9a3 3 0 006 0c0-1.6-1.1-3.3-3-5.9z"/></svg>',
+  TON:'<svg viewBox="0 0 24 24" fill-rule="evenodd"><path d="M5 8.2h14L12 19zM7.7 9.7l3.3 5.6V9.7zm5.3 0v5.6l3.3-5.6z"/></svg>',
+  DASH:'<svg viewBox="0 0 24 24"><path d="M7 8.5h8.2c2.3 0 3.8 1.5 3.8 3.5s-1.5 3.5-3.8 3.5H7l.6-2.2h7.4c.9 0 1.5-.5 1.5-1.3s-.6-1.3-1.5-1.3H6.4zM5.5 12.9h5.2l-.6 2.1H4.9z"/></svg>',
+  EGLD:'<svg viewBox="0 0 24 24"><path d="M5 7.5L7 6l5 3.6L17 6l2 1.5-5 3.6 5 3.6-2 1.8-5-3.6-5 3.6-2-1.8 5-3.6z"/></svg>',
+  ARB:'<svg viewBox="0 0 24 24" fill-rule="evenodd"><path d="M12 4l7.5 13.5-2.6 1.3-2-3.8h-5.8l-2 3.8L2.5 17.5zm0 5.2l-2 4.3h4z"/></svg>',
+  NEAR:'<svg viewBox="0 0 24 24"><path d="M7 5.5h2.3l5.4 6.6V5.5H17v13h-2.3L9.3 12v6.5H7z" fill="none" stroke="#fff" stroke-width="1.3"/></svg>'
 };
 const CRYPTO_COINS=[
-  {c:'#F7931A',t:'g',m:'₿'},{c:'#627EEA',t:'s',m:_cS.eth},{c:'#26A17B',t:'g',m:'₮'},
-  {c:'#F3BA2F',t:'s',m:_cS.bnb},{c:'#9945FF',t:'s',m:_cS.sol},{c:'#23292F',t:'t',m:'XRP'},
-  {c:'#2775CA',t:'t',m:'USDC'},{c:'#C2A633',t:'g',m:'Ð'},{c:'#0033AD',t:'t',m:'ADA'},
-  {c:'#EB0029',t:'t',m:'TRX'},{c:'#2A5ADA',t:'t',m:'LINK'},{c:'#E84142',t:'t',m:'AVAX'},
-  {c:'#E6007A',t:'s',m:_cS.dot},{c:'#8247E5',t:'t',m:'POL'},{c:'#345D9D',t:'g',m:'Ł'},
-  {c:'#FFA409',t:'t',m:'SHIB'},{c:'#0AC18E',t:'t',m:'BCH'},{c:'#14B6E7',t:'t',m:'XLM'},
-  {c:'#5C6BC0',t:'t',m:'ATOM'},{c:'#FF007A',t:'t',m:'UNI'},{c:'#FF6600',t:'g',m:'ɱ'},
-  {c:'#328332',t:'t',m:'ETC'},{c:'#3B3B3B',t:'t',m:'NEAR'},{c:'#2B2B2B',t:'t',m:'APT'},
-  {c:'#0090FF',t:'t',m:'FIL'},{c:'#3B00B9',t:'t',m:'ICP'},{c:'#3A3A3A',t:'t',m:'HBAR'},
-  {c:'#15BDFF',t:'t',m:'VET'},{c:'#2B2B2B',t:'t',m:'ALGO'},{c:'#6747ED',t:'t',m:'GRT'},
-  {c:'#B6509E',t:'t',m:'AAVE'},{c:'#1AAB9B',t:'t',m:'MKR'},{c:'#00ADEF',t:'t',m:'SAND'},
-  {c:'#FF2D55',t:'t',m:'MANA'},{c:'#0055D5',t:'t',m:'AXS'},{c:'#2C7DF7',t:'t',m:'XTZ'},
-  {c:'#1969FF',t:'t',m:'FTM'},{c:'#58BF00',t:'t',m:'NEO'},{c:'#70C7BA',t:'t',m:'KAS'},
-  {c:'#00A3FF',t:'t',m:'INJ'},{c:'#23DCC8',t:'t',m:'RUNE'},{c:'#1B46C2',t:'t',m:'EGLD'},
-  {c:'#00EF8B',t:'t',m:'FLOW'},{c:'#CD0124',t:'t',m:'CHZ'},{c:'#ECB244',t:'t',m:'ZEC'},
-  {c:'#008CE7',t:'t',m:'DASH'},{c:'#1199FA',t:'t',m:'CRO'},{c:'#28A0F0',t:'t',m:'ARB'},
-  {c:'#FF0420',t:'t',m:'OP'},{c:'#4DA2FF',t:'t',m:'SUI'},{c:'#0098EA',t:'t',m:'TON'}
+  {c:'#F7931A',m:CL.BTC},{c:'#627EEA',m:CL.ETH},{c:'#26A17B',m:CL.USDT},{c:'#F3BA2F',m:CL.BNB},
+  {c:'#9945FF',m:CL.SOL},{c:'#23292F',m:CL.XRP},{c:'#2775CA',m:CL.USDC},{c:'#C2A633',m:CL.DOGE},
+  {c:'#0033AD',m:CL.ADA},{c:'#EB0029',m:CL.TRX},{c:'#2A5ADA',m:CL.LINK},{c:'#E84142',m:CL.AVAX},
+  {c:'#E6007A',m:CL.DOT},{c:'#345D9D',m:CL.LTC},{c:'#14B6E7',m:CL.XLM},{c:'#5C6BC0',m:CL.ATOM},
+  {c:'#FF6600',m:CL.XMR},{c:'#328332',m:CL.ETC},{c:'#222831',m:CL.HBAR},{c:'#58BF00',m:CL.NEO},
+  {c:'#29ABE2',m:CL.ICP},{c:'#15BDFF',m:CL.VET},{c:'#ECB244',m:CL.ZEC},{c:'#FF0420',m:CL.OP},
+  {c:'#4DA2FF',m:CL.SUI},{c:'#0098EA',m:CL.TON},{c:'#1C75BC',m:CL.DASH},{c:'#1B46C2',m:CL.EGLD},
+  {c:'#28A0F0',m:CL.ARB},{c:'#1A1A1A',m:CL.NEAR}
 ];
-function _coinInner(coin){ return coin.t==='s'?coin.m:`<span>${coin.m}</span>`; }
 function buildRain(){
   const r=document.getElementById('vaultRain'); if(!r||r.childElementCount)return;
   let h='';
-  for(let i=0;i<32;i++){
+  for(let i=0;i<34;i++){
     const coin=CRYPTO_COINS[Math.floor(Math.random()*CRYPTO_COINS.length)];
-    const back=Math.random()<0.4;                   // ~40% pushed to a blurred back layer
-    const sz=(back?13:18)+Math.random()*(back?7:12);
-    const isTk=coin.t==='t';
-    const fs=Math.round(sz*(isTk?(coin.m.length>=4?0.30:0.36):0.5));
-    const sheen='radial-gradient(circle at 33% 27%,rgba(255,255,255,.42),rgba(255,255,255,0) 46%),';
-    h+=`<b class="${back?'bk':''}" style="left:${(Math.random()*98).toFixed(1)}%;width:${sz.toFixed(0)}px;height:${sz.toFixed(0)}px;background:${sheen}${coin.c};font-size:${fs}px;animation-duration:${((back?3.6:2.8)+Math.random()*3.2).toFixed(2)}s;animation-delay:${(-Math.random()*7).toFixed(2)}s">${_coinInner(coin)}</b>`;
+    const back=Math.random()<0.42;                   // ~42% pushed to a blurred back layer
+    const sz=(back?14:19)+Math.random()*(back?7:12);
+    const sheen='radial-gradient(circle at 33% 27%,rgba(255,255,255,.4),rgba(255,255,255,0) 46%),';
+    h+=`<b class="${back?'bk':''}" style="left:${(Math.random()*98).toFixed(1)}%;width:${sz.toFixed(0)}px;height:${sz.toFixed(0)}px;background:${sheen}${coin.c};animation-duration:${((back?3.6:2.8)+Math.random()*3.2).toFixed(2)}s;animation-delay:${(-Math.random()*7).toFixed(2)}s">${coin.m}</b>`;
   }
   r.innerHTML=h;
 }
