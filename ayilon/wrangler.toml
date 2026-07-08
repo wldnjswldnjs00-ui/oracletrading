@@ -18,10 +18,8 @@ EMAIL_FROM = "AYILON <noreply@ayilon.com>"
 [triggers]
 crons = ["*/1 * * * *"]
 
-# Custom domain for the API so the edge cache activates (unlimited-free reads).
-# Auto-provisioned on deploy IF ayilon.com is a zone in this Cloudflare account
-# and the deploy token has DNS edit permission. If not, the deploy fails harmlessly
-# (the previously-deployed worker keeps serving) — remove this block to revert.
-[[routes]]
-pattern = "api.ayilon.com"
-custom_domain = true
+# NOTE: api.ayilon.com is attached to this worker as a Custom Domain via the
+# Cloudflare dashboard (Workers > Settings > Domains & Routes), NOT here.
+# Declaring it as a [[routes]] block re-asserts the zone route on every deploy,
+# which fails when the deploy API token lacks zone/route permission. The domain
+# binding set in the dashboard persists on its own, so we leave it out here.
