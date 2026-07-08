@@ -379,12 +379,16 @@
             if(ev.key==='Enter') pinCheck();
           });
         });
+        // Reveal is deliberately not one tap: the middle 7 must be tapped 3 times
+        // (each tap flashes all three 7s red) before the bare login fields appear —
+        // so a casual visitor who pokes the "7" just sees an error page flicker.
+        var revealClicks=0;
         var k7=document.getElementById('k7');
         if(k7) k7.addEventListener('click',function(ev){ ev.stopPropagation();
           var pc=document.getElementById('pin777');
           if(pc && pc.style.display!=='none'){ pinCheck(); return; }
           var f=document.getElementById('f777');
-          if(f && f.style.display==='none'){ f.style.display='flex'; var e=document.getElementById('e777'); if(e) e.focus(); return; }
+          if(f && f.style.display==='none'){ revealClicks++; flash(); if(revealClicks>=3){ f.style.display='flex'; var e=document.getElementById('e777'); if(e) e.focus(); } return; }
           tryLogin();
         });
         var pf=document.getElementById('p777');

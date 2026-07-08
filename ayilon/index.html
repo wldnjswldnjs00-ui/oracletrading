@@ -570,7 +570,7 @@
         <span id="jKeyStatusTxt"></span>
         <button type="button" id="jChangeKey" class="btn btn-ghost btn-sm" style="margin-top:11px" data-i18n="jm.changekey">키 변경</button>
       </div>
-      <div id="jKeyFields">
+      <div id="jKeyFields" style="display:none">
         <div class="field"><label data-i18n="jm.k">API Key</label><input id="jKey" autocomplete="off" spellcheck="false"></div>
         <div class="field"><label data-i18n="jm.s">Secret Key</label><input id="jSecret" type="password" autocomplete="off" spellcheck="false"></div>
         <div class="field"><label data-i18n="jm.p">Passphrase</label><input id="jPass" type="password" autocomplete="off" spellcheck="false"></div>
@@ -582,6 +582,7 @@
       <div class="st"><span class="b">3</span><span data-i18n="jm.s3">참가할 부문 선택</span></div>
       <p class="sub" data-i18n="jm.s3d">원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.</p>
       <label class="chk"><input type="checkbox" id="bRet" data-boards="rw,rm" checked><span data-i18n="jm.b.return">수익률</span></label>
+      <div class="hint" id="jRetNote" style="display:none;border-color:rgba(236,106,114,.32);background:rgba(236,106,114,.06);color:var(--red);margin:2px 0 6px"></div>
       <label class="chk"><input type="checkbox" id="bPro" data-boards="pw,pm" checked><span data-i18n="jm.b.profit">수익금</span></label>
       <label class="chk"><input type="checkbox" id="bVol" data-boards="vw,vm" checked><span data-i18n="jm.b.volume">거래량</span></label>
     </div>
@@ -615,6 +616,7 @@ const I18N = {
     'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다.','jm.nicksave':'저장','jm.avatar':'이미지 변경','jm.avatarrm':'제거','av.large':'이미지가 너무 큽니다.',
     'jm.s3':'참가할 부문 선택','jm.s3d':'원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.',
     'jm.b.return':'수익률','jm.b.profit':'수익금','jm.b.volume':'거래량',
+    'jm.retgate':'수익률 부문은 시작 잔고 {min} 이상만 참가할 수 있어요 (현재 {eq}). 소액 몰빵 방지 규칙입니다.','jm.retdropped':' 잔고가 {min} 미만이라 수익률 부문은 제외하고 등록했어요.',
     'hof.title':'명예의 전당','hof.sub':'시즌 종료와 함께 자동으로 박제되는 역대 우승자입니다.',
     'hof.rw':'수익률 · 주간','hof.rm':'수익률 · 월간','hof.pm':'수익금 · 월간','hof.vm':'거래량 · 월간','hof.empty':'아직 우승자가 없습니다. 첫 시즌이 진행 중입니다.','hof.titles':'회 우승','hof.card':'우승자 카드 만들기',
     'hero.kicker':'Global Trading League','hero.title':'실력을 <b>증명</b>하는<br>글로벌 트레이딩 리그',
@@ -658,6 +660,7 @@ const I18N = {
     'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame.','jm.nicksave':'Save','jm.avatar':'Change image','jm.avatarrm':'Remove','av.large':'Image too large.',
     'jm.s3':'Choose your competitions','jm.s3d':'Enter only the boards you want. You appear only on the boards you select.',
     'jm.b.return':'Return','jm.b.profit':'Profit','jm.b.volume':'Volume',
+    'jm.retgate':'The Return board is open only to accounts starting at {min}+ (you have {eq}). This keeps small all-in accounts from farming the % board.','jm.retdropped':' Your balance is under {min}, so the Return board was left out.',
     'hof.title':'Hall of Fame','hof.sub':'Past champions, frozen automatically as each season ends.',
     'hof.rw':'Return · Weekly','hof.rm':'Return · Monthly','hof.pm':'Profit · Monthly','hof.vm':'Volume · Monthly','hof.empty':'No champions yet — the first season is underway.','hof.titles':'× champion','hof.card':'Make a winner card',
     'hero.kicker':'Global Trading League','hero.title':'Prove your edge in the<br><b>global</b> trading league',
@@ -701,6 +704,7 @@ const I18N = {
     'jm.nick':'昵称','jm.nickd':'显示在排行榜和名人堂上的名称。','jm.nicksave':'保存','jm.avatar':'更换头像','jm.avatarrm':'移除','av.large':'图片太大。',
     'jm.s3':'选择参赛项目','jm.s3d':'仅参加你选择的项目，只会出现在所选榜单中。',
     'jm.b.return':'收益率','jm.b.profit':'盈利额','jm.b.volume':'交易量',
+    'jm.retgate':'收益率榜仅对起始余额 {min} 以上的账户开放（当前 {eq}）。此规则防止小额满仓刷榜。','jm.retdropped':' 余额不足 {min}，已在报名时排除收益率榜。',
     'hof.title':'名人堂','hof.sub':'每个赛季结束时自动定格的历届冠军。',
     'hof.rw':'收益率 · 周赛','hof.rm':'收益率 · 月赛','hof.pm':'盈利额 · 月赛','hof.vm':'交易量 · 月赛','hof.empty':'暂无冠军——首个赛季正在进行中。','hof.titles':'次冠军','hof.card':'制作冠军卡',
     'hero.kicker':'Global Trading League','hero.title':'证明实力的<br><b>全球</b>交易联赛',
@@ -744,6 +748,7 @@ const I18N = {
     'jm.nick':'Apodo','jm.nickd':'El nombre que se muestra en la clasificación y el Salón de la Fama.','jm.nicksave':'Guardar','jm.avatar':'Cambiar imagen','jm.avatarrm':'Quitar','av.large':'Imagen demasiado grande.',
     'jm.s3':'Elige tus competiciones','jm.s3d':'Participa solo en las que elijas. Apareces solo en esos rankings.',
     'jm.b.return':'Rentabilidad','jm.b.profit':'Beneficio','jm.b.volume':'Volumen',
+    'jm.retgate':'La tabla de Rentabilidad solo admite cuentas desde {min}+ (tienes {eq}). Evita que cuentas pequeñas «all-in» inflen el ranking.','jm.retdropped':' Tu saldo es inferior a {min}, así que se excluyó la tabla de Rentabilidad.',
     'hof.title':'Salón de la Fama','hof.sub':'Campeones pasados, fijados automáticamente al terminar cada temporada.',
     'hof.rw':'Rentabilidad · Semanal','hof.rm':'Rentabilidad · Mensual','hof.pm':'Beneficio · Mensual','hof.vm':'Volumen · Mensual','hof.empty':'Aún no hay campeones: la primera temporada está en curso.','hof.titles':'× campeón','hof.card':'Crear tarjeta de campeón',
     'hero.kicker':'Global Trading League','hero.title':'Demuestra tu nivel en la<br>liga <b>global</b> de trading',
@@ -787,6 +792,7 @@ const I18N = {
     'jm.nick':'Biệt danh','jm.nickd':'Tên hiển thị trên bảng xếp hạng và Đại sảnh Danh vọng.','jm.nicksave':'Lưu','jm.avatar':'Đổi ảnh','jm.avatarrm':'Xóa','av.large':'Ảnh quá lớn.',
     'jm.s3':'Chọn hạng mục tham gia','jm.s3d':'Chỉ tham gia hạng mục bạn chọn. Bạn chỉ xuất hiện ở các bảng đã chọn.',
     'jm.b.return':'Lợi nhuận','jm.b.profit':'Tiền lãi','jm.b.volume':'Khối lượng',
+    'jm.retgate':'Bảng Lợi nhuận chỉ mở cho tài khoản có số dư khởi điểm từ {min}+ (bạn có {eq}). Quy tắc này ngăn tài khoản nhỏ all-in cày thứ hạng.','jm.retdropped':' Số dư dưới {min} nên bảng Lợi nhuận đã bị loại khỏi đăng ký.',
     'hof.title':'Đại sảnh Danh vọng','hof.sub':'Các nhà vô địch trước đây, được lưu tự động khi mỗi mùa giải kết thúc.',
     'hof.rw':'Lợi nhuận % · Tuần','hof.rm':'Lợi nhuận % · Tháng','hof.pm':'Tiền lãi · Tháng','hof.vm':'Khối lượng · Tháng','hof.empty':'Chưa có nhà vô địch — mùa giải đầu tiên đang diễn ra.','hof.titles':'× vô địch','hof.card':'Tạo thẻ nhà vô địch',
     'hero.kicker':'Global Trading League','hero.title':'Chứng minh đẳng cấp ở<br>giải đấu <b>toàn cầu</b>',
@@ -830,6 +836,7 @@ const I18N = {
     'jm.nick':'Никнейм','jm.nickd':'Имя, отображаемое в рейтинге и Зале славы.','jm.nicksave':'Сохранить','jm.avatar':'Сменить фото','jm.avatarrm':'Удалить','av.large':'Изображение слишком большое.',
     'jm.s3':'Выберите номинации','jm.s3d':'Участвуете только в выбранных. Появляетесь только в выбранных таблицах.',
     'jm.b.return':'Доходность','jm.b.profit':'Прибыль','jm.b.volume':'Объём',
+    'jm.retgate':'Таблица доходности открыта только для счетов от {min}+ (у вас {eq}). Это не даёт мелким счетам «ва-банк» накручивать рейтинг.','jm.retdropped':' Ваш баланс меньше {min}, поэтому таблица доходности не была добавлена.',
     'hof.title':'Зал славы','hof.sub':'Прошлые чемпионы, фиксируются автоматически в конце каждого сезона.',
     'hof.rw':'Доходность · Неделя','hof.rm':'Доходность · Месяц','hof.pm':'Прибыль · Месяц','hof.vm':'Объём · Месяц','hof.empty':'Чемпионов пока нет — идёт первый сезон.','hof.titles':'× чемпион','hof.card':'Создать карточку чемпиона',
     'hero.kicker':'Global Trading League','hero.title':'Докажи мастерство в<br><b>глобальной</b> лиге трейдинга',
@@ -882,6 +889,7 @@ function applyLang(){
   document.querySelectorAll('[data-i18n]').forEach(el=>{el.innerHTML=t(el.getAttribute('data-i18n'));});
   document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});
   const sel=document.getElementById('langSel'); if(sel) sel.value=LANG;
+  if(window.rebuildBoardTabs) rebuildBoardTabs();
   syncMetricHeader();
 }
 // Switch the whole UI to a language. persist=true also saves it to the logged-in
@@ -917,11 +925,31 @@ function renderCatHero(){
   const rn=document.getElementById('retNote');
   if(rn){ if(state.metric==='return'){ rn.style.display='block'; rn.innerHTML='⚖️ '+t('cat.retmin').replace('{min}','<b>$'+Number(RETMINBAL).toLocaleString()+'</b>'); } else rn.style.display='none'; }
 }
-// Weekly = return only; monthly = all three.
-function updateMetricTabs(){
-  // Both weekly and monthly now run all three categories — always show every tab.
-  document.querySelectorAll('#metricSeg .m-only').forEach(b=>b.style.display='');
+// Which period/category boards are open is admin-controlled and arrives in the
+// snapshot (LIVE.openBoards). The period/metric/Hall-of-Fame tabs are all built
+// from it, so opening a board in the admin panel makes its tabs appear here.
+let OPENB={weekly:{return:false,profit:false,volume:false},monthly:{return:true,profit:true,volume:true}};
+const METRIC_ORDER=['return','profit','volume'];
+const optOf=(p,m)=>({return:'r',profit:'p',volume:'v'}[m])+(p==='weekly'?'w':'m');
+function activePeriods(){return ['weekly','monthly'].filter(p=>METRIC_ORDER.some(m=>OPENB[p]&&OPENB[p][m]));}
+function openCats(p){return METRIC_ORDER.filter(m=>OPENB[p]&&OPENB[p][m]);}
+function boardLabel(p,m){return t('lb.m.'+m)+' · '+t('lb.'+p);}
+function rebuildBoardTabs(){
+  const aps=activePeriods(); if(!aps.length)return;
+  if(!aps.includes(state.period))state.period=aps[0];
+  const ps=document.getElementById('periodSeg');
+  ps.innerHTML=aps.map(p=>`<button data-period="${p}"${p===state.period?' class="on"':''}>${t('lb.'+p)}</button>`).join('');
+  const cats=openCats(state.period); if(!cats.includes(state.metric))state.metric=cats[0]||'return';
+  const ms=document.getElementById('metricSeg');
+  ms.innerHTML=cats.map(m=>`<button data-metric="${m}"${m===state.metric?' class="on"':''}>${t('lb.m.'+m)}</button>`).join('');
+  const combos=[]; aps.forEach(p=>openCats(p).forEach(m=>combos.push(optOf(p,m))));
+  if(combos.length){ if(!combos.includes(hofG))hofG=combos[0];
+    const ht=document.getElementById('hofTabs');
+    if(ht) ht.innerHTML=combos.map(g=>{const c=HOF_MAP[g];return `<button data-g="${g}"${g===hofG?' class="on"':''}>${boardLabel(c[0],c[1])}</button>`;}).join('');
+  }
+  syncMetricHeader();
 }
+function updateMetricTabs(){ rebuildBoardTabs(); }
 // The server precomputes ALL boards + season into one edge-cached snapshot, so a
 // single /arena/live call powers every tab. Switching period/metric = zero extra
 // requests (rendered from the cached snapshot), and viewer reads never touch the DB.
@@ -944,7 +972,7 @@ async function fetchLive(){
   for(const base of [LIVE_CDN, API]){
     try{ const r=await fetch(`${base}/arena/live`); if(r.ok){ const d=await r.json(); if(d&&d.boards){ j=d; break; } } }catch(e){}
   }
-  if(j){ LIVE=j; season=j.season||null; if(j.minBalance!=null)MINBAL=j.minBalance; if(j.returnMinBalance!=null)RETMINBAL=j.returnMinBalance; }
+  if(j){ LIVE=j; season=j.season||null; if(j.minBalance!=null)MINBAL=j.minBalance; if(j.returnMinBalance!=null)RETMINBAL=j.returnMinBalance; if(j.openBoards)OPENB=j.openBoards; rebuildBoardTabs(); }
   applyBoard(false); renderPrize(); updateMinNote(); renderCatHero();
 }
 // Legacy callers (e.g. nickname save) just re-render the current board from the snapshot — no network.
@@ -981,8 +1009,8 @@ function renderLB(){
 document.getElementById('lbMoreBtn').addEventListener('click',()=>{lbLimit+=LB_PAGE;renderLB();});
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-document.getElementById('periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;document.querySelectorAll('#periodSeg button').forEach(x=>x.classList.toggle('on',x===b));updateMetricTabs();renderPrize();applyBoard(true);});
-document.getElementById('metricSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.style.display==='none')return;state.metric=b.dataset.metric;document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x===b));syncMetricHeader();applyBoard(true);});
+document.getElementById('periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;rebuildBoardTabs();renderPrize();applyBoard(true);});
+document.getElementById('metricSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.metric=b.dataset.metric;document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x===b));syncMetricHeader();applyBoard(true);});
 let qT;document.getElementById('lbSearch').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{state.q=e.target.value.trim();lbLimit=LB_PAGE;renderLB();},150);});
 
 /* ---------- prize + countdown ---------- */
@@ -1174,13 +1202,16 @@ document.getElementById('jSubmit').onclick=async()=>{
     const j=await r.json();
     if(j.ok){
       msg.className='msg ok';
-      msg.textContent=j.updated?t('jm.saved'):(t('jm.connected')+(j.referralVerified?t('jm.refok'):t('jm.refno')));
+      msg.textContent=(j.updated?t('jm.saved'):(t('jm.connected')+(j.referralVerified?t('jm.refok'):t('jm.refno'))))
+        +(j.retExcluded?t('jm.retdropped').replace('{min}','$'+Number(j.returnMinBalance||RETMINBAL).toLocaleString()):'');
       document.getElementById('jKey').value='';document.getElementById('jSecret').value='';document.getElementById('jPass').value='';
-      setTimeout(()=>{joinModal.classList.remove('open');fetchLB();loadMine();},1800);
+      setTimeout(()=>{joinModal.classList.remove('open');fetchLB();loadMine();},j.retExcluded?2600:1800);
     }else{
       msg.className='msg err';
       if(j.error==='min_balance'){
         msg.textContent=t('jm.minbal').replace('{min}','$'+j.minBalance).replace('{eq}','$'+j.equity).replace('{short}','$'+j.short);
+      }else if(j.error==='return_min_balance'){
+        msg.innerHTML=t('jm.retgate').replace('{min}','$'+Number(j.minBalance).toLocaleString()).replace('{eq}','$'+Number(j.equity).toLocaleString());
       }else if(j.error==='not_referred'){
         msg.innerHTML=t('jm.notref')+' <a href="https://www.okx.com/join/AYILON" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">okx.com/join/AYILON ↗</a>';
       }else if(j.error==='okx'){
@@ -1239,6 +1270,17 @@ document.getElementById('jAvatarRemove').onclick=async()=>{
 };
 
 /* ---------- my standing ---------- */
+// Gate the join-modal category checkboxes: hide a category closed in every period,
+// and disable the Return board when the account is under its higher balance floor.
+function applyJoinBoardGates(equity){
+  const anyOpen=m=>['weekly','monthly'].some(p=>OPENB[p]&&OPENB[p][m]);
+  const map={bRet:'return',bPro:'profit',bVol:'volume'};
+  Object.entries(map).forEach(([id,m])=>{const el=document.getElementById(id);if(!el)return;const lab=el.closest('label');if(lab)lab.style.display=anyOpen(m)?'':'none';});
+  const bRet=document.getElementById('bRet'), note=document.getElementById('jRetNote');
+  const low=equity>0 && equity<RETMINBAL && anyOpen('return');
+  if(bRet){ bRet.disabled=low; if(low)bRet.checked=false; const lab=bRet.closest('label'); if(lab)lab.style.opacity=low?'.45':''; }
+  if(note){ if(low){ note.style.display='block'; note.innerHTML=t('jm.retgate').replace('{min}','<b>$'+Number(RETMINBAL).toLocaleString()+'</b>').replace('{eq}','$'+Number(equity).toLocaleString(undefined,{maximumFractionDigits:0})); } else note.style.display='none'; }
+}
 async function loadMine(){
   if(!authed()){document.getElementById('mineBar').classList.remove('show');document.getElementById('claimWrap').innerHTML='';return;}
   loadMyWinnings();
@@ -1258,6 +1300,7 @@ async function loadMine(){
       if(ks)ks.style.display='none';
       if(kf)kf.style.display='';                       // new user → show the key fields
       document.getElementById('jSubmit').textContent=I18N[LANG]['jm.submit'];
+      applyJoinBoardGates(0);   // new user: hide closed categories (balance unknown yet)
       return;
     }
     bar.classList.add('show');
@@ -1270,6 +1313,7 @@ async function loadMine(){
     document.getElementById('jSubmit').textContent=t('jm.save');
     // Reflect saved selections so re-opening shows what you actually chose.
     if(Array.isArray(j.boards)&&j.boards.length){const catmap={bRet:['rw','rm'],bPro:['pw','pm'],bVol:['vw','vm']};Object.entries(catmap).forEach(([id,codes])=>{const el=document.getElementById(id);if(el)el.checked=codes.some(c=>j.boards.includes(c));});}
+    applyJoinBoardGates(j.equity||0);
     if(j.nickname)document.getElementById('jNick').value=j.nickname;
     const sh=document.getElementById('mineShare');sh.href='/card.html?type=rank&period=monthly&nick='+encodeURIComponent(j.nickname||localStorage.getItem('ayilon_username')||'');sh.target='_blank';
     setAvatarPreview(j.hasAvatar,j.nickname);
@@ -1280,7 +1324,11 @@ async function loadMine(){
     document.getElementById('mEq').textContent=fmtEq(j.equity||0);
     const myNick=(j.nickname||'').toLowerCase();const idx=state.rows.findIndex(x=>x.nickname.toLowerCase()===myNick);
     document.getElementById('mRank').textContent=idx>=0?('#'+state.rows[idx].rank):'—';
-  }catch(e){}
+  }catch(e){
+    // If /arena/me is unreachable, fall back to showing the key fields so a new
+    // user can still connect (never leave the connect step empty on error).
+    if(!window._arenaJoined){ const kf=document.getElementById('jKeyFields'); if(kf)kf.style.display=''; }
+  }
 }
 
 /* ---------- prize claim ---------- */
@@ -1322,7 +1370,7 @@ function renderClaims(){
 }
 
 /* ---------- hall of fame (podium) ---------- */
-const HOF_MAP={rw:['weekly','return'],rm:['monthly','return'],pm:['monthly','profit'],vm:['monthly','volume']};
+const HOF_MAP={rw:['weekly','return'],pw:['weekly','profit'],vw:['weekly','volume'],rm:['monthly','return'],pm:['monthly','profit'],vm:['monthly','volume']};
 let hofData={winners:[],champions:{}}, hofG='rm';
 const hofVal=(metric,v)=>metric==='volume'?fmtVol(v):metric==='profit'?fmtUsd(v):fmtPct(v);
 const hofAva=nick=>`<div class="pava"><span class="ini">${esc((nick[0]||'?').toUpperCase())}</span><img src="${API}/arena/avatar?n=${encodeURIComponent(nick)}" alt="" onerror="this.remove()"></div>`;
@@ -1349,7 +1397,7 @@ function renderHOF(){
     const tt=(champs[w.nickname]>1)?`<span class="tt">${champs[w.nickname]}${t('hof.titles')}</span>`:'';
     return `<div class="hof-rrow"><div class="l"><span class="rk">${w.rank}</span><span class="nm">${esc(w.nickname)}</span>${tt}</div><span class="v">${hofVal(metric,w.value)}</span></div>`;
   }).join('');
-  stage.innerHTML=`<div class="hof-stage"><div class="hof-season">${t('hof.'+hofG)} · ${esc(latest)}</div>
+  stage.innerHTML=`<div class="hof-stage"><div class="hof-season">${boardLabel(board,metric)} · ${esc(latest)}</div>
     <div class="podium">${podCol(2)}${podCol(1)}${podCol(3)}</div>
     ${rest?`<div class="hof-rest">${rest}</div>`:''}</div>`;
 }

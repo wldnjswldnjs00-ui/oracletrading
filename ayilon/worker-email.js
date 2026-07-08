@@ -1206,12 +1206,46 @@ async function genUniqueNickname(env) {
 // per-participant re-baseline, so arena_score still holds the final values.
 // Monthly is the only cash competition (weekly was removed: cash-flow, integrity
 // and solo-operator load all favor a single monthly season).
-const ARENA_WIN_JOBS = [
-  { key: 'return_monthly', board: 'monthly', metric: 'return', sort: 'return_pct', topN: 5, opt: 'rm' },
-  { key: 'profit_monthly', board: 'monthly', metric: 'profit', sort: 'profit',     topN: 5, opt: 'pm' },
-  { key: 'volume_monthly', board: 'monthly', metric: 'volume', sort: 'volume',     topN: 5, opt: 'vm' }
-];
-const ARENA_PERIODS = ['monthly'];   // active competition periods
+// Which periods/categories are LIVE is admin-controlled (config.openBoards).
+// Everything below derives from it, so opening a board in the admin panel turns
+// on its scoring, snapshot, winner declaration, and public tabs together.
+const ARENA_CATS = ['return', 'profit', 'volume'];
+const ARENA_OPT = { weekly: { return: 'rw', profit: 'pw', volume: 'vw' },
+                    monthly: { return: 'rm', profit: 'pm', volume: 'vm' } };
+const ARENA_CAT_SORT = { return: 'return_pct', profit: 'profit', volume: 'volume' };
+function arenaOpenBoards(cfg) {
+  const d = ARENA_DEFAULT_CONFIG.openBoards, o = (cfg && cfg.openBoards) || {};
+  return { weekly: { ...d.weekly, ...(o.weekly || {}) }, monthly: { ...d.monthly, ...(o.monthly || {}) } };
+}
+function arenaOpenCats(cfg, period) { const ob = arenaOpenBoards(cfg); return ARENA_CATS.filter(c => ob[period] && ob[period][c]); }
+function arenaActivePeriods(cfg) { const out = ['weekly', 'monthly'].filter(p => arenaOpenCats(cfg, p).length); return out.length ? out : ['monthly']; }
+// The set of opt-in board codes (rw/rm/…) that are currently open.
+function arenaOpenBoardCodes(cfg) {
+  const codes = [];
+  for (const period of ['weekly', 'monthly']) for (const cat of arenaOpenCats(cfg, period)) codes.push(ARENA_OPT[period][cat]);
+  return codes;
+}
+function arenaWinJobs(cfg) {
+  const jobs = [];
+  for (const period of ['weekly', 'monthly']) for (const cat of arenaOpenCats(cfg, period))
+    jobs.push({ key: cat + '_' + period, board: period, metric: cat, sort: ARENA_CAT_SORT[cat], topN: 5, opt: ARENA_OPT[period][cat] });
+  return jobs;
+}
+// Commission→pool split across the ACTIVE periods. If the admin left the active
+// periods' shares at 0 (e.g. opened weekly without touching the split), fall back
+// to an even split so an open period never shows a $0 pool in commission mode.
+function arenaCsplit(cfg) {
+  const active = arenaActivePeriods(cfg);
+  const raw = cfg.commissionSplit || {};
+  const vals = active.map(p => Math.max(0, parseFloat(raw[p]) || 0));
+  // If nothing is configured, or any open period has a 0 share, split the pool
+  // evenly across the open periods so an open board never shows a $0 pool.
+  if (vals.reduce((a, v) => a + v, 0) <= 0 || vals.some(v => v <= 0)) {
+    const even = {}; active.forEach(p => { even[p] = 100 / active.length; });
+    return even;
+  }
+  return raw;
+}
 async function arenaDeclareWinners(env, now) {
   const curW = arenaWeekId(now), curM = arenaMonthId(now);
   const cfg = await getArenaConfig(env);
@@ -1219,7 +1253,7 @@ async function arenaDeclareWinners(env, now) {
   // Prize $ is locked in at declaration = the real pool-share for that rank/board
   // (same math the site advertises), so the admin knows exactly what to pay.
   const commissionPool = parseFloat(cfg.commissionTotal || 0) * parseFloat(cfg.commissionPct || 0) / 100;
-  const csplit = cfg.commissionSplit || { weekly: 25, monthly: 75 };
+  const csplit = arenaCsplit(cfg);
   const boardPoolOf = board => cfg.poolMode === 'manual'
     ? parseFloat((cfg.manualPool || {})[board] || 0)
     : commissionPool * (parseFloat(csplit[board] || 0) / 100);
@@ -1229,7 +1263,7 @@ async function arenaDeclareWinners(env, now) {
   const pmap = {};
   for (const p of parts) { let b = []; try { b = JSON.parse(p.boards || '[]'); } catch (_) {} pmap[p.email] = { nickname: p.nickname, boards: b, ref: p.referral_verified === 1, demo: p.demo === 1 }; }
   let changed = false, heavy = false;
-  for (const j of ARENA_WIN_JOBS) {
+  for (const j of arenaWinJobs(cfg)) {
     const cur = j.board === 'monthly' ? curM : curW;
     const prev = declared[j.key];
     if (!prev) { declared[j.key] = cur; changed = true; continue; }   // first run, nothing ended yet
@@ -1514,12 +1548,13 @@ async function arenaScore(env) {
   // declaration + emails + scoring past the subrequest limit.
   if (heavyTick) return;
   try { await arenaNotifyWinners(env); } catch (_) {}
-  // Score only the active period(s) — monthly (weekly removed) — to halve DB writes.
-  const boards = ARENA_PERIODS.map(pd => [pd, pd === 'monthly' ? arenaMonthId(now) : arenaWeekId(now)]);
+  const scfg = await getArenaConfig(env);
+  // Score only the currently-open period(s) — each extra period adds DB writes,
+  // so a period that isn't open in the admin panel costs nothing.
+  const boards = arenaActivePeriods(scfg).map(pd => [pd, pd === 'monthly' ? arenaMonthId(now) : arenaWeekId(now)]);
   let allParts = [];
   try { allParts = (await env.BOT_DB.prepare('SELECT * FROM arena_participants').all()).results || []; } catch (_) { return; }
 
-  const scfg = await getArenaConfig(env);
   const affiliateOn = !!(scfg.autoAffiliate && env.OKX_AFFILIATE_KEY && env.OKX_AFFILIATE_SECRET && env.OKX_AFFILIATE_PASS);
 
   // Round-robin batching: score only a slice of participants each minute so one
@@ -1655,7 +1690,12 @@ async function handleArenaJoin(request, env) {
   const apiPass = (body.apiPassphrase || body.apiPass || '').trim();
   const demo = false;   // demo/simulated accounts are not allowed — live only
 
-  const VALID_BOARDS_J = ['rw', 'rm', 'pm', 'vm', 'pw', 'vw'];
+  const joinCfg = await getArenaConfig(env);
+  const minBal = parseFloat(joinCfg.minBalance || 0);
+  const retMinJoin = Math.max(minBal, parseFloat(joinCfg.returnMinBalance || 0));
+  // Only currently-open boards can be opted into; closed ones are ignored.
+  const openCodes = arenaOpenBoardCodes(joinCfg);
+  const VALID_BOARDS_J = openCodes.length ? openCodes : ['rm', 'pm', 'vm'];
   let boardsIn = Array.isArray(body.boards) ? body.boards.filter(b => VALID_BOARDS_J.includes(b)) : null;
   if (!boardsIn || boardsIn.length === 0) boardsIn = [...VALID_BOARDS_J];
 
@@ -1665,8 +1705,11 @@ async function handleArenaJoin(request, env) {
   if (!apiKey || !apiSecret || !apiPass) {
     const ex = await env.BOT_DB.prepare('SELECT okx_uid,last_equity,nickname,referral_verified FROM arena_participants WHERE email=?').bind(session.email).first().catch(() => null);
     if (ex) {
-      await env.BOT_DB.prepare('UPDATE arena_participants SET boards=? WHERE email=?').bind(JSON.stringify(boardsIn), session.email).run();
-      return json({ ok: true, uid: ex.okx_uid, equity: ex.last_equity, referralVerified: ex.referral_verified === 1, boards: boardsIn, nickname: ex.nickname, updated: true });
+      // Enforce the return-board floor on board-only updates too (account may have shrunk).
+      let bIn = boardsIn, retExc = false;
+      if (parseFloat(ex.last_equity || 0) < retMinJoin) { const b0 = bIn.length; bIn = bIn.filter(b => b !== 'rw' && b !== 'rm'); retExc = b0 !== bIn.length; if (bIn.length === 0) return json({ ok: false, error: 'return_min_balance', minBalance: retMinJoin, equity: +parseFloat(ex.last_equity || 0).toFixed(2), short: +(retMinJoin - parseFloat(ex.last_equity || 0)).toFixed(2) }); }
+      await env.BOT_DB.prepare('UPDATE arena_participants SET boards=? WHERE email=?').bind(JSON.stringify(bIn), session.email).run();
+      return json({ ok: true, uid: ex.okx_uid, equity: ex.last_equity, referralVerified: ex.referral_verified === 1, boards: bIn, nickname: ex.nickname, retExcluded: retExc, returnMinBalance: retMinJoin, updated: true });
     }
     return json({ ok: false, error: 'missing_key' });
   }
@@ -1690,8 +1733,6 @@ async function handleArenaJoin(request, env) {
   } catch (_) {}
 
   // Hard entry gate: must have at least the minimum balance to join the competition.
-  const joinCfg = await getArenaConfig(env);
-  const minBal = parseFloat(joinCfg.minBalance || 0);
   if (minBal > 0 && eq < minBal) {
     return json({ ok: false, error: 'min_balance', minBalance: minBal, equity: +eq.toFixed(2), short: +(minBal - eq).toFixed(2) });
   }
@@ -1728,10 +1769,16 @@ async function handleArenaJoin(request, env) {
     await env.USERS_KV.put('user:' + session.email, JSON.stringify(freshUser));
     await env.USERS_KV.put('username:' + nickname.toLowerCase(), session.email.toLowerCase());
   }
-  // Opt-in boards: {r,p,v} × {w,m} = return/profit/volume × weekly/monthly.
-  const VALID_BOARDS = ['rw', 'rm', 'pm', 'vm', 'pw', 'vw'];
-  let boards = Array.isArray(body.boards) ? body.boards.filter(b => VALID_BOARDS.includes(b)) : null;
-  if (!boards || boards.length === 0) boards = [...VALID_BOARDS];
+  // Opt-in boards: already filtered to currently-open boards (boardsIn). Now enforce
+  // the return-(%) balance floor: under it, silently drop the return boards so a small
+  // account can still join profit/volume; if they picked ONLY return, tell them why.
+  let boards = boardsIn, retExcluded = false;
+  if (eq < retMinJoin) {
+    const b0 = boards.length;
+    boards = boards.filter(b => b !== 'rw' && b !== 'rm');
+    retExcluded = b0 !== boards.length;
+    if (boards.length === 0) return json({ ok: false, error: 'return_min_balance', minBalance: retMinJoin, equity: +eq.toFixed(2), short: +(retMinJoin - eq).toFixed(2) });
+  }
 
   const joinIp = request.headers.get('CF-Connecting-IP') || 'unknown';
   const fp = String(body.fp || '').trim().slice(0, 64) || null;
@@ -1747,7 +1794,7 @@ async function handleArenaJoin(request, env) {
        referral_verified=excluded.referral_verified,boards=excluded.boards,ip=excluded.ip,fp=excluded.fp,last_equity=excluded.last_equity`
   ).bind(session.email, nickname, freshUser.country || '', String(uid), encKey, encSec, encPass, demo ? 1 : 0, refVerified, JSON.stringify(boards), Date.now(), joinIp, fp, eq).run();
 
-  return json({ ok: true, uid: String(uid), equity: eq, referralVerified: refVerified === 1, boards, nickname });
+  return json({ ok: true, uid: String(uid), equity: eq, referralVerified: refVerified === 1, boards, nickname, retExcluded, returnMinBalance: retMinJoin });
 }
 
 // Set/change the display nickname. Enforces uniqueness and propagates the new
@@ -1968,8 +2015,13 @@ const ARENA_DEFAULT_CONFIG = {
   manualPool: { weekly: 0, monthly: 0 },      // used only when poolMode==='manual'
   cap:   { weekly: [250, 125, 25], monthly: [1000, 500, 100, 50, 10] }, // max $ per rank (weekly ≈ 1/4 of monthly)
   split: { weekly: [50, 30, 20], monthly: [40, 25, 15, 12, 8] },        // % of pool per rank
-  // Both weekly and monthly run all three categories; weekly prizes are ~1/4 of monthly.
-  boards: { monthly: ['return', 'profit', 'volume'] },   // monthly only (weekly removed)
+  // Which period/category boards are LIVE — admin-toggled. Default: monthly only
+  // (all three categories), weekly off. Turning a board on here activates its
+  // scoring, snapshot, winner declaration, and public tab together.
+  openBoards: {
+    weekly:  { return: false, profit: false, volume: false },
+    monthly: { return: true,  profit: true,  volume: true }
+  },
   minBalance: 100,          // $ floor to join + be prize-eligible (profit/volume boards)
   returnMinBalance: 500,    // higher $ floor to be prize-eligible on the RETURN board —
                             // stops $100 max-leverage all-ins from farming the % board
@@ -1982,14 +2034,24 @@ const ARENA_DEFAULT_CONFIG = {
 async function getArenaConfig(env) {
   try {
     const c = await env.USERS_KV.get('arena:config', { type: 'json' });
-    if (c) return { ...ARENA_DEFAULT_CONFIG, ...c,
-      manualPool: { ...ARENA_DEFAULT_CONFIG.manualPool, ...(c.manualPool || {}) },
-      // Prize caps/splits/boards are always code-controlled (ignore any stale saved values).
-      cap: ARENA_DEFAULT_CONFIG.cap,
-      split: ARENA_DEFAULT_CONFIG.split,
-      boards: ARENA_DEFAULT_CONFIG.boards };
+    if (c) {
+      const openBoards = {
+        weekly:  { ...ARENA_DEFAULT_CONFIG.openBoards.weekly,  ...((c.openBoards || {}).weekly  || {}) },
+        monthly: { ...ARENA_DEFAULT_CONFIG.openBoards.monthly, ...((c.openBoards || {}).monthly || {}) }
+      };
+      const merged = { ...ARENA_DEFAULT_CONFIG, ...c,
+        manualPool: { ...ARENA_DEFAULT_CONFIG.manualPool, ...(c.manualPool || {}) },
+        // Prize caps/splits are always code-controlled (ignore any stale saved values).
+        cap: ARENA_DEFAULT_CONFIG.cap,
+        split: ARENA_DEFAULT_CONFIG.split,
+        openBoards };
+      // boards[period] = the categories currently open for that period (derived).
+      merged.boards = { weekly: arenaOpenCats(merged, 'weekly'), monthly: arenaOpenCats(merged, 'monthly') };
+      return merged;
+    }
   } catch (_) {}
-  return ARENA_DEFAULT_CONFIG;
+  return { ...ARENA_DEFAULT_CONFIG,
+    boards: { weekly: arenaOpenCats(ARENA_DEFAULT_CONFIG, 'weekly'), monthly: arenaOpenCats(ARENA_DEFAULT_CONFIG, 'monthly') } };
 }
 function arenaSeasonEnds(now) {
   // weekly: next Monday 00:00 UTC; monthly: 1st of next month 00:00 UTC
@@ -2017,13 +2079,13 @@ function buildSeasonPayload(cfg, now) {
   const commissionTotal = parseFloat(cfg.commissionTotal || 0);
   const commissionPct = parseFloat(cfg.commissionPct || 0);
   const commissionPool = commissionTotal * commissionPct / 100;
-  const csplit = cfg.commissionSplit || { weekly: 25, monthly: 75 };
+  const csplit = arenaCsplit(cfg);
   const out = {};
-  for (const board of ARENA_PERIODS) {
+  for (const board of arenaActivePeriods(cfg)) {
     const boardPool = cfg.poolMode === 'manual'
       ? parseFloat(cfg.manualPool[board] || 0)
       : commissionPool * (parseFloat(csplit[board] || 0) / 100);
-    const cats = cfg.boards[board] || ['return'];
+    const cats = (cfg.boards[board] && cfg.boards[board].length) ? cfg.boards[board] : ['return'];
     const numCat = cats.length || 1;
     const catPool = boardPool / numCat;
     const split = cfg.split[board] || [];
@@ -2036,7 +2098,8 @@ function buildSeasonPayload(cfg, now) {
     };
   }
   return { ok: true, poolMode: cfg.poolMode, commissionPct, commissionTotal: Math.round(commissionTotal * 100) / 100,
-    minBalance: cfg.minBalance, returnMinBalance: Math.max(parseFloat(cfg.minBalance || 0), parseFloat(cfg.returnMinBalance || 0)), minTrades: cfg.minTrades, season: out };
+    minBalance: cfg.minBalance, returnMinBalance: Math.max(parseFloat(cfg.minBalance || 0), parseFloat(cfg.returnMinBalance || 0)), minTrades: cfg.minTrades,
+    openBoards: arenaOpenBoards(cfg), activePeriods: arenaActivePeriods(cfg), season: out };
 }
 async function handleArenaSeason(request, env) {
   const cfg = await getArenaConfig(env);
@@ -2062,7 +2125,7 @@ async function buildArenaSnapshot(env) {
   const minBal = parseFloat(cfg.minBalance || 0), minDays = parseInt(cfg.minTradeDays || 0), minVol = parseFloat(cfg.minVolume || 0);
   const retMin = Math.max(minBal, parseFloat(cfg.returnMinBalance || 0));
   const boards = {}, seasonIds = {};
-  for (const period of ARENA_PERIODS) {
+  for (const period of arenaActivePeriods(cfg)) {
     const sid = period === 'monthly' ? arenaMonthId(now) : arenaWeekId(now);
     seasonIds[period] = sid;
     let rows = [];
@@ -2074,7 +2137,7 @@ async function buildArenaSnapshot(env) {
          WHERE s.board=? AND s.season_id=? AND p.demo=0`).bind(period, sid).all()).results || [];
     } catch (_) {}
     boards[period] = {};
-    for (const metric of ['return', 'profit', 'volume']) {
+    for (const metric of arenaOpenCats(cfg, period)) {
       const optCode = period === 'monthly' ? (metric === 'volume' ? 'vm' : metric === 'profit' ? 'pm' : 'rm')
                                            : (metric === 'volume' ? 'vw' : metric === 'profit' ? 'pw' : 'rw');
       const effMin = metric === 'return' ? retMin : minBal;
@@ -2096,7 +2159,8 @@ async function buildArenaSnapshot(env) {
   const sp = buildSeasonPayload(cfg, now);
   const snap = { ok: true, updatedAt: Date.now(), seasonIds, boards,
     season: sp.season, poolMode: sp.poolMode, commissionPct: sp.commissionPct, commissionTotal: sp.commissionTotal,
-    minBalance: sp.minBalance, returnMinBalance: sp.returnMinBalance, minTrades: sp.minTrades };
+    minBalance: sp.minBalance, returnMinBalance: sp.returnMinBalance, minTrades: sp.minTrades,
+    openBoards: sp.openBoards, activePeriods: sp.activePeriods };
   try { await env.BOT_DB.prepare('INSERT OR REPLACE INTO arena_cache(k,v,t) VALUES(?,?,?)').bind('snapshot', JSON.stringify(snap), Date.now()).run(); } catch (_) {}
   return snap;
 }
@@ -2139,6 +2203,10 @@ async function handleAdminArenaConfig(request, env) {
   if (body.enforceReferral != null) next.enforceReferral = !!body.enforceReferral;
   if (body.minTrades != null)     next.minTrades = parseInt(body.minTrades);
   if (body.minTradeDays != null)  next.minTradeDays = Math.max(0, parseInt(body.minTradeDays) || 0);
+  if (body.openBoards) next.openBoards = {
+    weekly:  { ...(cur.openBoards || {}).weekly,  ...(body.openBoards.weekly  || {}) },
+    monthly: { ...(cur.openBoards || {}).monthly, ...(body.openBoards.monthly || {}) }
+  };
   await env.USERS_KV.put('arena:config', JSON.stringify(next));
   return json({ ok: true, config: next });
 }
