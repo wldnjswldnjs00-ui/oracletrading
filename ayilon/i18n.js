@@ -311,8 +311,8 @@
       'signup.name':     'Full Name',
       'signup.name.ph':  'John Doe',
       'signup.username': 'Username',
-      'signup.username.ph':   'e.g. ayilon_trader',
-      'signup.username.hint': 'Letters, numbers and _ only (2–20 characters)',
+      'signup.username.ph':   'e.g. ayilon7',
+      'signup.username.hint': 'Letters and numbers only (2–9 characters)',
       'signup.email':    'Email (used as login ID)',
       'signup.email.ph': 'you@example.com',
       'signup.sendcode': 'Send Code',
@@ -508,7 +508,7 @@
       'db.set.code_sent':    'Verification code sent. Check your email.',
       'db.set.username_ok':  '✓ Username available',
       'db.set.username_taken':'Username already taken',
-      'db.set.username_format':'Letters, numbers, _ only (2-20 chars)',
+      'db.set.username_format':'Letters and numbers only (2-9 chars)',
       'db.set.username_checking':'Checking...',
       'db.set.telegram_saved':'✓ Telegram settings saved',
       'db.set.tg_help_1':    '① In Telegram search <strong style="color:#fff;">@BotFather</strong> → run <code>/newbot</code> → copy Bot Token',
@@ -956,8 +956,8 @@
       'signup.name':          '이름',
       'signup.name.ph':       '홍길동',
       'signup.username':      '사용자명',
-      'signup.username.ph':   '예: ayilon_trader',
-      'signup.username.hint': '영문, 숫자, _ 만 사용 가능 (2–20자)',
+      'signup.username.ph':   '예: ayilon7',
+      'signup.username.hint': '영문·숫자만 사용 가능 (2~9자), 중복 불가',
       'signup.email':         '이메일 (로그인 ID로 사용)',
       'signup.email.ph':      'you@example.com',
       'signup.sendcode':      '코드 전송',
@@ -1149,7 +1149,7 @@
       'db.set.code_sent':    '인증 코드가 전송되었습니다. 이메일을 확인하세요.',
       'db.set.username_ok':  '✓ 사용 가능한 사용자명입니다',
       'db.set.username_taken':'이미 사용 중인 사용자명입니다',
-      'db.set.username_format':'영문, 숫자, _ 만 가능 (2-20자)',
+      'db.set.username_format':'영문·숫자만 가능 (2-9자)',
       'db.set.username_checking':'확인 중...',
       'db.set.telegram_saved':'✓ 텔레그램 설정이 저장되었습니다',
       'db.set.tg_help_1':    '① 텔레그램에서 <strong style="color:#fff;">@BotFather</strong>를 검색 → <code>/newbot</code> 명령으로 봇 생성 → Bot Token 복사',
@@ -1335,7 +1335,7 @@
       'login.newpw.title':'新密码','login.newpw.sub':'在下方输入新密码。','login.newpw.new':'新密码','login.newpw.new.ph':'至少 8 位','login.newpw.confirm':'确认密码','login.newpw.confirm.ph':'再次输入新密码','login.newpw.submit':'重置密码',
       'nav.nosignup':'还没有账户？注册 →','nav.haveaccount':'已有账户？登录 →',
       'signup.title':'创建账户','signup.email':'邮箱（用作登录 ID）','signup.sendcode':'发送验证码','signup.verify':'验证','signup.codehint':'输入发送到你邮箱的 6 位验证码','signup.codeph':'输入 6 位验证码',
-      'signup.username':'用户名','signup.username.hint':'仅限字母、数字和下划线（2–20 个字符）','signup.name':'姓名','signup.pw':'密码','signup.pw.ph':'8 位以上，字母 + 数字 + 符号','signup.pw.hint':'使用字母、数字和特殊字符（8 位以上）','signup.pw2':'确认密码','signup.pw2.ph':'再次输入密码','signup.show':'显示',
+      'signup.username':'用户名','signup.username.hint':'仅限字母和数字（2–9 个字符）','signup.name':'姓名','signup.pw':'密码','signup.pw.ph':'8 位以上，字母 + 数字 + 符号','signup.pw.hint':'使用字母、数字和特殊字符（8 位以上）','signup.pw2':'确认密码','signup.pw2.ph':'再次输入密码','signup.show':'显示',
       'signup.terms.all':'全部同意','signup.terms.req':'（必需）','signup.terms.age':'我已年满18岁，且在所在国家可合法交易加密衍生品','signup.terms.tos':'服务条款','signup.terms.priv':'隐私政策','signup.terms.mkt':'接收营销信息（可选）','signup.submit':'创建账户','signup.haveacct':'已有账户？','signup.loginlink':'登录'
     },
     es: {
@@ -1346,7 +1346,7 @@
       'login.newpw.title':'Nueva contraseña','login.newpw.sub':'Introduce tu nueva contraseña.','login.newpw.new':'Nueva contraseña','login.newpw.new.ph':'8+ caracteres','login.newpw.confirm':'Confirmar contraseña','login.newpw.confirm.ph':'Vuelve a introducir la contraseña','login.newpw.submit':'Restablecer contraseña',
       'nav.nosignup':'¿No tienes cuenta? Regístrate →','nav.haveaccount':'¿Ya tienes cuenta? Inicia sesión →',
       'signup.title':'Crea tu cuenta','signup.email':'Correo (se usa como ID)','signup.sendcode':'Enviar código','signup.verify':'Verificar','signup.codehint':'Introduce el código de 6 dígitos enviado a tu correo','signup.codeph':'Introduce el código de 6 dígitos',
-      'signup.username':'Nombre de usuario','signup.username.hint':'Solo letras, números y _ (2–20 caracteres)','signup.name':'Nombre completo','signup.pw':'Contraseña','signup.pw.ph':'8+ caracteres, letras + números + símbolos','signup.pw.hint':'Usa letras, números y caracteres especiales (8+)','signup.pw2':'Confirmar contraseña','signup.pw2.ph':'Vuelve a introducir tu contraseña','signup.show':'Mostrar',
+      'signup.username':'Nombre de usuario','signup.username.hint':'Solo letras y números (2–9 caracteres)','signup.name':'Nombre completo','signup.pw':'Contraseña','signup.pw.ph':'8+ caracteres, letras + números + símbolos','signup.pw.hint':'Usa letras, números y caracteres especiales (8+)','signup.pw2':'Confirmar contraseña','signup.pw2.ph':'Vuelve a introducir tu contraseña','signup.show':'Mostrar',
       'signup.terms.all':'Aceptar todo','signup.terms.req':'(obligatorio)','signup.terms.age':'Tengo al menos 18 años y puedo operar legalmente derivados cripto en mi país','signup.terms.tos':'Términos del servicio','signup.terms.priv':'Política de privacidad','signup.terms.mkt':'Recibir comunicaciones de marketing (opcional)','signup.submit':'Crear cuenta','signup.haveacct':'¿Ya tienes cuenta?','signup.loginlink':'Inicia sesión'
     },
     vi: {
@@ -1357,7 +1357,7 @@
       'login.newpw.title':'Mật khẩu mới','login.newpw.sub':'Nhập mật khẩu mới bên dưới.','login.newpw.new':'Mật khẩu mới','login.newpw.new.ph':'Từ 8 ký tự','login.newpw.confirm':'Xác nhận mật khẩu','login.newpw.confirm.ph':'Nhập lại mật khẩu mới','login.newpw.submit':'Đặt lại mật khẩu',
       'nav.nosignup':'Chưa có tài khoản? Đăng ký →','nav.haveaccount':'Đã có tài khoản? Đăng nhập →',
       'signup.title':'Tạo tài khoản','signup.email':'Email (dùng làm ID đăng nhập)','signup.sendcode':'Gửi mã','signup.verify':'Xác minh','signup.codehint':'Nhập mã 6 số đã gửi tới email của bạn','signup.codeph':'Nhập mã 6 số',
-      'signup.username':'Tên người dùng','signup.username.hint':'Chỉ chữ, số và _ (2–20 ký tự)','signup.name':'Họ và tên','signup.pw':'Mật khẩu','signup.pw.ph':'8+ ký tự, chữ + số + ký hiệu','signup.pw.hint':'Dùng chữ, số và ký tự đặc biệt (8+ ký tự)','signup.pw2':'Xác nhận mật khẩu','signup.pw2.ph':'Nhập lại mật khẩu','signup.show':'Hiện',
+      'signup.username':'Tên người dùng','signup.username.hint':'Chỉ chữ và số (2–9 ký tự)','signup.name':'Họ và tên','signup.pw':'Mật khẩu','signup.pw.ph':'8+ ký tự, chữ + số + ký hiệu','signup.pw.hint':'Dùng chữ, số và ký tự đặc biệt (8+ ký tự)','signup.pw2':'Xác nhận mật khẩu','signup.pw2.ph':'Nhập lại mật khẩu','signup.show':'Hiện',
       'signup.terms.all':'Đồng ý tất cả','signup.terms.req':'(bắt buộc)','signup.terms.age':'Tôi đủ 18 tuổi và được phép giao dịch phái sinh crypto hợp pháp tại quốc gia của mình','signup.terms.tos':'Điều khoản dịch vụ','signup.terms.priv':'Chính sách bảo mật','signup.terms.mkt':'Nhận thông tin tiếp thị (tùy chọn)','signup.submit':'Tạo tài khoản','signup.haveacct':'Đã có tài khoản?','signup.loginlink':'Đăng nhập'
     },
     ru: {
@@ -1368,7 +1368,7 @@
       'login.newpw.title':'Новый пароль','login.newpw.sub':'Введите новый пароль ниже.','login.newpw.new':'Новый пароль','login.newpw.new.ph':'От 8 символов','login.newpw.confirm':'Подтвердите пароль','login.newpw.confirm.ph':'Повторите новый пароль','login.newpw.submit':'Сбросить пароль',
       'nav.nosignup':'Нет аккаунта? Зарегистрироваться →','nav.haveaccount':'Уже есть аккаунт? Войти →',
       'signup.title':'Создайте аккаунт','signup.email':'Почта (используется как ID)','signup.sendcode':'Отправить код','signup.verify':'Подтвердить','signup.codehint':'Введите 6-значный код из письма','signup.codeph':'Введите 6-значный код',
-      'signup.username':'Имя пользователя','signup.username.hint':'Только буквы, цифры и _ (2–20 символов)','signup.name':'Полное имя','signup.pw':'Пароль','signup.pw.ph':'8+ символов, буквы + цифры + символы','signup.pw.hint':'Используйте буквы, цифры и спецсимволы (8+)','signup.pw2':'Подтвердите пароль','signup.pw2.ph':'Повторите пароль','signup.show':'Показать',
+      'signup.username':'Имя пользователя','signup.username.hint':'Только буквы и цифры (2–9 символов)','signup.name':'Полное имя','signup.pw':'Пароль','signup.pw.ph':'8+ символов, буквы + цифры + символы','signup.pw.hint':'Используйте буквы, цифры и спецсимволы (8+)','signup.pw2':'Подтвердите пароль','signup.pw2.ph':'Повторите пароль','signup.show':'Показать',
       'signup.terms.all':'Принять всё','signup.terms.req':'(обязательно)','signup.terms.age':'Мне не менее 18 лет, и мне законно разрешено торговать крипто-деривативами в моей стране','signup.terms.tos':'Условия использования','signup.terms.priv':'Политика конфиденциальности','signup.terms.mkt':'Получать маркетинговые сообщения (необязательно)','signup.submit':'Создать аккаунт','signup.haveacct':'Уже есть аккаунт?','signup.loginlink':'Войти'
     },
 

@@ -550,7 +550,7 @@
         </div>
       </div>
       <div style="display:flex;gap:8px">
-        <input id="jNick" maxlength="24" autocomplete="off" spellcheck="false" style="flex:1;background:var(--bg);border:1px solid var(--line2);color:var(--txt);border-radius:10px;padding:11px 13px;font-size:14px;font-family:inherit;outline:none">
+        <input id="jNick" maxlength="9" autocomplete="off" spellcheck="false" oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'')" style="flex:1;background:var(--bg);border:1px solid var(--line2);color:var(--txt);border-radius:10px;padding:11px 13px;font-size:14px;font-family:inherit;outline:none">
         <button class="btn btn-ghost btn-sm" id="jNickSave" data-i18n="jm.nicksave">저장</button>
       </div>
       <div class="msg" id="jNickMsg" style="margin-top:10px"></div>
@@ -613,7 +613,7 @@ const authed = () => !!token();
 const I18N = {
   ko:{
     'nav.board':'리더보드','nav.how':'참가방법','nav.hof':'명예의전당','nav.login':'로그인','nav.manage':'연결 관리','nav.logout':'로그아웃',
-    'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다.','jm.nicksave':'저장','jm.avatar':'이미지 변경','jm.avatarrm':'제거','av.large':'이미지가 너무 큽니다.',
+    'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다. 영문·숫자 2~9자, 중복 불가.','jm.nicksave':'저장','jm.avatar':'이미지 변경','jm.avatarrm':'제거','av.large':'이미지가 너무 큽니다.',
     'jm.s3':'참가할 부문 선택','jm.s3d':'원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.',
     'jm.b.return':'수익률','jm.b.profit':'수익금','jm.b.volume':'거래량',
     'jm.retgate':'수익률 부문은 시작 잔고 {min} 이상만 참가할 수 있어요 (현재 {eq}). 소액 몰빵 방지 규칙입니다.','jm.retdropped':' 잔고가 {min} 미만이라 수익률 부문은 제외하고 등록했어요.',
@@ -649,7 +649,7 @@ const I18N = {
     'am.title':'로그인이 필요합니다','am.lead':'대회 참가는 로그인 후 진행됩니다.','am.login':'로그인','am.signup':'회원가입',
     'lb.noresults':'검색 결과 없음','lb.empty':'아직 참가자가 없습니다','lb.befirst':'첫 번째 도전자가 되어보세요.','lb.meta':'시즌 {s} · 총 {n}명 참가','lb.more':'더 보기 (+{n})',
     'pz.accruing':'적립 중','pz.upto':'최대 ','pz.share':'실시간 상금 풀을 순위별 %로 분배','pz.utc':'매월 1일 00:00 UTC 기준','pz.rank':'등','pz.dunit':'일',
-    'nick.min':'2자 이상 입력하세요.','nick.saved':'닉네임 저장됨','nick.taken':'이미 사용 중인 닉네임입니다.','nick.len':'2~24자로 입력하세요.','nick.chars':'사용할 수 없는 문자가 있습니다.','nick.fail':'저장 실패',
+    'nick.min':'2자 이상 입력하세요.','nick.saved':'닉네임 저장됨','nick.taken':'이미 사용 중인 닉네임입니다.','nick.len':'2~9자, 영문·숫자만 가능합니다.','nick.chars':'영문·숫자만 사용할 수 있습니다.','nick.fail':'저장 실패',
     'err.net':'네트워크 오류',
     'jm.allfields':'API 키를 모두 입력하세요.','jm.pickone':'참가할 부문을 하나 이상 선택하세요.','jm.connected':'연결 완료. ','jm.refok':'AYILON 추천 인증됨 — 상금 대상입니다.','jm.refno':'순위 등재 완료. 상금은 AYILON 추천 가입 계정만 대상입니다.','jm.missing':'키를 모두 입력하세요.','jm.relogin':'다시 로그인해주세요.','jm.failprefix':'연결 실패: ','jm.leaveconfirm':'대회에서 나가고 연결을 해제할까요?',
     'okx.50110':'이 API 키에 IP 제한이 걸려 있습니다. OKX에서 키의 IP 화이트리스트를 비운 채로 다시 만들어 연결하세요.','okx.50111':'API Key가 올바르지 않습니다.','okx.50113':'Secret Key가 올바르지 않습니다.','okx.50105':'Passphrase가 올바르지 않습니다(로그인 비번 아님, 키 만들 때 정한 문구).','okx.50104':'시간 동기화 오류입니다. 잠시 후 다시 시도하세요.','okx.fail':'API 키 검증에 실패했습니다.',
@@ -657,7 +657,7 @@ const I18N = {
   },
   en:{
     'nav.board':'Leaderboard','nav.how':'How it works','nav.hof':'Hall of Fame','nav.login':'Log in','nav.manage':'Manage','nav.logout':'Log out',
-    'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame.','jm.nicksave':'Save','jm.avatar':'Change image','jm.avatarrm':'Remove','av.large':'Image too large.',
+    'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame. Letters & digits, 2–9 chars, must be unique.','jm.nicksave':'Save','jm.avatar':'Change image','jm.avatarrm':'Remove','av.large':'Image too large.',
     'jm.s3':'Choose your competitions','jm.s3d':'Enter only the boards you want. You appear only on the boards you select.',
     'jm.b.return':'Return','jm.b.profit':'Profit','jm.b.volume':'Volume',
     'jm.retgate':'The Return board is open only to accounts starting at {min}+ (you have {eq}). This keeps small all-in accounts from farming the % board.','jm.retdropped':' Your balance is under {min}, so the Return board was left out.',
@@ -693,7 +693,7 @@ const I18N = {
     'am.title':'Login required','am.lead':'Joining requires login.','am.login':'Log in','am.signup':'Sign up',
     'lb.noresults':'No results','lb.empty':'No participants yet','lb.befirst':'Be the first challenger.','lb.meta':'Season {s} · {n} participants','lb.more':'Show more (+{n})',
     'pz.accruing':'Accruing','pz.upto':'up to ','pz.share':'a live % share of the real prize pool','pz.utc':'resets Mon 00:00 UTC','pz.rank':'','pz.dunit':'d',
-    'nick.min':'At least 2 characters.','nick.saved':'Nickname saved','nick.taken':'That nickname is taken.','nick.len':'Use 2-24 characters.','nick.chars':'Contains invalid characters.','nick.fail':'Failed',
+    'nick.min':'At least 2 characters.','nick.saved':'Nickname saved','nick.taken':'That nickname is taken.','nick.len':'Use 2–9 characters (letters & digits only).','nick.chars':'Letters and digits only.','nick.fail':'Failed',
     'err.net':'Network error',
     'jm.allfields':'Enter all key fields.','jm.pickone':'Select at least one competition.','jm.connected':'Connected. ','jm.refok':'AYILON referral verified — prize-eligible.','jm.refno':'On the board. Prizes require an AYILON-referred account.','jm.missing':'Enter all key fields.','jm.relogin':'Please log in again.','jm.failprefix':'Failed: ','jm.leaveconfirm':'Leave the arena and disconnect?',
     'okx.50110':'This API key is IP-restricted. Recreate it in OKX with no IP whitelist, then connect.','okx.50111':'Invalid API Key.','okx.50113':'Invalid Secret Key.','okx.50105':'Invalid Passphrase (the phrase you set when creating the key, not your login password).','okx.50104':'Time sync error. Try again shortly.','okx.fail':'API key verification failed.',
@@ -701,7 +701,7 @@ const I18N = {
   },
   zh:{
     'nav.board':'排行榜','nav.how':'参与方式','nav.hof':'名人堂','nav.login':'登录','nav.manage':'管理','nav.logout':'退出',
-    'jm.nick':'昵称','jm.nickd':'显示在排行榜和名人堂上的名称。','jm.nicksave':'保存','jm.avatar':'更换头像','jm.avatarrm':'移除','av.large':'图片太大。',
+    'jm.nick':'昵称','jm.nickd':'显示在排行榜和名人堂上的名称。字母或数字，2–9 位，不可重复。','jm.nicksave':'保存','jm.avatar':'更换头像','jm.avatarrm':'移除','av.large':'图片太大。',
     'jm.s3':'选择参赛项目','jm.s3d':'仅参加你选择的项目，只会出现在所选榜单中。',
     'jm.b.return':'收益率','jm.b.profit':'盈利额','jm.b.volume':'交易量',
     'jm.retgate':'收益率榜仅对起始余额 {min} 以上的账户开放（当前 {eq}）。此规则防止小额满仓刷榜。','jm.retdropped':' 余额不足 {min}，已在报名时排除收益率榜。',
@@ -737,7 +737,7 @@ const I18N = {
     'am.title':'需要登录','am.lead':'参加联赛需先登录。','am.login':'登录','am.signup':'注册',
     'lb.noresults':'无搜索结果','lb.empty':'暂无参赛者','lb.befirst':'成为第一个挑战者。','lb.meta':'赛季 {s} · 共 {n} 人参加','lb.more':'查看更多 (+{n})',
     'pz.accruing':'累积中','pz.upto':'最高 ','pz.share':'按名次比例分配实时奖池','pz.utc':'每月 1 日 00:00 UTC 重置','pz.rank':'名','pz.dunit':'天',
-    'nick.min':'请至少输入 2 个字符。','nick.saved':'昵称已保存','nick.taken':'该昵称已被占用。','nick.len':'请使用 2-24 个字符。','nick.chars':'包含无效字符。','nick.fail':'保存失败',
+    'nick.min':'请至少输入 2 个字符。','nick.saved':'昵称已保存','nick.taken':'该昵称已被占用。','nick.len':'请使用 2–9 位字母或数字。','nick.chars':'仅限字母和数字。','nick.fail':'保存失败',
     'err.net':'网络错误',
     'jm.allfields':'请填写所有密钥字段。','jm.pickone':'请至少选择一个参赛项目。','jm.connected':'连接成功。','jm.refok':'AYILON 推荐已验证——具备领奖资格。','jm.refno':'已上榜。奖金仅限 AYILON 推荐注册账户。','jm.missing':'请填写所有密钥字段。','jm.relogin':'请重新登录。','jm.failprefix':'失败：','jm.leaveconfirm':'确定退出联赛并断开连接？',
     'okx.50110':'该 API 密钥设置了 IP 限制。请在 OKX 重新创建一个不绑定 IP 的密钥再连接。','okx.50111':'API Key 无效。','okx.50113':'Secret Key 无效。','okx.50105':'Passphrase 无效（不是登录密码，而是创建密钥时自设的口令）。','okx.50104':'时间同步错误，请稍后重试。','okx.fail':'API 密钥验证失败。',
@@ -745,7 +745,7 @@ const I18N = {
   },
   es:{
     'nav.board':'Clasificación','nav.how':'Cómo funciona','nav.hof':'Salón de la Fama','nav.login':'Entrar','nav.manage':'Gestionar','nav.logout':'Salir',
-    'jm.nick':'Apodo','jm.nickd':'El nombre que se muestra en la clasificación y el Salón de la Fama.','jm.nicksave':'Guardar','jm.avatar':'Cambiar imagen','jm.avatarrm':'Quitar','av.large':'Imagen demasiado grande.',
+    'jm.nick':'Apodo','jm.nickd':'El nombre que se muestra en la clasificación y el Salón de la Fama. Letras y números, 2–9 caracteres, único.','jm.nicksave':'Guardar','jm.avatar':'Cambiar imagen','jm.avatarrm':'Quitar','av.large':'Imagen demasiado grande.',
     'jm.s3':'Elige tus competiciones','jm.s3d':'Participa solo en las que elijas. Apareces solo en esos rankings.',
     'jm.b.return':'Rentabilidad','jm.b.profit':'Beneficio','jm.b.volume':'Volumen',
     'jm.retgate':'La tabla de Rentabilidad solo admite cuentas desde {min}+ (tienes {eq}). Evita que cuentas pequeñas «all-in» inflen el ranking.','jm.retdropped':' Tu saldo es inferior a {min}, así que se excluyó la tabla de Rentabilidad.',
@@ -781,7 +781,7 @@ const I18N = {
     'am.title':'Inicia sesión','am.lead':'Para unirte debes iniciar sesión.','am.login':'Entrar','am.signup':'Registrarse',
     'lb.noresults':'Sin resultados','lb.empty':'Aún no hay participantes','lb.befirst':'Sé el primer retador.','lb.meta':'Temporada {s} · {n} participantes','lb.more':'Ver más (+{n})',
     'pz.accruing':'Acumulando','pz.upto':'hasta ','pz.share':'reparto en % del bote real en vivo','pz.utc':'se reinicia lun 00:00 UTC','pz.rank':'º','pz.dunit':'d',
-    'nick.min':'Al menos 2 caracteres.','nick.saved':'Apodo guardado','nick.taken':'Ese apodo ya está en uso.','nick.len':'Usa 2-24 caracteres.','nick.chars':'Contiene caracteres no válidos.','nick.fail':'Error',
+    'nick.min':'Al menos 2 caracteres.','nick.saved':'Apodo guardado','nick.taken':'Ese apodo ya está en uso.','nick.len':'Usa 2–9 caracteres (solo letras y números).','nick.chars':'Solo letras y números.','nick.fail':'Error',
     'err.net':'Error de red',
     'jm.allfields':'Rellena todos los campos de la clave.','jm.pickone':'Selecciona al menos una competición.','jm.connected':'Conectado. ','jm.refok':'Referido AYILON verificado: con derecho a premio.','jm.refno':'En la tabla. Los premios requieren una cuenta referida por AYILON.','jm.missing':'Rellena todos los campos de la clave.','jm.relogin':'Inicia sesión de nuevo.','jm.failprefix':'Error: ','jm.leaveconfirm':'¿Salir de la arena y desconectar?',
     'okx.50110':'Esta clave API tiene restricción de IP. Vuelve a crearla en OKX sin lista de IP y conéctala.','okx.50111':'API Key no válida.','okx.50113':'Secret Key no válida.','okx.50105':'Passphrase no válida (la frase que definiste al crear la clave, no tu contraseña de acceso).','okx.50104':'Error de sincronización horaria. Inténtalo pronto.','okx.fail':'Error al verificar la clave API.',
@@ -789,7 +789,7 @@ const I18N = {
   },
   vi:{
     'nav.board':'Bảng xếp hạng','nav.how':'Cách tham gia','nav.hof':'Đại sảnh Danh vọng','nav.login':'Đăng nhập','nav.manage':'Quản lý','nav.logout':'Đăng xuất',
-    'jm.nick':'Biệt danh','jm.nickd':'Tên hiển thị trên bảng xếp hạng và Đại sảnh Danh vọng.','jm.nicksave':'Lưu','jm.avatar':'Đổi ảnh','jm.avatarrm':'Xóa','av.large':'Ảnh quá lớn.',
+    'jm.nick':'Biệt danh','jm.nickd':'Tên hiển thị trên bảng xếp hạng và Đại sảnh Danh vọng. Chữ và số, 2–9 ký tự, không trùng.','jm.nicksave':'Lưu','jm.avatar':'Đổi ảnh','jm.avatarrm':'Xóa','av.large':'Ảnh quá lớn.',
     'jm.s3':'Chọn hạng mục tham gia','jm.s3d':'Chỉ tham gia hạng mục bạn chọn. Bạn chỉ xuất hiện ở các bảng đã chọn.',
     'jm.b.return':'Lợi nhuận','jm.b.profit':'Tiền lãi','jm.b.volume':'Khối lượng',
     'jm.retgate':'Bảng Lợi nhuận chỉ mở cho tài khoản có số dư khởi điểm từ {min}+ (bạn có {eq}). Quy tắc này ngăn tài khoản nhỏ all-in cày thứ hạng.','jm.retdropped':' Số dư dưới {min} nên bảng Lợi nhuận đã bị loại khỏi đăng ký.',
@@ -825,7 +825,7 @@ const I18N = {
     'am.title':'Cần đăng nhập','am.lead':'Tham gia giải cần đăng nhập trước.','am.login':'Đăng nhập','am.signup':'Đăng ký',
     'lb.noresults':'Không có kết quả','lb.empty':'Chưa có người tham gia','lb.befirst':'Hãy là người thách đấu đầu tiên.','lb.meta':'Mùa {s} · {n} người tham gia','lb.more':'Xem thêm (+{n})',
     'pz.accruing':'Đang tích lũy','pz.upto':'tối đa ','pz.share':'chia theo % của quỹ thưởng thực tế','pz.utc':'đặt lại ngày 1 lúc 00:00 UTC','pz.rank':'','pz.dunit':'ngày',
-    'nick.min':'Nhập ít nhất 2 ký tự.','nick.saved':'Đã lưu biệt danh','nick.taken':'Biệt danh đã có người dùng.','nick.len':'Dùng 2-24 ký tự.','nick.chars':'Có ký tự không hợp lệ.','nick.fail':'Lưu thất bại',
+    'nick.min':'Nhập ít nhất 2 ký tự.','nick.saved':'Đã lưu biệt danh','nick.taken':'Biệt danh đã có người dùng.','nick.len':'Dùng 2–9 ký tự (chỉ chữ và số).','nick.chars':'Chỉ chữ cái và chữ số.','nick.fail':'Lưu thất bại',
     'err.net':'Lỗi mạng',
     'jm.allfields':'Nhập đủ tất cả các trường khóa.','jm.pickone':'Chọn ít nhất một hạng mục.','jm.connected':'Đã kết nối. ','jm.refok':'Đã xác minh giới thiệu AYILON — đủ điều kiện nhận thưởng.','jm.refno':'Đã lên bảng. Giải thưởng cần tài khoản đăng ký qua AYILON.','jm.missing':'Nhập đủ tất cả các trường khóa.','jm.relogin':'Vui lòng đăng nhập lại.','jm.failprefix':'Thất bại: ','jm.leaveconfirm':'Rời giải và ngắt kết nối?',
     'okx.50110':'Khóa API này bị giới hạn IP. Hãy tạo lại khóa trong OKX không có danh sách IP rồi kết nối.','okx.50111':'API Key không hợp lệ.','okx.50113':'Secret Key không hợp lệ.','okx.50105':'Passphrase không hợp lệ (cụm từ bạn đặt khi tạo khóa, không phải mật khẩu đăng nhập).','okx.50104':'Lỗi đồng bộ thời gian. Thử lại sau giây lát.','okx.fail':'Xác minh khóa API thất bại.',
@@ -833,7 +833,7 @@ const I18N = {
   },
   ru:{
     'nav.board':'Рейтинг','nav.how':'Как участвовать','nav.hof':'Зал славы','nav.login':'Войти','nav.manage':'Управление','nav.logout':'Выйти',
-    'jm.nick':'Никнейм','jm.nickd':'Имя, отображаемое в рейтинге и Зале славы.','jm.nicksave':'Сохранить','jm.avatar':'Сменить фото','jm.avatarrm':'Удалить','av.large':'Изображение слишком большое.',
+    'jm.nick':'Никнейм','jm.nickd':'Имя, отображаемое в рейтинге и Зале славы. Буквы и цифры, 2–9 символов, уникально.','jm.nicksave':'Сохранить','jm.avatar':'Сменить фото','jm.avatarrm':'Удалить','av.large':'Изображение слишком большое.',
     'jm.s3':'Выберите номинации','jm.s3d':'Участвуете только в выбранных. Появляетесь только в выбранных таблицах.',
     'jm.b.return':'Доходность','jm.b.profit':'Прибыль','jm.b.volume':'Объём',
     'jm.retgate':'Таблица доходности открыта только для счетов от {min}+ (у вас {eq}). Это не даёт мелким счетам «ва-банк» накручивать рейтинг.','jm.retdropped':' Ваш баланс меньше {min}, поэтому таблица доходности не была добавлена.',
@@ -869,7 +869,7 @@ const I18N = {
     'am.title':'Нужен вход','am.lead':'Для участия необходимо войти.','am.login':'Войти','am.signup':'Регистрация',
     'lb.noresults':'Ничего не найдено','lb.empty':'Пока нет участников','lb.befirst':'Станьте первым претендентом.','lb.meta':'Сезон {s} · участников: {n}','lb.more':'Показать ещё (+{n})',
     'pz.accruing':'Накапливается','pz.upto':'до ','pz.share':'доля в % от реального призового фонда','pz.utc':'сброс 1-го числа 00:00 UTC','pz.rank':'место','pz.dunit':'д',
-    'nick.min':'Минимум 2 символа.','nick.saved':'Никнейм сохранён','nick.taken':'Этот никнейм занят.','nick.len':'Используйте 2-24 символа.','nick.chars':'Содержит недопустимые символы.','nick.fail':'Ошибка',
+    'nick.min':'Минимум 2 символа.','nick.saved':'Никнейм сохранён','nick.taken':'Этот никнейм занят.','nick.len':'Используйте 2–9 символов (только буквы и цифры).','nick.chars':'Только буквы и цифры.','nick.fail':'Ошибка',
     'err.net':'Ошибка сети',
     'jm.allfields':'Заполните все поля ключа.','jm.pickone':'Выберите хотя бы одну номинацию.','jm.connected':'Подключено. ','jm.refok':'Реферал AYILON подтверждён — есть право на приз.','jm.refno':'Вы в таблице. Призы требуют аккаунт, зарегистрированный через AYILON.','jm.missing':'Заполните все поля ключа.','jm.relogin':'Войдите снова.','jm.failprefix':'Ошибка: ','jm.leaveconfirm':'Покинуть арену и отключить ключ?',
     'okx.50110':'У этого API-ключа ограничение по IP. Создайте в OKX ключ без списка IP и подключите.','okx.50111':'Неверный API Key.','okx.50113':'Неверный Secret Key.','okx.50105':'Неверный Passphrase (фраза, заданная при создании ключа, не пароль входа).','okx.50104':'Ошибка синхронизации времени. Повторите позже.','okx.fail':'Не удалось проверить API-ключ.',
@@ -1135,7 +1135,8 @@ function openJoin(){ if(!authed()){authModal.classList.add('open');return;} docu
 document.getElementById('jNickSave').onclick=async()=>{
   const m=document.getElementById('jNickMsg');m.className='msg';
   const nickname=document.getElementById('jNick').value.trim();
-  if(nickname.length<2){m.className='msg err';m.textContent=t('nick.min');return;}
+  if(nickname.length<2||nickname.length>9){m.className='msg err';m.textContent=t('nick.len');return;}
+  if(!/^[A-Za-z0-9]+$/.test(nickname)){m.className='msg err';m.textContent=t('nick.chars');return;}
   try{
     const r=await fetch(`${API}/arena/nickname`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()},body:JSON.stringify({nickname,sessionToken:token()})});
     const j=await r.json();

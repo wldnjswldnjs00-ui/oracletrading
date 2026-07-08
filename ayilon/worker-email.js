@@ -106,6 +106,7 @@ async function handleCheckEmail(request, env) {
 async function handleCheckUsername(request, env) {
   const { username } = await request.json();
   if (!username) return json({ available: false });
+  if (!/^[A-Za-z0-9]{2,9}$/.test(String(username))) return json({ available: false, error: 'bad_username' });
   if (!env.USERS_KV) return json({ available: true });
   const existing = await env.USERS_KV.get('username:' + username.toLowerCase());
   return json({ available: !existing });
@@ -115,6 +116,8 @@ async function handleCheckUsername(request, env) {
 async function handleRegisterUser(request, env) {
   const { email, username, name, password, code, country } = await request.json();
   if (!email || !username || !code) return json({ ok: false, success: false, error: 'missing_fields' }, 400);
+  // Username = the public leaderboard nickname: 2–9 chars, letters + digits only.
+  if (!/^[A-Za-z0-9]{2,9}$/.test(String(username))) return json({ ok: false, success: false, error: 'bad_username' }, 400);
 
   // Verify email code server-side — always required
   if (env.USERS_KV) {
@@ -1191,14 +1194,15 @@ async function arenaFetchVolumeDelta(env, p) {
   } catch (_) { return 0; }
 }
 
-// Generates a unique default nickname like "AYILON User 39500".
+// Generates a unique default nickname like "AYIL39500" — alphanumeric, ≤9 chars,
+// so it already satisfies the nickname rules (2–9 chars, letters+digits only).
 async function genUniqueNickname(env) {
-  for (let i = 0; i < 25; i++) {
-    const n = 10000 + Math.floor(Math.random() * 989999);
-    const nick = 'AYILON User ' + n;
+  for (let i = 0; i < 30; i++) {
+    const n = 10000 + Math.floor(Math.random() * 89999);   // 5 digits
+    const nick = 'AYIL' + n;                                // 9 chars total
     if (!(await env.USERS_KV.get('username:' + nick.toLowerCase()))) return nick;
   }
-  return 'AYILON User ' + Date.now();
+  return 'AYIL' + (10000 + Math.floor(Math.random() * 89999));
 }
 
 // At each season boundary, freeze the ending season's standings into the Hall of
@@ -1804,9 +1808,11 @@ async function handleArenaNickname(request, env) {
   const body = await request.json().catch(() => ({}));
   const session = await requireSession(body, env, request);
   if (!session) return json({ ok: false, error: 'unauthorized' }, 401);
-  let nick = String(body.nickname || '').trim().replace(/\s+/g, ' ');
-  if (nick.length < 2 || nick.length > 24) return json({ ok: false, error: 'bad_length' });
-  if (!/^[\w .\-가-힣]+$/u.test(nick)) return json({ ok: false, error: 'bad_chars' });
+  // Nickname rules: 2–9 characters, English letters and digits only (no spaces,
+  // no symbols, no other scripts). Uniqueness is case-insensitive.
+  let nick = String(body.nickname || '').trim();
+  if (nick.length < 2 || nick.length > 9) return json({ ok: false, error: 'bad_length' });
+  if (!/^[A-Za-z0-9]+$/.test(nick)) return json({ ok: false, error: 'bad_chars' });
 
   const user = await env.USERS_KV.get('user:' + session.email, { type: 'json' }) || {};
   const cur = user.username || '';
