@@ -1204,14 +1204,22 @@ function poolFrame(ts){
 const COIN_SYMS=['btc','eth','usdt','bnb','sol','xrp','usdc','doge','ada','trx','link','avax','dot','ltc','xlm','atom','etc','bch','icp','neo','zec','dash','mkr','aave','uni','grt','sand','mana','snx','comp','crv','sushi','theta','chz','algo','fil','xtz','bat','enj','waves','qtum','zil','ont','dcr','rvn'];
 function buildRain(){
   const r=document.getElementById('vaultRain'); if(!r||r.childElementCount)return;
+  const rnd=a=>a[Math.floor(Math.random()*a.length)];
+  const randSym=()=>'coins/'+rnd(COIN_SYMS)+'.svg';
   let h='';
   for(let i=0;i<34;i++){
-    const sym=COIN_SYMS[Math.floor(Math.random()*COIN_SYMS.length)];
     const back=Math.random()<0.42;                   // ~42% pushed to a blurred back layer
     const sz=(back?14:19)+Math.random()*(back?7:12);
-    h+=`<b class="${back?'bk':''}" style="left:${(Math.random()*98).toFixed(1)}%;width:${sz.toFixed(0)}px;height:${sz.toFixed(0)}px;animation-duration:${((back?3.6:2.8)+Math.random()*3.2).toFixed(2)}s;animation-delay:${(-Math.random()*7).toFixed(2)}s"><img src="coins/${sym}.svg" alt="" loading="lazy"></b>`;
+    h+=`<b class="${back?'bk':''}" style="left:${(Math.random()*98).toFixed(1)}%;width:${sz.toFixed(0)}px;height:${sz.toFixed(0)}px;animation-duration:${((back?3.6:2.8)+Math.random()*3.2).toFixed(2)}s;animation-delay:${(-Math.random()*7).toFixed(2)}s"><img src="${randSym()}" alt="" loading="lazy"></b>`;
   }
   r.innerHTML=h;
+  // Every time a coin finishes falling, respawn it at a new random column with a
+  // new random logo — so the pattern never repeats (no fixed coin-in-fixed-column).
+  r.addEventListener('animationiteration',e=>{
+    const el=e.target; if(!el||el.tagName!=='B')return;
+    el.style.left=(Math.random()*98).toFixed(1)+'%';
+    const img=el.querySelector('img'); if(img)img.src=randSym();
+  });
 }
 function renderPrize(){
   const d=I18N[LANG];const box=document.getElementById('prizeBox');
