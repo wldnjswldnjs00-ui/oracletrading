@@ -201,6 +201,7 @@
   .ac{display:inline-flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line2);border-radius:999px;padding:10px 20px;font-size:15px;font-weight:600;color:var(--txt)}
   .ac svg{width:18px;height:18px;flex:none;color:#c9a15a}
   .assets-note{text-align:center;color:var(--mut);font-size:14.5px;max-width:660px;margin:0 auto;line-height:1.65}
+  .assets-rec{text-align:center;color:#c9a15a;font-size:13px;max-width:660px;margin:12px auto 0;line-height:1.6}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:26px}
   .card .ico{width:38px;height:38px;border-radius:10px;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:var(--accent)}
   .card h3{font-size:17px;font-weight:640;margin-bottom:7px;letter-spacing:-.01em}
@@ -528,6 +529,7 @@
       <span class="ac"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h11M12 5.5l3 3-3 3"/><path d="M20 15.5H9M12 12.5l-3 3 3 3"/></svg><span data-i18n="assets.forex">외환</span></span>
     </div>
     <p class="assets-note" data-i18n="assets.note">OKX는 암호화폐뿐 아니라 금·원자재·주식·지수·외환까지 폭넓은 시장을 지원합니다. 무엇을 거래하든, 당신의 실력이 곧 순위가 됩니다.</p>
+    <p class="assets-rec" data-i18n="assets.rec">💡 순위는 활발한 거래로 갈립니다 — 레버리지가 있는 마진·선물 거래가 수익률·거래량 경쟁에서 특히 유리합니다. (현물 매수 후 보유만으로는 최소 거래일·거래량 조건을 채우기 어렵습니다.)</p>
   </div>
 </section>
 
@@ -670,6 +672,7 @@ const I18N = {
     'assets.title':'암호화폐만이 아닙니다','assets.sub':'OKX 계좌에서 거래하는 모든 자산의 성과가 순위에 반영됩니다.',
     'assets.crypto':'암호화폐','assets.gold':'금','assets.commodity':'원자재','assets.stocks':'주식','assets.indices':'지수','assets.forex':'외환',
     'assets.note':'OKX는 암호화폐뿐 아니라 금·원자재·주식·지수·외환까지 폭넓은 시장을 지원합니다. 무엇을 거래하든, 당신의 실력이 곧 순위가 됩니다.',
+    'assets.rec':'💡 순위는 활발한 거래로 갈립니다 — 레버리지가 있는 마진·선물 거래가 수익률·거래량 경쟁에서 특히 유리합니다. (현물 매수 후 보유만으로는 최소 거래일·거래량 조건을 채우기 어렵습니다.)',
     'jm.nick':'닉네임','jm.nickd':'리더보드·명예의전당에 표시되는 이름입니다. 영문·숫자 2~9자, 중복 불가.','jm.nicksave':'저장','jm.avatar':'이미지 변경','jm.avatarrm':'제거','av.large':'이미지가 너무 큽니다.',
     'jm.s3':'참가할 부문 선택','jm.s3d':'원하는 대회에만 참가합니다. 선택한 부문 리더보드에만 등재됩니다.',
     'jm.b.return':'수익률','jm.b.profit':'수익금','jm.b.volume':'거래량',
@@ -727,6 +730,7 @@ const I18N = {
     'assets.title':'Not just crypto','assets.sub':'Everything you trade on your OKX account counts toward your ranking.',
     'assets.crypto':'Crypto','assets.gold':'Gold','assets.commodity':'Commodities','assets.stocks':'Stocks','assets.indices':'Indices','assets.forex':'Forex',
     'assets.note':'OKX supports a broad range of markets — crypto, gold, commodities, stocks, indices and forex. Whatever you trade, your skill is what ranks.',
+    'assets.rec':'💡 Rankings reward active trading — leveraged margin & futures have the edge on the return and volume boards. (Buy-and-hold spot alone rarely meets the minimum trading-day and volume requirements.)',
     'jm.nick':'Nickname','jm.nickd':'The name shown on the leaderboard and Hall of Fame. Letters & digits, 2–9 chars, must be unique.','jm.nicksave':'Save','jm.avatar':'Change image','jm.avatarrm':'Remove','av.large':'Image too large.',
     'jm.s3':'Choose your competitions','jm.s3d':'Enter only the boards you want. You appear only on the boards you select.',
     'jm.b.return':'Return','jm.b.profit':'Profit','jm.b.volume':'Volume',
@@ -784,6 +788,7 @@ const I18N = {
     'assets.title':'不只是加密货币','assets.sub':'你在 OKX 账户上交易的所有资产表现都计入排名。',
     'assets.crypto':'加密货币','assets.gold':'黄金','assets.commodity':'大宗商品','assets.stocks':'股票','assets.indices':'指数','assets.forex':'外汇',
     'assets.note':'OKX 支持广泛的市场——加密货币、黄金、大宗商品、股票、指数和外汇。无论你交易什么，实力才决定排名。',
+    'assets.rec':'💡 排名取决于活跃交易——带杠杆的保证金与合约在收益率和交易量榜上更有优势。（仅现货买入持有通常难以满足最低交易天数和交易量要求。）',
     'jm.nick':'昵称','jm.nickd':'显示在排行榜和名人堂上的名称。字母或数字，2–9 位，不可重复。','jm.nicksave':'保存','jm.avatar':'更换头像','jm.avatarrm':'移除','av.large':'图片太大。',
     'jm.s3':'选择参赛项目','jm.s3d':'仅参加你选择的项目，只会出现在所选榜单中。',
     'jm.b.return':'收益率','jm.b.profit':'盈利额','jm.b.volume':'交易量',
@@ -841,6 +846,7 @@ const I18N = {
     'assets.title':'No solo cripto','assets.sub':'Todo lo que operes en tu cuenta de OKX cuenta para tu clasificación.',
     'assets.crypto':'Cripto','assets.gold':'Oro','assets.commodity':'Materias primas','assets.stocks':'Acciones','assets.indices':'Índices','assets.forex':'Forex',
     'assets.note':'OKX admite una amplia gama de mercados: cripto, oro, materias primas, acciones, índices y forex. Operes lo que operes, es tu habilidad la que clasifica.',
+    'assets.rec':'💡 La clasificación premia el trading activo: el margen y los futuros apalancados tienen ventaja en las tablas de rentabilidad y volumen. (Comprar y mantener spot rara vez cumple los mínimos de días de trading y volumen.)',
     'jm.nick':'Apodo','jm.nickd':'El nombre que se muestra en la clasificación y el Salón de la Fama. Letras y números, 2–9 caracteres, único.','jm.nicksave':'Guardar','jm.avatar':'Cambiar imagen','jm.avatarrm':'Quitar','av.large':'Imagen demasiado grande.',
     'jm.s3':'Elige tus competiciones','jm.s3d':'Participa solo en las que elijas. Apareces solo en esos rankings.',
     'jm.b.return':'Rentabilidad','jm.b.profit':'Beneficio','jm.b.volume':'Volumen',
@@ -898,6 +904,7 @@ const I18N = {
     'assets.title':'Không chỉ tiền mã hóa','assets.sub':'Mọi tài sản bạn giao dịch trên tài khoản OKX đều được tính vào thứ hạng.',
     'assets.crypto':'Tiền mã hóa','assets.gold':'Vàng','assets.commodity':'Hàng hóa','assets.stocks':'Cổ phiếu','assets.indices':'Chỉ số','assets.forex':'Ngoại hối',
     'assets.note':'OKX hỗ trợ nhiều thị trường — tiền mã hóa, vàng, hàng hóa, cổ phiếu, chỉ số và ngoại hối. Dù bạn giao dịch gì, kỹ năng của bạn mới là thứ quyết định thứ hạng.',
+    'assets.rec':'💡 Thứ hạng thưởng cho giao dịch chủ động — ký quỹ & hợp đồng tương lai có đòn bẩy chiếm ưu thế ở bảng lợi nhuận và khối lượng. (Chỉ mua và giữ giao ngay hiếm khi đạt yêu cầu tối thiểu về số ngày giao dịch và khối lượng.)',
     'jm.nick':'Biệt danh','jm.nickd':'Tên hiển thị trên bảng xếp hạng và Đại sảnh Danh vọng. Chữ và số, 2–9 ký tự, không trùng.','jm.nicksave':'Lưu','jm.avatar':'Đổi ảnh','jm.avatarrm':'Xóa','av.large':'Ảnh quá lớn.',
     'jm.s3':'Chọn hạng mục tham gia','jm.s3d':'Chỉ tham gia hạng mục bạn chọn. Bạn chỉ xuất hiện ở các bảng đã chọn.',
     'jm.b.return':'Lợi nhuận','jm.b.profit':'Tiền lãi','jm.b.volume':'Khối lượng',
@@ -955,6 +962,7 @@ const I18N = {
     'assets.title':'Не только крипта','assets.sub':'Всё, чем вы торгуете на счёте OKX, идёт в зачёт рейтинга.',
     'assets.crypto':'Крипта','assets.gold':'Золото','assets.commodity':'Сырьё','assets.stocks':'Акции','assets.indices':'Индексы','assets.forex':'Форекс',
     'assets.note':'OKX поддерживает широкий набор рынков — крипта, золото, сырьё, акции, индексы и форекс. Что бы вы ни торговали, в рейтинге решает мастерство.',
+    'assets.rec':'💡 Рейтинг вознаграждает активную торговлю — маржа и фьючерсы с плечом дают преимущество в зачётах доходности и объёма. (Спот по принципу «купил и держишь» редко выполняет минимумы по дням торговли и объёму.)',
     'jm.nick':'Никнейм','jm.nickd':'Имя, отображаемое в рейтинге и Зале славы. Буквы и цифры, 2–9 символов, уникально.','jm.nicksave':'Сохранить','jm.avatar':'Сменить фото','jm.avatarrm':'Удалить','av.large':'Изображение слишком большое.',
     'jm.s3':'Выберите номинации','jm.s3d':'Участвуете только в выбранных. Появляетесь только в выбранных таблицах.',
     'jm.b.return':'Доходность','jm.b.profit':'Прибыль','jm.b.volume':'Объём',
