@@ -1064,6 +1064,8 @@ function rebuildBoardTabs(){
   const aps=activePeriods(); if(!aps.length)return;
   if(!aps.includes(state.period))state.period=aps[0];
   const ps=document.getElementById('periodSeg');
+  // Only one active period → the lone period tab is redundant, so hide it.
+  ps.style.display=aps.length>1?'':'none';
   ps.innerHTML=aps.map(p=>`<button data-period="${p}"${p===state.period?' class="on"':''}>${t('lb.'+p)}</button>`).join('');
   const cats=openCats(state.period); if(!cats.includes(state.metric))state.metric=cats[0]||'return';
   const ms=document.getElementById('metricSeg');
