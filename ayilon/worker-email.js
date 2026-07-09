@@ -1256,6 +1256,18 @@ function arenaCsplit(cfg) {
   }
   return raw;
 }
+// Per-category share of a board's pool, normalized over the OPEN categories.
+// Returns { category: fraction } summing to 1. Falls back to an even split when
+// no weights are set or they sum to 0, so a category never shows a $0 pool.
+function arenaCatWeights(board, cfg) {
+  const cats = (cfg.boards && cfg.boards[board] && cfg.boards[board].length) ? cfg.boards[board] : ['return'];
+  const w = cfg.catWeight || {};
+  const raw = cats.map(c => Math.max(0, parseFloat(w[c] != null ? w[c] : 1) || 0));
+  const sum = raw.reduce((a, v) => a + v, 0);
+  const out = {};
+  cats.forEach((c, i) => { out[c] = sum > 0 ? raw[i] / sum : 1 / cats.length; });
+  return out;
+}
 async function arenaDeclareWinners(env, now) {
   const curW = arenaWeekId(now), curM = arenaMonthId(now);
   const cfg = await getArenaConfig(env);
@@ -1295,7 +1307,8 @@ async function arenaDeclareWinners(env, now) {
       // Return winners are ranked risk-adjusted (same as the live board); profit/volume raw.
       const winKey = j.metric === 'return' ? (r => arenaRiskAdj(r)) : (r => r[j.sort] || 0);
       rows.sort((a, b) => winKey(b) - winKey(a));
-      const catPool = boardPoolOf(j.board) / ((cfg.boards[j.board] || ['return']).length || 1);
+      // Weighted per-category slice of the board pool (Return weighted higher).
+      const catPool = boardPoolOf(j.board) * (arenaCatWeights(j.board, cfg)[j.metric] || 0);
       const rankSplit = cfg.split[j.board] || [];
       for (let i = 0; i < Math.min(j.topN, rows.length); i++) {
         const r = rows[i];
@@ -2031,6 +2044,10 @@ const ARENA_DEFAULT_CONFIG = {
   manualPool: { weekly: 0, monthly: 0 },      // used only when poolMode==='manual'
   cap:   { weekly: [250, 125, 25], monthly: [1000, 500, 100, 50, 10] }, // max $ per rank (weekly ≈ 1/4 of monthly)
   split: { weekly: [50, 30, 20], monthly: [40, 25, 15, 12, 8] },        // % of pool per rank
+  // Relative weight of each category's slice of a board's pool. Normalized over the
+  // OPEN categories, so Return (higher $500 entry bar) gets a bigger share than
+  // Profit/Volume. e.g. 50/25/25 → Return pool is 2× each of the others.
+  catWeight: { return: 50, profit: 25, volume: 25 },
   // Which period/category boards are LIVE — admin-toggled. Default: monthly only
   // (all three categories), weekly off. Turning a board on here activates its
   // scoring, snapshot, winner declaration, and public tab together.
@@ -2103,14 +2120,23 @@ function buildSeasonPayload(cfg, now) {
       : commissionPool * (parseFloat(csplit[board] || 0) / 100);
     const cats = (cfg.boards[board] && cfg.boards[board].length) ? cfg.boards[board] : ['return'];
     const numCat = cats.length || 1;
-    const catPool = boardPool / numCat;
+    const weights = arenaCatWeights(board, cfg);              // {cat: fraction}, Return weighted higher
     const split = cfg.split[board] || [];
-    const prizes = split.map((pct, i) => ({ rank: i + 1, pct, amount: Math.round(catPool * pct / 100 * 100) / 100 }));
     const r2 = v => Math.round(v * 100) / 100;
+    // Per-category slice + its rank breakdown (each category is its own competition).
+    const catData = {};
+    for (const c of cats) {
+      const cp = boardPool * (weights[c] || 0);
+      catData[c] = { pool: r2(cp), prizes: split.map((pct, i) => ({ rank: i + 1, pct, amount: r2(cp * pct / 100) })) };
+    }
+    const first = catData[cats[0]] || { pool: 0, prizes: [] };
     out[board] = {
       seasonId: board === 'monthly' ? arenaMonthId(now) : arenaWeekId(now),
-      endsAt: ends[board], pool: r2(catPool), boardPool: r2(boardPool),
-      numCategories: numCat, prizes, boards: cats
+      endsAt: ends[board], boardPool: r2(boardPool),
+      catWeights: weights, cats: catData,
+      numCategories: numCat, boards: cats,
+      // backward-compat single-category view (defaults to the first open category)
+      pool: first.pool, prizes: first.prizes
     };
   }
   return { ok: true, poolMode: cfg.poolMode, commissionPct, commissionTotal: Math.round(commissionTotal * 100) / 100,
@@ -2208,6 +2234,7 @@ async function handleAdminArenaConfig(request, env) {
   if (body.manualPool) next.manualPool = { ...cur.manualPool, ...body.manualPool };
   if (body.cap)        next.cap        = { ...cur.cap, ...body.cap };
   if (body.split)      next.split      = { ...cur.split, ...body.split };
+  if (body.catWeight)  next.catWeight  = { ...cur.catWeight, ...body.catWeight };
   if (body.poolMode === 'manual' || body.poolMode === 'commission') next.poolMode = body.poolMode;
   if (body.commissionPct   != null) next.commissionPct   = Math.max(0, Math.min(100, parseFloat(body.commissionPct) || 0));
   if (body.commissionTotal != null) next.commissionTotal = Math.max(0, parseFloat(body.commissionTotal) || 0);

@@ -1134,7 +1134,7 @@ document.getElementById('lbMoreBtn').addEventListener('click',()=>{lbLimit+=LB_P
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 document.getElementById('periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.period=b.dataset.period;rebuildBoardTabs();renderPrize();applyBoard(true);});
-document.getElementById('metricSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.metric=b.dataset.metric;document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x===b));syncMetricHeader();applyBoard(true);});
+document.getElementById('metricSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.metric=b.dataset.metric;document.querySelectorAll('#metricSeg button').forEach(x=>x.classList.toggle('on',x===b));syncMetricHeader();renderPrize();applyBoard(true);});
 let qT;document.getElementById('lbSearch').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{state.q=e.target.value.trim();lbLimit=LB_PAGE;renderLB();},150);});
 
 /* ---------- prize + countdown ---------- */
@@ -1145,7 +1145,7 @@ function updateMinNote(){ const el=document.getElementById('jMinNote'); if(el) e
 // Live-rising prize pool: the commission-funded pool visibly accrues. Each 60s
 // fetch re-anchors to the true server value; between fetches a small monotonic
 // drip keeps the number climbing so it's always alive. Never exceeds capTotal.
-let poolAnim={ cur:0, base:0, capTotal:0, prizes:[], active:false, period:'' };
+let poolAnim={ cur:0, base:0, capTotal:0, prizes:[], active:false, period:'', catFrac:1 };
 let poolRAF=null, poolLastTs=0;
 const POOL_DRIP_PER_SEC=0.00004; // fraction of pool added per second (visual accrual)
 function fmt2(v){ return v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -1179,13 +1179,14 @@ function coinFrame(ts){
   face.style.transform=(a>90&&a<270)?'scaleX(-1)':'none';   // un-mirror logo on the back half
   coinRAF=requestAnimationFrame(coinFrame);
 }
-function updatePrizeCells(pool){
+function updatePrizeCells(pool){   // pool = total board pool; cells show the selected division's share
   const box=document.getElementById('prizeBreak'); if(!box)return;
+  const catPool=pool*(poolAnim.catFrac!=null?poolAnim.catFrac:1);
   (poolAnim.prizes||[]).forEach(p=>{
     const cell=box.querySelector(`.a[data-rank="${p.rank}"]`); if(!cell)return;
-    // Always the real share of the current pool — never an unfunded ceiling.
-    const raw=pool*(p.pct||0)/100;
-    cell.textContent=pool>0?'$'+fmt2(raw):'$0';
+    // Always the real share of this division's live pool — never an unfunded ceiling.
+    const raw=catPool*(p.pct||0)/100;
+    cell.textContent=catPool>0?'$'+fmt2(raw):'$0';
   });
 }
 function startPoolAnim(){ if(poolRAF)return; poolLastTs=performance.now(); poolRAF=requestAnimationFrame(poolFrame); }
@@ -1196,8 +1197,8 @@ function poolFrame(ts){
   // Never drift more than a hair above the last real server value (keeps it honest).
   if(poolAnim.base>0 && poolAnim.cur>poolAnim.base*1.03) poolAnim.cur=poolAnim.base*1.03;
   const pa=document.getElementById('prizeAmt');
-  if(pa && !pa.classList.contains('accruing')) pa.textContent='$'+fmt2(poolAnim.cur);
-  const va=document.getElementById('vaultAmt'); if(va) va.textContent='$'+fmt2(poolAnim.cur);
+  if(pa && !pa.classList.contains('accruing')) pa.textContent='$'+fmt2(poolAnim.cur*(poolAnim.catFrac!=null?poolAnim.catFrac:1));
+  const va=document.getElementById('vaultAmt'); if(va) va.textContent='$'+fmt2(poolAnim.cur);   // hero = total pool
   updatePrizeCells(poolAnim.cur);
   poolRAF=requestAnimationFrame(poolFrame);
 }
@@ -1253,21 +1254,30 @@ function renderPrize(){
   const vAmt=document.getElementById('vaultAmt');
   if(!season||!season[state.period]){box.style.display='none';poolAnim.active=false;stopCoinCycle();if(vAmt){vAmt.textContent=t('pz.accruing');vAmt.classList.add('acc');}return;}
   box.style.display='block';const s=season[state.period];
-  document.getElementById('prizeLbl').textContent=state.period==='monthly'?d['pz.pool.m']:d['pz.pool'];
-  if(vAmt){ if(s.pool>0){vAmt.textContent='$'+fmt2(s.pool);vAmt.classList.remove('acc');} else {vAmt.textContent=t('pz.accruing');vAmt.classList.add('acc');} }
+  // Total pool (all divisions) drives the hero; the box shows the SELECTED division's slice.
+  const total=(s.boardPool!=null)?s.boardPool:(s.pool||0);
+  const catData=(s.cats&&s.cats[state.metric])?s.cats[state.metric]:null;
+  const numCat=s.numCategories||(s.boards?s.boards.length:1)||1;
+  const catFrac=(s.catWeights&&s.catWeights[state.metric]!=null)?s.catWeights[state.metric]
+               :(catData&&total>0?catData.pool/total:1/numCat);
+  const catPool=catData?catData.pool:(s.pool||0);
+  const prizes=catData?catData.prizes:(s.prizes||[]);
+  const metricLbl=t('lb.m.'+state.metric);
+  document.getElementById('prizeLbl').textContent=(state.period==='monthly'?d['pz.pool.m']:d['pz.pool'])+' · '+metricLbl;
+  if(vAmt){ if(total>0){vAmt.textContent='$'+fmt2(total);vAmt.classList.remove('acc');} else {vAmt.textContent=t('pz.accruing');vAmt.classList.add('acc');} }
   const pa=document.getElementById('prizeAmt');
   // Prizes are a live % share of the REAL pool — show the % so nothing looks like a fixed guarantee.
   document.getElementById('prizeCap').textContent=t('pz.share');
-  document.getElementById('prizeBreak').innerHTML=(s.prizes||[]).map(p=>
+  document.getElementById('prizeBreak').innerHTML=(prizes||[]).map(p=>
     `<div class="pz r${p.rank}"><div class="r">${p.rank}${t('pz.rank')} · ${p.pct}%</div><div class="a" data-rank="${p.rank}">—</div></div>`).join('');
   document.getElementById('cdUtc').textContent=t('pz.utc');
-  poolAnim.prizes=s.prizes||[]; poolAnim.capTotal=0;
-  if(s.pool>0){
+  poolAnim.prizes=prizes||[]; poolAnim.capTotal=0; poolAnim.catFrac=catFrac;
+  if(total>0){
     pa.classList.remove('accruing'); stopCoinCycle();
     // reset the running total when the period changes; otherwise keep climbing (monotonic)
-    if(poolAnim.period!==state.period || poolAnim.cur<s.pool) poolAnim.cur=s.pool;
-    poolAnim.base=s.pool; poolAnim.period=state.period; poolAnim.active=true;
-    pa.textContent='$'+fmt2(poolAnim.cur);
+    if(poolAnim.period!==state.period || poolAnim.cur<total) poolAnim.cur=total;
+    poolAnim.base=total; poolAnim.period=state.period; poolAnim.active=true;
+    pa.textContent='$'+fmt2(poolAnim.cur*catFrac);
     updatePrizeCells(poolAnim.cur);
     startPoolAnim();
   } else {
