@@ -2037,7 +2037,7 @@ async function handleArenaSetLang(request, env) {
 // ── Prize pool config (admin-settable; affiliate-auto when creds present) ──
 const ARENA_DEFAULT_CONFIG = {
   poolMode: 'commission',   // 'commission' = pool is a % of my OKX commission; 'manual' = fixed amount
-  commissionPct: 10,        // % of my referral commission that funds prizes
+  commissionPct: 20,        // % of my referral commission that funds prizes
   commissionTotal: 0,       // accumulated commission ($) — affiliate-auto (if creds) or admin-entered
   commissionSplit: { weekly: 0, monthly: 100 }, // 100% of the pool funds the monthly season (weekly removed)
   autoAffiliate: false,     // when true + affiliate creds → commissionTotal auto-computed
