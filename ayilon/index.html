@@ -311,9 +311,9 @@
   #splash .schart{width:min(340px,74vw);height:130px;overflow:visible}
   /* line perpetually draws upward, holds at the peak, fades, repeats — contained in frame */
   #splash .sar{fill:url(#lgSplash);opacity:0;animation:sfill 3.2s ease-in-out infinite}
-  #splash .sln{fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 4px 12px rgba(255,255,255,.55));stroke-dasharray:340;stroke-dashoffset:340;animation:sdraw 3.2s cubic-bezier(.45,0,.25,1) infinite}
+  #splash .sln{fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 4px 12px rgba(255,255,255,.55));stroke-dasharray:360;stroke-dashoffset:360;animation:sdraw 3.2s cubic-bezier(.45,0,.25,1) infinite}
   #splash .sdot{fill:#ffffff;filter:drop-shadow(0 0 8px #ffffff);opacity:0;animation:sdot 3.2s ease-in-out infinite}
-  @keyframes sdraw{0%{stroke-dashoffset:340;opacity:0}8%{opacity:1}55%{stroke-dashoffset:0;opacity:1}82%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+  @keyframes sdraw{0%{stroke-dashoffset:360;opacity:0}8%{opacity:1}55%{stroke-dashoffset:0;opacity:1}82%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
   @keyframes sfill{0%,18%{opacity:0}55%{opacity:.85}82%{opacity:.85}100%{opacity:0}}
   @keyframes sdot{0%,46%{opacity:0}56%{opacity:1}82%{opacity:1}100%{opacity:0}}
   /* prize vault — money-rain accrual (above leaderboard) */
